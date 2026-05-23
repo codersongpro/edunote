@@ -30,7 +30,7 @@ const AboutScreen: React.FC = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 shadow-lg mb-4">
             <span className="text-4xl">📚</span>
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-1">에듀노트</h1>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-1">EduNote</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">EduNote — 교직원을 위한 AI 도우미</p>
           <div className="flex items-center justify-center gap-3">
             <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">v{version}</span>

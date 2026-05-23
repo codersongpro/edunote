@@ -115,7 +115,7 @@ const SettingsScreen: React.FC = () => {
             <div className="bg-gray-100 p-1.5 rounded-lg">
               <Settings className="w-4 h-4 text-gray-600" />
             </div>
-            <h2 className="font-bold text-gray-800">에듀노트 설정</h2>
+            <h2 className="font-bold text-gray-800">EduNote 설정</h2>
           </div>
           <p className="text-xs text-gray-500">Gemini API 키와 기본 정보를 설정합니다.</p>
         </div>
@@ -391,7 +391,7 @@ const SettingsScreen: React.FC = () => {
 
         {/* Version */}
         <div className="text-center text-xs text-gray-400 pb-4">
-          에듀노트 (EduNote) — Developed by 송동석
+          EduNote — Developed by 송동석
         </div>
       </div>
     </div>

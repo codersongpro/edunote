@@ -59,7 +59,7 @@ const UsageGuideScreen: React.FC = () => {
             <Step n={2}>구글 계정으로 로그인합니다. <span className="text-gray-400 dark:text-gray-500">(무료 Google 계정으로 충분합니다)</span></Step>
             <Step n={3}>좌측 메뉴에서 <strong>"API 키"</strong>를 클릭합니다. <span className="text-gray-400 dark:text-gray-500">(영문: "Get API key")</span></Step>
             <Step n={4}>우측 상단 <strong>"API 키 만들기"</strong> 버튼을 클릭해 키를 생성합니다.</Step>
-            <Step n={5}>생성된 키(AIza…)를 복사한 뒤, 에듀노트 <strong>설정</strong> 화면의 API 키 입력란에 붙여넣고 저장합니다.</Step>
+            <Step n={5}>생성된 키(AIza…)를 복사한 뒤, EduNote <strong>설정</strong> 화면의 API 키 입력란에 붙여넣고 저장합니다.</Step>
           </ol>
           <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-xs text-amber-700 dark:text-amber-400">
             무료 계정 기준 분당 15회 요청 제한이 있습니다. 일반적인 사용에는 충분합니다.

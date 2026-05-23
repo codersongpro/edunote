@@ -261,7 +261,7 @@ const App: React.FC = () => {
       <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">에듀노트 불러오는 중...</p>
+          <p className="text-gray-500 text-sm">EduNote 불러오는 중...</p>
         </div>
       </div>
     );
@@ -322,7 +322,7 @@ const App: React.FC = () => {
                 disabled={!disclaimerChecked}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
               >
-                에듀노트 시작하기 →
+                EduNote 시작하기 →
               </button>
             </div>
           </div>
@@ -388,7 +388,7 @@ const App: React.FC = () => {
               onClick={() => setMode(AppMode.HOME)}
               className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
-              에듀노트
+              EduNote
             </button>
             <button
               onClick={toggleDarkMode}

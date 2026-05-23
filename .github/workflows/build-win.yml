@@ -45,9 +45,9 @@ jobs:
           token: ${{ secrets.RELEASE_PAT }}
           repository: codersongpro/edunote
           tag_name: v${{ steps.pkg.outputs.version }}
-          name: 에듀노트 v${{ steps.pkg.outputs.version }}
+          name: EduNote v${{ steps.pkg.outputs.version }}
           body: |
-            ## 에듀노트 v${{ steps.pkg.outputs.version }}
+            ## EduNote v${{ steps.pkg.outputs.version }}
 
             ### 설치 방법
             1. 아래 Assets에서 `edunote_*.exe` 파일을 다운로드합니다.

@@ -51,7 +51,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 shadow-lg mb-2">
             <span className="text-3xl">📚</span>
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">에듀노트</h1>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">EduNote</h1>
           <div className="flex items-center justify-center gap-2">
             <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
             {updateInfo && !updateInfo.hasUpdate && (
@@ -145,7 +145,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
             </div>
             <div>
               <p className="text-sm font-bold text-white">앱 만족도 설문 참여하기</p>
-              <p className="text-xs text-indigo-100 mt-0.5">소중한 의견이 더 나은 에듀노트를 만듭니다 (1분 소요)</p>
+              <p className="text-xs text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다 (1분 소요)</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
