@@ -20,7 +20,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
     window.electronAPI.checkUpdate()
-      .then((info: UpdateInfo) => { if (info.hasUpdate) setUpdateInfo(info); })
+      .then((info: UpdateInfo) => setUpdateInfo(info))
       .catch(() => {});
   }, []);
 
@@ -52,7 +52,14 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
             <span className="text-3xl">📚</span>
           </div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">에듀노트</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
+            {updateInfo && !updateInfo.hasUpdate && (
+              <span className="text-[11px] px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
+                최신 버전 ✓
+              </span>
+            )}
+          </div>
           <p className="text-base text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
             교직원을 위한 AI 도우미 — 학생 생활기록부 작성부터 교무 행정 문서까지, AI가 도와드립니다.
           </p>

@@ -241,7 +241,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const handleGenerate = async () => {
     setError(null);
     setIsGenerating(true);
-    startGeneration();
+    startGeneration(`SCHOOL_DOC_${activeTab}`);
     try {
       let result: string;
       if (activeTab === DocType.GONGGO) {

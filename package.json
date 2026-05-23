@@ -1,6 +1,6 @@
 {
   "name": "edunote",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "에듀노트 — 교사를 위한 AI 도우미 (학생기록 AI + 교무 AI)",
   "main": "out/main/index.js",
   "scripts": {

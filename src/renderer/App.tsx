@@ -362,7 +362,9 @@ const App: React.FC = () => {
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
                       {generatingModes.has(m) && mode !== m && (
-                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse shrink-0" />
+                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded font-bold shrink-0 tabular-nums">
+                          {generatingModes.get(m)}%
+                        </span>
                       )}
                     </button>
                   ))}
@@ -401,7 +403,9 @@ const App: React.FC = () => {
                     <GraduationCap className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">교육AI챗봇</span>
                     {generatingModes.has(AppMode.EDUCATION_QA) && mode !== AppMode.EDUCATION_QA && (
-                      <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                      <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                        {generatingModes.get(AppMode.EDUCATION_QA)}%
+                      </span>
                     )}
                   </button>
                   <div>
@@ -409,7 +413,9 @@ const App: React.FC = () => {
                       <FileText className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">공문서 작성기</span>
                       {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
-                        <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                        <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                          {generatingModes.get(AppMode.SCHOOL_DOC)}%
+                        </span>
                       )}
                       {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
                     </button>
@@ -418,7 +424,12 @@ const App: React.FC = () => {
                         {ALL_DOC_TYPES.map(dt => (
                           <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
                             <File className="w-3 h-3 shrink-0" />
-                            <span className="truncate">{DOC_TYPE_LABELS[dt]}</span>
+                            <span className="flex-1 truncate">{DOC_TYPE_LABELS[dt]}</span>
+                            {generatingModes.has(`SCHOOL_DOC_${dt}`) && (
+                              <span className="text-[9px] px-1 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                                {generatingModes.get(`SCHOOL_DOC_${dt}`)}%
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -429,7 +440,9 @@ const App: React.FC = () => {
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
                       {generatingModes.has(m) && mode !== m && (
-                        <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                        <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                          {generatingModes.get(m)}%
+                        </span>
                       )}
                     </button>
                   ))}
@@ -472,13 +485,25 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-hidden flex flex-col">
           <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
           {/* Generation progress bar */}
-          {generatingModes.has(mode) && (
-            generatingModes.get(mode) === -1
+          {generatingModes.has(mode) && (() => {
+            const pct = generatingModes.get(mode) ?? -1;
+            return pct === -1
               ? <div className="h-[2px] shrink-0 bg-blue-400 animate-pulse" />
-              : <div className="h-[2px] shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                  <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${generatingModes.get(mode)}%` }} />
+              : (
+                <div className="h-[2px] shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
+                  <div
+                    className={`h-full transition-all duration-500 ease-out bg-gradient-to-r ${
+                      STUDENT_RECORD_MODES.includes(mode)
+                        ? 'from-blue-400 to-blue-600'
+                        : ADMIN_MODES.includes(mode)
+                        ? 'from-teal-400 to-teal-600'
+                        : 'from-gray-400 to-gray-500'
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
                 </div>
-          )}
+              );
+          })()}
           {/* Lazy-mounted views */}
           {(Array.from(mountedModes) as AppMode[]).map(m => (
             <div key={m} className={m === mode ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
