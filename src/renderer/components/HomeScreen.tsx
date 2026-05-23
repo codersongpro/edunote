@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, AlertTriangle, Download, ClipboardList } from 'lucide-react';
+import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, Info, Download, ClipboardList } from 'lucide-react';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -49,7 +49,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
         {/* Hero */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 shadow-lg mb-2">
-            <span className="text-3xl font-black text-white">에</span>
+            <span className="text-3xl">📚</span>
           </div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">에듀노트</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
@@ -58,17 +58,13 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
           </p>
         </div>
 
-        {/* AI 생성 경고 */}
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4">
-          <div className="flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">AI 생성 문구 사용 시 주의사항</p>
-              <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                이 프로그램은 Google Gemini AI를 이용해 문구를 생성합니다. AI가 생성한 내용은 <strong>반드시 교사가 직접 검토·수정</strong>한 후 사용하세요.
-                AI 생성 문구를 무검토로 학생부에 기재하는 것은 교육 현장의 책임 원칙에 어긋날 수 있습니다.
-              </p>
-            </div>
+        {/* AI 활용 안내 */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl p-4">
+          <div className="flex gap-3 items-start">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              Gemini AI가 초안 문구를 제안합니다. 생성된 내용은 학생 특성에 맞게 <strong>검토·수정</strong>하여 활용해 주세요.
+            </p>
           </div>
         </div>
 
