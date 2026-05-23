@@ -220,11 +220,20 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     return title || 'document';
   };
 
-  const parseHwpxFillData = (content: string, tab: DocType): any[] | null => {
-    if (uploadedTemplates.length === 0) return null;
-    // Return simple fill data array for hwpx template
-    const title = getHwpxTitleFromContent(content, tab);
-    return [{ key: '문서제목', value: title }, { key: '내용', value: content }];
+  const extractResult = (raw: string): { cleanContent: string; fillData: any[] | null } => {
+    const START = '___HWPX_FILL_START___';
+    const END = '___HWPX_FILL_END___';
+    const si = raw.indexOf(START);
+    const ei = raw.indexOf(END);
+    if (si === -1 || ei === -1 || ei <= si) return { cleanContent: raw.trim(), fillData: null };
+    const jsonStr = raw.substring(si + START.length, ei).trim();
+    const cleanContent = raw.substring(0, si).trim();
+    try {
+      const parsed = JSON.parse(jsonStr);
+      return { cleanContent, fillData: Array.isArray(parsed) ? parsed : null };
+    } catch {
+      return { cleanContent, fillData: null };
+    }
   };
 
   // ─── Handle Generate ───────────────────────────────────────────────────────
@@ -265,8 +274,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           undefined,
         );
       }
-      setContentByTab(prev => ({ ...prev, [activeTab]: result }));
-      const fillData = parseHwpxFillData(result, activeTab);
+      const { cleanContent, fillData } = extractResult(result);
+      setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));
     } catch (err: any) {
       setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');

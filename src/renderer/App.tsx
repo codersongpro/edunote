@@ -89,9 +89,9 @@ const App: React.FC = () => {
           window.electronAPI.getConfig('darkMode'),
         ]);
         setHasApiKey(hn as boolean);
-        if (sl) setSchoolLevel(sl as SchoolLevel);
+        if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
-        const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v1');
+        const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v2');
         if (!disclaimerAccepted) setShowDisclaimerModal(true);
         setMode(AppMode.HOME);
       } catch {
@@ -104,7 +104,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleAcceptDisclaimer = () => {
-    localStorage.setItem('edunote_disclaimer_v1', 'accepted');
+    localStorage.setItem('edunote_disclaimer_v2', 'accepted');
     setShowDisclaimerModal(false);
   };
 
@@ -127,6 +127,7 @@ const App: React.FC = () => {
     setSchoolLevel(level);
     setHasEnteredStudentSection(true);
     setShowSchoolLevelModal(false);
+    window.electronAPI.setConfig({ schoolLevel: level });
     const pendingMode = (state as any)._pendingMode;
     if (pendingMode) {
       goTo(pendingMode);
