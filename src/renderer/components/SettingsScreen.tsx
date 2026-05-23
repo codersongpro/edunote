@@ -131,11 +131,11 @@ const SettingsScreen: React.FC = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">3</span>
-                    <span>좌측 메뉴에서 <strong>"Get API key"</strong> 클릭</span>
+                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-gray-500">(영문 메뉴인 경우 "Get API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">4</span>
-                    <span><strong>"Create API key"</strong> 버튼 클릭 → 키 생성</span>
+                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-gray-500">(영문: "Create API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">5</span>
