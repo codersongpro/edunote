@@ -17,6 +17,7 @@ import EducationAssistantQA from './components/EducationAssistantQA';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
 import QRMaker from './components/QRMaker';
 import MyResourceLibrary from './components/MyResourceLibrary';
+import LuckyDraw from './components/LuckyDraw';
 import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
@@ -34,7 +35,7 @@ const STUDENT_RECORD_MODES: AppMode[] = [
   AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.QR_MAKER, AppMode.MY_RESOURCES];
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.QR_MAKER, AppMode.MY_RESOURCES, AppMode.LUCKY_DRAW];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -248,6 +249,7 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.QR_MAKER: return <QRMaker />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
+      case AppMode.LUCKY_DRAW: return <LuckyDraw />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       default: return null;
@@ -535,6 +537,17 @@ const App: React.FC = () => {
                   >
                     <BookMarked className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">나만의 자료실</span>
+                  </button>
+                  <button
+                    onClick={() => goTo(AppMode.LUCKY_DRAW)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.LUCKY_DRAW
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                    }`}
+                  >
+                    <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>
+                    <span className="flex-1 text-left truncate">럭키드로우</span>
                   </button>
                 </div>
               )}

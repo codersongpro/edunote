@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check } from 'lucide-react';
+import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus } from 'lucide-react';
 
 interface Resource {
   id: string;
@@ -9,10 +9,12 @@ interface Resource {
   thumbnail: string;
   type: 'youtube' | 'web';
   tags: string;
+  category: string;
   createdAt: number;
 }
 
 const STORAGE_KEY = 'eduNote_resources_v1';
+const CATEGORIES_KEY = 'eduNote_resource_categories_v1';
 
 function extractYoutubeId(url: string): string | null {
   const patterns = [
@@ -28,101 +30,107 @@ function extractYoutubeId(url: string): string | null {
   return null;
 }
 
-function isYoutubeUrl(url: string): boolean {
-  return !!extractYoutubeId(url);
-}
-
-function youtubeThumbnail(videoId: string): string {
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-}
+function isYoutubeUrl(url: string): boolean { return !!extractYoutubeId(url); }
+function youtubeThumbnail(id: string): string { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
 
 function loadResources(): Resource[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
 }
 
-function saveResources(list: Resource[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+function saveResources(list: Resource[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+function loadCategories(): string[] {
+  try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY) || '[]'); }
+  catch { return []; }
 }
+
+function saveCategories(cats: string[]) { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); }
 
 const MyResourceLibrary: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>(loadResources);
+  const [categories, setCategories] = useState<string[]>(loadCategories);
+  const [activeCategory, setActiveCategory] = useState<string>('전체');
   const [search, setSearch] = useState('');
+
   const [showAdd, setShowAdd] = useState(false);
   const [addUrl, setAddUrl] = useState('');
   const [addTitle, setAddTitle] = useState('');
   const [addDesc, setAddDesc] = useState('');
   const [addTags, setAddTags] = useState('');
+  const [addCategory, setAddCategory] = useState('');
+  const [newCatInput, setNewCatInput] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState('');
+
   const [editId, setEditId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
+
+  // Category management
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [newCatManagerInput, setNewCatManagerInput] = useState('');
+
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    saveResources(resources);
-  }, [resources]);
+  useEffect(() => { saveResources(resources); }, [resources]);
+  useEffect(() => { saveCategories(categories); }, [categories]);
+  useEffect(() => { if (showAdd) setTimeout(() => urlInputRef.current?.focus(), 50); }, [showAdd]);
 
-  useEffect(() => {
-    if (showAdd) setTimeout(() => urlInputRef.current?.focus(), 50);
-  }, [showAdd]);
+  const addCategory_save = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || categories.includes(trimmed)) return;
+    setCategories(prev => [...prev, trimmed]);
+  };
+
+  const removeCategory = (name: string) => {
+    setCategories(prev => prev.filter(c => c !== name));
+    setResources(prev => prev.map(r => r.category === name ? { ...r, category: '' } : r));
+    if (activeCategory === name) setActiveCategory('전체');
+  };
 
   const handleFetchMeta = async () => {
     if (!addUrl.trim()) return;
-    setFetching(true);
-    setFetchError('');
+    setFetching(true); setFetchError('');
     try {
-      let urlToParse = addUrl.trim();
-      if (!/^https?:\/\//i.test(urlToParse)) urlToParse = 'https://' + urlToParse;
-
-      if (isYoutubeUrl(urlToParse)) {
-        const vid = extractYoutubeId(urlToParse)!;
-        if (!addTitle) setAddTitle('YouTube 영상');
-        if (!addDesc) setAddDesc('');
-        setAddUrl(urlToParse);
-      } else {
-        const meta = await window.electronAPI.fetchUrlMeta(urlToParse);
+      let url = addUrl.trim();
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      setAddUrl(url);
+      if (!isYoutubeUrl(url)) {
+        const meta = await window.electronAPI.fetchUrlMeta(url);
         if (meta.title && !addTitle) setAddTitle(meta.title);
         if (meta.description && !addDesc) setAddDesc(meta.description);
-        setAddUrl(urlToParse);
+      } else {
+        if (!addTitle) setAddTitle('YouTube 영상');
       }
     } catch {
-      setFetchError('주소를 불러오지 못했습니다. 수동으로 입력해주세요.');
-    } finally {
-      setFetching(false);
-    }
+      setFetchError('정보를 불러오지 못했습니다. 직접 입력해주세요.');
+    } finally { setFetching(false); }
   };
 
   const handleAdd = () => {
     if (!addUrl.trim()) return;
     let url = addUrl.trim();
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-
     const ytId = extractYoutubeId(url);
-    const type: Resource['type'] = ytId ? 'youtube' : 'web';
-    const thumbnail = ytId ? youtubeThumbnail(ytId) : '';
-
     const item: Resource = {
       id: Date.now().toString(),
       url,
       title: addTitle || url,
       description: addDesc,
-      thumbnail,
-      type,
+      thumbnail: ytId ? youtubeThumbnail(ytId) : '',
+      type: ytId ? 'youtube' : 'web',
       tags: addTags,
+      category: addCategory,
       createdAt: Date.now(),
     };
     setResources(prev => [item, ...prev]);
-    setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags('');
-    setFetchError('');
-    setShowAdd(false);
+    setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags(''); setAddCategory('');
+    setFetchError(''); setShowAdd(false);
   };
 
-  const handleDelete = (id: string) => {
-    setResources(prev => prev.filter(r => r.id !== id));
-  };
+  const handleDelete = (id: string) => setResources(prev => prev.filter(r => r.id !== id));
 
   const handleEditSave = (id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, title: editTitle, description: editDesc } : r));
@@ -130,16 +138,22 @@ const MyResourceLibrary: React.FC = () => {
   };
 
   const filtered = resources.filter(r => {
+    const catMatch = activeCategory === '전체' || r.category === activeCategory ||
+      (activeCategory === '미분류' && !r.category);
+    if (!catMatch) return false;
     if (!search) return true;
     const q = search.toLowerCase();
-    return r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) || r.tags.toLowerCase().includes(q) || r.url.toLowerCase().includes(q);
+    return r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) ||
+      r.tags.toLowerCase().includes(q) || r.url.toLowerCase().includes(q);
   });
 
   const inputClass = 'w-full bg-white rounded-lg border border-gray-300 text-gray-800 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none p-2.5 transition-all';
 
+  const allTabs = ['전체', ...categories, ...(resources.some(r => !r.category) ? ['미분류'] : [])];
+
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] overflow-y-auto">
-      <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
+      <div className="max-w-3xl mx-auto w-full p-4 space-y-3">
 
         {/* Header */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -150,24 +164,71 @@ const MyResourceLibrary: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-bold text-gray-800">나만의 자료실</h2>
-                <p className="text-xs text-gray-500">유용한 웹사이트·영상을 한 곳에 모아두세요.</p>
+                <p className="text-xs text-gray-500">유용한 웹사이트·영상을 주제별로 모아두세요.</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowAdd(!showAdd)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white text-sm font-semibold rounded-lg hover:bg-teal-600 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              추가
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCatManager(s => !s)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                title="주제 관리"
+              >
+                <FolderPlus className="w-4 h-4" />
+                주제 관리
+              </button>
+              <button
+                onClick={() => setShowAdd(!showAdd)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white text-sm font-semibold rounded-lg hover:bg-teal-600 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                추가
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Category manager */}
+        {showCatManager && (
+          <div className="bg-white rounded-xl border border-teal-200 shadow-sm p-4 space-y-3">
+            <h3 className="text-sm font-bold text-gray-700">주제(폴더) 관리</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="새 주제 이름 입력..."
+                value={newCatManagerInput}
+                onChange={e => setNewCatManagerInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { addCategory_save(newCatManagerInput); setNewCatManagerInput(''); }}}
+              />
+              <button
+                onClick={() => { addCategory_save(newCatManagerInput); setNewCatManagerInput(''); }}
+                disabled={!newCatManagerInput.trim()}
+                className="px-4 py-2 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold disabled:opacity-50 shrink-0"
+              >
+                추가
+              </button>
+            </div>
+            {categories.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {categories.map(cat => (
+                  <div key={cat} className="flex items-center gap-1.5 bg-teal-50 border border-teal-200 text-teal-700 rounded-full px-3 py-1 text-sm">
+                    <span>{cat}</span>
+                    <button onClick={() => removeCategory(cat)} className="text-teal-400 hover:text-red-500 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400">아직 주제가 없습니다. 새 주제를 추가해보세요.</p>
+            )}
+          </div>
+        )}
 
         {/* Add form */}
         {showAdd && (
           <div className="bg-white rounded-xl border border-teal-200 shadow-sm p-4 space-y-3">
             <h3 className="text-sm font-bold text-gray-700">새 자료 추가</h3>
-
             <div className="flex gap-2">
               <input
                 ref={urlInputRef}
@@ -186,17 +247,94 @@ const MyResourceLibrary: React.FC = () => {
                 {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : '정보 가져오기'}
               </button>
             </div>
-
             {fetchError && <p className="text-xs text-red-500">{fetchError}</p>}
-
             <input type="text" className={inputClass} placeholder="제목" value={addTitle} onChange={e => setAddTitle(e.target.value)} />
-            <textarea className={`${inputClass} min-h-[70px] resize-none`} placeholder="설명 (선택)" value={addDesc} onChange={e => setAddDesc(e.target.value)} />
-            <input type="text" className={inputClass} placeholder="태그 (선택, 예: 과학 5학년 동영상)" value={addTags} onChange={e => setAddTags(e.target.value)} />
+            <textarea className={`${inputClass} min-h-[60px] resize-none`} placeholder="설명 (선택)" value={addDesc} onChange={e => setAddDesc(e.target.value)} />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">주제(폴더) 선택</label>
+                <div className="flex gap-2">
+                  <select
+                    className={inputClass}
+                    value={addCategory}
+                    onChange={e => { if (e.target.value === '__new__') { setShowNewCat(true); } else { setAddCategory(e.target.value); setShowNewCat(false); }}}
+                  >
+                    <option value="">미분류</option>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="__new__">+ 새 주제 만들기</option>
+                  </select>
+                </div>
+                {showNewCat && (
+                  <div className="flex gap-1.5 mt-1.5">
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="새 주제 이름"
+                      value={newCatInput}
+                      onChange={e => setNewCatInput(e.target.value)}
+                    />
+                    <button
+                      onClick={() => {
+                        if (newCatInput.trim()) {
+                          addCategory_save(newCatInput.trim());
+                          setAddCategory(newCatInput.trim());
+                          setNewCatInput('');
+                          setShowNewCat(false);
+                        }
+                      }}
+                      className="px-2.5 py-1.5 text-xs bg-teal-500 text-white rounded-lg shrink-0 font-semibold"
+                    >
+                      추가
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">태그 (선택)</label>
+                <input type="text" className={inputClass} placeholder="예: 과학 5학년 실험" value={addTags} onChange={e => setAddTags(e.target.value)} />
+              </div>
+            </div>
 
             <div className="flex justify-end gap-2 pt-1">
-              <button onClick={() => { setShowAdd(false); setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags(''); setFetchError(''); }} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">취소</button>
-              <button onClick={handleAdd} disabled={!addUrl.trim()} className="px-4 py-2 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold disabled:opacity-50">저장</button>
+              <button
+                onClick={() => { setShowAdd(false); setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags(''); setAddCategory(''); setFetchError(''); setShowNewCat(false); }}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+              >취소</button>
+              <button
+                onClick={handleAdd}
+                disabled={!addUrl.trim()}
+                className="px-4 py-2 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold disabled:opacity-50"
+              >저장</button>
             </div>
+          </div>
+        )}
+
+        {/* Category filter tabs */}
+        {resources.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {allTabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveCategory(tab)}
+                className={`shrink-0 px-3 py-1.5 text-sm rounded-full border transition-all font-medium whitespace-nowrap ${
+                  activeCategory === tab
+                    ? 'bg-teal-500 text-white border-teal-500'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-teal-400'
+                }`}
+              >
+                {tab}
+                <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 ${
+                  activeCategory === tab ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {tab === '전체'
+                    ? resources.length
+                    : tab === '미분류'
+                    ? resources.filter(r => !r.category).length
+                    : resources.filter(r => r.category === tab).length}
+                </span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -206,7 +344,7 @@ const MyResourceLibrary: React.FC = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              className="w-full bg-white rounded-xl border border-gray-200 text-gray-800 text-sm focus:border-teal-500 outline-none pl-9 pr-4 py-2.5 shadow-sm"
+              className="w-full bg-white rounded-xl border border-gray-200 text-gray-800 text-sm focus:border-teal-500 outline-none pl-9 pr-9 py-2.5 shadow-sm"
               placeholder="제목·설명·태그 검색"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -225,7 +363,6 @@ const MyResourceLibrary: React.FC = () => {
             {filtered.map(r => (
               <div key={r.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="flex">
-                  {/* Thumbnail */}
                   {r.type === 'youtube' && r.thumbnail ? (
                     <div className="w-36 shrink-0 bg-black relative">
                       <img
@@ -236,7 +373,7 @@ const MyResourceLibrary: React.FC = () => {
                         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="bg-black/50 rounded-full p-1">
+                        <div className="bg-black/50 rounded-full p-1.5">
                           <Youtube className="w-5 h-5 text-red-500" />
                         </div>
                       </div>
@@ -247,15 +384,14 @@ const MyResourceLibrary: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Content */}
                   <div className="flex-1 p-3 min-w-0">
                     {editId === r.id ? (
                       <div className="space-y-2">
                         <input type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)} className="w-full text-sm border border-teal-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-teal-400" />
                         <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full text-xs border border-teal-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-teal-400 resize-none min-h-[50px]" />
                         <div className="flex gap-1.5">
-                          <button onClick={() => handleEditSave(r.id)} className="flex items-center gap-1 px-2 py-1 text-xs bg-teal-500 text-white rounded hover:bg-teal-600"><Check className="w-3 h-3" />저장</button>
-                          <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">취소</button>
+                          <button onClick={() => handleEditSave(r.id)} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-teal-500 text-white rounded hover:bg-teal-600"><Check className="w-3 h-3" />저장</button>
+                          <button onClick={() => setEditId(null)} className="px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">취소</button>
                         </div>
                       </div>
                     ) : (
@@ -270,9 +406,12 @@ const MyResourceLibrary: React.FC = () => {
                         </div>
                         {r.description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] text-gray-400 truncate max-w-[200px]">{r.url.replace(/^https?:\/\//, '').substring(0, 50)}</span>
+                          {r.category && (
+                            <span className="text-[10px] bg-teal-100 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 font-semibold">{r.category}</span>
+                          )}
+                          <span className="text-[10px] text-gray-400 truncate max-w-[180px]">{r.url.replace(/^https?:\/\//, '').substring(0, 50)}</span>
                           {r.tags && r.tags.split(/\s+/).filter(Boolean).map((tag, i) => (
-                            <span key={i} className="flex items-center gap-0.5 text-[10px] bg-teal-50 text-teal-700 border border-teal-100 rounded-full px-2 py-0.5">
+                            <span key={i} className="flex items-center gap-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
                               <Tag className="w-2.5 h-2.5" />{tag}
                             </span>
                           ))}
@@ -287,8 +426,10 @@ const MyResourceLibrary: React.FC = () => {
         ) : (
           <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 flex flex-col items-center justify-center text-center gap-3">
             <BookMarked className="w-14 h-14 text-gray-200" />
-            <p className="text-sm text-gray-400">
-              {search ? '검색 결과가 없습니다.' : '아직 저장된 자료가 없습니다.\n위의 추가 버튼으로 자료를 모아보세요.'}
+            <p className="text-sm text-gray-400 whitespace-pre-line">
+              {search || activeCategory !== '전체'
+                ? '검색 결과가 없습니다.'
+                : '아직 저장된 자료가 없습니다.\n위의 추가 버튼으로 자료를 모아보세요.'}
             </p>
           </div>
         )}

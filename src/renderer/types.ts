@@ -32,6 +32,7 @@ export enum AppMode {
   LESSON_MATERIAL = 'LESSON_MATERIAL',
   QR_MAKER = 'QR_MAKER',
   MY_RESOURCES = 'MY_RESOURCES',
+  LUCKY_DRAW = 'LUCKY_DRAW',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────
