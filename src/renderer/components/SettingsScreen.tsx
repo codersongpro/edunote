@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School } from 'lucide-react';
 import { SchoolLevel } from '../types';
 
 const SettingsScreen: React.FC = () => {
@@ -9,8 +9,9 @@ const SettingsScreen: React.FC = () => {
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
   const [saveDir, setSaveDir] = useState('');
   const [hasKey, setHasKey] = useState(false);
-  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'fail'>('idle');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'warn' | 'fail'>('idle');
   const [testError, setTestError] = useState('');
+  const [testWarn, setTestWarn] = useState('');
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
 
@@ -37,10 +38,16 @@ const SettingsScreen: React.FC = () => {
     if (!apiKey.trim()) return;
     setTestStatus('testing');
     setTestError('');
+    setTestWarn('');
     try {
-      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; error?: string };
+      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string };
       if (result?.ok) {
-        setTestStatus('ok');
+        if (result.warning) {
+          setTestStatus('warn');
+          setTestWarn(result.warning);
+        } else {
+          setTestStatus('ok');
+        }
       } else {
         setTestStatus('fail');
         setTestError(result?.error || 'API 키가 유효하지 않습니다.');
@@ -191,6 +198,12 @@ const SettingsScreen: React.FC = () => {
             <div className="flex items-center gap-2 text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100 text-sm">
               <CheckCircle className="w-4 h-4" />
               API 키가 정상적으로 확인되었습니다.
+            </div>
+          )}
+          {testStatus === 'warn' && (
+            <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200 text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{testWarn}</span>
             </div>
           )}
           {testStatus === 'fail' && (

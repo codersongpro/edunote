@@ -101,28 +101,60 @@ export async function generateContentMultipart(
   throw lastError;
 }
 
-export async function testApiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
+export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  const model = 'gemini-2.0-flash';
-  try {
-    const result = await Promise.race([
-      ai.models.generateContent({ model, contents: 'Hi', config: {} }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('timeout')), 15000)
-      ),
-    ]);
-    if ((result as any)?.text !== undefined) return { ok: true };
-    return { ok: false, error: '응답을 받지 못했습니다.' };
-  } catch (error: unknown) {
-    const msg = ((error as any)?.message || '').toLowerCase();
-    const status = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
-    if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
-    if (status === 401 || msg.includes('api_key_invalid') || msg.includes('api key not valid') || msg.includes('invalid_argument'))
-      return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인하세요.' };
-    if (status === 429 || msg.includes('quota') || msg.includes('resource_exhausted'))
-      return { ok: false, error: '요청 한도 초과. 잠시 후 다시 시도하거나 다른 API 키를 사용하세요.' };
-    if (msg.includes('network') || msg.includes('fetch'))
-      return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
-    return { ok: false, error: `오류: ${(error as any)?.message || '알 수 없는 오류'}` };
+  // Try models from most stable to newest — free-tier new keys may be limited on preview models
+  const testModels = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
+  let quotaHit = false;
+
+  for (const model of testModels) {
+    try {
+      await Promise.race([
+        ai.models.generateContent({ model, contents: 'Hi' }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('timeout')), 12000)
+        ),
+      ]);
+      return { ok: true };
+    } catch (error: unknown) {
+      const msg = ((error as any)?.message || '').toLowerCase();
+      const status = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
+
+      if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
+
+      // Definitively invalid key
+      if (status === 400 || status === 401 || status === 403 ||
+          errStatus === 'permission_denied' || errStatus === 'invalid_argument' ||
+          msg.includes('api_key_invalid') || msg.includes('api key not valid') ||
+          msg.includes('permission_denied')) {
+        return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인하세요.' };
+      }
+
+      // Quota / rate limit — key IS valid, just limited; try next model
+      if (status === 429 || errStatus === 'resource_exhausted' ||
+          msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('rate limit')) {
+        quotaHit = true;
+        continue;
+      }
+
+      // Network error
+      if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+        return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+      }
+
+      // Unknown — try next model
+      continue;
+    }
   }
+
+  // All models hit quota → key is valid but rate-limited
+  if (quotaHit) {
+    return {
+      ok: true,
+      warning: 'API 키가 확인되었습니다. 무료 계정 요청 한도에 근접했거나 일시적으로 제한 중입니다. 잠시 후 사용하면 정상 동작합니다.',
+    };
+  }
+
+  return { ok: false, error: '알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
 }

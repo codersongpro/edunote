@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, AlertTriangle, Download } from 'lucide-react';
+
+interface UpdateInfo {
+  currentVersion: string;
+  latestVersion: string | null;
+  hasUpdate: boolean;
+  releaseUrl: string;
+}
 
 interface Props {
   onNavigate: (target: 'settings' | 'student' | 'admin' | 'guide') => void;
@@ -8,14 +15,36 @@ interface Props {
 
 const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
   const [version, setVersion] = useState('1.0.0');
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
+    window.electronAPI.checkUpdate()
+      .then((info: UpdateInfo) => { if (info.hasUpdate) setUpdateInfo(info); })
+      .catch(() => {});
   }, []);
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
       <div className="max-w-2xl mx-auto w-full px-6 py-10 space-y-8">
+
+        {/* Update banner */}
+        {updateInfo?.hasUpdate && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4 text-blue-500 shrink-0" />
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                새 버전 <strong>v{updateInfo.latestVersion}</strong>이 출시됐습니다. (현재 v{updateInfo.currentVersion})
+              </p>
+            </div>
+            <button
+              onClick={() => window.electronAPI.openExternal(updateInfo.releaseUrl)}
+              className="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors"
+            >
+              다운로드
+            </button>
+          </div>
+        )}
 
         {/* Hero */}
         <div className="text-center space-y-3">

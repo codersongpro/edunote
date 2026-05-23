@@ -174,4 +174,31 @@ export function registerIpcHandlers(): void {
 
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
+
+  ipcMain.handle('app:check-update', async () => {
+    try {
+      const https = await import('https');
+      const data = await new Promise<string>((resolve, reject) => {
+        const req = https.default.get(
+          'https://api.github.com/repos/codersongpro/edunote/releases/latest',
+          { headers: { 'User-Agent': 'edunote-app' } },
+          (res) => {
+            let body = '';
+            res.on('data', (chunk) => { body += chunk; });
+            res.on('end', () => resolve(body));
+          }
+        );
+        req.on('error', reject);
+        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+      });
+      const json = JSON.parse(data);
+      const latestTag: string = json.tag_name || '';
+      const latestVersion = latestTag.replace(/^v/, '');
+      const currentVersion = app.getVersion();
+      const hasUpdate = latestVersion && latestVersion !== currentVersion;
+      return { currentVersion, latestVersion, hasUpdate, releaseUrl: json.html_url || '' };
+    } catch {
+      return { currentVersion: app.getVersion(), latestVersion: null, hasUpdate: false, releaseUrl: '' };
+    }
+  });
 }
