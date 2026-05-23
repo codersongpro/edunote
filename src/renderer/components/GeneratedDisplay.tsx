@@ -16,7 +16,6 @@ interface GeneratedDisplayProps {
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
-  const [hwpxGeneralDownloading, setHwpxGeneralDownloading] = React.useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Sync content prop to the editable div whenever it changes (new generation)
@@ -113,20 +112,6 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     return `${docTitle}(${dateStr}).${extension}`;
   };
 
-  const handleDownloadHwpxGeneral = async () => {
-    if (!content) return;
-    setHwpxGeneralDownloading(true);
-    try {
-      const plainText = contentRef.current?.innerText || content.replace(/<[^>]*>?/gm, '');
-      const docTitle = hwpxData?.["문서제목"] || title || plainText.split('\n')[0]?.slice(0, 30) || '문서';
-      await window.electronAPI.saveHwpx('general', plainText, { title: docTitle });
-    } catch (error) {
-      console.error('Failed to save HWPX', error);
-      alert('HWPX 저장 중 오류가 발생했습니다.');
-    } finally {
-      setHwpxGeneralDownloading(false);
-    }
-  };
 
   const handleDownloadHwpx = async () => {
     if (!hwpxTemplate || !hwpxFillData) return;
@@ -226,13 +211,12 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
           
           {content && (
             <button
-              onClick={handleDownloadHwpxGeneral}
-              disabled={hwpxGeneralDownloading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors shadow-sm disabled:opacity-50"
-              title="기본 HWPX 파일로 저장"
+              onClick={handleDownloadMarkdown}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors shadow-sm"
+              title="마크다운(.md) 파일로 저장"
             >
-              <FileType className="w-4 h-4" />
-              <span>{hwpxGeneralDownloading ? '저장 중...' : 'HWPX 저장'}</span>
+              <FileText className="w-4 h-4" />
+              <span>MD 저장</span>
             </button>
           )}
 
