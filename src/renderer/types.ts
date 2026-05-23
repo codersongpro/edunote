@@ -30,6 +30,8 @@ export enum AppMode {
   STUDENT_MEMO = 'STUDENT_MEMO',
   // 수업 AI
   LESSON_MATERIAL = 'LESSON_MATERIAL',
+  QR_MAKER = 'QR_MAKER',
+  MY_RESOURCES = 'MY_RESOURCES',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────

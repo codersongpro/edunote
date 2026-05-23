@@ -23,7 +23,9 @@ export interface ElectronAPI {
   hasApiKey(): Promise<boolean>;
 
   selectFolder(): Promise<string | null>;
+  fetchUrlMeta(url: string): Promise<{ title: string; description: string; image: string; domain: string }>;
   getVersion(): Promise<string>;
+  checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 }
 
 declare global {

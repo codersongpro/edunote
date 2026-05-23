@@ -15,6 +15,8 @@ import ClassManagementLogGenerator from './components/ClassManagementLogGenerato
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
+import QRMaker from './components/QRMaker';
+import MyResourceLibrary from './components/MyResourceLibrary';
 import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
@@ -24,7 +26,7 @@ import {
   Bot, BookOpen, User2, Dumbbell, Palette,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
-  Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle,
+  Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
@@ -32,7 +34,7 @@ const STUDENT_RECORD_MODES: AppMode[] = [
   AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL];
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.QR_MAKER, AppMode.MY_RESOURCES];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -244,6 +246,8 @@ const App: React.FC = () => {
       case AppMode.CLASS_LOG: return <ClassManagementLogGenerator />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
+      case AppMode.QR_MAKER: return <QRMaker />;
+      case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       default: return null;
@@ -509,6 +513,28 @@ const App: React.FC = () => {
                         {generatingModes.get(AppMode.LESSON_MATERIAL)}%
                       </span>
                     )}
+                  </button>
+                  <button
+                    onClick={() => goTo(AppMode.QR_MAKER)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.QR_MAKER
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                    }`}
+                  >
+                    <QrCode className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">QR 메이커</span>
+                  </button>
+                  <button
+                    onClick={() => goTo(AppMode.MY_RESOURCES)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.MY_RESOURCES
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                    }`}
+                  >
+                    <BookMarked className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">나만의 자료실</span>
                   </button>
                 </div>
               )}

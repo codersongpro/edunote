@@ -172,6 +172,44 @@ export function registerIpcHandlers(): void {
     return result.filePaths[0];
   });
 
+  // ── URL Metadata ─────────────────────────────────────────────────
+  ipcMain.handle('url:fetch-meta', async (_e, rawUrl: string) => {
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+      const httpMod = parsed.protocol === 'https:' ? await import('https') : await import('http');
+      const html = await new Promise<string>((resolve, reject) => {
+        const req = httpMod.default.get(rawUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+            resolve('');
+            return;
+          }
+          let body = '';
+          res.setEncoding('utf8');
+          res.on('data', (chunk: string) => { body += chunk; if (body.length > 50000) req.destroy(); });
+          res.on('end', () => resolve(body));
+        });
+        req.on('error', reject);
+        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+      });
+      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
+      const metaDesc = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+      const ogImage = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+      return {
+        title: (titleMatch?.[1] ?? '').trim().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').substring(0, 120),
+        description: ((ogDesc?.[1] ?? metaDesc?.[1] ?? '')).trim().replace(/&amp;/g, '&').substring(0, 300),
+        image: ogImage?.[1] ?? '',
+        domain: parsed.hostname,
+      };
+    } catch {
+      return { title: '', description: '', image: '', domain: '' };
+    }
+  });
+
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
 
