@@ -132,7 +132,6 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     extraInfo: '',
   });
 
-  const tabContainerRef = useRef<HTMLDivElement>(null);
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load school name from config on mount
@@ -141,39 +140,6 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       const val = v as string;
       setMeetingMinutesData(prev => ({ ...prev, schoolName: prev.schoolName || val || '' }));
     });
-  }, []);
-
-  // Drag-to-scroll for tabs
-  useEffect(() => {
-    const el = tabContainerRef.current;
-    if (!el) return;
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-    const onMouseDown = (e: MouseEvent) => {
-      isDown = true;
-      startX = e.pageX - el.offsetLeft;
-      scrollLeft = el.scrollLeft;
-    };
-    const onMouseLeave = () => { isDown = false; };
-    const onMouseUp = () => { isDown = false; };
-    const onMouseMove = (e: MouseEvent) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - el.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      el.scrollLeft = scrollLeft - walk;
-    };
-    el.addEventListener('mousedown', onMouseDown);
-    el.addEventListener('mouseleave', onMouseLeave);
-    el.addEventListener('mouseup', onMouseUp);
-    el.addEventListener('mousemove', onMouseMove);
-    return () => {
-      el.removeEventListener('mousedown', onMouseDown);
-      el.removeEventListener('mouseleave', onMouseLeave);
-      el.removeEventListener('mouseup', onMouseUp);
-      el.removeEventListener('mousemove', onMouseMove);
-    };
   }, []);
 
   // Loading message cycling
@@ -332,35 +298,6 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA]">
-      {/* Tab navigation bar */}
-      <div className="bg-white border-b border-gray-200 py-2 shadow-sm shrink-0">
-        <div className="px-4">
-          <div
-            ref={tabContainerRef}
-            className="flex gap-2 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden cursor-grab select-none"
-          >
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.type;
-              return (
-                <button
-                  key={tab.type}
-                  onClick={() => setActiveTab(tab.type)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all shrink-0 ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left: input panel */}
