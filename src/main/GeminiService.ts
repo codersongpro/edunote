@@ -128,7 +128,7 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
           errStatus === 'permission_denied' || errStatus === 'invalid_argument' ||
           msg.includes('api_key_invalid') || msg.includes('api key not valid') ||
           msg.includes('permission_denied')) {
-        return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인하세요.' };
+        return { ok: false, error: 'API 키를 인식하지 못했습니다. 방금 발급한 경우 1~2분 후 다시 시도해 주세요. 계속 실패하면 키를 다시 확인해 주세요.' };
       }
 
       // Quota / rate limit — key IS valid, just limited; try next model
