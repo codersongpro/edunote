@@ -44,9 +44,10 @@ if not exist "node_modules\" (
 )
 echo.
 
-:: Build EXE
+:: Build EXE (disable code signing - no certificate needed)
 echo [3/3] Building EXE... (2-3 minutes)
 echo.
+set CSC_IDENTITY_AUTO_DISCOVERY=false
 call npm run build:win
 if %errorlevel% neq 0 (
     echo.
