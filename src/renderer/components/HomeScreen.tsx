@@ -54,7 +54,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
           <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">에듀노트</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
           <p className="text-base text-gray-600 dark:text-gray-300 max-w-md mx-auto leading-relaxed">
-            교사를 위한 AI 도우미 — 학생 생활기록부 작성부터 교무 행정 문서까지, Gemini AI가 도와드립니다.
+            교직원을 위한 AI 도우미 — 학생 생활기록부 작성부터 교무 행정 문서까지, AI가 도와드립니다.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
           <div className="flex gap-3 items-start">
             <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
             <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-              Gemini AI가 초안 문구를 제안합니다. 생성된 내용은 학생 특성에 맞게 <strong>검토·수정</strong>하여 활용해 주세요.
+              AI가 초안 문구를 제안합니다. 생성된 내용은 학생 특성에 맞게 <strong>검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
         </div>
