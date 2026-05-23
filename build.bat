@@ -1,4 +1,14 @@
 @echo off
+
+:: electron-builder requires admin rights to extract winCodeSign (symlinks)
+:: Auto-elevate if not running as administrator
+net session >/dev/null 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator rights...
+    powershell -Command "Start-Process '%%COMSPEC%%' -ArgumentList ('/c ""' + '%%~s0' + '""') -Verb RunAs"
+    exit /b
+)
+
 chcp 949 >/dev/null 2>&1
 title EduNote Build
 setlocal enabledelayedexpansion
@@ -44,7 +54,7 @@ if not exist "node_modules\" (
 )
 echo.
 
-:: Build EXE (disable code signing - no certificate needed)
+:: Build EXE
 echo [3/3] Building EXE... (2-3 minutes)
 echo.
 set CSC_IDENTITY_AUTO_DISCOVERY=false
