@@ -808,9 +808,11 @@ ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 [{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모"}]`;
 
   const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
-  const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
-  const parsed = JSON.parse(cleanJson);
-  return Array.isArray(parsed) ? parsed : [];
+  const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+  if (!arrayMatch) throw new Error('슬라이드 JSON 파싱 실패: 올바른 배열 형식이 아닙니다.');
+  const parsed = JSON.parse(arrayMatch[0]);
+  return Array.isArray(parsed) && parsed.length > 0 ? parsed : (() => { throw new Error('슬라이드 생성 결과가 비어있습니다. 다시 시도해주세요.'); })();
 }
 
 export async function generateLessonWorksheet(

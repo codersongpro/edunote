@@ -304,29 +304,35 @@ const LuckyDraw: React.FC = () => {
                     window.electronAPI.getConfig('studentMaleNames'),
                     window.electronAPI.getConfig('studentFemaleNames'),
                   ]);
-                  const hasMale = maleNames && typeof maleNames === 'string' && maleNames.trim();
-                  const hasFemale = femaleNames && typeof femaleNames === 'string' && femaleNames.trim();
-                  if (hasMale || hasFemale) {
-                    // 성별 구분 명단이 있으면 gender mode로 자동 전환
-                    const mList = hasMale ? (maleNames as string).split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n') : '';
-                    const fList = hasFemale ? (femaleNames as string).split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n') : '';
-                    setMaleNamesText(mList);
-                    setFemaleNamesText(fList);
-                    setGenderMode(true);
-                    setSessionMalePool(null);
-                    setSessionFemalePool(null);
-                  } else if (allNames && typeof allNames === 'string' && allNames.trim()) {
-                    // 번호 제거 (예: "1. 홍길동" → "홍길동")
-                    const list = (allNames as string).split(/[\n,]+/)
-                      .map((s: string) => s.trim().replace(/^\d+[\.\)]\s*/, ''))
-                      .filter(Boolean).join('\n');
-                    setNamesText(list);
-                    setGenderMode(false);
+                  const hasMale = maleNames && typeof maleNames === 'string' && (maleNames as string).trim();
+                  const hasFemale = femaleNames && typeof femaleNames === 'string' && (femaleNames as string).trim();
+                  const hasAll = allNames && typeof allNames === 'string' && (allNames as string).trim();
+                  const strip = (s: string) => s.trim().replace(/^\d+[\.\)]\s*/, '');
+                  const toList = (raw: string) => raw.split(/[\n,]+/).map(strip).filter(Boolean).join('\n');
+
+                  if (genderMode) {
+                    // 남/녀 구분 ON: 성별 명단 채우기 (모드는 그대로 유지)
+                    if (hasMale) { setMaleNamesText(toList(maleNames as string)); setSessionMalePool(null); }
+                    if (hasFemale) { setFemaleNamesText(toList(femaleNames as string)); setSessionFemalePool(null); }
+                    if (!hasMale && !hasFemale && hasAll) {
+                      setMaleNamesText(toList(allNames as string)); setSessionMalePool(null);
+                    }
+                  } else {
+                    // 남/녀 구분 OFF: 전체 명단 채우기 (모드는 그대로 유지)
+                    if (hasAll) {
+                      setNamesText(toList(allNames as string));
+                    } else if (hasMale || hasFemale) {
+                      const merged = [
+                        ...(hasMale ? (maleNames as string).split(/[\n,]+/).map(strip).filter(Boolean) : []),
+                        ...(hasFemale ? (femaleNames as string).split(/[\n,]+/).map(strip).filter(Boolean) : []),
+                      ];
+                      setNamesText(merged.join('\n'));
+                    }
                     setSessionPool(null);
                   }
                 }}
                 className="text-[10px] font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors"
-                title="설정에서 저장한 우리 반 학생 이름을 자동으로 불러옵니다"
+                title="설정에서 저장한 우리 반 학생 이름을 자동으로 불러옵니다 (남/녀 구분 상태 유지)"
               >
                 우리반 자동 입력
               </button>
@@ -336,10 +342,12 @@ const LuckyDraw: React.FC = () => {
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <button
                 type="button"
+                role="switch"
+                aria-checked={genderMode}
                 onClick={() => setGenderMode(g => !g)}
-                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${genderMode ? 'bg-orange-500' : 'bg-gray-300'}`}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${genderMode ? 'bg-orange-500' : 'bg-gray-300'}`}
               >
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${genderMode ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${genderMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
               </button>
               <span className="text-xs text-gray-600 font-medium">남/녀 구분</span>
             </label>
@@ -457,16 +465,28 @@ const LuckyDraw: React.FC = () => {
                 {/* Winner chips */}
                 {winners.length > 0 && (
                   <div className="flex flex-wrap justify-center gap-3">
-                    {winners.map((w, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-xl px-5 py-2.5 shadow-lg"
-                        style={{ animation: 'luckyPop 0.45s cubic-bezier(0.175,0.885,0.32,1.275)' }}
-                      >
-                        <Trophy className="w-4 h-4" />
-                        <span className="font-black text-xl">{w}</span>
-                      </div>
-                    ))}
+                    {winners.map((w, i) => {
+                      const isMale = genderMode && parseNames(maleNamesText).includes(w);
+                      const isFemale = genderMode && parseNames(femaleNamesText).includes(w);
+                      const gradient = isMale
+                        ? 'from-blue-400 to-blue-600'
+                        : isFemale
+                        ? 'from-pink-400 to-rose-500'
+                        : 'from-yellow-400 to-orange-500';
+                      return (
+                        <div
+                          key={`${w}-${i}`}
+                          className={`flex items-center gap-2 bg-gradient-to-br ${gradient} text-white rounded-xl px-5 py-2.5 shadow-lg`}
+                          style={{ animation: 'luckyPop 0.45s cubic-bezier(0.175,0.885,0.32,1.275) both' }}
+                        >
+                          <Trophy className="w-4 h-4" />
+                          <span className="font-black text-xl">{w}</span>
+                          {genderMode && (
+                            <span className="text-xs font-bold opacity-80">{isMale ? '♂' : isFemale ? '♀' : ''}</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

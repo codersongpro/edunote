@@ -82,7 +82,7 @@ const LessonMaterialGenerator: React.FC = () => {
     });
   };
 
-  const [pageCount, setPageCount] = useState(6);
+  const [pageCount, setPageCount] = useState(5);
   const [questionCount, setQuestionCount] = useState(5);
   const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
   const [includeScore, setIncludeScore] = useState(false);
@@ -125,7 +125,10 @@ const LessonMaterialGenerator: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!topic.trim()) { setError('주제/수업명을 입력해주세요.'); return; }
+    if (!topic.trim() && !selectedStandardCode) {
+      setError('주제/수업명 또는 성취기준을 하나 이상 입력해주세요.');
+      return;
+    }
     setError(null);
     setIsGenerating(true);
     setSlides(null);
@@ -136,8 +139,9 @@ const LessonMaterialGenerator: React.FC = () => {
     const standardText = selectedStandard
       ? `[성취기준: ${selectedStandard.code} ${selectedStandard.text}]`
       : '';
+    const effectiveTopic = topic.trim() || (selectedStandard ? `${selectedStandard.code} 성취기준 수업` : '수업');
     const params: LessonParams = {
-      grade: selectedGradeLabel, subject, unit, topic,
+      grade: selectedGradeLabel, subject, unit, topic: effectiveTopic,
       details: `${standardText}${standardText && details ? '\n' : ''}${details}`,
     };
 
@@ -171,12 +175,12 @@ const LessonMaterialGenerator: React.FC = () => {
     await window.electronAPI.saveTxt(text, `${topic}_슬라이드.txt`);
   };
 
-  const handleSaveSlidesHwpx = async () => {
+  const handleSaveSlidesMd = async () => {
     if (!slides) return;
-    const text = slides.map(s =>
-      `슬라이드 ${s.page}: ${s.title}\n${s.content.map(c => `• ${c}`).join('\n')}\n교사 메모: ${s.notes}`
-    ).join('\n\n');
-    await window.electronAPI.saveHwpx('general', text, { title: `${topic} 수업 슬라이드` });
+    const md = slides.map(s =>
+      `## 슬라이드 ${s.page}: ${s.title}\n\n${s.content.map(c => `- ${c}`).join('\n')}\n\n> 📌 교사 메모: ${s.notes}`
+    ).join('\n\n---\n\n');
+    await window.electronAPI.saveFile(md, `${topic}_슬라이드.md`, 'md');
   };
 
   const handleSaveHtml = async () => {
@@ -418,8 +422,8 @@ const LessonMaterialGenerator: React.FC = () => {
                   수업 슬라이드 ({slides.length}장)
                 </span>
                 <div className="flex gap-2">
-                  <button onClick={handleSaveSlidesHwpx} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors">
-                    <FileType className="w-3.5 h-3.5" />HWPX 저장
+                  <button onClick={handleSaveSlidesMd} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors">
+                    <FileType className="w-3.5 h-3.5" />MD 저장
                   </button>
                   <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />TXT 저장
