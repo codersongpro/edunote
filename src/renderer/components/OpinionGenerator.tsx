@@ -436,6 +436,18 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">(예: 김철수, 이영희, 박민수)</span>
                             </p>
                         </div>
+                        <button
+                            onClick={async () => {
+                                const raw = await window.electronAPI.getConfig('studentNames') as string;
+                                if (!raw) return;
+                                const names = raw.split('\n').map((l: string) => l.replace(/^\d+[.\s)]+/, '').trim()).filter((l: string) => l.length > 0);
+                                if (names.length === 0) return;
+                                updateOpState({ nameInput: names.join(', '), studentCount: names.length });
+                            }}
+                            className="mb-2 px-4 py-2 text-sm font-bold bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors"
+                        >
+                            우리반 학생 이름 자동 입력
+                        </button>
                         <textarea
                             value={opState.nameInput}
                             onChange={handleNameInput}

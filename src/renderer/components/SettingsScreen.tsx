@@ -5,7 +5,6 @@ import { SchoolLevel } from '../types';
 const SettingsScreen: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [teacherName, setTeacherName] = useState('');
-  const [schoolName, setSchoolName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
   const [gradeClass, setGradeClass] = useState('');
@@ -22,10 +21,9 @@ const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, sn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
-        window.electronAPI.getConfig('schoolName'),
         window.electronAPI.getConfig('institution'),
         window.electronAPI.getConfig('schoolLevel'),
         window.electronAPI.getConfig('gradeClass'),
@@ -36,7 +34,6 @@ const SettingsScreen: React.FC = () => {
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
-      setSchoolName(sn as string || '');
       setInstitution(inst as string || '');
       setSchoolLevel((sl as string) || SchoolLevel.HIGH);
       setGradeClass(gc as string || '');
@@ -85,9 +82,22 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleSaveSettings = async () => {
-    await window.electronAPI.setConfig({ teacherName, schoolName, institution, schoolLevel, gradeClass, studentNames });
+    await window.electronAPI.setConfig({ teacherName, institution, schoolLevel, gradeClass, studentNames });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleStudentNamesPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const text = e.clipboardData.getData('text');
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const alreadyNumbered = lines.every(l => /^\d+[.\s)]/.test(l));
+    if (!alreadyNumbered && lines.length > 0) {
+      e.preventDefault();
+      const existing = studentNames.split('\n').filter(l => l.trim().length > 0);
+      const startNum = existing.length + 1;
+      const numbered = lines.map((name, i) => `${startNum + i}. ${name}`).join('\n');
+      setStudentNames(existing.length > 0 ? studentNames.trimEnd() + '\n' + numbered : numbered);
+    }
   };
 
   const handleSelectFolder = async () => {
@@ -264,10 +274,6 @@ const SettingsScreen: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className={labelClass}>학교 이름</label>
-            <input type="text" className={inputClass} placeholder="예: 충북초등학교" value={schoolName} onChange={e => setSchoolName(e.target.value)} />
-          </div>
-          <div>
             <label className={labelClass}>기본 학교급</label>
             <div className="flex gap-2">
               {[SchoolLevel.ELEMENTARY, SchoolLevel.MIDDLE, SchoolLevel.HIGH].map(level => (
@@ -306,8 +312,7 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-gray-700">우리반 학생 명단</h3>
           </div>
           <p className="text-xs text-gray-500">
-            수업자료 생성, 럭키드로우 등에 자동 반영됩니다.{' '}
-            <span className="text-orange-500 font-medium">개인정보 주의 — 이니셜 사용 권장</span>
+            수업자료 생성, 럭키드로우 등에 자동 반영됩니다.
           </p>
 
           {/* 번호+이름 통합 명단 */}
@@ -321,6 +326,7 @@ const SettingsScreen: React.FC = () => {
               placeholder={"1. 김○수\n2. 이○영\n3. 박○호\n4. 최○민"}
               value={studentNames}
               onChange={e => setStudentNames(e.target.value)}
+              onPaste={handleStudentNamesPaste}
             />
           </div>
 
