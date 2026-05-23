@@ -18,12 +18,13 @@ import LessonMaterialGenerator from './components/LessonMaterialGenerator';
 import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
+import AboutScreen from './components/AboutScreen';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
-  Home, AlertTriangle, BookMarked, Presentation, Info, X,
+  Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
@@ -60,6 +61,7 @@ const App: React.FC = () => {
   const [schoolLevel, setSchoolLevel] = useState<SchoolLevel>(SchoolLevel.HIGH);
   const [showSchoolLevelModal, setShowSchoolLevelModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
@@ -177,21 +179,21 @@ const App: React.FC = () => {
   };
 
   const studentNavClass = (m: AppMode) =>
-    `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+    `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
       mode === m
         ? 'bg-blue-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300'
     }`;
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
-    `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+    `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
       (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
         ? 'bg-teal-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-700 dark:hover:text-teal-300'
     }`;
 
   const docSubNavClass = (dt: DocType) =>
-    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-xs rounded-md transition-all cursor-pointer ${
+    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === AppMode.SCHOOL_DOC && activeDocType === dt
         ? 'bg-teal-500 text-white font-semibold'
         : 'text-gray-500 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-700 dark:hover:text-teal-300'
@@ -243,6 +245,7 @@ const App: React.FC = () => {
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.SETTINGS: return <SettingsScreen />;
+      case AppMode.ABOUT: return <AboutScreen />;
       default: return null;
     }
   };
@@ -266,32 +269,54 @@ const App: React.FC = () => {
         {/* Disclaimer Modal */}
         {showDisclaimerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
+              {/* Icon */}
+              <div className="flex flex-col items-center mb-5">
+                <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-3">
+                  <AlertTriangle className="w-8 h-8 text-orange-500" />
                 </div>
-                <h2 className="text-base font-black text-gray-900 dark:text-white">에듀노트 사용 안내</h2>
+                <h2 className="text-lg font-black text-gray-900 dark:text-white">AI 활용 시 유의사항</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">사용 전 반드시 확인해주세요</p>
               </div>
-              <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-5">
-                <p className="font-bold text-gray-900 dark:text-white">에듀노트에 오신 것을 환영합니다!</p>
-                <p className="leading-relaxed">이 프로그램은 <strong>Google Gemini AI</strong>를 활용해 교사의 업무를 돕기 위해 만들어졌습니다.</p>
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 space-y-1.5">
-                  <p className="font-bold text-amber-800 dark:text-amber-300 text-xs">⚠️ 반드시 확인해 주세요</p>
-                  <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1 leading-relaxed">
-                    <li>• AI가 생성한 문구는 <strong>참고용</strong>이며, 그대로 사용하지 마세요.</li>
-                    <li>• 학생부 기재 전 반드시 <strong>교사가 직접 검토·수정</strong>해야 합니다.</li>
-                    <li>• AI는 학생 개인정보나 사실관계를 알지 못합니다.</li>
-                    <li>• 저작권 및 개인정보 관련 내용 입력에 주의하세요.</li>
-                  </ul>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">이 프로그램은 교사의 업무 효율화를 위한 보조 도구입니다. 최종 책임은 사용자에게 있습니다.</p>
+
+              {/* Numbered items */}
+              <div className="space-y-4 mb-6">
+                {[
+                  { n: '01', title: '정보 정확성 확인', desc: 'AI 생성 내용은 사실과 다를 수 있습니다. 반드시 담당자 검토 후 사용하세요.' },
+                  { n: '02', title: '개인정보 보호', desc: '학생·학부모·교직원의 이름, 연락처 등 민감정보를 절대 입력하지 마세요.' },
+                  { n: '03', title: '법적 책임', desc: '최종 문서에 대한 모든 책임은 사용자 본인에게 있습니다.' },
+                ].map(({ n, title, desc }) => (
+                  <div key={n} className="flex gap-3">
+                    <span className="text-xs font-black text-gray-400 dark:text-gray-500 w-5 shrink-0 mt-0.5">{n}</span>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {/* Divider */}
+              <div className="h-px bg-gray-100 dark:bg-gray-700 mb-4" />
+
+              {/* Checkbox */}
+              <label className="flex items-center gap-2.5 cursor-pointer mb-5 select-none">
+                <input
+                  type="checkbox"
+                  checked={disclaimerChecked}
+                  onChange={e => setDisclaimerChecked(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-200">위 내용을 모두 확인하고 동의합니다.</span>
+              </label>
+
+              {/* Button */}
               <button
                 onClick={handleAcceptDisclaimer}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors"
+                disabled={!disclaimerChecked}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
               >
-                확인했습니다. 시작하기
+                에듀노트 시작하기 →
               </button>
             </div>
           </div>
@@ -350,7 +375,7 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className="w-56 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className="w-64 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
@@ -372,7 +397,7 @@ const App: React.FC = () => {
 
             <button
               onClick={() => setMode(AppMode.HOME)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.HOME
                   ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -394,7 +419,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-teal-500 flex items-center justify-center shrink-0">
                     <FileText className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무행정AI</span>
+                  <span className="text-sm font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무행정AI</span>
                 </div>
                 {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-teal-400" /> : <ChevronRight className="w-3 h-3 text-teal-400" />}
               </button>
@@ -463,7 +488,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
+                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
                 </div>
                 {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
               </button>
@@ -471,7 +496,7 @@ const App: React.FC = () => {
                 <div className="px-1.5 pb-1.5 space-y-0.5">
                   <button
                     onClick={() => goTo(AppMode.LESSON_MATERIAL)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.LESSON_MATERIAL
                         ? 'bg-amber-500 text-white font-semibold shadow-sm'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
@@ -501,7 +526,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
                     <Bot className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록AI</span>
+                  <span className="text-sm font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록AI</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
@@ -545,7 +570,7 @@ const App: React.FC = () => {
             )}
             <button
               onClick={() => goTo(AppMode.USAGE_GUIDE)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.USAGE_GUIDE
                   ? 'bg-purple-600 text-white font-semibold'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300'
@@ -555,8 +580,19 @@ const App: React.FC = () => {
               <span>사용 방법</span>
             </button>
             <button
+              onClick={() => goTo(AppMode.ABOUT)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                mode === AppMode.ABOUT
+                  ? 'bg-indigo-600 text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4 shrink-0" />
+              <span>도움말 / 정보</span>
+            </button>
+            <button
               onClick={() => goTo(AppMode.SETTINGS)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.SETTINGS
                   ? 'bg-gray-700 dark:bg-gray-600 text-white font-semibold'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon } from 'lucide-react';
-import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, GongmunComplexity, PumuiType, AppMode } from '../types';
+import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
@@ -85,6 +85,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     target: MessageTarget.PARENT,
     type: MessageType.SMS,
     context: '',
+    isReply: false,
+    receivedMessage: '',
+    relationship: MessageRelationship.PARENT,
   });
 
   // Pumui form
@@ -182,7 +185,11 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
         return `[제목]: ${newsletterData.title}\n[대상]: ${newsletterData.target}\n[내용]: ${newsletterData.context}`;
       case DocType.MESSAGE: {
         const typeLabel = messageData.type === MessageType.SMS ? '단문(SMS)' : '장문(LMS)';
-        return `[수신 대상]: ${messageData.target}\n[문자 유형]: ${typeLabel}\n[내용]: ${messageData.context}`;
+        let msgCtx = `[수신 대상]: ${messageData.target}\n[문자 유형]: ${typeLabel}\n[내용]: ${messageData.context}`;
+        if (messageData.isReply && messageData.receivedMessage.trim()) {
+          msgCtx += `\n[답장 생성]: 예\n[나와의 관계]: ${messageData.relationship}\n[받은 메시지]: ${messageData.receivedMessage}`;
+        }
+        return msgCtx;
       }
       case DocType.PUMUI: {
         let ctx = `[품의 유형]: ${pumuiData.type}\n[품의 제목/건명]: ${pumuiData.title}\n[관련 공문/근거]: ${pumuiData.relatedDoc}\n[소요 예산]: ${pumuiData.budget}원\n[산출 내역]: ${pumuiData.calcDetails}`;
@@ -663,9 +670,56 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                     ))}
                   </div>
                 </div>
+
+                {/* Reply toggle */}
+                <div className="flex items-center gap-2 py-2 border-t border-gray-100">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={messageData.isReply}
+                      onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-700">답장 생성</span>
+                  </label>
+                  <span className="text-xs text-gray-400">받은 메시지에 대한 답장을 생성합니다.</span>
+                </div>
+
+                {messageData.isReply && (
+                  <div className="space-y-3 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                    <div>
+                      <label className={labelClass}>나와의 관계</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.values(MessageRelationship).map(r => (
+                          <button
+                            key={r}
+                            onClick={() => setMessageData({ ...messageData, relationship: r })}
+                            className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                              messageData.relationship === r
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelClass}>받은 메시지</label>
+                      <textarea
+                        className={`${inputClass} min-h-[80px] resize-none`}
+                        placeholder="답장할 메시지를 붙여넣기 하세요."
+                        value={messageData.receivedMessage}
+                        onChange={e => setMessageData({ ...messageData, receivedMessage: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <label className={labelClass}>전달 내용</label>
-                  <textarea className={`${inputClass} min-h-[120px] resize-none`} placeholder="문자에 담을 내용을 입력하세요." value={messageData.context} onChange={e => setMessageData({ ...messageData, context: e.target.value })} />
+                  <label className={labelClass}>{messageData.isReply ? '답장 내용 / 추가 요청사항' : '전달 내용'}</label>
+                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder={messageData.isReply ? '답장에 포함할 내용이나 요청사항을 입력하세요. (비워도 됩니다)' : '문자에 담을 내용을 입력하세요.'} value={messageData.context} onChange={e => setMessageData({ ...messageData, context: e.target.value })} />
                 </div>
               </div>
             )}

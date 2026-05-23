@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  BookOpen, Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
-  Download, FileType, Monitor,
+  Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
+  Download, FileType, BookOpen, Monitor,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -11,19 +11,9 @@ import {
   LessonSlide, LessonParams,
 } from '../services/geminiService';
 import { LOADING_MESSAGES } from '../constants';
+import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade, getAchievementLevels } from '../constants/curriculum2022';
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
-
-const GRADES = [
-  '초등학교 1~2학년', '초등학교 3~4학년', '초등학교 5~6학년',
-  '중학교 1학년', '중학교 2학년', '중학교 3학년',
-  '고등학교 1학년', '고등학교 2학년', '고등학교 3학년',
-];
-
-const SUBJECTS = [
-  '국어', '수학', '영어', '사회', '과학', '역사', '도덕',
-  '음악', '미술', '체육', '기술가정', '정보', '진로', '기타',
-];
 
 const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
   { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
@@ -46,12 +36,31 @@ const extractHtml = (raw: string): string => {
 const LessonMaterialGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_MATERIAL);
 
-  const [grade, setGrade] = useState(GRADES[2]);
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const defaultGrade = CURRICULUM_GRADES[4]; // 초등 5학년
+  const [selectedGradeLabel, setSelectedGradeLabel] = useState(defaultGrade.label);
+  const [subject, setSubject] = useState(defaultGrade.subjects[0].name);
+  const [achievementLevel, setAchievementLevel] = useState(defaultGrade.subjects[0].achievementLevels[2].code); // C 기본
   const [unit, setUnit] = useState('');
   const [topic, setTopic] = useState('');
   const [details, setDetails] = useState('');
   const [contentType, setContentType] = useState<LessonContentType>('SLIDE');
+
+  const currentSubjects = getSubjectsForGrade(selectedGradeLabel);
+  const currentAchievementLevels = getAchievementLevels(selectedGradeLabel, subject);
+
+  const handleGradeChange = (newGrade: string) => {
+    setSelectedGradeLabel(newGrade);
+    const subs = getSubjectsForGrade(newGrade);
+    const firstSub = subs[0]?.name ?? '';
+    setSubject(firstSub);
+    setAchievementLevel(subs[0]?.achievementLevels[2]?.code ?? 'C');
+  };
+
+  const handleSubjectChange = (newSubject: string) => {
+    setSubject(newSubject);
+    const levels = getAchievementLevels(selectedGradeLabel, newSubject);
+    setAchievementLevel(levels[2]?.code ?? levels[0]?.code ?? 'C');
+  };
   const [pageCount, setPageCount] = useState(6);
   const [questionCount, setQuestionCount] = useState(5);
   const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
@@ -90,7 +99,11 @@ const LessonMaterialGenerator: React.FC = () => {
     setPlanContent('');
     startGeneration();
 
-    const params: LessonParams = { grade, subject, unit, topic, details: details || undefined };
+    const achievementDesc = currentAchievementLevels.find(l => l.code === achievementLevel)?.description ?? '';
+    const params: LessonParams = {
+      grade: selectedGradeLabel, subject, unit, topic,
+      details: `[성취수준: ${achievementLevel} - ${achievementDesc}]${details ? '\n' + details : ''}`
+    };
 
     try {
       if (contentType === 'SLIDE') {
@@ -157,16 +170,35 @@ const LessonMaterialGenerator: React.FC = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>학년</label>
-                <select className={inputClass} value={grade} onChange={e => setGrade(e.target.value)}>
-                  {GRADES.map(g => <option key={g}>{g}</option>)}
+                <select className={inputClass} value={selectedGradeLabel} onChange={e => handleGradeChange(e.target.value)}>
+                  {CURRICULUM_GRADES.map(g => (
+                    <option key={g.label} value={g.label}>{g.label}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className={labelClass}>교과</label>
-                <select className={inputClass} value={subject} onChange={e => setSubject(e.target.value)}>
-                  {SUBJECTS.map(s => <option key={s}>{s}</option>)}
+                <select className={inputClass} value={subject} onChange={e => handleSubjectChange(e.target.value)}>
+                  {currentSubjects.map(s => (
+                    <option key={s.name} value={s.name}>{s.name}</option>
+                  ))}
                 </select>
               </div>
+            </div>
+
+            {/* Achievement Level */}
+            <div>
+              <label className={labelClass}>성취수준</label>
+              <select className={inputClass} value={achievementLevel} onChange={e => setAchievementLevel(e.target.value)}>
+                {currentAchievementLevels.map(l => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
+              </select>
+              {currentAchievementLevels.find(l => l.code === achievementLevel) && (
+                <p className="mt-1 text-[11px] text-gray-400 leading-snug">
+                  {currentAchievementLevels.find(l => l.code === achievementLevel)!.description}
+                </p>
+              )}
             </div>
 
             <div>

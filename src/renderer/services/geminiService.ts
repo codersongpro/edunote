@@ -484,12 +484,29 @@ ${complexityInstruction}
 [구조] 제목(크고 진하게 중앙) → 인사말 → 본문(핵심 안내) → 맺음말 → 날짜 → 학교장`;
       break;
 
-    case DocType.MESSAGE:
+    case DocType.MESSAGE: {
+      const isReplyMode = promptContext.includes('[답장 생성]: 예');
+      const relationshipMatch = promptContext.match(/\[나와의 관계\]: (.+)/);
+      const relationship = relationshipMatch ? relationshipMatch[1] : '';
+      const toneMap: Record<string, string> = {
+        '전체메시지': '공식적이고 정중한 표준 어조. 높임말(합쇼체) 사용.',
+        '학부모': '정중하고 친절한 어조. 부모님께 드리는 느낌. 높임말(합쇼체) 사용.',
+        '상급자': '매우 공손하고 격식 있는 어조. 존경을 표현하는 높임말. 간결하고 명확하게.',
+        '동료교직원': '친근하면서도 예의 바른 어조. 해요체 또는 합니다체. 편안하게.',
+        '학생': '부드럽고 친근한 어조. 해요체 또는 해라체. 이해하기 쉽게.',
+        '친구': '캐주얼하고 친근한 어조. 반말 허용. 자연스럽고 편안하게.',
+      };
+      const toneInstruction = isReplyMode && relationship
+        ? `[답장 어조] ${toneMap[relationship] || '정중한 어조.'}`
+        : '[어조] 정중하고 격식 있는 높임말(합쇼체) 사용.';
       specificInstruction = `
-작업: [학부모 알림 문자 메세지 작성]
+작업: ${isReplyMode ? '[받은 메시지에 대한 답장 문자 작성]' : '[학부모 알림 문자 메세지 작성]'}
 [단문(SMS)] 절대 40자(90byte) 초과 금지. 인사말 생략, 용건만 작성.
-[장문(LMS)] 1000자 이내. [학교명/제목]으로 시작. 문의 전화번호 포함.`;
+[장문(LMS)] 1000자 이내. [학교명/제목]으로 시작.${isReplyMode ? '' : ' 문의 전화번호 포함.'}
+${toneInstruction}
+${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽게 이어지는 답장 메시지만 출력. 받은 메시지 반복 금지.' : ''}`;
       break;
+    }
 
     case DocType.PUMUI:
       specificInstruction = `

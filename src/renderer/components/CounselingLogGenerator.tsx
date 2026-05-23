@@ -43,6 +43,12 @@ const CounselingLogGenerator: React.FC = () => {
   const [counselingContent, setCounselingContent] = useState('');
   const [followUpPlan, setFollowUpPlan] = useState('');
   const [result, setResult] = useState(EXAMPLE_RESULT);
+
+  React.useEffect(() => {
+    window.electronAPI.getConfig('teacherName').then((v: string) => {
+      if (v) setParticipants(prev => prev || `담임교사(${v}), 학생`);
+    });
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
