@@ -299,12 +299,28 @@ const LuckyDraw: React.FC = () => {
               </div>
               <button
                 onClick={async () => {
-                  const names = await window.electronAPI.getConfig('studentNames');
-                  if (names && typeof names === 'string' && names.trim()) {
-                    const list = names.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n');
+                  const [allNames, maleNames, femaleNames] = await Promise.all([
+                    window.electronAPI.getConfig('studentNames'),
+                    window.electronAPI.getConfig('studentMaleNames'),
+                    window.electronAPI.getConfig('studentFemaleNames'),
+                  ]);
+                  const hasMale = maleNames && typeof maleNames === 'string' && maleNames.trim();
+                  const hasFemale = femaleNames && typeof femaleNames === 'string' && femaleNames.trim();
+                  if (hasMale || hasFemale) {
+                    // 성별 구분 명단이 있으면 gender mode로 자동 전환
+                    const mList = hasMale ? (maleNames as string).split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n') : '';
+                    const fList = hasFemale ? (femaleNames as string).split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n') : '';
+                    setMaleNamesText(mList);
+                    setFemaleNamesText(fList);
+                    setGenderMode(true);
+                    setSessionMalePool(null);
+                    setSessionFemalePool(null);
+                  } else if (allNames && typeof allNames === 'string' && allNames.trim()) {
+                    // 번호 제거 (예: "1. 홍길동" → "홍길동")
+                    const list = (allNames as string).split(/[\n,]+/)
+                      .map((s: string) => s.trim().replace(/^\d+[\.\)]\s*/, ''))
+                      .filter(Boolean).join('\n');
                     setNamesText(list);
-                    setMaleNamesText('');
-                    setFemaleNamesText('');
                     setGenderMode(false);
                     setSessionPool(null);
                   }

@@ -5,7 +5,7 @@ import { store } from './store';
 import { generateContent, generateContentMultipart, testApiKey } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'darkMode'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);

@@ -10,6 +10,8 @@ interface StoreSchema {
   schoolLevel: string;
   gradeClass: string;
   studentNames: string;
+  studentMaleNames: string;
+  studentFemaleNames: string;
   darkMode: boolean;
 }
 
@@ -24,6 +26,8 @@ export const store = new Store<StoreSchema>({
     schoolLevel: '고등학교',
     gradeClass: '',
     studentNames: '',
+    studentMaleNames: '',
+    studentFemaleNames: '',
     darkMode: false,
   },
 });

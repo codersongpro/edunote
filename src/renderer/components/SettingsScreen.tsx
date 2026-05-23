@@ -10,6 +10,8 @@ const SettingsScreen: React.FC = () => {
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
   const [gradeClass, setGradeClass] = useState('');
   const [studentNames, setStudentNames] = useState('');
+  const [studentMaleNames, setStudentMaleNames] = useState('');
+  const [studentFemaleNames, setStudentFemaleNames] = useState('');
   const [saveDir, setSaveDir] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'warn' | 'fail'>('idle');
@@ -20,7 +22,7 @@ const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, sn, inst, sl, gc, stNames, sd] = await Promise.all([
+      const [hn, tn, sn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('schoolName'),
@@ -28,6 +30,8 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('schoolLevel'),
         window.electronAPI.getConfig('gradeClass'),
         window.electronAPI.getConfig('studentNames'),
+        window.electronAPI.getConfig('studentMaleNames'),
+        window.electronAPI.getConfig('studentFemaleNames'),
         window.electronAPI.getConfig('saveDir'),
       ]);
       setHasKey(hn as boolean);
@@ -37,6 +41,8 @@ const SettingsScreen: React.FC = () => {
       setSchoolLevel((sl as string) || SchoolLevel.HIGH);
       setGradeClass(gc as string || '');
       setStudentNames(stNames as string || '');
+      setStudentMaleNames(stMale as string || '');
+      setStudentFemaleNames(stFemale as string || '');
       setSaveDir(sd as string || '');
       setGuideExpanded(!(hn as boolean));
     };
@@ -293,22 +299,63 @@ const SettingsScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* Student Names */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-3">
+        {/* Student Roster */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <Users className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-bold text-gray-700">우리반 학생 이름</h3>
+            <h3 className="text-sm font-bold text-gray-700">우리반 학생 명단</h3>
           </div>
-          <p className="text-xs text-gray-500">학생 이름을 입력하면 생성 결과에 반영될 수 있습니다. <span className="text-orange-500 font-medium">개인정보 주의 — 이니셜 사용 권장</span></p>
-          <textarea
-            className={`${inputClass} min-h-[100px] resize-y`}
-            placeholder="이름 또는 이니셜을 줄 바꿔 입력하세요.&#10;예:&#10;김○수&#10;이○영&#10;박○호"
-            value={studentNames}
-            onChange={e => setStudentNames(e.target.value)}
-          />
+          <p className="text-xs text-gray-500">
+            수업자료 생성, 럭키드로우 등에 자동 반영됩니다.{' '}
+            <span className="text-orange-500 font-medium">개인정보 주의 — 이니셜 사용 권장</span>
+          </p>
+
+          {/* 번호+이름 통합 명단 */}
+          <div>
+            <label className={labelClass}>번호 + 이름 통합 명단</label>
+            <p className="text-xs text-gray-400 mb-1.5">
+              한 줄에 한 명씩 입력. 앞에 번호를 붙이면 수업자료에 번호가 반영됩니다.
+            </p>
+            <textarea
+              className={`${inputClass} min-h-[100px] resize-y font-mono text-xs`}
+              placeholder={"1. 김○수\n2. 이○영\n3. 박○호\n4. 최○민"}
+              value={studentNames}
+              onChange={e => setStudentNames(e.target.value)}
+            />
+          </div>
+
+          {/* 성별 구분 명단 */}
+          <div>
+            <label className={labelClass}>성별 구분 명단 <span className="text-xs font-normal text-gray-400">(럭키드로우 남/녀 모드용)</span></label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">남학생</span>
+                </div>
+                <textarea
+                  className={`${inputClass} min-h-[90px] resize-y font-mono text-xs`}
+                  placeholder={"김○수\n박○호\n이○민"}
+                  value={studentMaleNames}
+                  onChange={e => setStudentMaleNames(e.target.value)}
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-xs font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded">여학생</span>
+                </div>
+                <textarea
+                  className={`${inputClass} min-h-[90px] resize-y font-mono text-xs`}
+                  placeholder={"이○영\n최○아\n정○린"}
+                  value={studentFemaleNames}
+                  onChange={e => setStudentFemaleNames(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
           <button
             onClick={async () => {
-              await window.electronAPI.setConfig({ studentNames });
+              await window.electronAPI.setConfig({ studentNames, studentMaleNames, studentFemaleNames });
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}

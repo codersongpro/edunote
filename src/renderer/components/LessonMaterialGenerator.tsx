@@ -114,6 +114,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const handleLoadStudentNames = async () => {
     const names = await window.electronAPI.getConfig('studentNames');
     if (names && typeof names === 'string' && names.trim()) {
+      // 번호 포함 그대로 유지 (예: "1. 홍○수, 2. 김○영")
       const nameList = names.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join(', ');
       const tag = `[우리반 학생: ${nameList}]`;
       setDetails(prev => {
