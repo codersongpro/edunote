@@ -6,7 +6,10 @@ interface StoreSchema {
   alwaysAskPath: boolean;
   teacherName: string;
   schoolName: string;
+  institution: string;
   schoolLevel: string;
+  gradeClass: string;
+  studentNames: string;
   darkMode: boolean;
 }
 
@@ -17,7 +20,10 @@ export const store = new Store<StoreSchema>({
     alwaysAskPath: true,
     teacherName: '',
     schoolName: '',
+    institution: '',
     schoolLevel: '고등학교',
+    gradeClass: '',
+    studentNames: '',
     darkMode: false,
   },
 });

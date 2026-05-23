@@ -61,13 +61,13 @@ const App: React.FC = () => {
   const [showSchoolLevelModal, setShowSchoolLevelModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
-  const [studentSectionOpen, setStudentSectionOpen] = useState(true);
-  const [adminSectionOpen, setAdminSectionOpen] = useState(true);
+  const [studentSectionOpen, setStudentSectionOpen] = useState(false);
+  const [adminSectionOpen, setAdminSectionOpen] = useState(false);
   const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
-  const [lessonSectionOpen, setLessonSectionOpen] = useState(true);
+  const [lessonSectionOpen, setLessonSectionOpen] = useState(false);
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -384,54 +384,7 @@ const App: React.FC = () => {
 
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
-            {/* ── 학생기록 AI ── */}
-            <div className="rounded-xl overflow-hidden border border-blue-100 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
-              <button
-                onClick={() => setStudentSectionOpen(!studentSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-blue-50/80 dark:hover:bg-blue-900/20 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
-                    <Bot className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록 AI</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {hasEnteredStudentSection && (
-                    <span className="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">{schoolLevel}</span>
-                  )}
-                  {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-blue-400" /> : <ChevronRight className="w-3 h-3 text-blue-400" />}
-                </div>
-              </button>
-              {studentSectionOpen && (
-                <div className="px-1.5 pb-1.5 space-y-0.5">
-                  {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
-                    <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 text-left truncate">{label}</span>
-                      {generatingModes.has(m) && mode !== m && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded font-bold shrink-0 tabular-nums">
-                          {generatingModes.get(m)}%
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                  {hasEnteredStudentSection && (
-                    <button
-                      onClick={() => setShowSchoolLevelModal(true)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-500 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-900/30 rounded-md transition-colors"
-                    >
-                      <School className="w-3.5 h-3.5" />
-                      학교급 변경
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="h-1.5" />
-
-            {/* ── 교무 AI ── */}
+            {/* ── 교무행정AI ── */}
             <div className="rounded-xl overflow-hidden border border-teal-100 dark:border-teal-900/50 bg-teal-50/40 dark:bg-teal-950/20">
               <button
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
@@ -441,7 +394,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-teal-500 flex items-center justify-center shrink-0">
                     <FileText className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무 AI</span>
+                  <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무행정AI</span>
                 </div>
                 {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-teal-400" /> : <ChevronRight className="w-3 h-3 text-teal-400" />}
               </button>
@@ -500,7 +453,7 @@ const App: React.FC = () => {
 
             <div className="h-1.5" />
 
-            {/* ── 수업 AI ── */}
+            {/* ── 수업자료AI ── */}
             <div className="rounded-xl overflow-hidden border border-amber-100 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20">
               <button
                 onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
@@ -510,7 +463,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업 AI</span>
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
                 </div>
                 {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
               </button>
@@ -532,6 +485,53 @@ const App: React.FC = () => {
                       </span>
                     )}
                   </button>
+                </div>
+              )}
+            </div>
+
+            <div className="h-1.5" />
+
+            {/* ── 학생기록AI ── */}
+            <div className="rounded-xl overflow-hidden border border-blue-100 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
+              <button
+                onClick={() => setStudentSectionOpen(!studentSectionOpen)}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-blue-50/80 dark:hover:bg-blue-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
+                    <Bot className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록AI</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {hasEnteredStudentSection && (
+                    <span className="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">{schoolLevel}</span>
+                  )}
+                  {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-blue-400" /> : <ChevronRight className="w-3 h-3 text-blue-400" />}
+                </div>
+              </button>
+              {studentSectionOpen && (
+                <div className="px-1.5 pb-1.5 space-y-0.5">
+                  {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
+                    <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 text-left truncate">{label}</span>
+                      {generatingModes.has(m) && mode !== m && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded font-bold shrink-0 tabular-nums">
+                          {generatingModes.get(m)}%
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  {hasEnteredStudentSection && (
+                    <button
+                      onClick={() => setShowSchoolLevelModal(true)}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-500 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                    >
+                      <School className="w-3.5 h-3.5" />
+                      학교급 변경
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -6,6 +6,34 @@ import { AppMode } from '../types';
 
 const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심리상담', '기타'];
 
+const EXAMPLE_RESULT = `【 상담일지 】
+
+■ 일 시: 2026. 3. 20.(금) 14:00~14:30
+■ 유 형: 생활상담
+■ 참여자: 담임교사, 학생(김○수)
+
+1. 상담 목적
+  - 최근 수업 중 집중력 저하 및 지각 반복 문제로 면담 실시함.
+
+2. 주요 상담 내용
+  - 학생이 가정 내 환경 변화(부모 맞벌이 시작)로 기상 어려움을 호소함.
+  - 스스로 문제를 인식하고 있으나 해결 방법을 모르는 상태임.
+  - 알람 2개 설정, 전날 준비물 미리 챙기기 등 구체적 방법을 함께 논의함.
+
+3. 학생 반응
+  - 처음에는 소극적이었으나 점차 자신의 어려움을 솔직히 이야기함.
+  - 개선 의지를 보이며 담임 교사의 조언을 수용함.
+
+4. 조치 사항
+  - 1주일간 등교 현황을 담임이 직접 확인하기로 함.
+  - 필요시 학부모 연락 예정임.
+
+5. 후속 지원 계획
+  - 2주 후 재면담을 통해 개선 여부를 확인하기로 함.
+  - 지속될 경우 학교 상담 교사와 연계하기로 함.
+
+※ 이 문서는 AI가 생성한 예시입니다. 실제 상담 내용으로 교체하여 사용하세요.`;
+
 const CounselingLogGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.COUNSELING_LOG);
   const [date, setDate] = useState('');
@@ -14,7 +42,7 @@ const CounselingLogGenerator: React.FC = () => {
   const [studentName, setStudentName] = useState('');
   const [counselingContent, setCounselingContent] = useState('');
   const [followUpPlan, setFollowUpPlan] = useState('');
-  const [result, setResult] = useState('');
+  const [result, setResult] = useState(EXAMPLE_RESULT);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -147,7 +175,12 @@ const CounselingLogGenerator: React.FC = () => {
         {result && (
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800 text-sm">생성 결과</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-gray-800 text-sm">생성 결과</h3>
+                {result === EXAMPLE_RESULT && (
+                  <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50">
                   <Copy className="w-3.5 h-3.5" />
@@ -159,7 +192,7 @@ const CounselingLogGenerator: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-md border border-gray-200 p-4 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800'}`}>
               {result}
             </div>
           </div>

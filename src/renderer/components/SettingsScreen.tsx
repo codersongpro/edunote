@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users } from 'lucide-react';
 import { SchoolLevel } from '../types';
 
 const SettingsScreen: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [schoolName, setSchoolName] = useState('');
+  const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
+  const [gradeClass, setGradeClass] = useState('');
+  const [studentNames, setStudentNames] = useState('');
   const [saveDir, setSaveDir] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'warn' | 'fail'>('idle');
@@ -17,17 +20,23 @@ const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, sn, sl, sd] = await Promise.all([
+      const [hn, tn, sn, inst, sl, gc, stNames, sd] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('schoolName'),
+        window.electronAPI.getConfig('institution'),
         window.electronAPI.getConfig('schoolLevel'),
+        window.electronAPI.getConfig('gradeClass'),
+        window.electronAPI.getConfig('studentNames'),
         window.electronAPI.getConfig('saveDir'),
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
       setSchoolName(sn as string || '');
+      setInstitution(inst as string || '');
       setSchoolLevel((sl as string) || SchoolLevel.HIGH);
+      setGradeClass(gc as string || '');
+      setStudentNames(stNames as string || '');
       setSaveDir(sd as string || '');
       setGuideExpanded(!(hn as boolean));
     };
@@ -70,7 +79,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleSaveSettings = async () => {
-    await window.electronAPI.setConfig({ teacherName, schoolName, schoolLevel });
+    await window.electronAPI.setConfig({ teacherName, schoolName, institution, schoolLevel, gradeClass, studentNames });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -238,9 +247,15 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-gray-700">기본 정보</h3>
           </div>
 
-          <div>
-            <label className={labelClass}>교사 이름</label>
-            <input type="text" className={inputClass} placeholder="예: 홍길동" value={teacherName} onChange={e => setTeacherName(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>이름</label>
+              <input type="text" className={inputClass} placeholder="예: 홍길동" value={teacherName} onChange={e => setTeacherName(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClass}>소속기관</label>
+              <input type="text" className={inputClass} placeholder="예: 충북교육청" value={institution} onChange={e => setInstitution(e.target.value)} />
+            </div>
           </div>
           <div>
             <label className={labelClass}>학교 이름</label>
@@ -264,6 +279,10 @@ const SettingsScreen: React.FC = () => {
               ))}
             </div>
           </div>
+          <div>
+            <label className={labelClass}>담당 학년/반</label>
+            <input type="text" className={inputClass} placeholder="예: 5학년 2반" value={gradeClass} onChange={e => setGradeClass(e.target.value)} />
+          </div>
 
           <button
             onClick={handleSaveSettings}
@@ -271,6 +290,32 @@ const SettingsScreen: React.FC = () => {
           >
             <Save className="w-4 h-4" />
             {saved ? '저장됨!' : '설정 저장'}
+          </button>
+        </div>
+
+        {/* Student Names */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Users className="w-4 h-4 text-gray-500" />
+            <h3 className="text-sm font-bold text-gray-700">우리반 학생 이름</h3>
+          </div>
+          <p className="text-xs text-gray-500">학생 이름을 입력하면 생성 결과에 반영될 수 있습니다. <span className="text-orange-500 font-medium">개인정보 주의 — 이니셜 사용 권장</span></p>
+          <textarea
+            className={`${inputClass} min-h-[100px] resize-y`}
+            placeholder="이름 또는 이니셜을 줄 바꿔 입력하세요.&#10;예:&#10;김○수&#10;이○영&#10;박○호"
+            value={studentNames}
+            onChange={e => setStudentNames(e.target.value)}
+          />
+          <button
+            onClick={async () => {
+              await window.electronAPI.setConfig({ studentNames });
+              setSaved(true);
+              setTimeout(() => setSaved(false), 2500);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            <Save className="w-4 h-4" />
+            학생 명단 저장
           </button>
         </div>
 

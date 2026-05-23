@@ -593,52 +593,60 @@ export const generateLessonObservation = async (inputs: {
   subject: string;
   unit: string;
   grade: string;
-  observations: string;
+  observationNotes: string;
+  teacherName: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 수업관찰기록을 작성해주세요.
 
 [수업 정보]
-- 관찰 일시: ${inputs.date}
+- 관찰 일시: ${inputs.date || '미입력'}
 - 교과: ${inputs.subject}
-- 단원/차시: ${inputs.unit}
-- 학년반: ${inputs.grade}
-- 관찰 내용 요약: ${inputs.observations}
+- 단원/차시: ${inputs.unit || '미입력'}
+- 학년반: ${inputs.grade || '미입력'}
+- 수업 교사: ${inputs.teacherName || '미입력'}
+- 관찰 내용 요약: ${inputs.observationNotes}
 
 [작성 지침]
 1. 수업 목표, 교사 활동, 학생 반응, 수업 분위기, 개선 제언 순으로 구성하세요.
-2. 객관적이고 전문적인 관찰 기록 형식으로 작성하세요.
-3. 분량: A4 1~2장 내외.`;
+2. 각 항목은 개조식(~함., ~임., ~였음. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 객관적이고 전문적인 관찰 기록 형식으로 작성하세요.
+4. 분량: A4 1~2장 내외.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 수업 전문가로서 교사의 수업관찰기록 작성을 돕는 보조자입니다. 전문적이고 객관적인 관찰 기록을 작성하세요.',
+    '당신은 수업 전문가로서 교사의 수업관찰기록 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~였음.) 문장 형식으로 전문적이고 객관적인 관찰 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };
 
 export const generateCounselingLog = async (inputs: {
-  datetime: string;
-  type: string;
+  date: string;
+  counselingType: string;
   participants: string;
-  summary: string;
+  studentName: string;
+  counselingContent: string;
+  followUpPlan: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 상담일지를 작성해주세요.
 
 [상담 정보]
-- 일시: ${inputs.datetime}
-- 상담 유형: ${inputs.type}
-- 참여자: ${inputs.participants}
-- 내용 요약: ${inputs.summary}
+- 일시: ${inputs.date || '미입력'}
+- 상담 유형: ${inputs.counselingType}
+- 참여자: ${inputs.participants || '미입력'}
+- 학생(이니셜): ${inputs.studentName || '미입력'}
+- 상담 내용: ${inputs.counselingContent}
+- 후속 지원 계획: ${inputs.followUpPlan || '없음'}
 
 [작성 지침]
 1. 상담 목적, 주요 내용, 학생 반응, 조치 사항, 후속 계획 순으로 구성.
-2. 개인정보 보호에 주의하며 전문적인 상담 기록 형식으로 작성.`;
+2. 각 항목은 개조식(~함., ~임., ~하기로 함. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 개인정보 보호에 주의하며 전문적인 상담 기록 형식으로 작성.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 학교 상담 전문가로서 교사의 상담일지 작성을 돕는 보조자입니다.',
+    '당신은 학교 상담 전문가로서 교사의 상담일지 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~하기로 함.) 문장 형식으로 간결하고 전문적인 상담 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };
@@ -646,7 +654,10 @@ export const generateCounselingLog = async (inputs: {
 export const generateClassManagementLog = async (inputs: {
   week: string;
   dateRange: string;
-  activities: string;
+  grade: string;
+  keyActivities: string;
+  studentIssues: string;
+  teacherNotes: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 학급경영일지를 작성해주세요.
@@ -654,15 +665,19 @@ export const generateClassManagementLog = async (inputs: {
 [주간 정보]
 - 주차: ${inputs.week}
 - 기간: ${inputs.dateRange}
-- 주요 활동: ${inputs.activities}
+- 학년/반: ${inputs.grade}
+- 주요 활동: ${inputs.keyActivities}
+- 학생 특이사항: ${inputs.studentIssues || '없음'}
+- 담임 소감/메모: ${inputs.teacherNotes || '없음'}
 
 [작성 지침]
 1. 주요 학급 활동, 학생 특이사항, 학부모 소통, 다음 주 계획 순으로 구성.
-2. 구체적이고 실용적인 학급경영 기록 형식으로 작성.`;
+2. 각 항목은 개조식(~함., ~임., ~였음. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 구체적이고 실용적인 학급경영 기록 형식으로 작성.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 학급 경영 전문가로서 담임교사의 학급경영일지 작성을 돕는 보조자입니다.',
+    '당신은 학급 경영 전문가로서 담임교사의 학급경영일지 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~였음.) 문장 형식으로 간결하고 실용적인 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };
