@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, AlertTriangle, Download } from 'lucide-react';
+import { Settings, BookOpen, Bot, FileText, Mail, ChevronRight, AlertTriangle, Download, ClipboardList } from 'lucide-react';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -130,6 +130,23 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
             <ChevronRight className="w-4 h-4 text-gray-400 self-end group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
+
+        {/* Survey */}
+        <button
+          onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
+          className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <ClipboardList className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">앱 만족도 설문 참여하기</p>
+              <p className="text-xs text-indigo-100 mt-0.5">소중한 의견이 더 나은 에듀노트를 만듭니다 (1분 소요)</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
+        </button>
 
         {/* Developer info */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">

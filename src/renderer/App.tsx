@@ -182,6 +182,18 @@ const App: React.FC = () => {
     { mode: AppMode.STUDENT_MEMO, icon: StickyNote, label: '학생 메모 보드' },
   ];
 
+  const ADMIN_MODES: AppMode[] = [
+    AppMode.EDUCATION_QA, AppMode.SCHOOL_DOC, AppMode.LESSON_OBSERVATION,
+    AppMode.COUNSELING_LOG, AppMode.CLASS_LOG, AppMode.STUDENT_MEMO,
+  ];
+
+  const contentAccent =
+    STUDENT_RECORD_MODES.includes(mode)
+      ? 'from-blue-400 via-blue-500 to-indigo-500'
+      : ADMIN_MODES.includes(mode)
+      ? 'from-teal-400 via-teal-500 to-emerald-500'
+      : 'from-transparent to-transparent';
+
   const renderContent = () => {
     switch (mode) {
       case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
@@ -278,7 +290,7 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className="w-56 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
@@ -312,25 +324,27 @@ const App: React.FC = () => {
 
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
-            {/* 학생기록 AI */}
-            <div>
+            {/* ── 학생기록 AI ── */}
+            <div className="rounded-xl overflow-hidden border border-blue-100 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
               <button
                 onClick={() => setStudentSectionOpen(!studentSectionOpen)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-blue-50/80 dark:hover:bg-blue-900/20 transition-colors"
               >
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">학생기록 AI</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
+                    <Bot className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록 AI</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
-                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-normal normal-case">{schoolLevel}</span>
+                    <span className="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">{schoolLevel}</span>
                   )}
                   {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-blue-400" /> : <ChevronRight className="w-3 h-3 text-blue-400" />}
                 </div>
               </button>
               {studentSectionOpen && (
-                <div className="mt-1 space-y-0.5">
+                <div className="px-1.5 pb-1.5 space-y-0.5">
                   {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
                     <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
                       <Icon className="w-4 h-4 shrink-0" />
@@ -340,7 +354,7 @@ const App: React.FC = () => {
                   {hasEnteredStudentSection && (
                     <button
                       onClick={() => setShowSchoolLevelModal(true)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-500 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-900/30 rounded-md transition-colors"
                     >
                       <School className="w-3.5 h-3.5" />
                       학교급 변경
@@ -350,22 +364,24 @@ const App: React.FC = () => {
               )}
             </div>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+            <div className="h-1.5" />
 
-            {/* 교무 AI */}
-            <div>
+            {/* ── 교무 AI ── */}
+            <div className="rounded-xl overflow-hidden border border-teal-100 dark:border-teal-900/50 bg-teal-50/40 dark:bg-teal-950/20">
               <button
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-teal-50/80 dark:hover:bg-teal-900/20 transition-colors"
               >
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-teal-500" />
-                  <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">교무 AI</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-teal-500 flex items-center justify-center shrink-0">
+                    <FileText className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무 AI</span>
                 </div>
                 {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-teal-400" /> : <ChevronRight className="w-3 h-3 text-teal-400" />}
               </button>
               {adminSectionOpen && (
-                <div className="mt-1 space-y-0.5">
+                <div className="px-1.5 pb-1.5 space-y-0.5">
                   <button onClick={() => setMode(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
                     <GraduationCap className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">교육AI챗봇</span>
@@ -430,6 +446,7 @@ const App: React.FC = () => {
         </aside>
 
         <main className="flex-1 overflow-hidden flex flex-col">
+          <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
           {renderContent()}
         </main>
 
