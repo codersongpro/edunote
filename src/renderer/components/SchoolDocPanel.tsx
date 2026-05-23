@@ -8,8 +8,16 @@ import { LOADING_MESSAGES } from '../constants';
 
 // ─── SchoolDocPanel ──────────────────────────────────────────────────────────
 
-export const SchoolDocPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<DocType>(DocType.GONGMUN);
+interface SchoolDocPanelProps {
+  initialTab?: DocType;
+}
+
+export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
+  const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);

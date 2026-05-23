@@ -7,6 +7,7 @@ interface StoreSchema {
   teacherName: string;
   schoolName: string;
   schoolLevel: string;
+  darkMode: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -17,5 +18,6 @@ export const store = new Store<StoreSchema>({
     teacherName: '',
     schoolName: '',
     schoolLevel: '고등학교',
+    darkMode: false,
   },
 });

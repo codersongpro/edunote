@@ -101,11 +101,28 @@ export async function generateContentMultipart(
   throw lastError;
 }
 
-export async function testApiKey(apiKey: string): Promise<boolean> {
+export async function testApiKey(apiKey: string): Promise<{ ok: boolean; error?: string }> {
+  const ai = new GoogleGenAI({ apiKey });
+  const model = 'gemini-2.0-flash';
   try {
-    await generateContent(apiKey, '안녕하세요. 한 문장으로 짧게 답해주세요.', {});
-    return true;
-  } catch {
-    return false;
+    const result = await Promise.race([
+      ai.models.generateContent({ model, contents: 'Hi', config: {} }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 15000)
+      ),
+    ]);
+    if ((result as any)?.text !== undefined) return { ok: true };
+    return { ok: false, error: '응답을 받지 못했습니다.' };
+  } catch (error: unknown) {
+    const msg = ((error as any)?.message || '').toLowerCase();
+    const status = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+    if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
+    if (status === 401 || msg.includes('api_key_invalid') || msg.includes('api key not valid') || msg.includes('invalid_argument'))
+      return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인하세요.' };
+    if (status === 429 || msg.includes('quota') || msg.includes('resource_exhausted'))
+      return { ok: false, error: '요청 한도 초과. 잠시 후 다시 시도하거나 다른 API 키를 사용하세요.' };
+    if (msg.includes('network') || msg.includes('fetch'))
+      return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+    return { ok: false, error: `오류: ${(error as any)?.message || '알 수 없는 오류'}` };
   }
 }

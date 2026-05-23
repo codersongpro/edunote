@@ -38,12 +38,16 @@ const SettingsScreen: React.FC = () => {
     setTestStatus('testing');
     setTestError('');
     try {
-      const ok = await window.electronAPI.testApiKey(apiKey.trim());
-      setTestStatus(ok ? 'ok' : 'fail');
-      if (!ok) setTestError('API 키가 유효하지 않습니다. 키를 확인하세요.');
+      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; error?: string };
+      if (result?.ok) {
+        setTestStatus('ok');
+      } else {
+        setTestStatus('fail');
+        setTestError(result?.error || 'API 키가 유효하지 않습니다.');
+      }
     } catch (e) {
       setTestStatus('fail');
-      setTestError(e instanceof Error ? e.message : 'API 키 테스트 중 오류가 발생했습니다.');
+      setTestError(e instanceof Error ? e.message : '오류가 발생했습니다.');
     }
   };
 
