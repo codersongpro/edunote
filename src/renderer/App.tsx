@@ -3,7 +3,6 @@ import { AppMode, SchoolLevel, DocType } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { GlobalState } from './types';
 
-import GuidelineQA from './components/GuidelineQA';
 import RecordChatbot from './components/RecordChatbot';
 import OpinionGenerator from './components/OpinionGenerator';
 import SubjectGenerator from './components/SubjectGenerator';
@@ -20,14 +19,14 @@ import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
 
 import {
-  Bot, BookOpen, User2, Dumbbell, Palette, MessageSquareText,
+  Bot, BookOpen, User2, Dumbbell, Palette,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
-  AppMode.RECORD_CHATBOT, AppMode.GUIDELINE_QA, AppMode.GENERATOR,
+  AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
   AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR,
 ];
 
@@ -168,7 +167,6 @@ const App: React.FC = () => {
 
   const studentMenuItems = [
     { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
-    { mode: AppMode.GUIDELINE_QA, icon: MessageSquareText, label: '기재요령 Q&A' },
     { mode: AppMode.GENERATOR, icon: User2, label: '행동특성 및 종합의견' },
     { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
     { mode: AppMode.SPORTS_CLUB_GENERATOR, icon: Dumbbell, label: '학교스포츠클럽' },
@@ -199,7 +197,6 @@ const App: React.FC = () => {
       case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
       case AppMode.USAGE_GUIDE: return <UsageGuideScreen />;
       case AppMode.RECORD_CHATBOT: return <RecordChatbot schoolLevel={schoolLevel} />;
-      case AppMode.GUIDELINE_QA: return <GuidelineQA schoolLevel={schoolLevel} />;
       case AppMode.GENERATOR: return <OpinionGenerator schoolLevel={schoolLevel} />;
       case AppMode.SUBJECT_GENERATOR: return <SubjectGenerator schoolLevel={schoolLevel} />;
       case AppMode.SPORTS_CLUB_GENERATOR: return <SportsClubGenerator schoolLevel={schoolLevel} />;
