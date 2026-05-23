@@ -1,0 +1,287 @@
+import React, { useRef, useEffect } from 'react';
+import { Copy, Download, FileText, Printer, FileType, PenLine } from 'lucide-react';
+
+export interface HwpxTemplateData {
+  [key: string]: string;
+}
+
+interface GeneratedDisplayProps {
+  content: string;
+  hwpxData?: HwpxTemplateData;
+  hwpxFillData?: any[] | null;
+  hwpxTemplate?: File;
+}
+
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate }) => {
+  const [copied, setCopied] = React.useState(false);
+  const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Sync content prop to the editable div whenever it changes (new generation)
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.innerHTML = content;
+    }
+  }, [content]);
+
+  const getCurrentContent = (): string => {
+    return contentRef.current?.innerHTML || content;
+  };
+
+  const handleCopy = async () => {
+    const currentHtml = getCurrentContent();
+    const plainText = contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+    
+    let success = false;
+
+    // 1. Try modern Clipboard API
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        const htmlBlob = new Blob([currentHtml], { type: "text/html" });
+        const textBlob = new Blob([plainText], { type: "text/plain" });
+        
+        const data = [new ClipboardItem({ 
+          "text/html": htmlBlob,
+          "text/plain": textBlob 
+        })];
+        await navigator.clipboard.write(data);
+        success = true;
+      } catch (err) {
+        console.error("Clipboard API failed", err);
+      }
+    }
+
+    // 2. Fallback to execCommand for older browsers or restricted iframes
+    if (!success) {
+      try {
+        const tempDiv = document.createElement("div");
+        tempDiv.contentEditable = "true";
+        tempDiv.innerHTML = currentHtml;
+        tempDiv.style.position = "fixed";
+        tempDiv.style.left = "-9999px";
+        document.body.appendChild(tempDiv);
+        
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(tempDiv);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+        
+        const execSuccess = document.execCommand("copy");
+        
+        selection?.removeAllRanges();
+        document.body.removeChild(tempDiv);
+        
+        if (execSuccess) {
+          success = true;
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback copy failed", fallbackErr);
+      }
+    }
+
+    // 3. Final fallback: just copy text
+    if (!success && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(plainText);
+        success = true;
+      } catch (textErr) {
+        console.error("Text copy failed", textErr);
+      }
+    }
+
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인해주세요.");
+    }
+  };
+
+  const getFormattedFilename = (extension: string): string => {
+    const now = new Date();
+    const dateStr = 
+      now.getFullYear().toString() + 
+      (now.getMonth() + 1).toString().padStart(2, '0') + 
+      now.getDate().toString().padStart(2, '0');
+    
+    let title = hwpxData?.["문서제목"] || "draft_document";
+    // Sanitize title
+    title = title.replace(/[\\/:*?"<>|]/g, "_");
+    
+    return `${title}(${dateStr}).${extension}`;
+  };
+
+  const handleDownloadHwpx = async () => {
+    if (!hwpxTemplate || !hwpxFillData) return;
+    setHwpxDownloading(true);
+    try {
+      const { fillHwpxTemplate } = await import('../lib/hwpx-template');
+      const uint8 = await fillHwpxTemplate(hwpxTemplate, hwpxFillData);
+      await window.electronAPI.saveBuffer(uint8.buffer, getFormattedFilename("hwpx"));
+    } catch (error) {
+      console.error("Failed to merge HWPX file", error);
+      alert("HWPX 양식 채우기 중 오류가 발생했습니다.");
+    } finally {
+      setHwpxDownloading(false);
+    }
+  };
+
+  const handleDownloadHtml = async () => {
+    const currentHtml = getCurrentContent();
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body>${currentHtml}</body></html>`;
+    await window.electronAPI.saveFile(fullHtml, getFormattedFilename("html"), "html");
+  };
+
+  const handleDownloadWord = async () => {
+    const currentHtml = getCurrentContent();
+    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>body { font-family: 'Batang', 'Dotum', sans-serif; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } th, td { border: 1px solid black; padding: 8px; }</style></head><body>${currentHtml}</body></html>`;
+    await window.electronAPI.saveFile(fullHtml, getFormattedFilename("doc"), "doc");
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const convertToMarkdown = (html: string): string => {
+    let md = html;
+    // Remove structure tags
+    md = md.replace(/<head>[\s\S]*?<\/head>/gi, "");
+    md = md.replace(/<style>[\s\S]*?<\/style>/gi, "");
+    md = md.replace(/<html>/gi, "").replace(/<\/html>/gi, "");
+    md = md.replace(/<body>/gi, "").replace(/<\/body>/gi, "");
+    md = md.replace(/<!DOCTYPE html>/gi, "");
+
+    // Basic Text Formatting
+    md = md.replace(/<h1>(.*?)<\/h1>/gim, '# $1\n');
+    md = md.replace(/<h2>(.*?)<\/h2>/gim, '## $1\n');
+    md = md.replace(/<h3>(.*?)<\/h3>/gim, '### $1\n');
+    md = md.replace(/<strong>(.*?)<\/strong>/gim, '**$1**');
+    md = md.replace(/<b>(.*?)<\/b>/gim, '**$1**');
+    md = md.replace(/<br\s*\/?>/gim, '\n');
+    md = md.replace(/<\/div>/gim, '\n');
+    md = md.replace(/<div>/gim, '');
+    md = md.replace(/<p>/gim, '');
+    md = md.replace(/<\/p>/gim, '\n\n');
+    
+    // Lists
+    md = md.replace(/<ul>/gim, '');
+    md = md.replace(/<\/ul>/gim, '');
+    md = md.replace(/<li>(.*?)<\/li>/gim, '- $1\n');
+
+    // Clean up entities
+    md = md.replace(/&nbsp;/g, ' ');
+    md = md.replace(/&lt;/g, '<');
+    md = md.replace(/&gt;/g, '>');
+    md = md.replace(/&amp;/g, '&');
+
+    // Clean up multiple newlines
+    md = md.replace(/\n\s*\n/g, '\n\n');
+
+    return md.trim();
+  };
+
+  const handleDownloadMarkdown = async () => {
+    const currentHtml = getCurrentContent();
+    const mdContent = convertToMarkdown(currentHtml);
+    await window.electronAPI.saveFile(mdContent, getFormattedFilename("md"), "md");
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-300 flex flex-col h-full overflow-hidden">
+      {/* Toolbar / Header */}
+      <div className="bg-[#F8F9FA] px-4 py-3 border-b border-gray-300 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <div className="flex items-center gap-2 mr-4">
+          <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+          <h2 className="font-bold text-gray-800 text-base">미리보기 및 편집</h2>
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+             <PenLine className="w-3 h-3" />
+             수정 가능
+          </span>
+        </div>
+        <div className="flex gap-2 shrink-0">
+           <button 
+            onClick={handlePrint}
+            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            title="인쇄하기"
+          >
+            <Printer className="w-4 h-4" />
+          </button>
+          
+          {hwpxTemplate && hwpxFillData && (
+             <button 
+              onClick={handleDownloadHwpx}
+              disabled={hwpxDownloading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm disabled:opacity-50"
+              title="원본 HWPX 양식에 생성된 내용 채워넣기"
+            >
+              <FileType className="w-4 h-4" />
+              <span>{hwpxDownloading ? '저장 중...' : 'HWPX 저장 (양식)'}</span>
+            </button>
+          )}
+
+          <button 
+            onClick={handleDownloadWord}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded transition-colors shadow-sm"
+            title="HWP에서 열기 좋은 Word 파일로 저장"
+          >
+            <Download className="w-4 h-4" />
+            <span>Doc 저장</span>
+          </button>
+
+
+          <button 
+            onClick={handleDownloadHtml}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded transition-colors shadow-sm"
+            title="HTML 파일로 저장"
+          >
+            <FileType className="w-4 h-4" />
+            <span>HTML 저장</span>
+          </button>
+          
+          <button 
+            onClick={handleCopy}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded shadow-sm transition-all
+              ${copied ? 'bg-green-600 hover:bg-green-700' : 'bg-[#1E88E5] hover:bg-[#1565C0]'}
+            `}
+            title="HWP 붙여넣기 최적화 복사"
+          >
+            <Copy className="w-4 h-4" />
+            {copied ? '복사됨' : '복사하기'}
+          </button>
+        </div>
+      </div>
+      
+      {/* Editor Viewport */}
+      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] cursor-text print-section"
+             style={{ 
+               minHeight: "297mm",
+               backgroundColor: "white",
+               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+               padding: "20mm",
+               fontFamily: "'Dotum', sans-serif",
+               wordBreak: "break-word",
+               overflowWrap: "break-word"
+             }}>
+             <div 
+                ref={contentRef}
+                contentEditable
+                suppressContentEditableWarning
+                className="prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full"
+                style={{ minHeight: "100%" }}
+             />
+        </div>
+      </div>
+      
+      {/* Status Bar */}
+      <div className="bg-white border-t border-gray-300 px-4 py-1 flex justify-between items-center text-xs text-gray-500">
+        <span className="flex items-center gap-1">
+          <PenLine className="w-3 h-3" />
+          내용을 직접 클릭하여 수정할 수 있습니다.
+        </span>
+        <span>HTML & MD 호환 | HWP 복사 가능</span>
+      </div>
+    </div>
+  );
+};

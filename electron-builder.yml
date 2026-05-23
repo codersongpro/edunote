@@ -1,0 +1,25 @@
+appId: com.edunote.app
+productName: 에듀노트
+copyright: Copyright © 2026
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: 에듀노트_${version}.exe
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+
+portable:
+  artifactName: 에듀노트_${version}_portable.exe

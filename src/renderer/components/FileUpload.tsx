@@ -1,0 +1,162 @@
+import React, { useRef } from 'react';
+import { Upload, X, FileText } from 'lucide-react';
+import { FileData } from '../types';
+
+interface FileUploadProps {
+  label: string;
+  files: FileData[];
+  onFilesChange: (files: FileData[]) => void;
+  accept?: string;
+  multiple?: boolean;
+}
+
+export const FileUpload: React.FC<FileUploadProps> = ({ 
+  label, 
+  files, 
+  onFilesChange, 
+  accept = ".pdf,.jpg,.jpeg,.png,.txt,.hwp,.hwpx",
+  multiple = false 
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  const handleFiles = async (fileList: FileList) => {
+    if (fileList.length > 0) {
+      const newFiles: FileData[] = [];
+      
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        
+        const isHwp = file.name.toLowerCase().endsWith('.hwp') && !file.name.toLowerCase().endsWith('.hwpx');
+        const isHwpx = file.name.toLowerCase().endsWith('.hwpx');
+        
+        let base64 = "";
+        let mimeType = file.type;
+
+        if (isHwp || isHwpx) {
+          try {
+            const { extractTextFromHwpx } = await import('../lib/hwpx-parser');
+            // If it's pure HWP, extractTextFromHwpx will gracefully catch JSZip error and return the fallback message instead of throwing!
+            const extractedText = await extractTextFromHwpx(file);
+            const textFile = new File([extractedText], file.name + ".txt", { type: "text/plain" });
+            base64 = await convertToBase64(textFile);
+            mimeType = 'text/plain';
+          } catch (hwpxError: any) {
+            console.error("HWPX/HWP Fallback:", hwpxError);
+            const textFile = new File(["[문서 내용을 읽을 수 없습니다 - 손상되거나 지원되지 않는 형식]"], file.name + ".txt", { type: "text/plain" });
+            base64 = await convertToBase64(textFile);
+            mimeType = 'text/plain';
+          }
+        } else {
+          base64 = await convertToBase64(file);
+        }
+
+        newFiles.push({
+          file,
+          base64,
+          mimeType
+        });
+      }
+
+      if (newFiles.length > 0) {
+        onFilesChange(multiple ? [...files, ...newFiles] : newFiles);
+      }
+      
+      // Reset input so the same file can be selected again if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      handleFiles(e.target.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) {
+      handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const removeFile = (index: number) => {
+    const updated = files.filter((_, i) => i !== index);
+    onFilesChange(updated);
+  };
+
+  return (
+    <div className="mb-6">
+      <label className="block text-sm font-bold text-gray-800 mb-2">{label}</label>
+      
+      <div className="flex flex-col gap-3">
+        <div 
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`group border bg-gray-50 hover:bg-white rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-500"}`}
+        >
+          <div className="bg-white p-2 rounded-full border border-gray-200 group-hover:border-blue-200 group-hover:bg-blue-50 mb-2 transition-colors">
+             <Upload className="w-5 h-5 text-gray-500 group-hover:text-blue-600" />
+          </div>
+          <p className="text-sm text-gray-600 font-medium group-hover:text-blue-600">
+            파일 업로드
+          </p>
+          <span className="text-xs text-gray-400 mt-1">참고 자료 및 양식 (드래그 가능)</span>
+        </div>
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          onChange={handleFileChange} 
+          accept={accept}
+          multiple={multiple}
+        />
+
+        {files.length > 0 && (
+          <div className="grid grid-cols-1 gap-2">
+            {files.map((f, idx) => (
+              <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-md border border-gray-200 shadow-sm hover:border-blue-300 transition-colors">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <div className="bg-blue-50 p-1 rounded">
+                    <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  </div>
+                  <span className="text-sm text-gray-700 truncate font-medium">{f.file.name}</span>
+                </div>
+                <button 
+                  onClick={() => removeFile(idx)}
+                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

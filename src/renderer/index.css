@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Prose markdown styles for chatbot */
+.prose h1, .prose h2, .prose h3 { font-weight: bold; margin-top: 0.75em; margin-bottom: 0.25em; }
+.prose h1 { font-size: 1.15em; }
+.prose h2 { font-size: 1.05em; }
+.prose h3 { font-size: 0.95em; }
+.prose p { margin-bottom: 0.5em; }
+.prose ul, .prose ol { padding-left: 1.25em; margin-bottom: 0.5em; }
+.prose li { margin-bottom: 0.25em; }
+.prose code { background: rgba(0,0,0,0.08); padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
+.prose strong { font-weight: 700; }

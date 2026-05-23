@@ -1,0 +1,35 @@
+{
+  "name": "edunote",
+  "version": "1.0.0",
+  "description": "에듀노트 — 교사를 위한 AI 도우미 (학생기록 AI + 교무 AI)",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@google/genai": "^1.30.0",
+    "@xmldom/xmldom": "^0.9.7",
+    "electron-store": "^10.0.0",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.469.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.0",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.0",
+    "electron-vite": "^2.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "~5.8.2"
+  }
+}
