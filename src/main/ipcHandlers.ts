@@ -1,4 +1,5 @@
-import { ipcMain, dialog, shell, app } from 'electron';
+import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron';
+import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { store } from './store';
@@ -237,6 +238,34 @@ export function registerIpcHandlers(): void {
       return { currentVersion, latestVersion, hasUpdate, releaseUrl: json.html_url || '' };
     } catch {
       return { currentVersion: app.getVersion(), latestVersion: null, hasUpdate: false, releaseUrl: '' };
+    }
+  });
+
+  // ── PDF Save ──────────────────────────────────────────────────────
+  ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
+    const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);
+    fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
+    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+    try {
+      await win.loadFile(tmpFile);
+      const pdfData = await win.webContents.printToPDF({
+        pageSize: 'A4',
+        printBackground: true,
+        margins: { marginType: 'none' },
+      });
+      const saveDir = store.get('saveDir');
+      const result = await dialog.showSaveDialog({
+        defaultPath: path.join(saveDir || app.getPath('documents'), suggestedName),
+        filters: [{ name: 'PDF 파일', extensions: ['pdf'] }],
+      });
+      if (!result.canceled && result.filePath) {
+        fs.writeFileSync(result.filePath, pdfData);
+        return result.filePath;
+      }
+      return null;
+    } finally {
+      win.destroy();
+      try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
     }
   });
 }

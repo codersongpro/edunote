@@ -49,4 +49,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   checkUpdate: () => ipcRenderer.invoke('app:check-update'),
+
+  // PDF Save
+  savePdf: (htmlContent: string, suggestedName: string) =>
+    ipcRenderer.invoke('file:save-pdf', htmlContent, suggestedName),
 });

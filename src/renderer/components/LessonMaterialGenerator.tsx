@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
-  Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight,
+  Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -83,6 +83,7 @@ const LessonMaterialGenerator: React.FC = () => {
   };
 
   const [pageCount, setPageCount] = useState(5);
+  const [worksheetCount, setWorksheetCount] = useState(2);
   const [questionCount, setQuestionCount] = useState(5);
   const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
   const [includeScore, setIncludeScore] = useState(false);
@@ -150,7 +151,7 @@ const LessonMaterialGenerator: React.FC = () => {
         const result = await generateLessonSlides(params, pageCount);
         setSlides(result);
       } else if (contentType === 'WORKSHEET') {
-        const html = await generateLessonWorksheet(params, worksheetType, questionCount, includeScore);
+        const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore);
         setHtmlContent(extractHtml(html));
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount);
@@ -181,6 +182,40 @@ const LessonMaterialGenerator: React.FC = () => {
       `## 슬라이드 ${s.page}: ${s.title}\n\n${s.content.map(c => `- ${c}`).join('\n')}\n\n> 📌 교사 메모: ${s.notes}`
     ).join('\n\n---\n\n');
     await window.electronAPI.saveFile(md, `${topic}_슬라이드.md`, 'md');
+  };
+
+  const handleSaveSlidesPdf = async () => {
+    if (!slides) return;
+    const now = new Date();
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    const slidesHtml = slides.map(s => `
+      <div class="slide">
+        <div class="slide-header">${s.page}. ${s.title}</div>
+        <ul>${s.content.map(c => `<li>${c}</li>`).join('')}</ul>
+        ${s.notes ? `<div class="notes">교사 메모: ${s.notes}</div>` : ''}
+      </div>`).join('');
+    const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${topic} 수업 슬라이드</title><style>
+@page{size:A4;margin:20mm 15mm;}
+*{box-sizing:border-box;}
+body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum',sans-serif;font-size:11pt;color:#000;background:#fff;}
+.slide{page-break-inside:avoid;margin-bottom:24pt;border:1.5pt solid #e2a800;border-radius:6pt;overflow:hidden;}
+.slide-header{background:#f5a800;color:#fff;font-size:13pt;font-weight:bold;padding:8pt 12pt;}
+ul{margin:10pt 0 10pt 20pt;padding:0;}
+li{margin-bottom:5pt;line-height:1.6;}
+.notes{background:#f9f9f9;border-top:1pt dashed #ccc;padding:6pt 12pt;font-size:9pt;color:#555;font-style:italic;}
+</style></head><body>${slidesHtml}</body></html>`;
+    try {
+      await (window.electronAPI as any).savePdf(html, `${topic}_슬라이드(${d}).pdf`);
+    } catch { alert('PDF 저장 중 오류가 발생했습니다.'); }
+  };
+
+  const handleSaveHtmlPdf = async () => {
+    if (!htmlContent) return;
+    const now = new Date();
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    try {
+      await (window.electronAPI as any).savePdf(htmlContent, `${topic}(${d}).pdf`);
+    } catch { alert('PDF 저장 중 오류가 발생했습니다.'); }
   };
 
   const handleSaveHtml = async () => {
@@ -345,8 +380,8 @@ const LessonMaterialGenerator: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className={labelClass}>문항 수</label>
-                  <input type="number" className={inputClass} min={3} max={20} value={questionCount} onChange={e => setQuestionCount(parseInt(e.target.value) || 5)} />
+                  <label className={labelClass}>활동 수</label>
+                  <input type="number" className={inputClass} min={1} max={10} value={worksheetCount} onChange={e => setWorksheetCount(Math.max(1, parseInt(e.target.value) || 2))} />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
                   <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
@@ -422,6 +457,9 @@ const LessonMaterialGenerator: React.FC = () => {
                   수업 슬라이드 ({slides.length}장)
                 </span>
                 <div className="flex gap-2">
+                  <button onClick={handleSaveSlidesPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
+                    <FileDown className="w-3.5 h-3.5" />PDF 저장
+                  </button>
                   <button onClick={handleSaveSlidesMd} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors">
                     <FileType className="w-3.5 h-3.5" />MD 저장
                   </button>
@@ -466,6 +504,9 @@ const LessonMaterialGenerator: React.FC = () => {
                   <Monitor className="w-4 h-4 text-amber-500" />
                   {contentType === 'QUIZ' ? '퀴즈 앱 미리보기' : '활동지 미리보기'}
                 </span>
+                <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
+                  <FileDown className="w-3.5 h-3.5" />PDF 저장
+                </button>
                 <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
                   <Download className="w-3.5 h-3.5" />HTML 저장
                 </button>

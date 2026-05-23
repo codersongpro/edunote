@@ -827,19 +827,25 @@ export async function generateLessonWorksheet(
 [수업 정보]
 - 학년: ${params.grade}
 - 교과: ${params.subject}
-- 단원: ${params.unit}
+- 단원: ${params.unit || ''}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 
 [요구사항]
-- 문항 수: ${questionCount}개
-- 점수란 포함: ${includeScore ? '예 (각 문항에 점수 배점 표시)' : '아니오'}
-- 인쇄 가능한 깔끔한 디자인으로 작성하세요.
-- A4 용지 출력에 최적화하세요.
+- 활동 수: ${questionCount}개
+- 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
+- A4 용지 출력 및 PDF 저장에 최적화 (여백 포함)
+- 각 활동 섹션은 페이지 중간에서 잘리지 않도록 page-break-inside: avoid 적용
+- 제목, 이름/날짜 기입란, 활동별 구분선 포함
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
-인라인 CSS로 스타일을 적용하고, 한국어 폰트(Noto Sans KR 또는 기본 sans-serif)를 사용하세요.
-흰 배경, 검정 텍스트로 인쇄 친화적으로 작성하세요.
+<style> 태그에 다음 CSS를 반드시 포함하세요:
+@page { size: A4; margin: 20mm 15mm; }
+body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 11pt; color: #000; margin: 0; padding: 0; }
+.activity, section, .question { page-break-inside: avoid; margin-bottom: 16pt; }
+h1, h2, h3 { page-break-after: avoid; }
+table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+th, td { border: 1pt solid #333; padding: 6pt 8pt; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
@@ -889,8 +895,13 @@ ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 5. 준비물 및 참고자료
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
-인라인 CSS로 스타일을 적용하고, 표(table)를 활용하여 체계적으로 구성하세요.
-A4 인쇄에 최적화된 흰 배경, 검정 텍스트로 작성하세요.
+<style> 태그에 다음 CSS를 반드시 포함하세요:
+@page { size: A4; margin: 20mm 15mm; }
+body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 10.5pt; color: #000; margin: 0; padding: 0; }
+table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+th, td { border: 1pt solid #333; padding: 5pt 8pt; }
+section, .section, tr, h2, h3 { page-break-inside: avoid; }
+h1, h2, h3 { page-break-after: avoid; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 });

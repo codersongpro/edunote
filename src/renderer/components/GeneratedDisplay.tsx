@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, FileType, PenLine } from 'lucide-react';
+import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown } from 'lucide-react';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -144,6 +144,30 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     window.print();
   };
 
+  const handleSavePdf = async () => {
+    const currentHtml = getCurrentContent();
+    const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    const filename = `${docTitle.replace(/[\\/:*?"<>|]/g, '_')}(${dateStr}).pdf`;
+    const fullHtml = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${docTitle}</title><style>
+@page{size:A4;margin:20mm 15mm;}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum','Apple SD Gothic Neo',sans-serif;font-size:11pt;color:#000;background:#fff;}
+h1{font-size:15pt;margin:0 0 10pt;}h2{font-size:13pt;margin:8pt 0 6pt;}h3{font-size:11pt;margin:6pt 0 4pt;}
+p,li{line-height:1.7;margin:0 0 6pt;}
+table{width:100%;border-collapse:collapse;page-break-inside:avoid;margin:8pt 0;}
+th,td{border:1pt solid #333;padding:5pt 7pt;font-size:10pt;}
+section,.section,tr{page-break-inside:avoid;}
+h2,h3{page-break-after:avoid;}
+</style></head><body>${currentHtml}</body></html>`;
+    try {
+      await (window.electronAPI as any).savePdf(fullHtml, filename);
+    } catch (e) {
+      alert('PDF 저장 중 오류가 발생했습니다.');
+    }
+  };
+
   const convertToMarkdown = (html: string): string => {
     let md = html;
     // Remove structure tags
@@ -201,13 +225,24 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
           </span>
         </div>
         <div className="flex gap-2 shrink-0">
-           <button 
+           <button
             onClick={handlePrint}
             className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
             title="인쇄하기"
           >
             <Printer className="w-4 h-4" />
           </button>
+
+          {content && (
+            <button
+              onClick={handleSavePdf}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded transition-colors shadow-sm"
+              title="A4 PDF 파일로 저장"
+            >
+              <FileDown className="w-4 h-4" />
+              <span>PDF 저장</span>
+            </button>
+          )}
           
           {content && (
             <button

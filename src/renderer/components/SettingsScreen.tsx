@@ -189,10 +189,15 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* API Key Input */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-3">
+        <div className={`rounded-lg border shadow-sm p-4 space-y-3 transition-all ${!hasKey ? 'bg-amber-50 border-amber-400 animate-pulse' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center gap-2 mb-2">
-            <Key className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-bold text-gray-700">API 키 설정</h3>
+            <Key className={`w-4 h-4 ${!hasKey ? 'text-amber-600' : 'text-gray-500'}`} />
+            <h3 className={`text-sm font-bold ${!hasKey ? 'text-amber-800' : 'text-gray-700'}`}>API 키 설정</h3>
+            {!hasKey && (
+              <span className="flex items-center gap-1 text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+                ⚠ 미입력
+              </span>
+            )}
             {hasKey && (
               <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                 <CheckCircle className="w-3 h-3" />
@@ -262,6 +267,9 @@ const SettingsScreen: React.FC = () => {
             <User className="w-4 h-4 text-gray-500" />
             <h3 className="text-sm font-bold text-gray-700">기본 정보</h3>
           </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2 text-xs text-blue-700 leading-relaxed">
+            💡 이름, 소속기관, 담당 학년/반을 입력하면 <strong>공문서·수업자료·학생기록 생성 결과물</strong>에 자동으로 반영됩니다.
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -311,9 +319,9 @@ const SettingsScreen: React.FC = () => {
             <Users className="w-4 h-4 text-gray-500" />
             <h3 className="text-sm font-bold text-gray-700">우리반 학생 명단</h3>
           </div>
-          <p className="text-xs text-gray-500">
-            수업자료 생성, 럭키드로우 등에 자동 반영됩니다.
-          </p>
+          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2 text-xs text-blue-700 leading-relaxed">
+            💡 학생 명단을 입력하면 <strong>수업자료·럭키드로우</strong> 등에서 "우리반 자동 입력" 버튼으로 바로 불러올 수 있습니다.
+          </div>
 
           {/* 번호+이름 통합 명단 */}
           <div>
