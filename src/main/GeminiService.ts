@@ -1,10 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
 
 const MODELS_TO_TRY = [
-  'gemini-2.5-flash-preview-05-20',
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
+  'gemini-3.5-flash',   // Latest GA (2026.05)
+  'gemini-2.5-flash',   // Previous stable
+  'gemini-2.0-flash',   // Legacy fallback
+  'gemini-1.5-flash',   // Last resort
 ];
 
 const isQuotaError = (error: unknown): boolean => {
@@ -103,8 +103,8 @@ export async function generateContentMultipart(
 
 export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  // Try models from most stable to newest — free-tier new keys may be limited on preview models
-  const testModels = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-8b'];
+  // Stable models first — free-tier new keys work best with non-preview GA models
+  const testModels = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-2.0-flash'];
   let quotaHit = false;
 
   for (const model of testModels) {
