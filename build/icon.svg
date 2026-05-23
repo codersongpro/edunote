@@ -7,7 +7,7 @@
   <text x="340" y="310" font-family="Arial Black, Arial" font-weight="900" font-size="220" fill="#00C9B1" text-anchor="middle">I</text>
 
   <!-- Pencil body (diagonal) -->
-  <g transform="translate(370, 270) rotate(-45)">
+  <g transform="translate(404, 246) scale(-1, 1) rotate(-45)">
     <rect x="-18" y="-90" width="36" height="140" rx="4" fill="white" stroke="black" stroke-width="14"/>
     <rect x="-18" y="-90" width="36" height="40" rx="4" fill="#00C9B1"/>
     <!-- Pencil tip -->
@@ -18,5 +18,5 @@
   </g>
 
   <!-- Bottom line under pencil -->
-  <line x1="290" y1="450" x2="470" y2="450" stroke="black" stroke-width="28" stroke-linecap="round"/>
+  <line x1="295" y1="450" x2="460" y2="450" stroke="black" stroke-width="28" stroke-linecap="round"/>
 </svg>
