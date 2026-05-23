@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -42,6 +42,8 @@ jobs:
       - name: Create or update release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.RELEASE_PAT }}
+          repository: codersongpro/edunote
           tag_name: v${{ steps.pkg.outputs.version }}
           name: 에듀노트 v${{ steps.pkg.outputs.version }}
           body: |
