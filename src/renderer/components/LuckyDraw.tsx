@@ -290,11 +290,30 @@ const LuckyDraw: React.FC = () => {
 
           {/* Names */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 space-y-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-orange-500 flex items-center justify-center">
-                <Users className="w-3.5 h-3.5 text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-orange-500 flex items-center justify-center">
+                  <Users className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-bold text-gray-800 text-sm">학생 이름</span>
               </div>
-              <span className="font-bold text-gray-800 text-sm">학생 이름</span>
+              <button
+                onClick={async () => {
+                  const names = await window.electronAPI.getConfig('studentNames');
+                  if (names && typeof names === 'string' && names.trim()) {
+                    const list = names.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join('\n');
+                    setNamesText(list);
+                    setMaleNamesText('');
+                    setFemaleNamesText('');
+                    setGenderMode(false);
+                    setSessionPool(null);
+                  }
+                }}
+                className="text-[10px] font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 px-2 py-0.5 rounded transition-colors"
+                title="설정에서 저장한 우리 반 학생 이름을 자동으로 불러옵니다"
+              >
+                우리반 자동 입력
+              </button>
             </div>
 
             {/* Gender toggle */}

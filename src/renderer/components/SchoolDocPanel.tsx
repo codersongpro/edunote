@@ -7,6 +7,28 @@ import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
+// ─── Example Documents ───────────────────────────────────────────────────────
+
+const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
+  [DocType.GONGMUN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:14pt;text-align:center;font-weight:bold;margin:20px 0 30px}table{width:100%;border-collapse:collapse;margin-bottom:18px}td{padding:6px 10px;border:1px solid #444;vertical-align:top}td.label{background:#f5f5f5;font-weight:bold;width:100px;text-align:center}.content{padding:20px 0}.sig{text-align:right;margin-top:40px;font-size:11pt}</style></head><body><p style="text-align:right;font-size:11pt">수신: 교육지원청 교육장<br>참조: 초등교육과장<br>제목: 2026학년도 학부모 공개수업 운영 계획 제출</p><table><tr><td class="label">수신</td><td>교육지원청 교육장(경유)</td></tr><tr><td class="label">제목</td><td>2026학년도 학부모 공개수업 운영 계획 제출</td></tr></table><div class="content"><p>1. 관련: 초등교육과-2026-0312(2026.03.01.)</p><p>2. 위 관련에 의거 2026학년도 학부모 공개수업 운영 계획을 붙임과 같이 제출합니다.</p><p>붙 임: 학부모 공개수업 운영 계획서 1부. 끝.</p></div><div class="sig">○○초등학교장<br>(직인)</div></body></html>`,
+
+  [DocType.PLAN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:15pt;text-align:center;font-weight:bold;margin:10px 0 6px}h2{font-size:13pt;margin:18px 0 8px;border-bottom:2px solid #333;padding-bottom:3px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#e8e8e8;border:1px solid #555;padding:6px 10px;font-weight:bold;text-align:center}td{border:1px solid #555;padding:6px 10px;vertical-align:top}ul{margin:4px 0;padding-left:20px}</style></head><body><h1>2026학년도 독서 교육 활성화 계획</h1><p style="text-align:center">○○초등학교</p><h2>1. 목적</h2><p>독서 교육을 통해 학생의 언어 능력과 창의적 사고력을 신장하고, 올바른 독서 습관 형성을 지원한다.</p><h2>2. 방침</h2><ul><li>학교 도서관 활용 수업과 연계하여 독서 교육 활성화</li><li>학년별 권장 도서 목록을 제공하고 독서 기록 생활화</li><li>가정과 연계한 독서 환경 조성 지원</li></ul><h2>3. 세부 추진 계획</h2><table><tr><th>구분</th><th>내용</th><th>시기</th><th>담당</th></tr><tr><td>도서관 활용 수업</td><td>학급별 월 2회 이상 운영</td><td>3~12월</td><td>담임교사</td></tr><tr><td>독서 골든벨</td><td>학년별 독서 퀴즈 대회</td><td>6월, 11월</td><td>사서교사</td></tr><tr><td>독서 주간 운영</td><td>주제별 독서 행사 및 전시</td><td>4월, 9월</td><td>교육과정부</td></tr></table><h2>4. 기대 효과</h2><p>학생의 자기 주도적 독서 습관 형성 및 언어 능력 향상</p></body></html>`,
+
+  [DocType.REPORT]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:15pt;text-align:center;font-weight:bold;margin:10px 0 6px}h2{font-size:13pt;margin:18px 0 8px;border-bottom:2px solid #333;padding-bottom:3px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#e8e8e8;border:1px solid #555;padding:6px 10px;font-weight:bold;text-align:center}td{border:1px solid #555;padding:6px 10px;vertical-align:top}ul{margin:4px 0;padding-left:20px}</style></head><body><h1>2026학년도 1학기 현장체험학습 결과 보고</h1><p style="text-align:center">○○초등학교 5학년 담임교사 홍길동</p><h2>1. 행사 개요</h2><table><tr><th width="120">항목</th><th>내용</th></tr><tr><td>일시</td><td>2026년 5월 14일(목) 08:30~17:00</td></tr><tr><td>장소</td><td>국립과천과학관 및 서울대공원</td></tr><tr><td>참가 인원</td><td>5학년 전체 120명(교직원 8명 포함)</td></tr><tr><td>목적</td><td>과학·환경 체험을 통한 탐구력 신장</td></tr></table><h2>2. 주요 활동 내용</h2><ul><li>국립과천과학관 상설전시관 관람 및 체험 활동</li><li>환경 생태원 탐방 및 생태 그림 그리기</li><li>모둠별 탐구 활동지 작성 및 발표</li></ul><h2>3. 성과 및 평가</h2><p>학생들의 과학에 대한 흥미와 호기심이 크게 증가하였으며, 모둠 협력 활동을 통해 의사소통 능력이 향상되었음. 일부 안전 사고 없이 원활히 마무리됨.</p><h2>4. 건의 사항</h2><p>이동 시 버스 대수 증편 필요(학생 이동 시간 단축)</p></body></html>`,
+
+  [DocType.PUMUI]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:15pt;text-align:center;font-weight:bold;margin:10px 0 20px}table{width:100%;border-collapse:collapse;margin-bottom:14px}th{background:#e8e8e8;border:1px solid #555;padding:7px 10px;font-weight:bold;text-align:center}td{border:1px solid #555;padding:7px 10px;vertical-align:top}td.label{background:#f5f5f5;font-weight:bold;text-align:center;width:120px}.sig{text-align:right;margin-top:30px;line-height:2}</style></head><body><h1>물품 구입 품의서</h1><table><tr><td class="label">품 의 제 목</td><td>2026학년도 1학기 수업 준비물 구입 품의</td></tr><tr><td class="label">관련 근거</td><td>2026학년도 학교 교육비 예산 편성 계획</td></tr><tr><td class="label">소요 예산</td><td>₩ 320,000원 (교육활동비)</td></tr></table><table><tr><th>No.</th><th>품명</th><th>규격</th><th>수량</th><th>단가</th><th>금액</th></tr><tr><td style="text-align:center">1</td><td>색연필 세트</td><td>12색</td><td>30세트</td><td>5,000</td><td>150,000</td></tr><tr><td style="text-align:center">2</td><td>포스터보드</td><td>B4</td><td>100장</td><td>500</td><td>50,000</td></tr><tr><td style="text-align:center">3</td><td>수채화 물감</td><td>12색</td><td>20세트</td><td>6,000</td><td>120,000</td></tr><tr><td style="text-align:center" colspan="5"><b>합 계</b></td><td><b>320,000</b></td></tr></table><p>위와 같이 물품 구입을 품의하오니 허가하여 주시기 바랍니다.</p><div class="sig">2026년 3월 15일<br>담임교사 홍 길 동 (인)<br>교감 이 영 희 (인)<br>교장 김 철 수 (인)</div></body></html>`,
+
+  [DocType.MEETING_MINUTES]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:15pt;text-align:center;font-weight:bold;margin:10px 0 20px}table{width:100%;border-collapse:collapse;margin-bottom:14px}th{background:#e8e8e8;border:1px solid #555;padding:7px 10px;font-weight:bold;text-align:center}td{border:1px solid #555;padding:7px 10px;vertical-align:top}td.label{background:#f5f5f5;font-weight:bold;text-align:center;width:100px}h2{font-size:13pt;margin:16px 0 6px;font-weight:bold}ul{margin:4px 0;padding-left:20px}</style></head><body><h1>2026학년도 1학기 제1차 교직원 협의회 회의록</h1><table><tr><td class="label">일시</td><td>2026년 3월 5일(목) 15:30~17:00</td><td class="label">장소</td><td>○○초등학교 회의실</td></tr><tr><td class="label">참석자</td><td colspan="3">교장, 교감, 교육과정부장, 담임교사 20명, 전담교사 4명 (총 26명)</td></tr></table><h2>1. 심의·의결 사항</h2><ul><li>[안건 1] 2026학년도 학교 교육계획 심의 → 원안 가결</li><li>[안건 2] 학급 배정 및 담임 배정 → 원안 가결</li></ul><h2>2. 토의 사항</h2><ul><li>2026 개정 교육과정 적용 방안 논의: 학년별 교육과정 재구성 TF팀 구성하기로 함</li><li>학부모 공개수업 일정: 4월 중 실시 예정, 세부 일정 추후 공지</li></ul><h2>3. 전달 사항</h2><ul><li>3월 학교 안전교육 주간 운영 안내(3.10.~3.14.)</li><li>학생 건강검진 일정 안내</li></ul><p style="text-align:right;margin-top:20px">기록: 교육과정부장 박민준</p></body></html>`,
+
+  [DocType.PROMOTION]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;margin:0;padding:0;background:#fff}*{box-sizing:border-box}.wrap{max-width:600px;margin:0 auto;padding:30px}.header{background:linear-gradient(135deg,#1a73e8,#0d47a1);color:#fff;padding:32px 28px;border-radius:12px;text-align:center;margin-bottom:24px}.header h1{font-size:22pt;font-weight:900;margin:0 0 8px}.header p{font-size:11pt;margin:0;opacity:.9}.section{background:#f8f9fa;border-radius:10px;padding:20px 24px;margin-bottom:16px;border-left:4px solid #1a73e8}.section h2{font-size:13pt;font-weight:bold;color:#1a73e8;margin:0 0 10px}.section ul{margin:0;padding-left:18px;line-height:1.9;font-size:11pt}.highlight{background:#e3f2fd;border-radius:8px;padding:14px 20px;text-align:center;font-size:12pt;font-weight:bold;color:#0d47a1;margin-bottom:16px}.footer{text-align:center;font-size:10pt;color:#888;margin-top:20px}</style></head><body><div class="wrap"><div class="header"><h1>○○초등학교 방과후학교 프로그램 안내</h1><p>2026학년도 1학기 수강생 모집</p></div><div class="highlight">접수 기간: 2026. 3. 4.(화) ~ 3. 7.(금) / 선착순 모집</div><div class="section"><h2>📚 개설 프로그램</h2><ul><li>영어 회화반 — 월·수 15:00~16:00</li><li>수학 사고력반 — 화·목 15:00~16:00</li><li>창의 미술반 — 금 14:00~16:00</li><li>소프트웨어 코딩반 — 수·금 15:00~16:00</li></ul></div><div class="section"><h2>📌 신청 방법</h2><ul><li>학교 홈페이지 → 방과후학교 → 수강 신청</li><li>문의: 방과후 담당교사 ☎ 02-XXX-XXXX</li></ul></div><div class="footer">○○초등학교 | 서울시 ○○구 ○○로 123</div></div></body></html>`,
+
+  [DocType.NEWSLETTER]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;margin:0;padding:0}*{box-sizing:border-box}.wrap{max-width:580px;margin:0 auto;padding:24px}.header{background:#1565c0;color:#fff;padding:22px 24px;border-radius:10px;margin-bottom:18px;text-align:center}.header .school{font-size:10pt;opacity:.85;margin-bottom:4px}.header h1{font-size:16pt;font-weight:900;margin:0 0 4px}.header .date{font-size:9pt;opacity:.8}.section{background:#f5f7ff;border:1px solid #dde3f5;border-radius:8px;padding:16px 20px;margin-bottom:14px}.section h2{font-size:12pt;font-weight:bold;color:#1565c0;margin:0 0 10px;display:flex;align-items:center;gap:6px}.section p,.section ul{font-size:10.5pt;line-height:1.85;margin:0;padding-left:0}.section ul{padding-left:18px}.footer{text-align:center;font-size:9pt;color:#999;margin-top:16px;border-top:1px solid #ddd;padding-top:12px}</style></head><body><div class="wrap"><div class="header"><div class="school">○○초등학교 3학년 3반</div><h1>3월 학급 가정통신문</h1><div class="date">2026년 3월 1일</div></div><div class="section"><h2>🌸 새 학년을 시작하며</h2><p>안녕하세요, 학부모님. 2026학년도 3학년 3반 담임교사 홍길동입니다. 우리 반 학생들이 건강하고 즐겁게 학교생활을 할 수 있도록 최선을 다하겠습니다.</p></div><div class="section"><h2>📅 3월 주요 일정</h2><ul><li>3. 2.(월): 입학식·시업식</li><li>3. 5.(목): 학급 임원 선출</li><li>3. 10.~14.: 학교 안전교육 주간</li><li>3. 20.(금): 학부모 상담 주간 시작</li></ul></div><div class="section"><h2>📌 가정에서 지도해 주세요</h2><ul><li>학용품에 이름을 꼭 적어주세요.</li><li>등교 시간: 오전 8:30~8:50</li><li>알림장을 매일 확인해 주시기 바랍니다.</li></ul></div><div class="footer">○○초등학교 ☎ 02-XXX-XXXX | 담임 홍길동</div></div></body></html>`,
+
+  [DocType.MESSAGE]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;margin:30px;color:#111;line-height:1.9;font-size:12pt}.bubble{background:#f0f0f0;border-radius:14px;padding:18px 22px;max-width:400px;margin:10px auto;position:relative}.bubble::before{content:'문자 메시지 예시';display:block;font-size:9pt;color:#888;margin-bottom:8px}.title{font-weight:bold;color:#1a237e;margin-bottom:8px}ul{margin:8px 0;padding-left:18px}p{margin:6px 0}.note{font-size:9pt;color:#666;text-align:center;margin-top:20px}</style></head><body><div class="bubble"><div class="title">[○○초등학교] 안내 말씀</div><p>안녕하세요, 학부모님. 3학년 3반 담임 홍길동입니다.</p><p>내일(3/20) 학부모 참관 수업이 진행됩니다.</p><ul><li>일시: 3. 20.(목) 10:00~11:00</li><li>장소: 3학년 3반 교실</li></ul><p>바쁘시더라도 참석해 주시면 감사하겠습니다.</p><p>문의: 02-XXX-XXXX</p></div><div class="note">SMS/LMS 형식 예시 — 실제 발송 시 문자 앱을 이용하세요.</div></body></html>`,
+
+  [DocType.GONGGO]: `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:'맑은 고딕','Malgun Gothic',sans-serif;font-size:12pt;margin:40px;color:#111;line-height:1.8}h1{font-size:16pt;text-align:center;font-weight:bold;margin:10px 0 4px}h2{font-size:13pt;text-align:center;font-weight:normal;margin:0 0 4px;color:#333}.num{text-align:center;color:#555;font-size:10pt;margin-bottom:24px}hr{border:none;border-top:2px solid #222;margin:16px 0}h3{font-size:13pt;margin:14px 0 6px}ul{margin:4px 0;padding-left:20px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#e8e8e8;border:1px solid #555;padding:6px 10px;font-weight:bold;text-align:center}td{border:1px solid #555;padding:6px 10px;vertical-align:top;text-align:center}.sig{text-align:center;margin-top:40px;font-size:12pt;font-weight:bold;line-height:2.2}</style></head><body><h1>공 고</h1><h2>2026학년도 학생회 임원 선거 공고</h2><div class="num">제2026-001호</div><hr><h3>1. 선거 일정</h3><table><tr><th>구분</th><th>일시</th><th>장소</th></tr><tr><td>후보자 등록</td><td>2026. 3. 10.(화) ~ 3. 11.(수)</td><td>교무실</td></tr><tr><td>선거 운동</td><td>2026. 3. 13.(금) ~ 3. 17.(화)</td><td>학교 내</td></tr><tr><td>투표</td><td>2026. 3. 19.(목) 10:00~12:00</td><td>강당</td></tr><tr><td>개표 및 당선 발표</td><td>2026. 3. 19.(목) 13:00</td><td>방송</td></tr></table><h3>2. 모집 임원</h3><ul><li>회장: 1명(5~6학년 중 1명)</li><li>부회장: 2명(학년별 1명)</li></ul><h3>3. 지원 자격</h3><ul><li>품행이 단정하고 학교생활에 모범이 되는 학생</li><li>결석·징계 이력이 없는 학생</li></ul><div class="sig">2026년 3월 1일<br>○○초등학교장</div></body></html>`,
+};
+
 // ─── SchoolDocPanel ──────────────────────────────────────────────────────────
 
 interface SchoolDocPanelProps {
@@ -843,19 +865,41 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               hwpxTemplate={hwpxTemplateFile}
             />
           ) : (
-            <div className="flex-1 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col items-center justify-center text-center p-8">
-              <div className="bg-blue-50 p-4 rounded-full mb-4">
-                <FileText className="w-10 h-10 text-blue-400" />
-              </div>
-              <h3 className="text-base font-semibold text-gray-600 mb-2">
-                {isGenerating ? '문서를 생성하는 중...' : '문서를 생성해 주세요'}
-              </h3>
+            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
               {isGenerating ? (
-                <p className="text-sm text-gray-400 max-w-xs">{loadingMessage}</p>
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                  <svg className="animate-spin w-8 h-8 text-blue-500 mb-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <p className="text-sm font-semibold text-gray-600 mb-1">문서를 생성하는 중...</p>
+                  <p className="text-sm text-gray-400">{loadingMessage}</p>
+                </div>
+              ) : EXAMPLE_DOCS[activeTab] ? (
+                <>
+                  <div className="shrink-0 bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wide">예시 문서</span>
+                    <span className="text-xs text-blue-500">정보를 입력하고 생성하면 아래와 유사한 형식으로 만들어집니다.</span>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <iframe
+                      srcDoc={EXAMPLE_DOCS[activeTab]}
+                      sandbox=""
+                      className="w-full h-full border-0"
+                      title="예시 문서"
+                    />
+                  </div>
+                </>
               ) : (
-                <p className="text-sm text-gray-400 max-w-xs">
-                  왼쪽 패널에서 탭을 선택하고 필요한 정보를 입력한 후<br />생성 버튼을 눌러주세요.
-                </p>
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                  <div className="bg-blue-50 p-4 rounded-full mb-4">
+                    <FileText className="w-10 h-10 text-blue-400" />
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-600 mb-2">문서를 생성해 주세요</h3>
+                  <p className="text-sm text-gray-400 max-w-xs">
+                    왼쪽 패널에서 필요한 정보를 입력한 후<br />생성 버튼을 눌러주세요.
+                  </p>
+                </div>
               )}
             </div>
           )}

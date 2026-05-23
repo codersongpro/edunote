@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
-  Download, FileType, BookOpen, Monitor,
+  Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -11,7 +11,8 @@ import {
   LessonSlide, LessonParams,
 } from '../services/geminiService';
 import { LOADING_MESSAGES } from '../constants';
-import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade, getAchievementLevels } from '../constants/curriculum2022';
+import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
+import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
 
@@ -36,31 +37,51 @@ const extractHtml = (raw: string): string => {
 const LessonMaterialGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_MATERIAL);
 
-  const defaultGrade = CURRICULUM_GRADES[4]; // 초등 5학년
+  const defaultGrade = CURRICULUM_GRADES[4];
   const [selectedGradeLabel, setSelectedGradeLabel] = useState(defaultGrade.label);
   const [subject, setSubject] = useState(defaultGrade.subjects[0].name);
-  const [achievementLevel, setAchievementLevel] = useState(defaultGrade.subjects[0].achievementLevels[2].code); // C 기본
+  const [selectedStandardCode, setSelectedStandardCode] = useState('');
+  const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set(['01']));
   const [unit, setUnit] = useState('');
   const [topic, setTopic] = useState('');
   const [details, setDetails] = useState('');
   const [contentType, setContentType] = useState<LessonContentType>('SLIDE');
 
   const currentSubjects = getSubjectsForGrade(selectedGradeLabel);
-  const currentAchievementLevels = getAchievementLevels(selectedGradeLabel, subject);
+  const currentStandards = getStandards(selectedGradeLabel, subject);
+
+  const standardsByDomain = currentStandards.reduce((acc, s) => {
+    if (!acc[s.domain]) acc[s.domain] = [];
+    acc[s.domain].push(s);
+    return acc;
+  }, {} as Record<string, AchievementStandard[]>);
+  const domains = Object.keys(standardsByDomain).sort();
+
+  const selectedStandard = currentStandards.find(s => s.code === selectedStandardCode) ?? null;
 
   const handleGradeChange = (newGrade: string) => {
     setSelectedGradeLabel(newGrade);
     const subs = getSubjectsForGrade(newGrade);
     const firstSub = subs[0]?.name ?? '';
     setSubject(firstSub);
-    setAchievementLevel(subs[0]?.achievementLevels[2]?.code ?? 'C');
+    setSelectedStandardCode('');
+    setExpandedDomains(new Set(['01']));
   };
 
   const handleSubjectChange = (newSubject: string) => {
     setSubject(newSubject);
-    const levels = getAchievementLevels(selectedGradeLabel, newSubject);
-    setAchievementLevel(levels[2]?.code ?? levels[0]?.code ?? 'C');
+    setSelectedStandardCode('');
+    setExpandedDomains(new Set(['01']));
   };
+
+  const toggleDomain = (domain: string) => {
+    setExpandedDomains(prev => {
+      const next = new Set(prev);
+      if (next.has(domain)) next.delete(domain); else next.add(domain);
+      return next;
+    });
+  };
+
   const [pageCount, setPageCount] = useState(6);
   const [questionCount, setQuestionCount] = useState(5);
   const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
@@ -90,6 +111,18 @@ const LessonMaterialGenerator: React.FC = () => {
     return () => { if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current); };
   }, [isGenerating]);
 
+  const handleLoadStudentNames = async () => {
+    const names = await window.electronAPI.getConfig('studentNames');
+    if (names && typeof names === 'string' && names.trim()) {
+      const nameList = names.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join(', ');
+      const tag = `[우리반 학생: ${nameList}]`;
+      setDetails(prev => {
+        if (prev.includes('[우리반 학생:')) return prev.replace(/\[우리반 학생:[^\]]*\]/, tag);
+        return prev ? `${tag}\n${prev}` : tag;
+      });
+    }
+  };
+
   const handleGenerate = async () => {
     if (!topic.trim()) { setError('주제/수업명을 입력해주세요.'); return; }
     setError(null);
@@ -99,10 +132,12 @@ const LessonMaterialGenerator: React.FC = () => {
     setPlanContent('');
     startGeneration();
 
-    const achievementDesc = currentAchievementLevels.find(l => l.code === achievementLevel)?.description ?? '';
+    const standardText = selectedStandard
+      ? `[성취기준: ${selectedStandard.code} ${selectedStandard.text}]`
+      : '';
     const params: LessonParams = {
       grade: selectedGradeLabel, subject, unit, topic,
-      details: `[성취수준: ${achievementLevel} - ${achievementDesc}]${details ? '\n' + details : ''}`
+      details: `${standardText}${standardText && details ? '\n' : ''}${details}`,
     };
 
     try {
@@ -186,17 +221,63 @@ const LessonMaterialGenerator: React.FC = () => {
               </div>
             </div>
 
-            {/* Achievement Level */}
+            {/* Achievement Standards */}
             <div>
-              <label className={labelClass}>성취수준</label>
-              <select className={inputClass} value={achievementLevel} onChange={e => setAchievementLevel(e.target.value)}>
-                {currentAchievementLevels.map(l => (
-                  <option key={l.code} value={l.code}>{l.label}</option>
-                ))}
-              </select>
-              {currentAchievementLevels.find(l => l.code === achievementLevel) && (
-                <p className="mt-1 text-[11px] text-gray-400 leading-snug">
-                  {currentAchievementLevels.find(l => l.code === achievementLevel)!.description}
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelClass}>성취기준 (2022 개정)</label>
+                {selectedStandard && (
+                  <button
+                    onClick={() => setSelectedStandardCode('')}
+                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    선택 해제
+                  </button>
+                )}
+              </div>
+
+              {currentStandards.length > 0 ? (
+                <div className="border border-gray-200 rounded-md overflow-hidden">
+                  {selectedStandard && (
+                    <div className="bg-amber-50 border-b border-amber-200 px-3 py-2">
+                      <span className="text-[10px] font-bold text-amber-700 font-mono block">{selectedStandard.code}</span>
+                      <p className="text-[11px] text-amber-800 leading-snug mt-0.5">{selectedStandard.text}</p>
+                    </div>
+                  )}
+                  <div className="max-h-[220px] overflow-y-auto divide-y divide-gray-100">
+                    {domains.map(domain => (
+                      <div key={domain}>
+                        <button
+                          onClick={() => toggleDomain(domain)}
+                          className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                        >
+                          {expandedDomains.has(domain)
+                            ? <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
+                            : <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                          }
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">영역 {domain}</span>
+                          <span className="text-[10px] text-gray-400 ml-auto">{standardsByDomain[domain].length}개</span>
+                        </button>
+                        {expandedDomains.has(domain) && standardsByDomain[domain].map(std => (
+                          <button
+                            key={std.code}
+                            onClick={() => setSelectedStandardCode(prev => prev === std.code ? '' : std.code)}
+                            className={`w-full text-left px-3 py-2 border-t border-gray-50 hover:bg-amber-50 transition-colors ${
+                              selectedStandardCode === std.code ? 'bg-amber-100' : ''
+                            }`}
+                          >
+                            <span className="text-[10px] font-bold text-amber-600 font-mono block">{std.code}</span>
+                            <span className="text-[11px] text-gray-700 leading-snug">{std.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-400 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                  {selectedGradeLabel.includes('고등학교')
+                    ? '고등학교 성취기준은 추가 요청사항란에 직접 입력해 주세요.'
+                    : '해당 학년/교과의 성취기준을 찾을 수 없습니다.'}
                 </p>
               )}
             </div>
@@ -277,7 +358,17 @@ const LessonMaterialGenerator: React.FC = () => {
             )}
 
             <div>
-              <label className={labelClass}>추가 요청사항 (선택)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelClass}>추가 요청사항 (선택)</label>
+                <button
+                  onClick={handleLoadStudentNames}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded transition-colors"
+                  title="설정에서 저장한 우리 반 학생 이름을 자동으로 불러옵니다"
+                >
+                  <Users className="w-3 h-3" />
+                  우리반 이름 불러오기
+                </button>
+              </div>
               <textarea className={`${inputClass} min-h-[80px] resize-none`} placeholder="특이사항, 강조할 내용, 제외할 내용 등을 자유롭게 입력하세요." value={details} onChange={e => setDetails(e.target.value)} />
             </div>
 
@@ -406,7 +497,7 @@ const LessonMaterialGenerator: React.FC = () => {
                 <p className="text-sm text-gray-400 max-w-xs">{loadingMessage}</p>
               ) : (
                 <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
-                  왼쪽에서 학년·교과·주제와 자료 유형을 선택한 후<br />생성 버튼을 눌러주세요.
+                  왼쪽에서 학년·교과·성취기준·주제와 자료 유형을 선택한 후<br />생성 버튼을 눌러주세요.
                 </p>
               )}
             </div>
