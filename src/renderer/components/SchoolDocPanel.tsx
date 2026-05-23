@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon } from 'lucide-react';
-import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, GongmunComplexity, PumuiType } from '../types';
+import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 // ─── SchoolDocPanel ──────────────────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ interface SchoolDocPanelProps {
 }
 
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
 
   useEffect(() => {
@@ -230,6 +232,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const handleGenerate = async () => {
     setError(null);
     setIsGenerating(true);
+    startGeneration();
     try {
       let result: string;
       if (activeTab === DocType.GONGGO) {
@@ -269,6 +272,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
+      endGeneration();
     }
   };
 

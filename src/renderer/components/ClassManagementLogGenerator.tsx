@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { generateClassManagementLog } from '../services/geminiService';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { AppMode } from '../types';
 
 const ClassManagementLogGenerator: React.FC = () => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CLASS_LOG);
   const [week, setWeek] = useState('');
   const [dateRange, setDateRange] = useState('');
   const [grade, setGrade] = useState('');
@@ -21,6 +24,7 @@ const ClassManagementLogGenerator: React.FC = () => {
     setError('');
     setResult('');
     setIsLoading(true);
+    startGeneration();
     try {
       const generated = await generateClassManagementLog({
         week,
@@ -35,6 +39,7 @@ const ClassManagementLogGenerator: React.FC = () => {
       setError(err?.message || '생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
+      endGeneration();
     }
   };
 

@@ -232,6 +232,8 @@ export interface GlobalStateContextType {
   setIsGlobalGenerating: (v: boolean) => void;
   globalProgress: number;
   setGlobalProgress: (v: number) => void;
+  generatingModes: Map<string, number>;       // AppMode string → progress (-1=indeterminate, 0-100)
+  setGeneratingMode: (mode: string, progress: number | null) => void;  // null = done
 }
 
 // ─── School Doc Types ─────────────────────────────────────────────

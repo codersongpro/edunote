@@ -65,6 +65,20 @@ const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
+  const setGeneratingMode = (modeKey: string, progress: number | null) => {
+    setGeneratingModes(prev => {
+      const next = new Map(prev);
+      if (progress === null) next.delete(modeKey);
+      else next.set(modeKey, progress);
+      return next;
+    });
+  };
+  const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
+  const goTo = (newMode: AppMode) => {
+    setMode(newMode);
+    setMountedModes(prev => new Set([...prev, newMode]));
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -106,7 +120,7 @@ const App: React.FC = () => {
       setState(prev => ({ ...prev, _pendingMode: newMode } as any));
       return;
     }
-    setMode(newMode);
+    goTo(newMode);
   };
 
   const handleSchoolLevelSelect = (level: SchoolLevel) => {
@@ -115,15 +129,15 @@ const App: React.FC = () => {
     setShowSchoolLevelModal(false);
     const pendingMode = (state as any)._pendingMode;
     if (pendingMode) {
-      setMode(pendingMode);
+      goTo(pendingMode);
       setState(prev => { const s = { ...prev }; delete (s as any)._pendingMode; return s; });
     } else {
-      setMode(AppMode.RECORD_CHATBOT);
+      goTo(AppMode.RECORD_CHATBOT);
     }
   };
 
   const handleSchoolDocNav = (docType: DocType) => {
-    setMode(AppMode.SCHOOL_DOC);
+    goTo(AppMode.SCHOOL_DOC);
     setActiveDocType(docType);
     setSchoolDocSubOpen(true);
   };
@@ -131,17 +145,17 @@ const App: React.FC = () => {
   const handleSchoolDocParent = () => {
     if (!schoolDocSubOpen) {
       setSchoolDocSubOpen(true);
-      setMode(AppMode.SCHOOL_DOC);
+      goTo(AppMode.SCHOOL_DOC);
     } else {
       setSchoolDocSubOpen(false);
     }
   };
 
   const handleHomeNavigate = (target: 'settings' | 'student' | 'admin' | 'guide') => {
-    if (target === 'settings') setMode(AppMode.SETTINGS);
-    else if (target === 'guide') setMode(AppMode.USAGE_GUIDE);
+    if (target === 'settings') goTo(AppMode.SETTINGS);
+    else if (target === 'guide') goTo(AppMode.USAGE_GUIDE);
     else if (target === 'student') handleModeChange(AppMode.RECORD_CHATBOT);
-    else if (target === 'admin') { setMode(AppMode.EDUCATION_QA); setAdminSectionOpen(true); }
+    else if (target === 'admin') { goTo(AppMode.EDUCATION_QA); setAdminSectionOpen(true); }
   };
 
   const studentNavClass = (m: AppMode) =>
@@ -192,8 +206,8 @@ const App: React.FC = () => {
       ? 'from-teal-400 via-teal-500 to-emerald-500'
       : 'from-transparent to-transparent';
 
-  const renderContent = () => {
-    switch (mode) {
+  const renderMode = (m: AppMode): React.ReactNode => {
+    switch (m) {
       case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
       case AppMode.USAGE_GUIDE: return <UsageGuideScreen />;
       case AppMode.RECORD_CHATBOT: return <RecordChatbot schoolLevel={schoolLevel} />;
@@ -224,7 +238,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
@@ -346,6 +360,9 @@ const App: React.FC = () => {
                     <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
+                      {generatingModes.has(m) && mode !== m && (
+                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse shrink-0" />
+                      )}
                     </button>
                   ))}
                   {hasEnteredStudentSection && (
@@ -379,14 +396,20 @@ const App: React.FC = () => {
               </button>
               {adminSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  <button onClick={() => setMode(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
+                  <button onClick={() => goTo(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
                     <GraduationCap className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">교육AI챗봇</span>
+                    {generatingModes.has(AppMode.EDUCATION_QA) && mode !== AppMode.EDUCATION_QA && (
+                      <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                    )}
                   </button>
                   <div>
                     <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
                       <FileText className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">공문서 작성기</span>
+                      {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
+                        <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                      )}
                       {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
                     </button>
                     {schoolDocSubOpen && (
@@ -401,9 +424,12 @@ const App: React.FC = () => {
                     )}
                   </div>
                   {adminMenuItems.map(({ mode: m, icon: Icon, label }) => (
-                    <button key={m} onClick={() => setMode(m)} className={adminNavClass(m)}>
+                    <button key={m} onClick={() => goTo(m)} className={adminNavClass(m)}>
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
+                      {generatingModes.has(m) && mode !== m && (
+                        <span className="w-2 h-2 rounded-full bg-teal-300 animate-pulse shrink-0" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -418,7 +444,7 @@ const App: React.FC = () => {
               </div>
             )}
             <button
-              onClick={() => setMode(AppMode.USAGE_GUIDE)}
+              onClick={() => goTo(AppMode.USAGE_GUIDE)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
                 mode === AppMode.USAGE_GUIDE
                   ? 'bg-purple-600 text-white font-semibold'
@@ -429,7 +455,7 @@ const App: React.FC = () => {
               <span>사용 방법</span>
             </button>
             <button
-              onClick={() => setMode(AppMode.SETTINGS)}
+              onClick={() => goTo(AppMode.SETTINGS)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
                 mode === AppMode.SETTINGS
                   ? 'bg-gray-700 dark:bg-gray-600 text-white font-semibold'
@@ -444,7 +470,20 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-hidden flex flex-col">
           <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
-          {renderContent()}
+          {/* Generation progress bar */}
+          {generatingModes.has(mode) && (
+            generatingModes.get(mode) === -1
+              ? <div className="h-[2px] shrink-0 bg-blue-400 animate-pulse" />
+              : <div className="h-[2px] shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                  <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${generatingModes.get(mode)}%` }} />
+                </div>
+          )}
+          {/* Lazy-mounted views */}
+          {(Array.from(mountedModes) as AppMode[]).map(m => (
+            <div key={m} className={m === mode ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
+              {renderMode(m)}
+            </div>
+          ))}
         </main>
 
       </div>

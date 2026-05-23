@@ -1,15 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SchoolLevel, ChatMessage } from '../types';
+import { SchoolLevel, ChatMessage, AppMode } from '../types';
 import { askRecordChatbot } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { useGlobalState } from '../GlobalStateContext';
 import { Bot, Trash2 } from 'lucide-react';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
   schoolLevel: SchoolLevel;
 }
 
 const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.RECORD_CHATBOT);
   const { state, setState } = useGlobalState();
   const messages = state.recordChatbot.messages;
 
@@ -51,6 +53,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+    startGeneration();
 
     try {
       const answer = await askRecordChatbot(schoolLevel, history, userMsg.text);
@@ -63,6 +66,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
       }]);
     } finally {
       setIsLoading(false);
+      endGeneration();
     }
   };
 

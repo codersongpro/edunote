@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateLessonObservation } from '../services/geminiService';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { AppMode } from '../types';
 
 const LessonObservationGenerator: React.FC = () => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_OBSERVATION);
   const [date, setDate] = useState('');
   const [subject, setSubject] = useState('');
   const [unit, setUnit] = useState('');
@@ -28,6 +31,7 @@ const LessonObservationGenerator: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setResult('');
+    startGeneration();
     try {
       const output = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName });
       setResult(output);
@@ -35,6 +39,7 @@ const LessonObservationGenerator: React.FC = () => {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
+      endGeneration();
     }
   };
 

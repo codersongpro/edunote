@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { MessageCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateCounselingLog } from '../services/geminiService';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { AppMode } from '../types';
 
 const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심리상담', '기타'];
 
 const CounselingLogGenerator: React.FC = () => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.COUNSELING_LOG);
   const [date, setDate] = useState('');
   const [counselingType, setCounselingType] = useState('생활상담');
   const [participants, setParticipants] = useState('');
@@ -24,6 +27,7 @@ const CounselingLogGenerator: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setResult('');
+    startGeneration();
     try {
       const output = await generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan });
       setResult(output);
@@ -31,6 +35,7 @@ const CounselingLogGenerator: React.FC = () => {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
+      endGeneration();
     }
   };
 

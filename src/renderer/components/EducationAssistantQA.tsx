@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../types';
+import { ChatMessage, AppMode } from '../types';
 import { askEducationQuestion } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { GraduationCap, Trash2 } from 'lucide-react';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 const EducationAssistantQA: React.FC = () => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.EDUCATION_QA);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +37,7 @@ const EducationAssistantQA: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
+    startGeneration();
 
     try {
       const answer = await askEducationQuestion(userMsg.text, history);
@@ -47,6 +50,7 @@ const EducationAssistantQA: React.FC = () => {
       }]);
     } finally {
       setIsLoading(false);
+      endGeneration();
     }
   };
 
