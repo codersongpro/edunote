@@ -135,17 +135,26 @@ const StudentMemoBoard: React.FC = () => {
       </div>
 
       {/* Memo Grid */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        className="flex-1 overflow-y-auto p-4"
+        onDoubleClick={(e) => { if (e.target === e.currentTarget) handleAdd(); }}
+      >
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
+          <div
+            className="flex flex-col items-center justify-center h-full text-center"
+            onDoubleClick={handleAdd}
+          >
             <div className="bg-white p-6 rounded-full shadow-sm mb-4">
               <StickyNote className="w-10 h-10 text-gray-300" />
             </div>
             <h3 className="text-gray-500 font-medium mb-1">메모가 없습니다</h3>
-            <p className="text-sm text-gray-400">상단의 "메모 추가" 버튼으로 첫 메모를 작성하세요.</p>
+            <p className="text-sm text-gray-400">빈 공간을 더블클릭하면 바로 메모를 추가할 수 있습니다.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+            onDoubleClick={(e) => { if (e.target === e.currentTarget) handleAdd(); }}
+          >
             {filtered.map(memo => (
               <div
                 key={memo.id}

@@ -144,11 +144,11 @@ const UsageGuideScreen: React.FC = () => {
 
         {/* 설정 안내 */}
         <Section title="설정에서 내 정보를 입력하세요" icon={<Key className="w-4 h-4 text-gray-500" />}>
-          <p className="text-xs leading-relaxed">설정 화면에서 <strong>이름, 소속기관, 학교 이름, 담당 학년/반, 우리반 학생 이름</strong>을 입력해두면 AI가 생성하는 결과에 반영됩니다.</p>
+          <p className="text-xs leading-relaxed">설정 화면에서 <strong>이름, 소속기관, 담당 학년/반, 우리반 학생 이름</strong>을 입력해두면 AI가 생성하는 결과에 반영됩니다.</p>
           <ul className="text-xs space-y-1.5 ml-4 text-gray-600 dark:text-gray-400 mt-2">
             <li>• <strong>담당 학년/반:</strong> 수업관찰기록, 학급경영일지에 자동 입력됨</li>
             <li>• <strong>이름:</strong> 수업관찰기록 교사 필드에 자동 입력됨</li>
-            <li>• <strong>우리반 학생 이름:</strong> 개인정보 보호를 위해 이니셜 사용 권장</li>
+            <li>• <strong>우리반 학생 이름:</strong> 이름을 붙여넣으면 번호가 자동 부여됨</li>
           </ul>
         </Section>
 

@@ -125,7 +125,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p className="text-sm text-gray-600 font-medium group-hover:text-blue-600">
             파일 업로드
           </p>
-          <span className="text-xs text-gray-400 mt-1">참고 자료 및 양식 (드래그 가능)</span>
+          <span className="text-xs text-gray-400 mt-1">드래그 가능 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
         </div>
         <input 
           type="file" 

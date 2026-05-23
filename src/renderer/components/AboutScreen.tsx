@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, Mail, ExternalLink, Info, Bot, FileText, Presentation, Heart } from 'lucide-react';
+import { BookOpen, Mail, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield } from 'lucide-react';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -120,6 +120,30 @@ const AboutScreen: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
+        </div>
+
+        {/* Usage precautions */}
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-base font-bold text-amber-800 dark:text-amber-200 flex items-center gap-2 mb-4">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            사용 시 주의사항
+          </h2>
+          <div className="space-y-3">
+            {[
+              { icon: '①', title: '반드시 검토 후 사용', desc: 'AI가 생성한 내용은 사실과 다를 수 있습니다. 담당자가 직접 검토·수정 후 사용해 주세요.' },
+              { icon: '②', title: '개인정보 입력 금지', desc: '학생·학부모·교직원의 실명, 연락처 등 민감 정보를 입력하지 마세요. 이니셜 또는 가명을 사용하세요.' },
+              { icon: '③', title: '최종 책임은 사용자에게', desc: '생성된 문서의 정확성과 법적 책임은 사용자 본인에게 있습니다.' },
+              { icon: '④', title: '수업관찰·상담·학급경영 기록', desc: '교사의 직접 기록이 최우선입니다. AI는 형식 정리와 표현 보완을 보조할 뿐입니다.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={icon} className="flex gap-3 items-start">
+                <span className="text-sm font-black text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">{icon}</span>
+                <div>
+                  <p className="text-sm font-bold text-amber-800 dark:text-amber-200">{title}</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* License */}

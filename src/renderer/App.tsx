@@ -112,7 +112,7 @@ const App: React.FC = () => {
         setHasApiKey(hn as boolean);
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
-        const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v2');
+        const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v3');
         if (!disclaimerAccepted) setShowDisclaimerModal(true);
         if (localStorage.getItem('edunote_concurrent_v1')) concurrentNoticeDismissed.current = true;
         setMode(AppMode.HOME);
@@ -126,7 +126,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleAcceptDisclaimer = () => {
-    localStorage.setItem('edunote_disclaimer_v2', 'accepted');
+    localStorage.setItem('edunote_disclaimer_v3', 'accepted');
     setShowDisclaimerModal(false);
   };
 
