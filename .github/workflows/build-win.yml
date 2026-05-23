@@ -48,7 +48,7 @@ jobs:
             ## 에듀노트 v${{ steps.pkg.outputs.version }}
 
             ### 설치 방법
-            1. 아래 Assets에서 `에듀노트_*.exe` 파일을 다운로드합니다.
+            1. 아래 Assets에서 `edunote_*.exe` 파일을 다운로드합니다.
             2. 다운로드한 EXE 파일을 실행합니다. (설치 불필요)
             3. 설정에서 Gemini API 키를 입력하면 바로 사용 가능합니다.
 

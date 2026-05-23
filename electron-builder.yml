@@ -14,7 +14,7 @@ win:
     - target: portable
       arch:
         - x64
-  artifactName: 에듀노트_${version}.exe
+  artifactName: edunote_${version}.exe
 
 nsis:
   oneClick: false
@@ -22,4 +22,4 @@ nsis:
   createDesktopShortcut: true
 
 portable:
-  artifactName: 에듀노트_${version}_portable.exe
+  artifactName: edunote_${version}_portable.exe
