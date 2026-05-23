@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppMode, SchoolLevel, DocType } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { GlobalState } from './types';
@@ -14,6 +14,7 @@ import CounselingLogGenerator from './components/CounselingLogGenerator';
 import ClassManagementLogGenerator from './components/ClassManagementLogGenerator';
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
+import LessonMaterialGenerator from './components/LessonMaterialGenerator';
 import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
@@ -22,13 +23,15 @@ import {
   Bot, BookOpen, User2, Dumbbell, Palette,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
-  Home, AlertTriangle, BookMarked,
+  Home, AlertTriangle, BookMarked, Presentation, Info, X,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
   AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR,
 ];
+
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -63,6 +66,9 @@ const App: React.FC = () => {
   const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
+  const [lessonSectionOpen, setLessonSectionOpen] = useState(true);
+  const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
@@ -78,6 +84,16 @@ const App: React.FC = () => {
   const goTo = (newMode: AppMode) => {
     setMode(newMode);
     setMountedModes(prev => new Set([...prev, newMode]));
+    setGeneratingModes(prev => {
+      if (prev.size > 0 && !concurrentNoticeDismissed.current) setShowConcurrentNotice(true);
+      return prev;
+    });
+  };
+
+  const handleDismissConcurrentNotice = () => {
+    localStorage.setItem('edunote_concurrent_v1', 'seen');
+    concurrentNoticeDismissed.current = true;
+    setShowConcurrentNotice(false);
   };
 
   useEffect(() => {
@@ -93,6 +109,7 @@ const App: React.FC = () => {
         setDarkMode(!!(dm as boolean));
         const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v2');
         if (!disclaimerAccepted) setShowDisclaimerModal(true);
+        if (localStorage.getItem('edunote_concurrent_v1')) concurrentNoticeDismissed.current = true;
         setMode(AppMode.HOME);
       } catch {
         setMode(AppMode.HOME);
@@ -205,6 +222,8 @@ const App: React.FC = () => {
       ? 'from-blue-400 via-blue-500 to-indigo-500'
       : ADMIN_MODES.includes(mode)
       ? 'from-teal-400 via-teal-500 to-emerald-500'
+      : LESSON_AI_MODES.includes(mode)
+      ? 'from-amber-400 via-amber-500 to-orange-500'
       : 'from-transparent to-transparent';
 
   const renderMode = (m: AppMode): React.ReactNode => {
@@ -222,6 +241,7 @@ const App: React.FC = () => {
       case AppMode.COUNSELING_LOG: return <CounselingLogGenerator />;
       case AppMode.CLASS_LOG: return <ClassManagementLogGenerator />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
+      case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       default: return null;
     }
@@ -273,6 +293,34 @@ const App: React.FC = () => {
               >
                 확인했습니다. 시작하기
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Concurrent generation notice */}
+        {showConcurrentNotice && (
+          <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-full max-w-md px-4">
+            <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl shadow-lg p-4 flex gap-3 items-start">
+              <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg shrink-0">
+                <Info className="w-4 h-4 text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-0.5">동시 생성 안내</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                  다른 메뉴에서 생성 중에도 이 화면을 계속 사용할 수 있습니다.
+                  무료 API는 <strong>분당 15회 요청 제한</strong>이 있어 <strong>3~4개 동시 생성</strong>이 현실적인 안전선입니다.
+                </p>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button
+                  onClick={handleDismissConcurrentNotice}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors"
+                >확인</button>
+                <button
+                  onClick={() => setShowConcurrentNotice(false)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition-colors"
+                ><X className="w-3.5 h-3.5" /></button>
+              </div>
             </div>
           </div>
         )}
@@ -449,6 +497,44 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+
+            <div className="h-1.5" />
+
+            {/* ── 수업 AI ── */}
+            <div className="rounded-xl overflow-hidden border border-amber-100 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20">
+              <button
+                onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50/80 dark:hover:bg-amber-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
+                    <Presentation className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업 AI</span>
+                </div>
+                {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
+              </button>
+              {lessonSectionOpen && (
+                <div className="px-1.5 pb-1.5 space-y-0.5">
+                  <button
+                    onClick={() => goTo(AppMode.LESSON_MATERIAL)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.LESSON_MATERIAL
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                    }`}
+                  >
+                    <Presentation className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">수업자료 생성</span>
+                    {generatingModes.has(AppMode.LESSON_MATERIAL) && mode !== AppMode.LESSON_MATERIAL && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
+                        {generatingModes.get(AppMode.LESSON_MATERIAL)}%
+                      </span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
@@ -497,6 +583,8 @@ const App: React.FC = () => {
                         ? 'from-blue-400 to-blue-600'
                         : ADMIN_MODES.includes(mode)
                         ? 'from-teal-400 to-teal-600'
+                        : LESSON_AI_MODES.includes(mode)
+                        ? 'from-amber-400 to-amber-600'
                         : 'from-gray-400 to-gray-500'
                     }`}
                     style={{ width: `${pct}%` }}

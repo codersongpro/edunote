@@ -10,11 +10,13 @@ interface GeneratedDisplayProps {
   hwpxData?: HwpxTemplateData;
   hwpxFillData?: any[] | null;
   hwpxTemplate?: File;
+  title?: string;
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
+  const [hwpxGeneralDownloading, setHwpxGeneralDownloading] = React.useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Sync content prop to the editable div whenever it changes (new generation)
@@ -100,16 +102,30 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 
   const getFormattedFilename = (extension: string): string => {
     const now = new Date();
-    const dateStr = 
-      now.getFullYear().toString() + 
-      (now.getMonth() + 1).toString().padStart(2, '0') + 
+    const dateStr =
+      now.getFullYear().toString() +
+      (now.getMonth() + 1).toString().padStart(2, '0') +
       now.getDate().toString().padStart(2, '0');
-    
-    let title = hwpxData?.["문서제목"] || "draft_document";
-    // Sanitize title
-    title = title.replace(/[\\/:*?"<>|]/g, "_");
-    
-    return `${title}(${dateStr}).${extension}`;
+
+    let docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || "draft_document";
+    docTitle = docTitle.replace(/[\\/:*?"<>|]/g, "_");
+
+    return `${docTitle}(${dateStr}).${extension}`;
+  };
+
+  const handleDownloadHwpxGeneral = async () => {
+    if (!content) return;
+    setHwpxGeneralDownloading(true);
+    try {
+      const plainText = contentRef.current?.innerText || content.replace(/<[^>]*>?/gm, '');
+      const docTitle = hwpxData?.["문서제목"] || title || plainText.split('\n')[0]?.slice(0, 30) || '문서';
+      await window.electronAPI.saveHwpx('general', plainText, { title: docTitle });
+    } catch (error) {
+      console.error('Failed to save HWPX', error);
+      alert('HWPX 저장 중 오류가 발생했습니다.');
+    } finally {
+      setHwpxGeneralDownloading(false);
+    }
   };
 
   const handleDownloadHwpx = async () => {
@@ -208,15 +224,27 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
             <Printer className="w-4 h-4" />
           </button>
           
+          {content && (
+            <button
+              onClick={handleDownloadHwpxGeneral}
+              disabled={hwpxGeneralDownloading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors shadow-sm disabled:opacity-50"
+              title="기본 HWPX 파일로 저장"
+            >
+              <FileType className="w-4 h-4" />
+              <span>{hwpxGeneralDownloading ? '저장 중...' : 'HWPX 저장'}</span>
+            </button>
+          )}
+
           {hwpxTemplate && hwpxFillData && (
-             <button 
+             <button
               onClick={handleDownloadHwpx}
               disabled={hwpxDownloading}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm disabled:opacity-50"
               title="원본 HWPX 양식에 생성된 내용 채워넣기"
             >
               <FileType className="w-4 h-4" />
-              <span>{hwpxDownloading ? '저장 중...' : 'HWPX 저장 (양식)'}</span>
+              <span>{hwpxDownloading ? '저장 중...' : 'HWPX (양식)'}</span>
             </button>
           )}
 

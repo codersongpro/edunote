@@ -1,0 +1,388 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  BookOpen, Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
+  Download, FileType, Monitor,
+} from 'lucide-react';
+import { AppMode } from '../types';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { GeneratedDisplay } from './GeneratedDisplay';
+import {
+  generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan,
+  LessonSlide, LessonParams,
+} from '../services/geminiService';
+import { LOADING_MESSAGES } from '../constants';
+
+type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
+
+const GRADES = [
+  '초등학교 1~2학년', '초등학교 3~4학년', '초등학교 5~6학년',
+  '중학교 1학년', '중학교 2학년', '중학교 3학년',
+  '고등학교 1학년', '고등학교 2학년', '고등학교 3학년',
+];
+
+const SUBJECTS = [
+  '국어', '수학', '영어', '사회', '과학', '역사', '도덕',
+  '음악', '미술', '체육', '기술가정', '정보', '진로', '기타',
+];
+
+const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
+  { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
+  { value: 'WORKSHEET', icon: ClipboardList, label: '활동지', desc: '활동지 및 평가지 (HTML/인쇄용)' },
+  { value: 'QUIZ', icon: Zap, label: '퀴즈 앱', desc: '인터랙티브 퀴즈 (선택형/O×)' },
+  { value: 'PLAN', icon: FileText, label: '수업 계획서', desc: '교수·학습 과정안 (A4 인쇄용)' },
+];
+
+const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
+const labelClass = 'block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide';
+
+const extractHtml = (raw: string): string => {
+  const m = raw.match(/```(?:html)?\s*([\s\S]*?)```/);
+  if (m) return m[1].trim();
+  const doc = raw.match(/(<!DOCTYPE html>[\s\S]*|<html[\s\S]*)/i);
+  if (doc) return doc[0].replace(/```/g, '').trim();
+  return raw.replace(/```html/g, '').replace(/```/g, '').trim();
+};
+
+const LessonMaterialGenerator: React.FC = () => {
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_MATERIAL);
+
+  const [grade, setGrade] = useState(GRADES[2]);
+  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [unit, setUnit] = useState('');
+  const [topic, setTopic] = useState('');
+  const [details, setDetails] = useState('');
+  const [contentType, setContentType] = useState<LessonContentType>('SLIDE');
+  const [pageCount, setPageCount] = useState(6);
+  const [questionCount, setQuestionCount] = useState(5);
+  const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
+  const [includeScore, setIncludeScore] = useState(false);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const [slides, setSlides] = useState<LessonSlide[] | null>(null);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [planContent, setPlanContent] = useState<string>('');
+
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (isGenerating) {
+      let idx = 0;
+      setLoadingMessage(LOADING_MESSAGES[0]);
+      loadingIntervalRef.current = setInterval(() => {
+        idx = (idx + 1) % LOADING_MESSAGES.length;
+        setLoadingMessage(LOADING_MESSAGES[idx]);
+      }, 2500);
+    } else {
+      if (loadingIntervalRef.current) { clearInterval(loadingIntervalRef.current); loadingIntervalRef.current = null; }
+    }
+    return () => { if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current); };
+  }, [isGenerating]);
+
+  const handleGenerate = async () => {
+    if (!topic.trim()) { setError('주제/수업명을 입력해주세요.'); return; }
+    setError(null);
+    setIsGenerating(true);
+    setSlides(null);
+    setHtmlContent(null);
+    setPlanContent('');
+    startGeneration();
+
+    const params: LessonParams = { grade, subject, unit, topic, details: details || undefined };
+
+    try {
+      if (contentType === 'SLIDE') {
+        const result = await generateLessonSlides(params, pageCount);
+        setSlides(result);
+      } else if (contentType === 'WORKSHEET') {
+        const html = await generateLessonWorksheet(params, worksheetType, questionCount, includeScore);
+        setHtmlContent(extractHtml(html));
+      } else if (contentType === 'QUIZ') {
+        const html = await generateLessonQuiz(params, questionCount);
+        setHtmlContent(extractHtml(html));
+      } else {
+        const html = await generateLessonPlan(params);
+        setPlanContent(extractHtml(html));
+      }
+    } catch (err: any) {
+      setError(err.message || '자료 생성 중 오류가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+      endGeneration();
+    }
+  };
+
+  const handleSaveSlidesTxt = async () => {
+    if (!slides) return;
+    const text = slides.map(s =>
+      `[슬라이드 ${s.page}] ${s.title}\n${s.content.map(c => `  • ${c}`).join('\n')}\n[교사 메모] ${s.notes}`
+    ).join('\n\n---\n\n');
+    await window.electronAPI.saveTxt(text, `${topic}_슬라이드.txt`);
+  };
+
+  const handleSaveSlidesHwpx = async () => {
+    if (!slides) return;
+    const text = slides.map(s =>
+      `슬라이드 ${s.page}: ${s.title}\n${s.content.map(c => `• ${c}`).join('\n')}\n교사 메모: ${s.notes}`
+    ).join('\n\n');
+    await window.electronAPI.saveHwpx('general', text, { title: `${topic} 수업 슬라이드` });
+  };
+
+  const handleSaveHtml = async () => {
+    if (!htmlContent) return;
+    const now = new Date();
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    await window.electronAPI.saveFile(htmlContent, `${topic}(${d}).html`, 'html');
+  };
+
+  const hasResult = slides !== null || htmlContent !== null || planContent !== '';
+
+  return (
+    <div className="flex flex-col h-full bg-[#F5F7FA]">
+      <div className="flex-1 flex overflow-hidden p-4 gap-4">
+
+        {/* Left: input panel */}
+        <div className="w-[360px] shrink-0 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col overflow-hidden">
+          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 shrink-0">
+            <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-amber-500" />
+              수업 정보 입력
+            </h3>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            {/* Grade & Subject */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>학년</label>
+                <select className={inputClass} value={grade} onChange={e => setGrade(e.target.value)}>
+                  {GRADES.map(g => <option key={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>교과</label>
+                <select className={inputClass} value={subject} onChange={e => setSubject(e.target.value)}>
+                  {SUBJECTS.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>단원</label>
+              <input type="text" className={inputClass} placeholder="예: 3단원. 우리 몸의 구조" value={unit} onChange={e => setUnit(e.target.value)} />
+            </div>
+
+            <div>
+              <label className={labelClass}>주제 / 수업명 <span className="text-red-400">*</span></label>
+              <input type="text" className={inputClass} placeholder="예: 소화 기관의 역할과 구조" value={topic} onChange={e => setTopic(e.target.value)} />
+            </div>
+
+            <hr className="border-gray-200" />
+
+            {/* Content Type */}
+            <div>
+              <label className={labelClass}>자료 유형</label>
+              <div className="grid grid-cols-2 gap-2">
+                {CONTENT_TYPES.map(({ value, icon: Icon, label, desc }) => (
+                  <button
+                    key={value}
+                    onClick={() => setContentType(value)}
+                    className={`flex flex-col items-start gap-1 p-2.5 rounded-lg border-2 text-left transition-all ${
+                      contentType === value
+                        ? 'border-amber-500 bg-amber-50 text-amber-900'
+                        : 'border-gray-200 hover:border-amber-300 text-gray-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${contentType === value ? 'text-amber-600' : 'text-gray-400'}`} />
+                      <span className="text-xs font-bold">{label}</span>
+                    </div>
+                    <span className="text-[10px] text-gray-400 leading-tight">{desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Type-specific options */}
+            {contentType === 'SLIDE' && (
+              <div>
+                <label className={labelClass}>슬라이드 수</label>
+                <input type="number" className={inputClass} min={3} max={20} value={pageCount} onChange={e => setPageCount(parseInt(e.target.value) || 6)} />
+              </div>
+            )}
+
+            {contentType === 'WORKSHEET' && (
+              <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>활동지 유형</label>
+                  <div className="flex gap-2">
+                    {[{ val: 'activity', label: '활동지' }, { val: 'assessment', label: '평가지' }].map(opt => (
+                      <button key={opt.val} onClick={() => setWorksheetType(opt.val as any)}
+                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>문항 수</label>
+                  <input type="number" className={inputClass} min={3} max={20} value={questionCount} onChange={e => setQuestionCount(parseInt(e.target.value) || 5)} />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                  <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
+                  점수란 포함
+                </label>
+              </div>
+            )}
+
+            {contentType === 'QUIZ' && (
+              <div>
+                <label className={labelClass}>문항 수</label>
+                <input type="number" className={inputClass} min={3} max={20} value={questionCount} onChange={e => setQuestionCount(parseInt(e.target.value) || 5)} />
+              </div>
+            )}
+
+            <div>
+              <label className={labelClass}>추가 요청사항 (선택)</label>
+              <textarea className={`${inputClass} min-h-[80px] resize-none`} placeholder="특이사항, 강조할 내용, 제외할 내용 등을 자유롭게 입력하세요." value={details} onChange={e => setDetails(e.target.value)} />
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 shrink-0">
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                isGenerating ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm active:scale-[0.98]'
+              }`}
+            >
+              {isGenerating ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  <span className="truncate">{loadingMessage}</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  수업 자료 생성
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Right: output panel */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Slide result */}
+          {slides && (
+            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-amber-500" />
+                  수업 슬라이드 ({slides.length}장)
+                </span>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveSlidesHwpx} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors">
+                    <FileType className="w-3.5 h-3.5" />HWPX 저장
+                  </button>
+                  <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded transition-colors">
+                    <Download className="w-3.5 h-3.5" />TXT 저장
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#EAECEF]">
+                {slides.map((slide) => (
+                  <div key={slide.page} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 flex items-center gap-2">
+                      <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{slide.page}</span>
+                      <h3 className="text-sm font-black text-white truncate">{slide.title}</h3>
+                    </div>
+                    <div className="px-4 py-3">
+                      <ul className="space-y-1.5 mb-3">
+                        {slide.content.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                            <span className="text-amber-400 mt-0.5 shrink-0">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {slide.notes && (
+                        <div className="border-t border-gray-100 pt-2 mt-2">
+                          <p className="text-xs text-gray-400 italic">[교사 메모] {slide.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* HTML result (worksheet / quiz) */}
+          {htmlContent && (
+            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-amber-500" />
+                  {contentType === 'QUIZ' ? '퀴즈 앱 미리보기' : '활동지 미리보기'}
+                </span>
+                <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                  <Download className="w-3.5 h-3.5" />HTML 저장
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <iframe
+                  srcDoc={htmlContent}
+                  sandbox="allow-scripts"
+                  className="w-full h-full border-0"
+                  title="수업 자료 미리보기"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Plan result */}
+          {planContent && (
+            <GeneratedDisplay
+              content={planContent}
+              title={`${topic} 수업 계획서`}
+            />
+          )}
+
+          {/* Empty / loading state */}
+          {!hasResult && (
+            <div className="flex-1 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col items-center justify-center text-center p-8">
+              <div className="bg-amber-50 p-4 rounded-full mb-4">
+                <BookOpen className="w-10 h-10 text-amber-400" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-600 mb-2">
+                {isGenerating ? '수업 자료를 생성하는 중...' : '수업 자료를 생성해 주세요'}
+              </h3>
+              {isGenerating ? (
+                <p className="text-sm text-gray-400 max-w-xs">{loadingMessage}</p>
+              ) : (
+                <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+                  왼쪽에서 학년·교과·주제와 자료 유형을 선택한 후<br />생성 버튼을 눌러주세요.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LessonMaterialGenerator;

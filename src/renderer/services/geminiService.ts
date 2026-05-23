@@ -731,6 +731,134 @@ export const parseNeisGradeFiles = async (files: { data: string; mimeType: strin
   return Array.isArray(parsed) ? parsed : [parsed];
 };
 
+// ─── 수업 AI — 수업자료 생성 ──────────────────────────────────────
+
+export interface LessonSlide {
+  page: number;
+  title: string;
+  content: string[];
+  notes: string;
+}
+
+export interface LessonParams {
+  grade: string;
+  subject: string;
+  unit: string;
+  topic: string;
+  details?: string;
+}
+
+const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로서 교사의 수업 자료 제작을 돕는 보조자입니다.
+한국 국가교육과정 성취기준에 맞는 양질의 수업 자료를 생성하세요.
+학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.`;
+
+export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<LessonSlide[]> {
+  const prompt = `다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
+
+[수업 정보]
+- 학년: ${params.grade}
+- 교과: ${params.subject}
+- 단원: ${params.unit}
+- 주제/수업명: ${params.topic}
+${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+
+[요구사항]
+1. 반드시 ${pageCount}장의 슬라이드를 생성하세요.
+2. 첫 번째 슬라이드는 제목 슬라이드로 구성하세요.
+3. 각 슬라이드의 content는 3~5개의 핵심 내용 bullet point로 구성하세요.
+4. notes에는 교사용 발표 참고 내용을 작성하세요.
+5. 한국 교육과정 성취기준에 맞게 작성하세요.
+
+반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
+[{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모"}]`;
+
+  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
+  const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
+  const parsed = JSON.parse(cleanJson);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+export async function generateLessonWorksheet(
+  params: LessonParams,
+  worksheetType: 'activity' | 'assessment',
+  questionCount: number,
+  includeScore: boolean,
+): Promise<string> {
+  const typeLabel = worksheetType === 'activity' ? '활동지' : '평가지';
+  const prompt = `다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
+
+[수업 정보]
+- 학년: ${params.grade}
+- 교과: ${params.subject}
+- 단원: ${params.unit}
+- 주제/수업명: ${params.topic}
+${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+
+[요구사항]
+- 문항 수: ${questionCount}개
+- 점수란 포함: ${includeScore ? '예 (각 문항에 점수 배점 표시)' : '아니오'}
+- 인쇄 가능한 깔끔한 디자인으로 작성하세요.
+- A4 용지 출력에 최적화하세요.
+
+반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
+인라인 CSS로 스타일을 적용하고, 한국어 폰트(Noto Sans KR 또는 기본 sans-serif)를 사용하세요.
+흰 배경, 검정 텍스트로 인쇄 친화적으로 작성하세요.
+마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
+
+  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+}
+
+export async function generateLessonQuiz(params: LessonParams, questionCount: number): Promise<string> {
+  const prompt = `다음 수업 정보를 바탕으로 인터랙티브 퀴즈를 HTML 형식으로 생성해주세요.
+
+[수업 정보]
+- 학년: ${params.grade}
+- 교과: ${params.subject}
+- 단원: ${params.unit}
+- 주제/수업명: ${params.topic}
+${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+
+[요구사항]
+- 문항 수: ${questionCount}개 (4지선다형 또는 O/X 혼합)
+- 각 문항에 정답 표시 기능 포함
+- 학생이 답을 선택하면 정답/오답 표시
+- 최종 점수 계산 기능 포함
+- 모바일 친화적이고 시각적으로 매력적인 디자인
+
+반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
+인라인 CSS와 JavaScript로 인터랙티브 기능을 구현하세요.
+한국어 폰트와 밝은 색상을 사용하여 학생들이 흥미를 가질 수 있는 디자인으로 작성하세요.
+마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
+
+  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+}
+
+export async function generateLessonPlan(params: LessonParams): Promise<string> {
+  const prompt = `다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
+
+[수업 정보]
+- 학년: ${params.grade}
+- 교과: ${params.subject}
+- 단원: ${params.unit}
+- 주제/수업명: ${params.topic}
+${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+
+[필수 구성 요소]
+1. 수업 개요 (학년, 교과, 단원, 주제, 차시)
+2. 학습 목표 (지식, 기능, 태도 영역)
+3. 교수·학습 과정안 (도입-전개-정리 단계별 표로 작성)
+   - 단계, 학습활동, 교수·학습 활동, 시간(분), 자료/유의점 포함
+4. 평가 계획 (평가 기준, 방법)
+5. 준비물 및 참고자료
+
+반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
+인라인 CSS로 스타일을 적용하고, 표(table)를 활용하여 체계적으로 구성하세요.
+A4 인쇄에 최적화된 흰 배경, 검정 텍스트로 작성하세요.
+마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
+
+  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 });
+}
+
 export const parseAnnualPlanFromImages = async (images: string[]): Promise<string> => {
   if (images.length === 0) return '';
   const prompt = `이 이미지들은 학교 생활기록부 기재를 위한 연간 지도 계획 또는 활동 계획표입니다.

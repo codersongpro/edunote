@@ -27,6 +27,8 @@ export enum AppMode {
   COUNSELING_LOG = 'COUNSELING_LOG',
   CLASS_LOG = 'CLASS_LOG',
   STUDENT_MEMO = 'STUDENT_MEMO',
+  // 수업 AI
+  LESSON_MATERIAL = 'LESSON_MATERIAL',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────
