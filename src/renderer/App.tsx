@@ -3,7 +3,6 @@ import { AppMode, SchoolLevel, DocType } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { GlobalState } from './types';
 
-import SchoolLevelSelector from './components/SchoolLevelSelector';
 import GuidelineQA from './components/GuidelineQA';
 import RecordChatbot from './components/RecordChatbot';
 import OpinionGenerator from './components/OpinionGenerator';
@@ -17,11 +16,14 @@ import ClassManagementLogGenerator from './components/ClassManagementLogGenerato
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import SettingsScreen from './components/SettingsScreen';
+import HomeScreen from './components/HomeScreen';
+import UsageGuideScreen from './components/UsageGuideScreen';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette, MessageSquareText,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
-  Settings, ChevronDown, ChevronRight, School, Sun, Moon, File
+  Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
+  Home, AlertTriangle, BookMarked,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
@@ -52,9 +54,10 @@ const App: React.FC = () => {
   const [isGlobalGenerating, setIsGlobalGenerating] = useState(false);
   const [globalProgress, setGlobalProgress] = useState(0);
 
-  const [mode, setMode] = useState<AppMode>(AppMode.SETTINGS);
+  const [mode, setMode] = useState<AppMode>(AppMode.HOME);
   const [schoolLevel, setSchoolLevel] = useState<SchoolLevel>(SchoolLevel.HIGH);
   const [showSchoolLevelModal, setShowSchoolLevelModal] = useState(false);
+  const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(true);
   const [adminSectionOpen, setAdminSectionOpen] = useState(true);
@@ -75,20 +78,22 @@ const App: React.FC = () => {
         setHasApiKey(hn as boolean);
         if (sl) setSchoolLevel(sl as SchoolLevel);
         setDarkMode(!!(dm as boolean));
-        if (!(hn as boolean)) {
-          setMode(AppMode.SETTINGS);
-        } else {
-          setMode(AppMode.RECORD_CHATBOT);
-          setHasEnteredStudentSection(true);
-        }
+        const disclaimerAccepted = localStorage.getItem('edunote_disclaimer_v1');
+        if (!disclaimerAccepted) setShowDisclaimerModal(true);
+        setMode(AppMode.HOME);
       } catch {
-        setMode(AppMode.SETTINGS);
+        setMode(AppMode.HOME);
       } finally {
         setIsLoading(false);
       }
     };
     init();
   }, []);
+
+  const handleAcceptDisclaimer = () => {
+    localStorage.setItem('edunote_disclaimer_v1', 'accepted');
+    setShowDisclaimerModal(false);
+  };
 
   const toggleDarkMode = async () => {
     const next = !darkMode;
@@ -133,7 +138,13 @@ const App: React.FC = () => {
     }
   };
 
-  // Section-specific nav item classes
+  const handleHomeNavigate = (target: 'settings' | 'student' | 'admin' | 'guide') => {
+    if (target === 'settings') setMode(AppMode.SETTINGS);
+    else if (target === 'guide') setMode(AppMode.USAGE_GUIDE);
+    else if (target === 'student') handleModeChange(AppMode.RECORD_CHATBOT);
+    else if (target === 'admin') { setMode(AppMode.EDUCATION_QA); setAdminSectionOpen(true); }
+  };
+
   const studentNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
@@ -143,9 +154,7 @@ const App: React.FC = () => {
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
-      mode === m && !isDocParent
-        ? 'bg-teal-600 text-white font-semibold shadow-sm'
-        : isDocParent && mode === AppMode.SCHOOL_DOC
+      (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
         ? 'bg-teal-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-700 dark:hover:text-teal-300'
     }`;
@@ -158,7 +167,7 @@ const App: React.FC = () => {
     }`;
 
   const studentMenuItems = [
-    { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: 'AI 챗봇 도우미', badge: 'NEW' },
+    { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
     { mode: AppMode.GUIDELINE_QA, icon: MessageSquareText, label: '기재요령 Q&A' },
     { mode: AppMode.GENERATOR, icon: User2, label: '행동특성 및 종합의견' },
     { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
@@ -171,23 +180,24 @@ const App: React.FC = () => {
     { mode: AppMode.COUNSELING_LOG, icon: MessageCircle, label: '상담일지' },
     { mode: AppMode.CLASS_LOG, icon: CalendarDays, label: '학급경영일지' },
     { mode: AppMode.STUDENT_MEMO, icon: StickyNote, label: '학생 메모 보드' },
-    { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교육 도우미 AI' },
   ];
 
   const renderContent = () => {
     switch (mode) {
+      case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
+      case AppMode.USAGE_GUIDE: return <UsageGuideScreen />;
       case AppMode.RECORD_CHATBOT: return <RecordChatbot schoolLevel={schoolLevel} />;
       case AppMode.GUIDELINE_QA: return <GuidelineQA schoolLevel={schoolLevel} />;
       case AppMode.GENERATOR: return <OpinionGenerator schoolLevel={schoolLevel} />;
       case AppMode.SUBJECT_GENERATOR: return <SubjectGenerator schoolLevel={schoolLevel} />;
       case AppMode.SPORTS_CLUB_GENERATOR: return <SportsClubGenerator schoolLevel={schoolLevel} />;
       case AppMode.CREATIVE_ACTIVITY_GENERATOR: return <CreativeActivityGenerator schoolLevel={schoolLevel} />;
+      case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.LESSON_OBSERVATION: return <LessonObservationGenerator />;
       case AppMode.COUNSELING_LOG: return <CounselingLogGenerator />;
       case AppMode.CLASS_LOG: return <ClassManagementLogGenerator />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
-      case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       default: return null;
     }
@@ -208,6 +218,40 @@ const App: React.FC = () => {
     <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
+
+        {/* Disclaimer Modal */}
+        {showDisclaimerModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                </div>
+                <h2 className="text-base font-black text-gray-900 dark:text-white">에듀노트 사용 안내</h2>
+              </div>
+              <div className="space-y-3 text-sm text-gray-700 dark:text-gray-300 mb-5">
+                <p className="font-bold text-gray-900 dark:text-white">에듀노트에 오신 것을 환영합니다!</p>
+                <p className="leading-relaxed">이 프로그램은 <strong>Google Gemini AI</strong>를 활용해 교사의 업무를 돕기 위해 만들어졌습니다.</p>
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 space-y-1.5">
+                  <p className="font-bold text-amber-800 dark:text-amber-300 text-xs">⚠️ 반드시 확인해 주세요</p>
+                  <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1 leading-relaxed">
+                    <li>• AI가 생성한 문구는 <strong>참고용</strong>이며, 그대로 사용하지 마세요.</li>
+                    <li>• 학생부 기재 전 반드시 <strong>교사가 직접 검토·수정</strong>해야 합니다.</li>
+                    <li>• AI는 학생 개인정보나 사실관계를 알지 못합니다.</li>
+                    <li>• 저작권 및 개인정보 관련 내용 입력에 주의하세요.</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">이 프로그램은 교사의 업무 효율화를 위한 보조 도구입니다. 최종 책임은 사용자에게 있습니다.</p>
+              </div>
+              <button
+                onClick={handleAcceptDisclaimer}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors"
+              >
+                확인했습니다. 시작하기
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* School Level Modal */}
         {showSchoolLevelModal && (
@@ -236,26 +280,43 @@ const App: React.FC = () => {
         {/* Sidebar */}
         <aside className="w-56 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
-          {/* Logo + dark toggle */}
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
-            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">에듀노트</h1>
+            <button
+              onClick={() => setMode(AppMode.HOME)}
+              className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              에듀노트
+            </button>
             <button
               onClick={toggleDarkMode}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={darkMode ? '라이트 모드' : '다크 모드'}
             >
               {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
           </div>
 
-          {/* Nav */}
           <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
 
-            {/* 학생기록 AI Section */}
+            <button
+              onClick={() => setMode(AppMode.HOME)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                mode === AppMode.HOME
+                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Home className="w-4 h-4 shrink-0" />
+              <span>홈</span>
+            </button>
+
+            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+            {/* 학생기록 AI */}
             <div>
               <button
                 onClick={() => setStudentSectionOpen(!studentSectionOpen)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 group"
+                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50"
               >
                 <div className="flex items-center gap-1.5">
                   <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -263,25 +324,17 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
-                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-normal normal-case">
-                      {schoolLevel}
-                    </span>
+                    <span className="text-[10px] bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-normal normal-case">{schoolLevel}</span>
                   )}
-                  {studentSectionOpen
-                    ? <ChevronDown className="w-3 h-3 text-blue-400" />
-                    : <ChevronRight className="w-3 h-3 text-blue-400" />}
+                  {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-blue-400" /> : <ChevronRight className="w-3 h-3 text-blue-400" />}
                 </div>
               </button>
-
               {studentSectionOpen && (
                 <div className="mt-1 space-y-0.5">
-                  {studentMenuItems.map(({ mode: m, icon: Icon, label, badge }) => (
+                  {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
                     <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
-                      {badge && mode !== m && (
-                        <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded font-bold">{badge}</span>
-                      )}
                     </button>
                   ))}
                   {hasEnteredStudentSection && (
@@ -297,9 +350,9 @@ const App: React.FC = () => {
               )}
             </div>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-700 my-2" />
+            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
-            {/* 교무 AI Section */}
+            {/* 교무 AI */}
             <div>
               <button
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
@@ -309,34 +362,24 @@ const App: React.FC = () => {
                   <div className="w-2.5 h-2.5 rounded-full bg-teal-500" />
                   <span className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">교무 AI</span>
                 </div>
-                {adminSectionOpen
-                  ? <ChevronDown className="w-3 h-3 text-teal-400" />
-                  : <ChevronRight className="w-3 h-3 text-teal-400" />}
+                {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-teal-400" /> : <ChevronRight className="w-3 h-3 text-teal-400" />}
               </button>
-
               {adminSectionOpen && (
                 <div className="mt-1 space-y-0.5">
-                  {/* 공문서 작성기 - expandable */}
+                  <button onClick={() => setMode(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
+                    <GraduationCap className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">교육AI챗봇</span>
+                  </button>
                   <div>
-                    <button
-                      onClick={handleSchoolDocParent}
-                      className={adminNavClass(AppMode.SCHOOL_DOC, true)}
-                    >
+                    <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
                       <FileText className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">공문서 작성기</span>
-                      {schoolDocSubOpen
-                        ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" />
-                        : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
+                      {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
                     </button>
-
                     {schoolDocSubOpen && (
                       <div className="mt-0.5 space-y-0.5 border-l-2 border-teal-200 dark:border-teal-700 ml-3">
                         {ALL_DOC_TYPES.map(dt => (
-                          <button
-                            key={dt}
-                            onClick={() => handleSchoolDocNav(dt)}
-                            className={docSubNavClass(dt)}
-                          >
+                          <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
                             <File className="w-3 h-3 shrink-0" />
                             <span className="truncate">{DOC_TYPE_LABELS[dt]}</span>
                           </button>
@@ -344,7 +387,6 @@ const App: React.FC = () => {
                       </div>
                     )}
                   </div>
-
                   {adminMenuItems.map(({ mode: m, icon: Icon, label }) => (
                     <button key={m} onClick={() => setMode(m)} className={adminNavClass(m)}>
                       <Icon className="w-4 h-4 shrink-0" />
@@ -356,13 +398,23 @@ const App: React.FC = () => {
             </div>
           </nav>
 
-          {/* Settings at bottom */}
-          <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0">
+          <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
             {!hasApiKey && (
-              <div className="mb-2 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400">
+              <div className="mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400">
                 API 키를 설정해 주세요
               </div>
             )}
+            <button
+              onClick={() => setMode(AppMode.USAGE_GUIDE)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                mode === AppMode.USAGE_GUIDE
+                  ? 'bg-purple-600 text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300'
+              }`}
+            >
+              <BookMarked className="w-4 h-4 shrink-0" />
+              <span>사용 방법</span>
+            </button>
             <button
               onClick={() => setMode(AppMode.SETTINGS)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
@@ -377,7 +429,6 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main content */}
         <main className="flex-1 overflow-hidden flex flex-col">
           {renderContent()}
         </main>

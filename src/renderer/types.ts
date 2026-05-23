@@ -9,6 +9,10 @@ export enum SchoolLevel {
 
 // ─── App Mode ─────────────────────────────────────────────────────
 export enum AppMode {
+  // System
+  HOME = 'HOME',
+  USAGE_GUIDE = 'USAGE_GUIDE',
+  SETTINGS = 'SETTINGS',
   // 학생기록 AI
   RECORD_CHATBOT = 'RECORD_CHATBOT',
   GUIDELINE_QA = 'GUIDELINE_QA',
@@ -17,14 +21,12 @@ export enum AppMode {
   SPORTS_CLUB_GENERATOR = 'SPORTS_CLUB_GENERATOR',
   CREATIVE_ACTIVITY_GENERATOR = 'CREATIVE_ACTIVITY_GENERATOR',
   // 교무 AI
+  EDUCATION_QA = 'EDUCATION_QA',
   SCHOOL_DOC = 'SCHOOL_DOC',
   LESSON_OBSERVATION = 'LESSON_OBSERVATION',
   COUNSELING_LOG = 'COUNSELING_LOG',
   CLASS_LOG = 'CLASS_LOG',
   STUDENT_MEMO = 'STUDENT_MEMO',
-  EDUCATION_QA = 'EDUCATION_QA',
-  // System
-  SETTINGS = 'SETTINGS',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────
