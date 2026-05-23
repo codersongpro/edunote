@@ -1,7 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateClassManagementLog } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
+
+const EXAMPLE_RESULT = `【 학급경영일지 】
+
+■ 주 차: 3월 2주
+■ 기 간: 2026. 3. 10.(화) ~ 3. 14.(토)
+■ 학 급: 5학년 2반
+
+1. 주요 학급 활동
+  - 과학 실험(산과 염기) 수업을 실시함.
+  - 학급 자치회의를 열어 3월 학급 규칙을 함께 결정함.
+  - 체험학습 사전 준비 안내장을 배부하고 동의서를 수거함.
+
+2. 학생 특이사항
+  - 김○수: 결석 1일(가정 사유), 복귀 후 학습 내용 보충 지도함.
+  - 이○영: 모둠 활동에서 적극적으로 리더십을 발휘하는 모습이 두드러짐.
+
+3. 학부모 소통
+  - 체험학습 관련 학부모 문의 전화 2건 응대함.
+  - 상담 희망 학부모 1명과 전화 상담 실시함.
+
+4. 다음 주 계획
+  - 체험학습 최종 안내 및 준비물 확인 예정임.
+  - 3월 학업성취도 점검을 위한 간이 평가 실시 예정임.
+  - 학급 환경 게시판 정비 예정임.
+
+※ 이 문서는 AI가 생성한 예시입니다. 실제 학급 활동 내용으로 교체하여 사용하세요.`;
 
 const ClassManagementLogGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CLASS_LOG);
@@ -11,10 +37,16 @@ const ClassManagementLogGenerator: React.FC = () => {
   const [keyActivities, setKeyActivities] = useState('');
   const [studentIssues, setStudentIssues] = useState('');
   const [teacherNotes, setTeacherNotes] = useState('');
-  const [result, setResult] = useState('');
+  const [result, setResult] = useState(EXAMPLE_RESULT);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    window.electronAPI.getConfig('gradeClass').then((gc: string) => {
+      if (gc) setGrade(gc);
+    });
+  }, []);
 
   const handleGenerate = async () => {
     if (!week.trim() || !dateRange.trim() || !grade.trim() || !keyActivities.trim()) {
@@ -178,7 +210,12 @@ const ClassManagementLogGenerator: React.FC = () => {
           {result && (
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">생성 결과</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">생성 결과</h3>
+                  {result === EXAMPLE_RESULT && (
+                    <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopy}
@@ -211,7 +248,7 @@ const ClassManagementLogGenerator: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm text-slate-800 dark:text-slate-100 whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto shadow-inner">
+              <div className={`rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto shadow-inner ${result === EXAMPLE_RESULT ? 'bg-amber-50 border border-amber-200 text-slate-600' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'}`}>
                 {result}
               </div>
             </div>

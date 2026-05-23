@@ -1,6 +1,15 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, nativeImage } from 'electron';
 import { join } from 'path';
 import { registerIpcHandlers } from './ipcHandlers';
+
+function getAppIcon() {
+  try {
+    const iconPath = join(__dirname, '../../build/icon.ico');
+    return nativeImage.createFromPath(iconPath);
+  } catch {
+    return undefined;
+  }
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -9,6 +18,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     title: '에듀노트',
+    icon: getAppIcon(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

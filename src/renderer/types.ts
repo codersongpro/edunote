@@ -13,6 +13,7 @@ export enum AppMode {
   HOME = 'HOME',
   USAGE_GUIDE = 'USAGE_GUIDE',
   SETTINGS = 'SETTINGS',
+  ABOUT = 'ABOUT',
   // 학생기록 AI
   RECORD_CHATBOT = 'RECORD_CHATBOT',
   GUIDELINE_QA = 'GUIDELINE_QA',
@@ -29,6 +30,9 @@ export enum AppMode {
   STUDENT_MEMO = 'STUDENT_MEMO',
   // 수업 AI
   LESSON_MATERIAL = 'LESSON_MATERIAL',
+  QR_MAKER = 'QR_MAKER',
+  MY_RESOURCES = 'MY_RESOURCES',
+  LUCKY_DRAW = 'LUCKY_DRAW',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────
@@ -273,6 +277,15 @@ export enum MessageTarget {
   STUDENT = '학생',
 }
 
+export enum MessageRelationship {
+  ALL = '전체메시지',
+  PARENT = '학부모',
+  SUPERIOR = '상급자',
+  COLLEAGUE = '동료교직원',
+  STUDENT = '학생',
+  FRIEND = '친구',
+}
+
 export enum PumuiType {
   GOODS = 'GOODS',
   ALLOWANCE = 'ALLOWANCE',
@@ -327,6 +340,9 @@ export interface MessageInputs {
   target: MessageTarget;
   type: MessageType;
   context: string;
+  isReply: boolean;
+  receivedMessage: string;
+  relationship: MessageRelationship;
 }
 
 export interface PumuiInputs {

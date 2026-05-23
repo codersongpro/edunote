@@ -484,12 +484,29 @@ ${complexityInstruction}
 [구조] 제목(크고 진하게 중앙) → 인사말 → 본문(핵심 안내) → 맺음말 → 날짜 → 학교장`;
       break;
 
-    case DocType.MESSAGE:
+    case DocType.MESSAGE: {
+      const isReplyMode = promptContext.includes('[답장 생성]: 예');
+      const relationshipMatch = promptContext.match(/\[나와의 관계\]: (.+)/);
+      const relationship = relationshipMatch ? relationshipMatch[1] : '';
+      const toneMap: Record<string, string> = {
+        '전체메시지': '공식적이고 정중한 표준 어조. 높임말(합쇼체) 사용.',
+        '학부모': '정중하고 친절한 어조. 부모님께 드리는 느낌. 높임말(합쇼체) 사용.',
+        '상급자': '매우 공손하고 격식 있는 어조. 존경을 표현하는 높임말. 간결하고 명확하게.',
+        '동료교직원': '친근하면서도 예의 바른 어조. 해요체 또는 합니다체. 편안하게.',
+        '학생': '부드럽고 친근한 어조. 해요체 또는 해라체. 이해하기 쉽게.',
+        '친구': '캐주얼하고 친근한 어조. 반말 허용. 자연스럽고 편안하게.',
+      };
+      const toneInstruction = isReplyMode && relationship
+        ? `[답장 어조] ${toneMap[relationship] || '정중한 어조.'}`
+        : '[어조] 정중하고 격식 있는 높임말(합쇼체) 사용.';
       specificInstruction = `
-작업: [학부모 알림 문자 메세지 작성]
+작업: ${isReplyMode ? '[받은 메시지에 대한 답장 문자 작성]' : '[학부모 알림 문자 메세지 작성]'}
 [단문(SMS)] 절대 40자(90byte) 초과 금지. 인사말 생략, 용건만 작성.
-[장문(LMS)] 1000자 이내. [학교명/제목]으로 시작. 문의 전화번호 포함.`;
+[장문(LMS)] 1000자 이내. [학교명/제목]으로 시작.${isReplyMode ? '' : ' 문의 전화번호 포함.'}
+${toneInstruction}
+${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽게 이어지는 답장 메시지만 출력. 받은 메시지 반복 금지.' : ''}`;
       break;
+    }
 
     case DocType.PUMUI:
       specificInstruction = `
@@ -593,52 +610,60 @@ export const generateLessonObservation = async (inputs: {
   subject: string;
   unit: string;
   grade: string;
-  observations: string;
+  observationNotes: string;
+  teacherName: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 수업관찰기록을 작성해주세요.
 
 [수업 정보]
-- 관찰 일시: ${inputs.date}
+- 관찰 일시: ${inputs.date || '미입력'}
 - 교과: ${inputs.subject}
-- 단원/차시: ${inputs.unit}
-- 학년반: ${inputs.grade}
-- 관찰 내용 요약: ${inputs.observations}
+- 단원/차시: ${inputs.unit || '미입력'}
+- 학년반: ${inputs.grade || '미입력'}
+- 수업 교사: ${inputs.teacherName || '미입력'}
+- 관찰 내용 요약: ${inputs.observationNotes}
 
 [작성 지침]
 1. 수업 목표, 교사 활동, 학생 반응, 수업 분위기, 개선 제언 순으로 구성하세요.
-2. 객관적이고 전문적인 관찰 기록 형식으로 작성하세요.
-3. 분량: A4 1~2장 내외.`;
+2. 각 항목은 개조식(~함., ~임., ~였음. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 객관적이고 전문적인 관찰 기록 형식으로 작성하세요.
+4. 분량: A4 1~2장 내외.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 수업 전문가로서 교사의 수업관찰기록 작성을 돕는 보조자입니다. 전문적이고 객관적인 관찰 기록을 작성하세요.',
+    '당신은 수업 전문가로서 교사의 수업관찰기록 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~였음.) 문장 형식으로 전문적이고 객관적인 관찰 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };
 
 export const generateCounselingLog = async (inputs: {
-  datetime: string;
-  type: string;
+  date: string;
+  counselingType: string;
   participants: string;
-  summary: string;
+  studentName: string;
+  counselingContent: string;
+  followUpPlan: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 상담일지를 작성해주세요.
 
 [상담 정보]
-- 일시: ${inputs.datetime}
-- 상담 유형: ${inputs.type}
-- 참여자: ${inputs.participants}
-- 내용 요약: ${inputs.summary}
+- 일시: ${inputs.date || '미입력'}
+- 상담 유형: ${inputs.counselingType}
+- 참여자: ${inputs.participants || '미입력'}
+- 학생(이니셜): ${inputs.studentName || '미입력'}
+- 상담 내용: ${inputs.counselingContent}
+- 후속 지원 계획: ${inputs.followUpPlan || '없음'}
 
 [작성 지침]
 1. 상담 목적, 주요 내용, 학생 반응, 조치 사항, 후속 계획 순으로 구성.
-2. 개인정보 보호에 주의하며 전문적인 상담 기록 형식으로 작성.`;
+2. 각 항목은 개조식(~함., ~임., ~하기로 함. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 개인정보 보호에 주의하며 전문적인 상담 기록 형식으로 작성.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 학교 상담 전문가로서 교사의 상담일지 작성을 돕는 보조자입니다.',
+    '당신은 학교 상담 전문가로서 교사의 상담일지 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~하기로 함.) 문장 형식으로 간결하고 전문적인 상담 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };
@@ -646,7 +671,10 @@ export const generateCounselingLog = async (inputs: {
 export const generateClassManagementLog = async (inputs: {
   week: string;
   dateRange: string;
-  activities: string;
+  grade: string;
+  keyActivities: string;
+  studentIssues: string;
+  teacherNotes: string;
 }): Promise<string> => {
   const prompt = `
 다음 정보를 바탕으로 학급경영일지를 작성해주세요.
@@ -654,15 +682,19 @@ export const generateClassManagementLog = async (inputs: {
 [주간 정보]
 - 주차: ${inputs.week}
 - 기간: ${inputs.dateRange}
-- 주요 활동: ${inputs.activities}
+- 학년/반: ${inputs.grade}
+- 주요 활동: ${inputs.keyActivities}
+- 학생 특이사항: ${inputs.studentIssues || '없음'}
+- 담임 소감/메모: ${inputs.teacherNotes || '없음'}
 
 [작성 지침]
 1. 주요 학급 활동, 학생 특이사항, 학부모 소통, 다음 주 계획 순으로 구성.
-2. 구체적이고 실용적인 학급경영 기록 형식으로 작성.`;
+2. 각 항목은 개조식(~함., ~임., ~였음. 으로 끝나는 짧고 명확한 문장)으로 작성하세요.
+3. 구체적이고 실용적인 학급경영 기록 형식으로 작성.`;
 
   return await aiGenerate(
     prompt,
-    '당신은 학급 경영 전문가로서 담임교사의 학급경영일지 작성을 돕는 보조자입니다.',
+    '당신은 학급 경영 전문가로서 담임교사의 학급경영일지 작성을 돕는 보조자입니다. 개조식(~함., ~임., ~였음.) 문장 형식으로 간결하고 실용적인 기록을 작성하세요.',
     { temperature: 0.4 },
   );
 };

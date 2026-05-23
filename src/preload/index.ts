@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
 
+  // URL Metadata
+  fetchUrlMeta: (url: string) => ipcRenderer.invoke('url:fetch-meta', url),
+
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   checkUpdate: () => ipcRenderer.invoke('app:check-update'),

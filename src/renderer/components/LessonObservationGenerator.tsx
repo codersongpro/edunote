@@ -4,6 +4,38 @@ import { generateLessonObservation } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 
+const EXAMPLE_RESULT = `【 수업관찰기록 】
+
+■ 일 시: 2026. 3. 15.(일) 2교시
+■ 교 과: 수학
+■ 단 원: 3-1. 분수의 덧셈
+■ 학 급: 5학년 2반
+■ 수업교사: 홍길동
+
+1. 수업 목표
+  - 분모가 다른 분수의 덧셈 원리를 이해함.
+  - 통분을 이용하여 분수의 덧셈을 계산할 수 있음.
+
+2. 교사 활동
+  - 이전 차시 복습을 통해 공약수, 공배수 개념을 간략히 확인함.
+  - 직관적 이해를 위해 수직선 모델과 색칠 활동지를 함께 활용함.
+  - 학생의 오답 풀이를 칠판에 제시하고 토론 유도함.
+
+3. 학생 반응
+  - 대다수 학생이 통분 절차를 이해하고 문제를 풀었음.
+  - 최소공배수를 구하는 과정에서 일부 학생의 혼동이 관찰됨.
+  - 모둠 활동 시 적극적으로 의견을 교환하는 모습이 보였음.
+
+4. 수업 분위기
+  - 전반적으로 집중도가 높고 질문이 활발하였음.
+  - 모둠별 협력 학습이 원활히 이루어짐.
+
+5. 개선 제언
+  - 최소공배수 계산 연습을 위한 추가 활동지 제공이 필요함.
+  - 마무리 정리 시간을 5분 확보하면 학습 내용 정착에 도움이 될 것임.
+
+※ 이 문서는 AI가 생성한 예시입니다. 실제 관찰 내용으로 교체하여 사용하세요.`;
+
 const LessonObservationGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_OBSERVATION);
   const [date, setDate] = useState('');
@@ -12,14 +44,18 @@ const LessonObservationGenerator: React.FC = () => {
   const [grade, setGrade] = useState('');
   const [observationNotes, setObservationNotes] = useState('');
   const [teacherName, setTeacherName] = useState('');
-  const [result, setResult] = useState('');
+  const [result, setResult] = useState(EXAMPLE_RESULT);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    window.electronAPI.getConfig('teacherName').then((v: string) => {
-      if (v) setTeacherName(v);
+    Promise.all([
+      window.electronAPI.getConfig('teacherName'),
+      window.electronAPI.getConfig('gradeClass'),
+    ]).then(([tn, gc]) => {
+      if (tn) setTeacherName(tn as string);
+      if (gc && !grade) setGrade(gc as string);
     });
   }, []);
 
@@ -133,7 +169,12 @@ const LessonObservationGenerator: React.FC = () => {
         {result && (
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800 text-sm">생성 결과</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-gray-800 text-sm">생성 결과</h3>
+                {result === EXAMPLE_RESULT && (
+                  <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
+                )}
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleCopy}
@@ -151,7 +192,7 @@ const LessonObservationGenerator: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className="bg-gray-50 rounded-md border border-gray-200 p-4 text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800'}`}>
               {result}
             </div>
           </div>
