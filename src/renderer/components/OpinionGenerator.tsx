@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData } from '../types';
+import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } from '../types';
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
 import { generateOpinion } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -15,6 +16,7 @@ interface DuplicateResult {
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
+  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
 
   // Local UI State
@@ -179,9 +181,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // --- Generation Handlers ---
   const handleGenerateAll = async () => {
     setIsGlobalGenerating(true);
+    startGeneration(0);
     setGlobalProgress(0);
     const newStudents = [...opState.students];
-    let completedCount = 0;
+    const total = newStudents.length;
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
@@ -197,10 +200,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 lengthUnit: opState.lengthUnit as LengthUnit
             });
             newStudents[i].generatedContent = result;
-            completedCount++;
-            setGlobalProgress(Math.round((completedCount / newStudents.length) * 100));
+            setGlobalProgress(Math.round((i + 1) / total * 100));
+            updateProgress(Math.round((i + 1) / total * 100));
         }
-        
+
         updateOpState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -210,6 +213,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 
@@ -224,9 +228,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
 
     setIsGlobalGenerating(true);
+    startGeneration(0);
     setGlobalProgress(0);
     const newStudents = [...opState.students];
-    let completedCount = 0;
+    const total = selectedIndices.length;
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
@@ -243,10 +248,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 lengthUnit: opState.lengthUnit as LengthUnit
             });
             newStudents[index].generatedContent = result;
-            completedCount++;
-            setGlobalProgress(Math.round((completedCount / selectedIndices.length) * 100));
+            setGlobalProgress(Math.round((i + 1) / total * 100));
+            updateProgress(Math.round((i + 1) / total * 100));
         }
-        
+
         updateOpState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -256,6 +261,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 
