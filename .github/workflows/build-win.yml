@@ -11,6 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout
@@ -32,10 +35,9 @@ jobs:
 
       - name: Get version
         id: pkg
-        shell: bash
         run: |
-          VERSION=$(node -e "process.stdout.write(require('./package.json').version)")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Create or update release
         uses: softprops/action-gh-release@v2
