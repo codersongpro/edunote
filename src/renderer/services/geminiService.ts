@@ -845,6 +845,7 @@ export interface LessonSlide {
   title: string;
   content: string[];
   notes: string;
+  imageKeyword?: string;
 }
 
 export interface LessonParams {
@@ -900,9 +901,10 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 3. 각 슬라이드의 content는 3~5개의 핵심 내용 bullet point로 구성하세요.
 4. notes에는 교사용 발표 참고 내용을 작성하세요.
 5. 한국 교육과정 성취기준에 맞게 작성하세요.
+6. imageKeyword에는 해당 슬라이드 내용을 나타내는 영어 단어 1~3개를 쉼표 없이 공백으로 구분하여 입력하세요 (예: "photosynthesis plant", "ancient rome history"). 제목 슬라이드는 수업 주제와 관련된 키워드를 사용하세요.
 
 반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
-[{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모"}]`;
+[{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imageKeyword":"keyword english"}]`;
 
   const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
@@ -932,18 +934,22 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
 - 활동 수: ${questionCount}개
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
-- A4 용지 출력 및 PDF 저장에 최적화 (여백 포함)
-- 각 활동 섹션은 페이지 중간에서 잘리지 않도록 page-break-inside: avoid 적용
+- 반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요
+- 각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요
 - 제목, 이름/날짜 기입란, 활동별 구분선 포함
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
 <style> 태그에 다음 CSS를 반드시 포함하세요:
-@page { size: A4; margin: 20mm 15mm; }
-body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 11pt; color: #000; margin: 0; padding: 0; }
-.activity, section, .question { page-break-inside: avoid; margin-bottom: 16pt; }
-h1, h2, h3 { page-break-after: avoid; }
-table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
-th, td { border: 1pt solid #333; padding: 6pt 8pt; }
+@page { size: A4; margin: 10mm 12mm; }
+body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 0; }
+h1 { font-size: 13pt; margin: 0 0 4pt; }
+h2, h3 { font-size: 11pt; margin: 6pt 0 3pt; page-break-after: avoid; }
+.header-row { display: flex; gap: 16pt; margin-bottom: 6pt; font-size: 10pt; }
+.activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
+.answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
+table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
+p { margin: 2pt 0; line-height: 1.5; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });

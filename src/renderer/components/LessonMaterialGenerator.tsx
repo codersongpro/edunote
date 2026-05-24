@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
+  Play, X, ChevronLeft, Image as ImageIcon,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -95,6 +96,11 @@ const LessonMaterialGenerator: React.FC = () => {
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [planContent, setPlanContent] = useState<string>('');
+  const [slideImages, setSlideImages] = useState<Record<number, string>>({});
+  const [isFetchingImages, setIsFetchingImages] = useState(false);
+  const [isPresentMode, setIsPresentMode] = useState(false);
+  const [presentIndex, setPresentIndex] = useState(0);
+  const [showNotes, setShowNotes] = useState(true);
 
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -111,6 +117,39 @@ const LessonMaterialGenerator: React.FC = () => {
     }
     return () => { if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current); };
   }, [isGenerating]);
+
+  useEffect(() => {
+    if (!slides || slides.length === 0) return;
+    const fetchImages = async () => {
+      setIsFetchingImages(true);
+      setSlideImages({});
+      for (const slide of slides) {
+        if (!slide.imageKeyword) continue;
+        try {
+          const img = await window.electronAPI.fetchSlideImage(slide.imageKeyword);
+          if (img) setSlideImages(prev => ({ ...prev, [slide.page]: img }));
+        } catch { /* no-op */ }
+      }
+      setIsFetchingImages(false);
+    };
+    fetchImages();
+  }, [slides]);
+
+  const handlePresentKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      setPresentIndex(i => Math.min((slides?.length ?? 1) - 1, i + 1));
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      setPresentIndex(i => Math.max(0, i - 1));
+    } else if (e.key === 'Escape') {
+      setIsPresentMode(false);
+    }
+  }, [slides]);
+
+  useEffect(() => {
+    if (!isPresentMode) return;
+    document.addEventListener('keydown', handlePresentKey);
+    return () => document.removeEventListener('keydown', handlePresentKey);
+  }, [isPresentMode, handlePresentKey]);
 
   const handleLoadStudentNames = async () => {
     const names = await window.electronAPI.getConfig('studentNames');
@@ -135,6 +174,8 @@ const LessonMaterialGenerator: React.FC = () => {
     setSlides(null);
     setHtmlContent(null);
     setPlanContent('');
+    setSlideImages({});
+    setIsPresentMode(false);
     startGeneration();
 
     const standardText = selectedStandard
@@ -455,8 +496,23 @@ li{margin-bottom:5pt;line-height:1.6;}
                 <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
+                  {isFetchingImages && (
+                    <span className="flex items-center gap-1 text-xs font-normal text-gray-400">
+                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                      </svg>
+                      이미지 불러오는 중...
+                    </span>
+                  )}
                 </span>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors"
+                  >
+                    <Play className="w-3.5 h-3.5" />프레젠테이션
+                  </button>
                   <button onClick={handleSaveSlidesPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
                     <FileDown className="w-3.5 h-3.5" />PDF 저장
                   </button>
@@ -475,6 +531,13 @@ li{margin-bottom:5pt;line-height:1.6;}
                       <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{slide.page}</span>
                       <h3 className="text-sm font-black text-white truncate">{slide.title}</h3>
                     </div>
+                    {slideImages[slide.page] ? (
+                      <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
+                    ) : slide.imageKeyword && isFetchingImages ? (
+                      <div className="w-full bg-gray-100 flex items-center justify-center" style={{height: 80}}>
+                        <ImageIcon className="w-5 h-5 text-gray-300" />
+                      </div>
+                    ) : null}
                     <div className="px-4 py-3">
                       <ul className="space-y-1.5 mb-3">
                         {slide.content.map((item, i) => (
@@ -550,6 +613,95 @@ li{margin-bottom:5pt;line-height:1.6;}
           )}
         </div>
       </div>
+      {/* Presentation mode overlay */}
+      {isPresentMode && slides && slides.length > 0 && (() => {
+        const slide = slides[presentIndex];
+        const img = slideImages[slide.page];
+        return (
+          <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col select-none" tabIndex={-1}>
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-6 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
+              <span className="text-gray-400 text-sm truncate max-w-xs">{slide.title}</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setShowNotes(n => !n)}
+                  className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${showNotes ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300'}`}
+                >
+                  교사 메모 {showNotes ? '숨기기' : '보기'}
+                </button>
+                <span className="text-gray-500 text-sm tabular-nums">{presentIndex + 1} / {slides.length}</span>
+                <button onClick={() => setIsPresentMode(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Slide area */}
+            <div className="flex-1 flex items-center justify-center p-6 min-h-0">
+              <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{maxHeight: 'calc(100vh - 130px)'}}>
+                {/* Title */}
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-5 shrink-0">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl font-black text-white/60 bg-white/20 px-3 py-0.5 rounded-full tabular-nums shrink-0">{slide.page}</span>
+                    <h2 className="text-2xl font-black text-white leading-tight">{slide.title}</h2>
+                  </div>
+                </div>
+                {/* Body */}
+                <div className="flex flex-1 min-h-0 overflow-hidden">
+                  <div className="flex-1 px-8 py-6 overflow-y-auto">
+                    <ul className="space-y-4">
+                      {slide.content.map((item, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <span className="text-amber-400 mt-1.5 shrink-0 text-xl leading-none">•</span>
+                          <span className="text-lg text-gray-800 leading-relaxed">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {img && (
+                    <div className="w-[40%] shrink-0 overflow-hidden">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+                {/* Notes */}
+                {showNotes && slide.notes && (
+                  <div className="bg-gray-50 border-t border-gray-200 px-8 py-3 shrink-0">
+                    <p className="text-sm text-gray-500 italic">📌 {slide.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center justify-center gap-5 pb-4 shrink-0">
+              <button
+                onClick={() => setPresentIndex(i => Math.max(0, i - 1))}
+                disabled={presentIndex === 0}
+                className="flex items-center gap-1.5 px-5 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
+              >
+                <ChevronLeft className="w-4 h-4" />이전
+              </button>
+              <div className="flex gap-1.5">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setPresentIndex(i)}
+                    className={`h-2 rounded-full transition-all ${i === presentIndex ? 'bg-amber-400 w-4' : 'bg-gray-600 hover:bg-gray-500 w-2'}`}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={() => setPresentIndex(i => Math.min(slides.length - 1, i + 1))}
+                disabled={presentIndex === slides.length - 1}
+                className="flex items-center gap-1.5 px-5 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
+              >
+                다음<ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

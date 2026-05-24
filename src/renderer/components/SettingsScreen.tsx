@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Image } from 'lucide-react';
 import { SchoolLevel } from '../types';
 
 const SettingsScreen: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
+  const [unsplashKey, setUnsplashKey] = useState('');
+  const [hasUnsplashKey, setHasUnsplashKey] = useState(false);
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
@@ -21,8 +23,9 @@ const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
+      const [hn, huk, tn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
         window.electronAPI.hasApiKey(),
+        window.electronAPI.hasUnsplashKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
         window.electronAPI.getConfig('schoolLevel'),
@@ -33,6 +36,7 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('saveDir'),
       ]);
       setHasKey(hn as boolean);
+      setHasUnsplashKey(huk as boolean);
       setTeacherName(tn as string || '');
       setInstitution(inst as string || '');
       setSchoolLevel((sl as string) || SchoolLevel.HIGH);
@@ -401,6 +405,59 @@ const SettingsScreen: React.FC = () => {
             </button>
           </div>
           <p className="text-xs text-gray-400">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+        </div>
+
+        {/* Unsplash API Key */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Image className="w-4 h-4 text-gray-500" />
+            <h3 className="text-sm font-bold text-gray-700">수업 슬라이드 이미지 설정</h3>
+            {hasUnsplashKey && (
+              <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                <CheckCircle className="w-3 h-3" />등록됨
+              </span>
+            )}
+          </div>
+          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2 text-xs text-blue-700 leading-relaxed">
+            💡 Unsplash API 키를 등록하면 수업 슬라이드 생성 시 관련 이미지가 자동으로 삽입됩니다.<br />
+            <button
+              onClick={() => window.electronAPI.openExternal('https://unsplash.com/developers')}
+              className="text-blue-600 hover:underline font-medium mt-0.5 inline-flex items-center gap-0.5"
+            >
+              unsplash.com/developers <ExternalLink className="w-3 h-3" />
+            </button>
+            {' '}에서 무료 계정 생성 → New Application → Access Key 복사
+          </div>
+          {hasUnsplashKey && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100">
+              <CheckCircle className="w-4 h-4 shrink-0" />
+              <span>Unsplash API 키가 등록되어 있습니다. 변경하려면 새 키를 입력하세요.</span>
+            </div>
+          )}
+          <div>
+            <label className={labelClass}>Unsplash Access Key</label>
+            <input
+              type="password"
+              className={inputClass}
+              placeholder={hasUnsplashKey ? '새 키를 입력하면 교체됩니다' : 'Unsplash Access Key 붙여넣기'}
+              value={unsplashKey}
+              onChange={e => setUnsplashKey(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={async () => {
+              if (!unsplashKey.trim()) return;
+              await window.electronAPI.setUnsplashKey(unsplashKey.trim());
+              setHasUnsplashKey(true);
+              setUnsplashKey('');
+              setSaved(true);
+              setTimeout(() => setSaved(false), 2500);
+            }}
+            disabled={!unsplashKey.trim()}
+            className="w-full py-2.5 rounded-md text-sm font-bold bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Unsplash 키 저장
+          </button>
         </div>
 
         {/* Version */}

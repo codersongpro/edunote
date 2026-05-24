@@ -12,6 +12,7 @@ export interface ElectronAPI {
   saveTxt(content: string, suggestedName?: string): Promise<string | null>;
   saveCsv(content: string, suggestedName?: string): Promise<string | null>;
   saveHwpx(templateName: string, content: string, meta: Record<string, string>): Promise<string | null>;
+  savePdf(htmlContent: string, suggestedName: string): Promise<string | null>;
 
   openFolder(folderPath: string): Promise<boolean>;
   openExternal(url: string): Promise<boolean>;
@@ -21,9 +22,14 @@ export interface ElectronAPI {
   setConfig(data: Record<string, unknown>): Promise<void>;
   setApiKey(key: string): Promise<void>;
   hasApiKey(): Promise<boolean>;
+  setUnsplashKey(key: string): Promise<void>;
+  hasUnsplashKey(): Promise<boolean>;
 
   selectFolder(): Promise<string | null>;
   fetchUrlMeta(url: string): Promise<{ title: string; description: string; image: string; domain: string }>;
+  fetchImage(url: string): Promise<string | null>;
+  screenshotUrl(url: string): Promise<string | null>;
+  fetchSlideImage(keyword: string): Promise<string | null>;
   getVersion(): Promise<string>;
   checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 }
