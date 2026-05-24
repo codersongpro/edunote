@@ -107,7 +107,7 @@ const AboutScreen: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-700 dark:text-gray-200">직업</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">데이터 분석 · 앱 개발</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Teacher · Data Analytics · App Developer</span>
             </div>
             <div className="flex items-center gap-2 mt-3">
               <Mail className="w-4 h-4 text-gray-400" />
