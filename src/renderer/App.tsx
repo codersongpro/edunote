@@ -628,7 +628,7 @@ const App: React.FC = () => {
                 className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
               >
                 <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>API 키 설정 완료</span>
+                <span>API 키 활성화 완료!</span>
               </button>
             ) : (
               <button
