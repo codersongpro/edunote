@@ -381,7 +381,7 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className="w-64 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className="min-w-[160px] w-[17%] max-w-[240px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
@@ -645,27 +645,36 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-hidden flex flex-col">
           <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
-          {/* Generation progress bar */}
+          {/* Generation progress banner */}
           {generatingModes.has(mode) && (() => {
             const pct = generatingModes.get(mode) ?? -1;
-            return pct === -1
-              ? <div className="h-[2px] shrink-0 bg-blue-400 animate-pulse" />
-              : (
-                <div className="h-[2px] shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden relative">
+            const colorBar = STUDENT_RECORD_MODES.includes(mode)
+              ? 'from-blue-400 to-blue-600'
+              : ADMIN_MODES.includes(mode)
+              ? 'from-teal-400 to-teal-600'
+              : LESSON_AI_MODES.includes(mode)
+              ? 'from-amber-400 to-amber-600'
+              : 'from-gray-400 to-gray-500';
+            const colorBg = STUDENT_RECORD_MODES.includes(mode)
+              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300'
+              : ADMIN_MODES.includes(mode)
+              ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-100 dark:border-teal-900 text-teal-700 dark:text-teal-300'
+              : LESSON_AI_MODES.includes(mode)
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300'
+              : 'bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-600';
+            return (
+              <div className={`shrink-0 flex items-center gap-3 px-4 py-1.5 border-b ${colorBg}`}>
+                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className={`h-full transition-all duration-500 ease-out bg-gradient-to-r ${
-                      STUDENT_RECORD_MODES.includes(mode)
-                        ? 'from-blue-400 to-blue-600'
-                        : ADMIN_MODES.includes(mode)
-                        ? 'from-teal-400 to-teal-600'
-                        : LESSON_AI_MODES.includes(mode)
-                        ? 'from-amber-400 to-amber-600'
-                        : 'from-gray-400 to-gray-500'
-                    }`}
-                    style={{ width: `${pct}%` }}
+                    className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colorBar} ${pct === -1 ? 'w-full animate-pulse' : ''}`}
+                    style={pct !== -1 ? { width: `${pct}%` } : undefined}
                   />
                 </div>
-              );
+                <span className="text-xs font-semibold tabular-nums shrink-0">
+                  {pct === -1 ? 'AI 생성 중...' : `AI 생성 중 ${pct}%`}
+                </span>
+              </div>
+            );
           })()}
           {/* Lazy-mounted views */}
           {(Array.from(mountedModes) as AppMode[]).map(m => (

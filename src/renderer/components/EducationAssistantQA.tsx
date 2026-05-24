@@ -90,7 +90,7 @@ const EducationAssistantQA: React.FC = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length <= 1 && (
           <div className="pt-2">
             <p className="text-xs text-slate-400 text-center mb-3">자주 묻는 질문</p>

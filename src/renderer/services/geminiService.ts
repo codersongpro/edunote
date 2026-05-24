@@ -787,7 +787,31 @@ const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로�
 한국 국가교육과정 성취기준에 맞는 양질의 수업 자료를 생성하세요.
 학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.`;
 
+const getLessonGradeGuidance = (grade: string): string => {
+  if (grade.includes('초등')) {
+    return `[학년 적합성 - 초등학교]
+- 어휘: 쉽고 친숙한 일상 언어, 개념 설명 시 구체적 예시와 비유 활용
+- 분량: 슬라이드당 핵심 내용 2~3개, 활동지 활동 1~2개씩 간결하게
+- 방식: 놀이·체험·조작 활동 중심, 그림/도표로 시각화
+- 수업 시간: 40분 기준으로 도입 5분·전개 25분·정리 10분`;
+  } else if (grade.includes('중학')) {
+    return `[학년 적합성 - 중학교]
+- 어휘: 교과 기본 용어 도입, 기초 학술 언어와 일상 언어 혼용
+- 분량: 슬라이드당 핵심 내용 3~4개, 활동지 활동 2~3개
+- 방식: 탐구·토의 활동 포함, 실생활 연계 예시로 흥미 유발
+- 수업 시간: 45분 기준으로 도입 5분·전개 30분·정리 10분`;
+  } else if (grade.includes('고등')) {
+    return `[학년 적합성 - 고등학교]
+- 어휘: 교과 전문 용어 적극 활용, 학술적·분석적 표현
+- 분량: 슬라이드당 핵심 내용 4~5개, 활동지 활동 3~4개 심화
+- 방식: 심화 탐구·논술·비판적 사고 포함, 입시와 연계 가능한 활동
+- 수업 시간: 50분 기준으로 도입 5분·전개 35분·정리 10분`;
+  }
+  return '';
+};
+
 export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<LessonSlide[]> {
+  const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
 
 [수업 정보]
@@ -796,6 +820,7 @@ export async function generateLessonSlides(params: LessonParams, pageCount: numb
 - 단원: ${params.unit}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${gradeGuidance ? `\n${gradeGuidance}` : ''}
 
 [요구사항]
 1. 반드시 ${pageCount}장의 슬라이드를 생성하세요.
@@ -822,6 +847,7 @@ export async function generateLessonWorksheet(
   includeScore: boolean,
 ): Promise<string> {
   const typeLabel = worksheetType === 'activity' ? '활동지' : '평가지';
+  const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
@@ -830,7 +856,7 @@ export async function generateLessonWorksheet(
 - 단원: ${params.unit || ''}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
-
+${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
 - 활동 수: ${questionCount}개
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
@@ -852,6 +878,7 @@ th, td { border: 1pt solid #333; padding: 6pt 8pt; }
 }
 
 export async function generateLessonQuiz(params: LessonParams, questionCount: number): Promise<string> {
+  const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 정보를 바탕으로 인터랙티브 퀴즈를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
@@ -860,7 +887,7 @@ export async function generateLessonQuiz(params: LessonParams, questionCount: nu
 - 단원: ${params.unit}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
-
+${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
 - 문항 수: ${questionCount}개 (4지선다형 또는 O/X 혼합)
 - 각 문항에 정답 표시 기능 포함
@@ -877,6 +904,7 @@ ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 }
 
 export async function generateLessonPlan(params: LessonParams): Promise<string> {
+  const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
@@ -885,7 +913,7 @@ export async function generateLessonPlan(params: LessonParams): Promise<string> 
 - 단원: ${params.unit}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
-
+${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [필수 구성 요소]
 1. 수업 개요 (학년, 교과, 단원, 주제, 차시)
 2. 학습 목표 (지식, 기능, 태도 영역)
