@@ -483,18 +483,18 @@ const App: React.FC = () => {
             <div className="h-1.5" />
 
             {/* ── 수업자료AI ── */}
-            <div className="rounded-xl overflow-hidden border border-amber-100 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20">
+            <div className="rounded-xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20">
               <button
                 onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50/80 dark:hover:bg-amber-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-violet-50/80 dark:hover:bg-violet-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-violet-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
+                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">수업자료AI</span>
                 </div>
-                {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
+                {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-violet-400" /> : <ChevronRight className="w-3 h-3 text-violet-400" />}
               </button>
               {lessonSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
@@ -502,14 +502,14 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.LESSON_MATERIAL)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.LESSON_MATERIAL
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
                   >
                     <Presentation className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">수업자료 생성</span>
                     {generatingModes.has(AppMode.LESSON_MATERIAL) && mode !== AppMode.LESSON_MATERIAL && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
+                      <span className="text-[9px] px-1.5 py-0.5 bg-violet-200 dark:bg-violet-800 text-violet-700 dark:text-violet-200 rounded font-bold shrink-0 tabular-nums">
                         {generatingModes.get(AppMode.LESSON_MATERIAL)}%
                       </span>
                     )}
@@ -518,8 +518,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.QR_MAKER)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.QR_MAKER
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
                   >
                     <QrCode className="w-4 h-4 shrink-0" />
@@ -529,8 +529,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.MY_RESOURCES)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_RESOURCES
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
                   >
                     <BookMarked className="w-4 h-4 shrink-0" />
@@ -540,8 +540,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.LUCKY_DRAW)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.LUCKY_DRAW
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
                   >
                     <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>
@@ -601,9 +601,12 @@ const App: React.FC = () => {
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
             {!hasApiKey && (
-              <div className="mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400">
-                API 키를 설정해 주세요
-              </div>
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
+              >
+                ⚠ API 키를 설정해 주세요
+              </button>
             )}
             <button
               onClick={() => goTo(AppMode.USAGE_GUIDE)}

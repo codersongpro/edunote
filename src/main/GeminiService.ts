@@ -1,10 +1,19 @@
 import { GoogleGenAI } from '@google/genai';
 
+// gemini-2.5-pro 시도 → 유료 계정이면 성공, 무료 계정이면 403으로 즉시 실패 후 flash로 폴백
 const MODELS_TO_TRY = [
+  'gemini-2.5-pro',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-1.5-flash',
 ];
+
+// 첫 성공 모델 인덱스를 캐시 — 이후 호출은 검증된 모델부터 바로 시작
+let cachedStartIndex = 0;
+
+export function resetModelCache(): void {
+  cachedStartIndex = 0;
+}
 
 const isQuotaError = (error: unknown): boolean => {
   const msg = (error as any)?.message?.toLowerCase() || '';
@@ -18,6 +27,14 @@ const isQuotaError = (error: unknown): boolean => {
     msg.includes('resource exhausted') || msg.includes('rate limit') ||
     msg.includes('exceeded') || msg.includes('overloaded') ||
     str.includes('quota') || str.includes('exceeded');
+};
+
+// 생성 호출 중 모델 접근 불가 판단 (키 검증은 이미 완료된 상태이므로 403도 모델 문제로 처리)
+const isModelUnavailable = (error: unknown): boolean => {
+  const errStatus = ((error as any)?.error?.status || '').toLowerCase();
+  const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+  return httpStatus === 400 || httpStatus === 403 || httpStatus === 404 ||
+    errStatus === 'invalid_argument' || errStatus === 'not_found' || errStatus === 'permission_denied';
 };
 
 export interface GenerateOptions {
@@ -38,31 +55,25 @@ export async function generateContent(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config,
-      });
+      const result = await ai.models.generateContent({ model, contents: prompt, config });
+      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
       if (isQuotaError(error)) {
-        console.warn(`Model ${model} quota limit. Trying next...`);
-        const delay = 2000 * Math.pow(2, i);
-        await new Promise((r) => setTimeout(r, delay));
+        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
+        await new Promise((r) => setTimeout(r, 1000));
         continue;
       }
-      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
-      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
-      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
-        console.warn(`Model ${model} not available. Trying next...`);
+      if (isModelUnavailable(error)) {
+        console.warn(`[${model}] 접근 불가 (무료 계정 또는 미지원) → 다음 모델로`);
         continue;
       }
       throw error;
@@ -79,31 +90,25 @@ export async function generateContentMultipart(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({
-        model,
-        contents: { parts },
-        config,
-      });
+      const result = await ai.models.generateContent({ model, contents: { parts }, config });
+      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
       if (isQuotaError(error)) {
-        console.warn(`Model ${model} quota limit. Trying next...`);
-        const delay = 2000 * Math.pow(2, i);
-        await new Promise((r) => setTimeout(r, delay));
+        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
+        await new Promise((r) => setTimeout(r, 1000));
         continue;
       }
-      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
-      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
-      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
-        console.warn(`Model ${model} not available. Trying next...`);
+      if (isModelUnavailable(error)) {
+        console.warn(`[${model}] 접근 불가 → 다음 모델로`);
         continue;
       }
       throw error;
@@ -133,24 +138,28 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
 
       if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
 
-      // Network error
       if (msg.includes('failed to fetch') || msg.includes('network error') || msg.includes('networkerror')) {
         return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
       }
 
-      // Definitively invalid key — only when the error message explicitly says so,
-      // or HTTP 401 (unauthenticated). Do NOT include 400/INVALID_ARGUMENT here
-      // because Google also returns 400 for invalid model names, not just bad keys.
+      // Definitively invalid key — 401 or explicit "invalid key" message only
       const isKeyInvalid =
         status === 401 ||
         msg.includes('api_key_invalid') ||
         msg.includes('api key not valid') ||
         msg.includes('api key invalid') ||
-        msg.includes('invalid api key') ||
-        (status === 403 && (errStatus === 'permission_denied' || msg.includes('permission')));
+        msg.includes('invalid api key');
 
       if (isKeyInvalid) {
         return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
+      }
+
+      // 403 PERMISSION_DENIED: 키 자체 오류가 아닌 계정/조직 정책 제한일 가능성이 높음
+      if (status === 403 || errStatus === 'permission_denied') {
+        return {
+          ok: false,
+          error: 'Gemini API 접근이 거부되었습니다 (403).\n\n학교/기관 Google Workspace 계정으로 발급한 키는 조직 관리자가 Gemini API를 차단한 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.',
+        };
       }
 
       // Quota / rate limit — key IS valid, just limited; try next model
@@ -174,7 +183,7 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
   if (quotaHit) {
     return {
       ok: true,
-      warning: 'API 키가 확인되었습니다. 무료 계정 요청 한도에 근접했거나 일시적으로 제한 중입니다. 잠시 후 사용하면 정상 동작합니다.',
+      warning: '무료 요청 한도가 일시적으로 초과된 상태입니다. 1~2분 후 정상적으로 사용할 수 있습니다.',
     };
   }
 

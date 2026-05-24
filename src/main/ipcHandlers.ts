@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { store } from './store';
-import { generateContent, generateContentMultipart, testApiKey, generateSlideImage } from './GeminiService';
+import { generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode'];
