@@ -586,6 +586,22 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
   };
 
+  // 현재 활동의 모든 학생 결과를 한 번에 클립보드에 복사
+  const handleCopyAll = async () => {
+    const text = creativeState.activeStudents
+      .filter(s => s.generatedContent)
+      .map(s => `[${s.name}]\n${s.generatedContent}`)
+      .join('\n\n');
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId('__ALL__');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy all: ', err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const checkDuplicates = () => {
     try {
       const sentenceMap = new Map<string, string[]>();
@@ -1167,6 +1183,20 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         <span className="text-orange-600 dark:text-orange-400">[{creativeState.currentActivityName}]</span> 생성 결과
                     </h3>
                     <div className="flex items-center gap-2">
+                         <button
+                            onClick={handleCopyAll}
+                            disabled={isGlobalGenerating}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center shadow-md ${
+                                copiedId === '__ALL__'
+                                ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-400'
+                                : 'bg-slate-600 text-white hover:bg-slate-700'
+                            } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                            </svg>
+                            {copiedId === '__ALL__' ? '전체 복사 완료!' : '전체 복사'}
+                        </button>
                          <button
                             onClick={checkDuplicates}
                             disabled={isGlobalGenerating}
