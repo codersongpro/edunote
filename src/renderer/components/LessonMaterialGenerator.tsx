@@ -558,11 +558,12 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={handleGenerateAllImages}
-                    disabled={!!allImagesProgress}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 rounded transition-colors"
+                    disabled
+                    title="이미지 생성 기능은 현재 구현 중입니다"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 bg-gray-100 border border-dashed border-gray-300 rounded cursor-not-allowed"
                   >
                     <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
+                    <span className="ml-1 text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">구현중</span>
                   </button>
                   <button
                     onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
@@ -596,29 +597,12 @@ li{margin-bottom:5pt;line-height:1.6;}
                     {slideImages[slide.page] ? (
                       <div className="relative group">
                         <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
-                        <button
-                          onClick={() => handleGenerateSlideImage(slide)}
-                          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white bg-black/50 hover:bg-black/70 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <ImageIcon className="w-3 h-3" />재생성
-                        </button>
-                      </div>
-                    ) : generatingImageSlides.has(slide.page) ? (
-                      <div className="w-full bg-gray-100 flex flex-col items-center justify-center gap-1" style={{height: 80}}>
-                        <svg className="animate-spin w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                        </svg>
-                        <span className="text-[10px] text-gray-400">이미지 생성 중...</span>
                       </div>
                     ) : slide.imagePrompt ? (
-                      <div className="w-full bg-gray-50 flex items-center justify-center border-b border-gray-100" style={{height: 56}}>
-                        <button
-                          onClick={() => handleGenerateSlideImage(slide)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-md transition-colors"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성
-                        </button>
+                      <div className="w-full bg-gray-50 flex items-center justify-center border-b border-gray-100" style={{height: 48}}>
+                        <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성 <span className="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">구현중</span>
+                        </span>
                       </div>
                     ) : null}
                     <div className="px-4 py-3">

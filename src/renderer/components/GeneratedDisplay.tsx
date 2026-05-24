@@ -255,19 +255,17 @@ h2,h3{page-break-after:avoid;}
             </button>
           )}
 
-          {hwpxTemplate && hwpxFillData && (
-             <button
-              onClick={handleDownloadHwpx}
-              disabled={hwpxDownloading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded transition-colors shadow-sm disabled:opacity-50"
-              title="원본 HWPX 양식에 생성된 내용 채워넣기"
-            >
-              <FileType className="w-4 h-4" />
-              <span>{hwpxDownloading ? '저장 중...' : 'HWPX (양식)'}</span>
-            </button>
-          )}
+          <button
+            disabled
+            title="HWPX 저장 기능은 현재 구현 중입니다"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-400 bg-gray-100 border border-dashed border-gray-300 rounded cursor-not-allowed"
+          >
+            <FileType className="w-4 h-4" />
+            <span>HWPX 저장</span>
+            <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full leading-none">구현중</span>
+          </button>
 
-          <button 
+          <button
             onClick={handleDownloadWord}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded transition-colors shadow-sm"
             title="HWP에서 열기 좋은 Word 파일로 저장"
