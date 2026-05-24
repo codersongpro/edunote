@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails } from '../types';
+import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails, AppMode } from '../types';
 import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
 import { useGlobalState } from '../GlobalStateContext';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -15,11 +16,19 @@ interface DuplicateResult {
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress } = useGlobalState();
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
 
   // Local UI State
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const wasGenerating = useRef(false);
+
+  useEffect(() => {
+    const isNow = generatingIds.size > 0;
+    if (isNow && !wasGenerating.current) { startGeneration(); wasGenerating.current = true; }
+    else if (!isNow && wasGenerating.current) { endGeneration(); wasGenerating.current = false; }
+  }, [generatingIds.size]);
   const [uploadedFile, setUploadedFile] = useState<{data: string, type: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);

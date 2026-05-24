@@ -34,15 +34,17 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
     scrollToBottom();
   }, [messages]);
 
+  const greetingText = (level: typeof schoolLevel) =>
+    `안녕하세요! 저는 학교생활기록부 기재 전문 AI 도우미입니다.\n\n2026학년도 기재요령을 기반으로 **${level}** 선생님께 실질적인 도움을 드리겠습니다. 기재 예시 요청, 특정 항목 작성법, 기재 금지 사항 확인 등 무엇이든 편하게 물어보세요!`;
+
   useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
-        role: 'model',
-        text: `안녕하세요! 저는 학교생활기록부 기재 전문 AI 도우미입니다.\n\n2026학년도 기재요령을 기반으로 **${schoolLevel}** 선생님께 실질적인 도움을 드리겠습니다. 기재 예시 요청, 특정 항목 작성법, 기재 금지 사항 확인 등 무엇이든 편하게 물어보세요!`,
-        timestamp: Date.now(),
-      }]);
-    }
-  }, []);
+    setMessages(prev => {
+      const greeting = { role: 'model' as const, text: greetingText(schoolLevel), timestamp: Date.now() };
+      if (prev.length === 0) return [greeting];
+      if (prev[0].role === 'model') return [greeting, ...prev.slice(1)];
+      return prev;
+    });
+  }, [schoolLevel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,11 +73,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const handleClear = () => {
-    setMessages([{
-      role: 'model',
-      text: `안녕하세요! 학교생활기록부 기재에 대해 무엇이든 질문해 주세요.`,
-      timestamp: Date.now(),
-    }]);
+    setMessages([{ role: 'model', text: greetingText(schoolLevel), timestamp: Date.now() }]);
   };
 
   const suggestedQuestions = [

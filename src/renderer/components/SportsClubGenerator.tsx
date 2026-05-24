@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { SchoolLevel, LengthOption, LengthUnit, StudentSportsData } from '../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { SchoolLevel, LengthOption, LengthUnit, StudentSportsData, AppMode } from '../types';
 import { generateSportsClubReport } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -14,10 +15,18 @@ interface DuplicateResult {
 
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
 
   // Local UI State
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const wasGenerating = useRef(false);
+
+  useEffect(() => {
+    const isNow = generatingIds.size > 0;
+    if (isNow && !wasGenerating.current) { startGeneration(); wasGenerating.current = true; }
+    else if (!isNow && wasGenerating.current) { endGeneration(); wasGenerating.current = false; }
+  }, [generatingIds.size]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);

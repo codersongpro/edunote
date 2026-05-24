@@ -1,9 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student } from '../types';
+import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student, AppMode } from '../types';
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
 import { generateCreativeActivityReport, parseAnnualPlanFromImages } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -18,10 +19,18 @@ const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '�
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
+  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
   // Local UI State
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const wasGeneratingCreative = useRef(false);
+
+  useEffect(() => {
+    const isNow = generatingIds.size > 0;
+    if (isNow && !wasGeneratingCreative.current) { startGeneration(); wasGeneratingCreative.current = true; }
+    else if (!isNow && wasGeneratingCreative.current) { endGeneration(); wasGeneratingCreative.current = false; }
+  }, [generatingIds.size]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
