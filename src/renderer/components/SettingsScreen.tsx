@@ -240,7 +240,15 @@ const SettingsScreen: React.FC = () => {
           )}
 
           <div>
-            <label className={labelClass}>새 API 키 {!hasKey && <span className="text-red-500">*</span>}</label>
+            <label className={`${labelClass} flex items-center gap-2`}>
+              <span>새 API 키 {!hasKey && <span className="text-red-500">*</span>}</span>
+              {hasKey && (
+                <span className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 border border-green-300 rounded-full px-2 py-0.5">
+                  <CheckCircle className="w-3 h-3" />
+                  API 키 설정 완료
+                </span>
+              )}
+            </label>
             <input
               type="password"
               className={inputClass}

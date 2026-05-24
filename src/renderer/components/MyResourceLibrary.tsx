@@ -77,6 +77,9 @@ const MyResourceLibrary: React.FC = () => {
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
+  // 자료의 분류(카테고리)를 변경 중인 자료 ID — 드롭다운 메뉴 표시 제어용
+  const [categoryEditId, setCategoryEditId] = useState<string | null>(null);
+
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCatManagerInput, setNewCatManagerInput] = useState('');
 
@@ -256,6 +259,25 @@ const MyResourceLibrary: React.FC = () => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, title: editTitle, description: editDesc } : r));
     setEditId(null);
   };
+
+  // 자료의 분류(카테고리)를 즉시 변경하는 핸들러 — 드롭다운에서 카테고리 선택 시 호출
+  const handleCategoryChange = (id: string, newCategory: string) => {
+    setResources(prev => prev.map(r => r.id === id ? { ...r, category: newCategory } : r));
+    setCategoryEditId(null);
+  };
+
+  // 드롭다운 메뉴 외부 클릭 시 자동 닫기
+  useEffect(() => {
+    if (!categoryEditId) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-category-dropdown]')) {
+        setCategoryEditId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [categoryEditId]);
 
   const filtered = resources.filter(r => {
     const catMatch = activeCategory === '전체' || r.category === activeCategory ||
@@ -626,9 +648,40 @@ const MyResourceLibrary: React.FC = () => {
                         </div>
                         {r.description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
                         <div className="flex items-center gap-2 flex-wrap">
-                          {r.category && (
-                            <span className="text-[10px] bg-teal-100 text-teal-700 border border-teal-200 rounded-full px-2 py-0.5 font-semibold">{r.category}</span>
-                          )}
+                          {/* 분류 태그 — 클릭하면 드롭다운으로 분류 변경 가능 */}
+                          <div className="relative" data-category-dropdown>
+                            <button
+                              onClick={() => setCategoryEditId(categoryEditId === r.id ? null : r.id)}
+                              className={`text-[10px] rounded-full px-2 py-0.5 font-semibold transition-colors cursor-pointer ${
+                                r.category
+                                  ? 'bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200'
+                                  : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                              }`}
+                              title="클릭하여 분류 변경"
+                            >
+                              {r.category || '+ 분류'}
+                            </button>
+                            {categoryEditId === r.id && (
+                              <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] max-h-[200px] overflow-y-auto">
+                                <button
+                                  onClick={() => handleCategoryChange(r.id, '')}
+                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${!r.category ? 'font-bold text-teal-600 bg-teal-50' : 'text-gray-700'}`}
+                                >
+                                  미분류
+                                </button>
+                                {categories.length > 0 && <div className="border-t border-gray-100 my-1" />}
+                                {categories.map(cat => (
+                                  <button
+                                    key={cat}
+                                    onClick={() => handleCategoryChange(r.id, cat)}
+                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${r.category === cat ? 'font-bold text-teal-600 bg-teal-50' : 'text-gray-700'}`}
+                                  >
+                                    {cat}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <span className="text-[10px] text-gray-400 truncate max-w-[180px]">{r.url.replace(/^https?:\/\//, '').substring(0, 50)}</span>
                           {r.tags && r.tags.split(/\s+/).filter(Boolean).map((tag, i) => (
                             <span key={i} className="flex items-center gap-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">

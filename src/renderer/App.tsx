@@ -27,7 +27,7 @@ import {
   Bot, BookOpen, User2, Dumbbell, Palette,
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
-  Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode,
+  Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
 } from 'lucide-react';
 
 const STUDENT_RECORD_MODES: AppMode[] = [
@@ -600,7 +600,15 @@ const App: React.FC = () => {
           </nav>
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
-            {!hasApiKey && (
+            {hasApiKey ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
+              >
+                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>API 키 설정 완료</span>
+              </button>
+            ) : (
               <button
                 onClick={() => goTo(AppMode.SETTINGS)}
                 className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
