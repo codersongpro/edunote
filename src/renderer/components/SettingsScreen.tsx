@@ -72,6 +72,32 @@ const SettingsScreen: React.FC = () => {
 
   const handleSaveKey = async () => {
     if (!apiKey.trim()) return;
+
+    // 아직 테스트 통과 상태가 아니면 자동으로 테스트 먼저 실행
+    if (testStatus !== 'ok' && testStatus !== 'warn') {
+      setTestStatus('testing');
+      setTestError('');
+      setTestWarn('');
+      try {
+        const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string };
+        if (!result?.ok) {
+          setTestStatus('fail');
+          setTestError(result?.error || 'API 키가 유효하지 않습니다.');
+          return; // 저장 차단
+        }
+        if (result.warning) {
+          setTestStatus('warn');
+          setTestWarn(result.warning);
+        } else {
+          setTestStatus('ok');
+        }
+      } catch (e) {
+        setTestStatus('fail');
+        setTestError(e instanceof Error ? e.message : '오류가 발생했습니다.');
+        return; // 저장 차단
+      }
+    }
+
     await window.electronAPI.setApiKey(apiKey.trim());
     setHasKey(true);
     setApiKey('');
@@ -231,15 +257,18 @@ const SettingsScreen: React.FC = () => {
             </div>
           )}
           {testStatus === 'warn' && (
-            <div className="flex items-start gap-2 text-amber-700 bg-amber-50 p-2.5 rounded-md border border-amber-200 text-sm">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{testWarn}</span>
+            <div className="flex items-start gap-2 text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100 text-sm">
+              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">API 키 정상 — 바로 사용 가능합니다!</p>
+                <p className="text-xs mt-0.5 text-green-600">{testWarn}</p>
+              </div>
             </div>
           )}
           {testStatus === 'fail' && (
             <div className="flex items-start gap-2 text-red-600 bg-red-50 p-2.5 rounded-md border border-red-100 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{testError}</span>
+              <span className="whitespace-pre-line">{testError}</span>
             </div>
           )}
 
@@ -253,10 +282,10 @@ const SettingsScreen: React.FC = () => {
             </button>
             <button
               onClick={handleSaveKey}
-              disabled={!apiKey.trim()}
+              disabled={!apiKey.trim() || testStatus === 'testing'}
               className="flex-1 py-2.5 rounded-md text-sm font-bold bg-[#1E88E5] text-white hover:bg-[#1565C0] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {saved ? '저장됨!' : 'API 키 저장'}
+              {testStatus === 'testing' ? '확인 중...' : saved ? '저장 완료!' : 'API 키 저장'}
             </button>
           </div>
           {hasKey && (

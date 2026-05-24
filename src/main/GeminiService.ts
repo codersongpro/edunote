@@ -1,6 +1,22 @@
 import { GoogleGenAI } from '@google/genai';
 
-// gemini-2.5-pro 시도 → 유료 계정이면 성공, 무료 계정이면 403으로 즉시 실패 후 flash로 폴백
+// ─────────────────────────────────────────────────────────────
+// Gemini 모델 스마트 폴백 전략
+//
+// 동작 원리:
+//   1. 매 호출마다 사용 가능한 "가장 상위" 모델부터 시도
+//   2. 쿼터 초과(429) → 해당 모델만 60초간 임시 차단 → 다음 모델로 폴백
+//      → 60초가 지나면 자동으로 차단 해제 → 다시 상위 모델로 복귀
+//   3. 권한 거부/모델 미지원(400/403/404) → 영구 차단 (재시도 무의미)
+//      → 앱 재시작 또는 API 키 변경 시에만 초기화
+//
+// 계정별 자동 결과:
+//   • 유료 계정: 항상 gemini-2.5-pro 사용
+//   • 무료 gmail: 첫 호출 시 2.5-pro 403 → 영구 차단 → 이후 2.5-flash 사용
+//     쿼터 시 2.0-flash로 일시 폴백 → 1분 후 자동으로 2.5-flash 복귀
+// ─────────────────────────────────────────────────────────────
+
+// 시도할 모델 우선순위 (위에서부터 시도)
 const MODELS_TO_TRY = [
   'gemini-2.5-pro',
   'gemini-2.5-flash',
@@ -8,13 +24,33 @@ const MODELS_TO_TRY = [
   'gemini-1.5-flash',
 ];
 
-// 첫 성공 모델 인덱스를 캐시 — 이후 호출은 검증된 모델부터 바로 시작
-let cachedStartIndex = 0;
+// 권한 거부/모델 미지원으로 영구 차단된 모델 목록
+const permanentlyBlockedModels = new Set<string>();
 
+// 쿼터 초과로 임시 차단된 모델 → 차단 해제 시각(unix ms)
+const quotaBlockedModels = new Map<string, number>();
+
+// 쿼터 초과 시 재시도 대기 시간 (60초)
+const QUOTA_COOLDOWN_MS = 60_000;
+
+// API 키 변경 시 모든 차단 상태를 초기화 (외부에서 호출)
 export function resetModelCache(): void {
-  cachedStartIndex = 0;
+  permanentlyBlockedModels.clear();
+  quotaBlockedModels.clear();
 }
 
+// 특정 모델이 현재 차단 상태인지 확인 (쿨다운 만료 시 자동 해제)
+function isBlocked(model: string): boolean {
+  if (permanentlyBlockedModels.has(model)) return true;
+  const cooldownUntil = quotaBlockedModels.get(model);
+  if (cooldownUntil === undefined) return false;
+  if (cooldownUntil > Date.now()) return true;
+  // 쿨다운 만료 → 차단 해제하고 다시 사용 가능
+  quotaBlockedModels.delete(model);
+  return false;
+}
+
+// 쿼터 초과 에러인지 판단 (429, 503, RESOURCE_EXHAUSTED 등)
 const isQuotaError = (error: unknown): boolean => {
   const msg = (error as any)?.message?.toLowerCase() || '';
   const str = (error as any)?.toString()?.toLowerCase() || '';
@@ -29,8 +65,9 @@ const isQuotaError = (error: unknown): boolean => {
     str.includes('quota') || str.includes('exceeded');
 };
 
-// 생성 호출 중 모델 접근 불가 판단 (키 검증은 이미 완료된 상태이므로 403도 모델 문제로 처리)
-const isModelUnavailable = (error: unknown): boolean => {
+// 권한/모델 문제로 재시도 무의미한 에러인지 판단 (400/403/404)
+// → 영구 차단 대상
+const isPermanentBlockError = (error: unknown): boolean => {
   const errStatus = ((error as any)?.error?.status || '').toLowerCase();
   const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
   return httpStatus === 400 || httpStatus === 403 || httpStatus === 404 ||
@@ -47,6 +84,7 @@ export interface MultipartPart {
   inlineData?: { data: string; mimeType: string };
 }
 
+// 텍스트 생성 (단일 프롬프트)
 export async function generateContent(
   apiKey: string,
   prompt: string,
@@ -55,33 +93,45 @@ export async function generateContent(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
+  // 우선순위 순서대로 모델 시도, 차단된 모델은 자동 skip
+  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
+    if (isBlocked(model)) continue; // 차단된 모델 건너뜀
+
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
       const result = await ai.models.generateContent({ model, contents: prompt, config });
-      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
+
+      // 쿼터 초과 → 60초 임시 차단 후 다음 모델로
       if (isQuotaError(error)) {
-        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
-        await new Promise((r) => setTimeout(r, 1000));
+        quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
         continue;
       }
-      if (isModelUnavailable(error)) {
-        console.warn(`[${model}] 접근 불가 (무료 계정 또는 미지원) → 다음 모델로`);
+
+      // 권한 거부/모델 미지원 → 영구 차단
+      if (isPermanentBlockError(error)) {
+        permanentlyBlockedModels.add(model);
+        console.warn(`[${model}] 접근 불가 → 영구 차단, 다음 모델로 폴백`);
         continue;
       }
+
+      // 그 외 에러는 즉시 전파 (네트워크 오류 등)
       throw error;
     }
   }
+
+  // 모든 모델이 실패한 경우 마지막 에러 전파
   throw lastError;
 }
 
+// 멀티파트(텍스트+파일) 생성
 export async function generateContentMultipart(
   apiKey: string,
   parts: MultipartPart[],
@@ -90,33 +140,40 @@ export async function generateContentMultipart(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
+  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
+    if (isBlocked(model)) continue;
+
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
       const result = await ai.models.generateContent({ model, contents: { parts }, config });
-      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
+
       if (isQuotaError(error)) {
-        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
-        await new Promise((r) => setTimeout(r, 1000));
+        quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
         continue;
       }
-      if (isModelUnavailable(error)) {
-        console.warn(`[${model}] 접근 불가 → 다음 모델로`);
+
+      if (isPermanentBlockError(error)) {
+        permanentlyBlockedModels.add(model);
+        console.warn(`[${model}] 접근 불가 → 영구 차단, 다음 모델로 폴백`);
         continue;
       }
+
       throw error;
     }
   }
+
   throw lastError;
 }
 
+// API 키 유효성 검증 (설정 화면에서 호출)
 export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
   const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
@@ -138,54 +195,59 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
 
       if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
 
-      // Network error
       if (msg.includes('failed to fetch') || msg.includes('network error') || msg.includes('networkerror')) {
         return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
       }
 
-      // Definitively invalid key — only when the error message explicitly says so,
-      // or HTTP 401 (unauthenticated). Do NOT include 400/INVALID_ARGUMENT here
-      // because Google also returns 400 for invalid model names, not just bad keys.
+      // 명시적인 "키 잘못됨" 에러 (401 또는 메시지에 키 관련 문구)
       const isKeyInvalid =
         status === 401 ||
         msg.includes('api_key_invalid') ||
         msg.includes('api key not valid') ||
         msg.includes('api key invalid') ||
-        msg.includes('invalid api key') ||
-        (status === 403 && (errStatus === 'permission_denied' || msg.includes('permission')));
+        msg.includes('invalid api key');
 
       if (isKeyInvalid) {
         return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
       }
 
-      // Quota / rate limit — key IS valid, just limited; try next model
+      // 403 PERMISSION_DENIED → 학교/조직 Workspace 계정 제한일 가능성 높음
+      if (status === 403 || errStatus === 'permission_denied') {
+        return {
+          ok: false,
+          error: 'Gemini API 접근이 거부되었습니다 (403).\n\n학교/기관 Google Workspace 계정으로 발급한 키는 조직 관리자가 Gemini API를 차단한 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.',
+        };
+      }
+
+      // 쿼터 초과 → 키는 유효, 일시적 제한
       if (status === 429 || errStatus === 'resource_exhausted' ||
           msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('rate limit')) {
         quotaHit = true;
         continue;
       }
 
-      // Model not found or bad request (400/404/INVALID_ARGUMENT) → try next model
+      // 모델 미지원 (400/404) → 다음 모델 시도
       if (status === 400 || status === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
         continue;
       }
 
-      // Unknown — try next model
+      // 그 외 → 다음 모델 시도
       continue;
     }
   }
 
-  // All models hit quota → key is valid but rate-limited
+  // 모든 모델이 쿼터 초과 → 키는 유효함
   if (quotaHit) {
     return {
       ok: true,
-      warning: 'API 키가 확인되었습니다. 무료 계정 요청 한도에 근접했거나 일시적으로 제한 중입니다. 잠시 후 사용하면 정상 동작합니다.',
+      warning: '무료 요청 한도가 일시적으로 초과된 상태입니다. 1~2분 후 정상적으로 사용할 수 있습니다.',
     };
   }
 
   return { ok: false, error: '알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
 }
 
+// 이미지 생성 모델 (2종류만 시도, 캐싱 로직 불필요)
 const IMAGE_MODELS_TO_TRY = [
   'gemini-2.0-flash-preview-image-generation',
   'gemini-2.0-flash-exp-image-generation',
