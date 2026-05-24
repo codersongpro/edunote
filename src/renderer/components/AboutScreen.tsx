@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, Mail, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield } from 'lucide-react';
+import { BookOpen, Mail, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield, ClipboardList } from 'lucide-react';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -107,7 +107,7 @@ const AboutScreen: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-700 dark:text-gray-200">직업</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">교사 · 데이터 분석 · 앱 개발</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">데이터 분석 · 앱 개발</span>
             </div>
             <div className="flex items-center gap-2 mt-3">
               <Mail className="w-4 h-4 text-gray-400" />
@@ -120,6 +120,14 @@ const AboutScreen: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
+          <button
+            onClick={() => openLink('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
+            className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 border border-violet-200 dark:border-violet-700 rounded-xl text-sm font-semibold text-violet-700 dark:text-violet-300 transition-colors"
+          >
+            <ClipboardList className="w-4 h-4" />
+            앱 만족도 설문 참여하기
+            <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+          </button>
         </div>
 
         {/* Usage precautions */}
