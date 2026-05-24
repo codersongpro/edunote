@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus } from 'lucide-react';
+import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera } from 'lucide-react';
 
 interface Resource {
   id: string;
@@ -13,7 +13,7 @@ interface Resource {
   createdAt: number;
 }
 
-const STORAGE_KEY = 'eduNote_resources_v1';
+const STORAGE_KEY = 'eduNote_resources_v2';
 const CATEGORIES_KEY = 'eduNote_resource_categories_v1';
 
 function extractYoutubeId(url: string): string | null {
@@ -31,20 +31,17 @@ function extractYoutubeId(url: string): string | null {
 }
 
 function isYoutubeUrl(url: string): boolean { return !!extractYoutubeId(url); }
-function youtubeThumbnail(id: string): string { return `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
 
 function loadResources(): Resource[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { return []; }
 }
-
 function saveResources(list: Resource[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
 
 function loadCategories(): string[] {
   try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY) || '[]'); }
   catch { return []; }
 }
-
 function saveCategories(cats: string[]) { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); }
 
 const MyResourceLibrary: React.FC = () => {
@@ -59,16 +56,17 @@ const MyResourceLibrary: React.FC = () => {
   const [addDesc, setAddDesc] = useState('');
   const [addTags, setAddTags] = useState('');
   const [addCategory, setAddCategory] = useState('');
+  const [addThumbnail, setAddThumbnail] = useState('');
   const [newCatInput, setNewCatInput] = useState('');
   const [showNewCat, setShowNewCat] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [fetchStep, setFetchStep] = useState('');
   const [fetchError, setFetchError] = useState('');
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDesc, setEditDesc] = useState('');
 
-  // Category management
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCatManagerInput, setNewCatManagerInput] = useState('');
 
@@ -90,23 +88,97 @@ const MyResourceLibrary: React.FC = () => {
     if (activeCategory === name) setActiveCategory('전체');
   };
 
+  const autoClassify = async (title: string, desc: string, url: string): Promise<string> => {
+    if (categories.length === 0) return '';
+    try {
+      const prompt = `다음 웹 자료의 주제를 아래 카테고리 중 하나로 분류해주세요.
+
+카테고리 목록: ${categories.join(', ')}
+
+웹 자료 정보:
+- URL: ${url}
+- 제목: ${title}
+- 설명: ${desc}
+
+규칙:
+- 반드시 위 카테고리 목록 중 하나만 정확히 그대로 답하세요.
+- 맞는 카테고리가 없으면 "없음"이라고만 답하세요.
+- 다른 설명 없이 카테고리 이름 하나만 출력하세요.`;
+      const result = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0 });
+      const matched = categories.find(c => result.trim() === c || result.trim().startsWith(c));
+      return matched ?? '';
+    } catch {
+      return '';
+    }
+  };
+
   const handleFetchMeta = async () => {
     if (!addUrl.trim()) return;
-    setFetching(true); setFetchError('');
+    setFetching(true); setFetchError(''); setAddThumbnail('');
     try {
       let url = addUrl.trim();
       if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
       setAddUrl(url);
-      if (!isYoutubeUrl(url)) {
+
+      const ytId = extractYoutubeId(url);
+
+      // 1. Fetch page metadata
+      setFetchStep('페이지 정보 가져오는 중...');
+      if (!ytId) {
         const meta = await window.electronAPI.fetchUrlMeta(url);
         if (meta.title && !addTitle) setAddTitle(meta.title);
         if (meta.description && !addDesc) setAddDesc(meta.description);
+
+        // 2a. Thumbnail: try og:image first, then screenshot
+        if (meta.image) {
+          setFetchStep('썸네일 이미지 가져오는 중...');
+          const imgData = await (window.electronAPI as any).fetchImage(meta.image);
+          if (imgData) {
+            setAddThumbnail(imgData);
+          } else {
+            setFetchStep('스크린샷 촬영 중... (최대 15초)');
+            const shot = await (window.electronAPI as any).screenshotUrl(url);
+            if (shot) setAddThumbnail(shot);
+          }
+        } else {
+          setFetchStep('스크린샷 촬영 중... (최대 15초)');
+          const shot = await (window.electronAPI as any).screenshotUrl(url);
+          if (shot) setAddThumbnail(shot);
+        }
+
+        // 3. Auto-classify
+        if (categories.length > 0 && !addCategory) {
+          setFetchStep('자동 분류 중...');
+          const cat = await autoClassify(meta.title || addTitle, meta.description || addDesc, url);
+          if (cat) setAddCategory(cat);
+        }
       } else {
+        // YouTube
         if (!addTitle) setAddTitle('YouTube 영상');
+        // 2b. Fetch YouTube thumbnail
+        setFetchStep('YouTube 썸네일 가져오는 중...');
+        const ytThumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+        const imgData = await (window.electronAPI as any).fetchImage(ytThumbUrl);
+        if (imgData) setAddThumbnail(imgData);
+
+        // Auto-classify YouTube by title
+        if (categories.length > 0 && !addCategory && addTitle) {
+          setFetchStep('자동 분류 중...');
+          const cat = await autoClassify(addTitle, addDesc, url);
+          if (cat) setAddCategory(cat);
+        }
       }
     } catch {
       setFetchError('정보를 불러오지 못했습니다. 직접 입력해주세요.');
-    } finally { setFetching(false); }
+    } finally {
+      setFetching(false);
+      setFetchStep('');
+    }
+  };
+
+  const resetForm = () => {
+    setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags('');
+    setAddCategory(''); setAddThumbnail(''); setFetchError(''); setShowNewCat(false);
   };
 
   const handleAdd = () => {
@@ -119,15 +191,15 @@ const MyResourceLibrary: React.FC = () => {
       url,
       title: addTitle || url,
       description: addDesc,
-      thumbnail: ytId ? youtubeThumbnail(ytId) : '',
+      thumbnail: addThumbnail,
       type: ytId ? 'youtube' : 'web',
       tags: addTags,
       category: addCategory,
       createdAt: Date.now(),
     };
     setResources(prev => [item, ...prev]);
-    setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags(''); setAddCategory('');
-    setFetchError(''); setShowAdd(false);
+    resetForm();
+    setShowAdd(false);
   };
 
   const handleDelete = (id: string) => setResources(prev => prev.filter(r => r.id !== id));
@@ -148,7 +220,6 @@ const MyResourceLibrary: React.FC = () => {
   });
 
   const inputClass = 'w-full bg-white rounded-lg border border-gray-300 text-gray-800 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none p-2.5 transition-all';
-
   const allTabs = ['전체', ...categories, ...(resources.some(r => !r.category) ? ['미분류'] : [])];
 
   return (
@@ -171,7 +242,6 @@ const MyResourceLibrary: React.FC = () => {
               <button
                 onClick={() => setShowCatManager(s => !s)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
-                title="주제 관리"
               >
                 <FolderPlus className="w-4 h-4" />
                 주제 관리
@@ -198,15 +268,13 @@ const MyResourceLibrary: React.FC = () => {
                 placeholder="새 주제 이름 입력..."
                 value={newCatManagerInput}
                 onChange={e => setNewCatManagerInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { addCategory_save(newCatManagerInput); setNewCatManagerInput(''); }}}
+                onKeyDown={e => { if (e.key === 'Enter') { addCategory_save(newCatManagerInput); setNewCatManagerInput(''); } }}
               />
               <button
                 onClick={() => { addCategory_save(newCatManagerInput); setNewCatManagerInput(''); }}
                 disabled={!newCatManagerInput.trim()}
                 className="px-4 py-2 text-sm bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold disabled:opacity-50 shrink-0"
-              >
-                추가
-              </button>
+              >추가</button>
             </div>
             {categories.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -220,7 +288,7 @@ const MyResourceLibrary: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400">아직 주제가 없습니다. 새 주제를 추가해보세요.</p>
+              <p className="text-xs text-gray-400">아직 주제가 없습니다.</p>
             )}
           </div>
         )}
@@ -238,27 +306,67 @@ const MyResourceLibrary: React.FC = () => {
                 value={addUrl}
                 onChange={e => setAddUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleFetchMeta()}
+                disabled={fetching}
               />
               <button
                 onClick={handleFetchMeta}
                 disabled={fetching || !addUrl.trim()}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 transition-colors shrink-0 disabled:opacity-50"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 transition-colors shrink-0 disabled:opacity-50 min-w-[110px] justify-center"
               >
-                {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : '정보 가져오기'}
+                {fetching ? <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs ml-1">분석 중</span></> : '정보 가져오기'}
               </button>
             </div>
+
+            {fetching && fetchStep && (
+              <div className="flex items-center gap-2 text-xs text-teal-600 bg-teal-50 rounded-lg px-3 py-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                {fetchStep}
+              </div>
+            )}
             {fetchError && <p className="text-xs text-red-500">{fetchError}</p>}
+
+            {/* Thumbnail preview */}
+            {addThumbnail && (
+              <div className="relative w-full aspect-video max-h-36 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+                <img src={addThumbnail} alt="썸네일" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => setAddThumbnail('')}
+                  className="absolute top-1.5 right-1.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70"
+                  title="썸네일 삭제"
+                ><X className="w-3.5 h-3.5" /></button>
+              </div>
+            )}
+            {!addThumbnail && !fetching && addUrl && (
+              <button
+                onClick={async () => {
+                  let url = addUrl.trim();
+                  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+                  setFetching(true); setFetchStep('스크린샷 촬영 중...');
+                  const shot = await (window.electronAPI as any).screenshotUrl(url);
+                  if (shot) setAddThumbnail(shot);
+                  setFetching(false); setFetchStep('');
+                }}
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-teal-600 transition-colors"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                스크린샷으로 썸네일 만들기
+              </button>
+            )}
+
             <input type="text" className={inputClass} placeholder="제목" value={addTitle} onChange={e => setAddTitle(e.target.value)} />
             <textarea className={`${inputClass} min-h-[60px] resize-none`} placeholder="설명 (선택)" value={addDesc} onChange={e => setAddDesc(e.target.value)} />
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">주제(폴더) 선택</label>
+                <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                  주제(폴더) 선택
+                  {addCategory && <span className="ml-1.5 text-teal-600 font-bold">· 자동 분류됨</span>}
+                </label>
                 <div className="flex gap-2">
                   <select
                     className={inputClass}
                     value={addCategory}
-                    onChange={e => { if (e.target.value === '__new__') { setShowNewCat(true); } else { setAddCategory(e.target.value); setShowNewCat(false); }}}
+                    onChange={e => { if (e.target.value === '__new__') setShowNewCat(true); else { setAddCategory(e.target.value); setShowNewCat(false); } }}
                   >
                     <option value="">미분류</option>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -267,26 +375,11 @@ const MyResourceLibrary: React.FC = () => {
                 </div>
                 {showNewCat && (
                   <div className="flex gap-1.5 mt-1.5">
-                    <input
-                      type="text"
-                      className={inputClass}
-                      placeholder="새 주제 이름"
-                      value={newCatInput}
-                      onChange={e => setNewCatInput(e.target.value)}
-                    />
+                    <input type="text" className={inputClass} placeholder="새 주제 이름" value={newCatInput} onChange={e => setNewCatInput(e.target.value)} />
                     <button
-                      onClick={() => {
-                        if (newCatInput.trim()) {
-                          addCategory_save(newCatInput.trim());
-                          setAddCategory(newCatInput.trim());
-                          setNewCatInput('');
-                          setShowNewCat(false);
-                        }
-                      }}
+                      onClick={() => { if (newCatInput.trim()) { addCategory_save(newCatInput.trim()); setAddCategory(newCatInput.trim()); setNewCatInput(''); setShowNewCat(false); } }}
                       className="px-2.5 py-1.5 text-xs bg-teal-500 text-white rounded-lg shrink-0 font-semibold"
-                    >
-                      추가
-                    </button>
+                    >추가</button>
                   </div>
                 )}
               </div>
@@ -298,7 +391,7 @@ const MyResourceLibrary: React.FC = () => {
 
             <div className="flex justify-end gap-2 pt-1">
               <button
-                onClick={() => { setShowAdd(false); setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags(''); setAddCategory(''); setFetchError(''); setShowNewCat(false); }}
+                onClick={() => { setShowAdd(false); resetForm(); }}
                 className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
               >취소</button>
               <button
@@ -324,13 +417,9 @@ const MyResourceLibrary: React.FC = () => {
                 }`}
               >
                 {tab}
-                <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 ${
-                  activeCategory === tab ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {tab === '전체'
-                    ? resources.length
-                    : tab === '미분류'
-                    ? resources.filter(r => !r.category).length
+                <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 ${activeCategory === tab ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                  {tab === '전체' ? resources.length
+                    : tab === '미분류' ? resources.filter(r => !r.category).length
                     : resources.filter(r => r.category === tab).length}
                 </span>
               </button>
@@ -363,27 +452,27 @@ const MyResourceLibrary: React.FC = () => {
             {filtered.map(r => (
               <div key={r.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
                 <div className="flex">
-                  {r.type === 'youtube' && r.thumbnail ? (
-                    <div className="w-36 shrink-0 bg-black relative">
-                      <img
-                        src={r.thumbnail}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        style={{ minHeight: 80 }}
-                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="bg-black/50 rounded-full p-1.5">
-                          <Youtube className="w-5 h-5 text-red-500" />
+                  {/* Thumbnail */}
+                  {r.thumbnail ? (
+                    <div className={`shrink-0 relative overflow-hidden bg-black ${r.type === 'youtube' ? 'w-36' : 'w-36'}`} style={{ minHeight: 80 }}>
+                      <img src={r.thumbnail} alt="" className="w-full h-full object-cover" style={{ minHeight: 80 }} />
+                      {r.type === 'youtube' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="bg-black/50 rounded-full p-1.5">
+                            <Youtube className="w-5 h-5 text-red-500" />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ) : (
                     <div className="w-14 shrink-0 flex items-center justify-center bg-gray-50 border-r border-gray-100">
-                      <Globe className="w-6 h-6 text-gray-300" />
+                      {r.type === 'youtube'
+                        ? <Youtube className="w-6 h-6 text-red-300" />
+                        : <Globe className="w-6 h-6 text-gray-300" />}
                     </div>
                   )}
 
+                  {/* Content */}
                   <div className="flex-1 p-3 min-w-0">
                     {editId === r.id ? (
                       <div className="space-y-2">

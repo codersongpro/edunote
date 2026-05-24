@@ -211,6 +211,59 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  // ── Resource Thumbnail ───────────────────────────────────────────
+  // Fetch any image URL → base64 data URI (bypasses renderer CSP)
+  ipcMain.handle('resource:fetch-image', async (_e, imageUrl: string) => {
+    try {
+      const parsed = new URL(imageUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      const httpMod = parsed.protocol === 'https:' ? await import('https') : await import('http');
+      const { buf, ct } = await new Promise<{ buf: Buffer; ct: string }>((resolve, reject) => {
+        const req = (httpMod.default as typeof import('https')).get(
+          imageUrl,
+          { headers: { 'User-Agent': 'Mozilla/5.0' } },
+          (res) => {
+            const chunks: Buffer[] = [];
+            const contentType = (res.headers['content-type'] as string) || 'image/jpeg';
+            res.on('data', (c: Buffer) => { chunks.push(Buffer.from(c)); });
+            res.on('end', () => resolve({ buf: Buffer.concat(chunks), ct: contentType }));
+          },
+        );
+        req.on('error', reject);
+        req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+      });
+      const mime = ct.split(';')[0].trim();
+      return `data:${mime};base64,${buf.toString('base64')}`;
+    } catch {
+      return null;
+    }
+  });
+
+  // Screenshot a webpage → base64 PNG (for sites with no og:image)
+  ipcMain.handle('resource:screenshot', async (_e, rawUrl: string) => {
+    let win: BrowserWindow | null = null;
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      win = new BrowserWindow({
+        width: 1280, height: 800, show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
+      });
+      await Promise.race([
+        win.loadURL(rawUrl),
+        new Promise((_, r) => setTimeout(() => r(new Error('load timeout')), 12000)),
+      ]);
+      await new Promise(r => setTimeout(r, 1500));
+      const image = await win.webContents.capturePage({ x: 0, y: 0, width: 1280, height: 640 });
+      const resized = image.resize({ width: 480, height: 240 });
+      return `data:image/png;base64,${resized.toPNG().toString('base64')}`;
+    } catch {
+      return null;
+    } finally {
+      if (win && !win.isDestroyed()) win.destroy();
+    }
+  });
+
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
 

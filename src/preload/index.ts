@@ -43,8 +43,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
 
-  // URL Metadata
+  // URL Metadata & Resource thumbnails
   fetchUrlMeta: (url: string) => ipcRenderer.invoke('url:fetch-meta', url),
+  fetchImage: (url: string) => ipcRenderer.invoke('resource:fetch-image', url),
+  screenshotUrl: (url: string) => ipcRenderer.invoke('resource:screenshot', url),
 
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),
