@@ -920,7 +920,11 @@ export async function generateLessonWorksheet(
   questionCount: number,
   includeScore: boolean,
 ): Promise<string> {
-  const typeLabel = worksheetType === 'activity' ? '활동지' : '평가지';
+  const typeLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
+  const baseFontSize = params.grade.includes('초등') ? '12pt' : params.grade.includes('중학') ? '11pt' : '10pt';
+  const h1Size = params.grade.includes('초등') ? '15pt' : params.grade.includes('중학') ? '14pt' : '13pt';
+  const h2Size = params.grade.includes('초등') ? '13pt' : params.grade.includes('중학') ? '12pt' : '11pt';
+  const tableSize = params.grade.includes('초등') ? '11.5pt' : params.grade.includes('중학') ? '10.5pt' : '9.5pt';
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
 
@@ -941,13 +945,13 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
 <style> 태그에 다음 CSS를 반드시 포함하세요:
 @page { size: A4; margin: 10mm 12mm; }
-body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 10pt; color: #000; margin: 0; padding: 0; }
-h1 { font-size: 13pt; margin: 0 0 4pt; }
-h2, h3 { font-size: 11pt; margin: 6pt 0 3pt; page-break-after: avoid; }
-.header-row { display: flex; gap: 16pt; margin-bottom: 6pt; font-size: 10pt; }
+body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: ${baseFontSize}; color: #000; margin: 0; padding: 0; }
+h1 { font-size: ${h1Size}; margin: 0 0 4pt; }
+h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; }
+.header-row { display: flex; gap: 16pt; margin-bottom: 6pt; font-size: ${baseFontSize}; }
 .activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
 p { margin: 2pt 0; line-height: 1.5; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;

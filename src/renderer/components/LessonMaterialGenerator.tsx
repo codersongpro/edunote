@@ -19,7 +19,7 @@ type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
 
 const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
   { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
-  { value: 'WORKSHEET', icon: ClipboardList, label: '활동지', desc: '활동지 및 평가지 (HTML/인쇄용)' },
+  { value: 'WORKSHEET', icon: ClipboardList, label: '워크시트', desc: '워크시트 및 평가지 (HTML/인쇄용)' },
   { value: 'QUIZ', icon: Zap, label: '퀴즈 앱', desc: '인터랙티브 퀴즈 (선택형/O×)' },
   { value: 'PLAN', icon: FileText, label: '수업 계획서', desc: '교수·학습 과정안 (A4 인쇄용)' },
 ];
@@ -410,9 +410,9 @@ li{margin-bottom:5pt;line-height:1.6;}
             {contentType === 'WORKSHEET' && (
               <div className="space-y-3">
                 <div>
-                  <label className={labelClass}>활동지 유형</label>
+                  <label className={labelClass}>워크시트 유형</label>
                   <div className="flex gap-2">
-                    {[{ val: 'activity', label: '활동지' }, { val: 'assessment', label: '평가지' }].map(opt => (
+                    {[{ val: 'activity', label: '워크시트' }, { val: 'assessment', label: '평가지' }].map(opt => (
                       <button key={opt.val} onClick={() => setWorksheetType(opt.val as any)}
                         className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'}`}>
                         {opt.label}
@@ -565,7 +565,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
                 <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
-                  {contentType === 'QUIZ' ? '퀴즈 앱 미리보기' : '활동지 미리보기'}
+                  {contentType === 'QUIZ' ? '퀴즈 앱 미리보기' : '워크시트 미리보기'}
                 </span>
                 <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
                   <FileDown className="w-3.5 h-3.5" />PDF 저장
