@@ -124,9 +124,9 @@ const LessonMaterialGenerator: React.FC = () => {
       setIsFetchingImages(true);
       setSlideImages({});
       for (const slide of slides) {
-        if (!slide.imageKeyword) continue;
+        if (!slide.imagePrompt) continue;
         try {
-          const img = await window.electronAPI.fetchSlideImage(slide.imageKeyword);
+          const img = await window.electronAPI.fetchSlideImage(slide.imagePrompt);
           if (img) setSlideImages(prev => ({ ...prev, [slide.page]: img }));
         } catch { /* no-op */ }
       }
@@ -533,17 +533,17 @@ li{margin-bottom:5pt;line-height:1.6;}
                     </div>
                     {slideImages[slide.page] ? (
                       <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
-                    ) : slide.imageKeyword && isFetchingImages ? (
+                    ) : slide.imagePrompt && isFetchingImages ? (
                       <div className="w-full bg-gray-100 flex items-center justify-center" style={{height: 80}}>
                         <ImageIcon className="w-5 h-5 text-gray-300" />
                       </div>
                     ) : null}
                     <div className="px-4 py-3">
                       <ul className="space-y-1.5 mb-3">
-                        {slide.content.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                        {slide.content.slice(0, 3).map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-base text-gray-700">
                             <span className="text-amber-400 mt-0.5 shrink-0">•</span>
-                            <span>{item}</span>
+                            <span className="line-clamp-2">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -642,18 +642,18 @@ li{margin-bottom:5pt;line-height:1.6;}
                 {/* Title */}
                 <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-5 shrink-0">
                   <div className="flex items-center gap-3">
-                    <span className="text-xl font-black text-white/60 bg-white/20 px-3 py-0.5 rounded-full tabular-nums shrink-0">{slide.page}</span>
-                    <h2 className="text-2xl font-black text-white leading-tight">{slide.title}</h2>
+                    <span className="text-2xl font-black text-white/60 bg-white/20 px-3 py-0.5 rounded-full tabular-nums shrink-0">{slide.page}</span>
+                    <h2 className="text-5xl font-black text-white leading-tight">{slide.title}</h2>
                   </div>
                 </div>
                 {/* Body */}
                 <div className="flex flex-1 min-h-0 overflow-hidden">
-                  <div className="flex-1 px-8 py-6 overflow-y-auto">
+                  <div className="flex-1 px-8 py-6">
                     <ul className="space-y-4">
-                      {slide.content.map((item, i) => (
+                      {slide.content.slice(0, 3).map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
-                          <span className="text-amber-400 mt-1.5 shrink-0 text-xl leading-none">•</span>
-                          <span className="text-lg text-gray-800 leading-relaxed">{item}</span>
+                          <span className="text-amber-400 mt-1.5 shrink-0 text-3xl leading-none">•</span>
+                          <span className="text-3xl font-medium leading-snug text-gray-800">{item}</span>
                         </li>
                       ))}
                     </ul>

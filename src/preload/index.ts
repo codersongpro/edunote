@@ -39,8 +39,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setConfig: (data: Record<string, unknown>) => ipcRenderer.invoke('config:set', data),
   setApiKey: (key: string) => ipcRenderer.invoke('config:set-api-key', key),
   hasApiKey: () => ipcRenderer.invoke('config:has-api-key'),
-  setUnsplashKey: (key: string) => ipcRenderer.invoke('config:set-unsplash-key', key),
-  hasUnsplashKey: () => ipcRenderer.invoke('config:has-unsplash-key'),
 
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),

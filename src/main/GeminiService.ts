@@ -158,3 +158,39 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
 
   return { ok: false, error: '알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
 }
+
+const IMAGE_MODELS_TO_TRY = [
+  'gemini-2.5-flash-image-preview',
+  'gemini-3.0-flash-image-preview',
+];
+
+export async function generateSlideImage(apiKey: string, imagePrompt: string): Promise<string | null> {
+  const ai = new GoogleGenAI({ apiKey });
+  for (const model of IMAGE_MODELS_TO_TRY) {
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: imagePrompt,
+        config: { responseModalities: ['IMAGE', 'TEXT'] },
+      });
+      const parts = (response as any).candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          const mime = part.inlineData.mimeType || 'image/png';
+          return `data:${mime};base64,${part.inlineData.data}`;
+        }
+      }
+      return null;
+    } catch (error: unknown) {
+      if (isQuotaError(error)) {
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      // Model doesn't support images — try next
+      const msg = (error as any)?.message?.toLowerCase() || '';
+      if (msg.includes('not supported') || msg.includes('invalid') || msg.includes('modality')) continue;
+      return null;
+    }
+  }
+  return null;
+}

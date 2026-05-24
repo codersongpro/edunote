@@ -2,7 +2,6 @@ import Store from 'electron-store';
 
 interface StoreSchema {
   geminiApiKey: string;
-  unsplashApiKey: string;
   saveDir: string;
   alwaysAskPath: boolean;
   teacherName: string;
@@ -19,7 +18,6 @@ interface StoreSchema {
 export const store = new Store<StoreSchema>({
   defaults: {
     geminiApiKey: '',
-    unsplashApiKey: '',
     saveDir: '',
     alwaysAskPath: true,
     teacherName: '',

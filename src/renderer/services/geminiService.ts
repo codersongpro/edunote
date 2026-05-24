@@ -845,7 +845,7 @@ export interface LessonSlide {
   title: string;
   content: string[];
   notes: string;
-  imageKeyword?: string;
+  imagePrompt?: string;
 }
 
 export interface LessonParams {
@@ -898,13 +898,13 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 [요구사항]
 1. 반드시 ${pageCount}장의 슬라이드를 생성하세요.
 2. 첫 번째 슬라이드는 제목 슬라이드로 구성하세요.
-3. 각 슬라이드의 content는 3~5개의 핵심 내용 bullet point로 구성하세요.
+3. 각 슬라이드의 content는 2~3개의 짧고 임팩트 있는 핵심 bullet point로만 구성하세요. 각 항목은 20자 이내로 간결하게 작성하세요. 뒷자리 학생도 한눈에 읽을 수 있어야 합니다.
 4. notes에는 교사용 발표 참고 내용을 작성하세요.
 5. 한국 교육과정 성취기준에 맞게 작성하세요.
-6. imageKeyword에는 해당 슬라이드 내용을 나타내는 영어 단어 1~3개를 쉼표 없이 공백으로 구분하여 입력하세요 (예: "photosynthesis plant", "ancient rome history"). 제목 슬라이드는 수업 주제와 관련된 키워드를 사용하세요.
+6. imagePrompt에는 해당 슬라이드 내용을 시각적으로 표현하는 영어 이미지 생성 프롬프트를 20단어 이내로 작성하세요. 교육적이고 텍스트가 없는 이미지를 묘사하세요. 예시: "colorful diagram of photosynthesis in a plant leaf, educational illustration, no text, no labels" / "Korean middle school students conducting science experiment, bright classroom, photorealistic"
 
 반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
-[{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imageKeyword":"keyword english"}]`;
+[{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imagePrompt":"educational image description in english, no text"}]`;
 
   const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();

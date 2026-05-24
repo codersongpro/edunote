@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { store } from './store';
-import { generateContent, generateContentMultipart, testApiKey } from './GeminiService';
+import { generateContent, generateContentMultipart, testApiKey, generateSlideImage } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode'];
@@ -131,13 +131,13 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'unsplashApiKey') return undefined;
+    if (key === 'geminiApiKey') return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _g, unsplashApiKey: _u, ...safe } = all;
+    const { geminiApiKey: _g, ...safe } = all;
     return safe;
   });
 
@@ -160,16 +160,6 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:has-api-key', () => {
     const key = store.get('geminiApiKey');
-    return typeof key === 'string' && key.trim().length > 0;
-  });
-
-  ipcMain.handle('config:set-unsplash-key', (_e, key: string) => {
-    if (typeof key !== 'string') return;
-    store.set('unsplashApiKey', key.trim());
-  });
-
-  ipcMain.handle('config:has-unsplash-key', () => {
-    const key = store.get('unsplashApiKey');
     return typeof key === 'string' && key.trim().length > 0;
   });
 
@@ -248,38 +238,12 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  // Fetch image from Unsplash API by keyword → base64 PNG/JPEG
-  ipcMain.handle('resource:slide-image', async (_e, keyword: string) => {
+  // Generate slide image via Gemini image generation
+  ipcMain.handle('resource:slide-image', async (_e, imagePrompt: string) => {
     try {
-      const apiKey = store.get('unsplashApiKey');
+      const apiKey = store.get('geminiApiKey');
       if (!apiKey) return null;
-      const https = await import('https');
-      const apiUrl = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(keyword)}&orientation=landscape&client_id=${apiKey}`;
-      const jsonStr = await new Promise<string>((resolve, reject) => {
-        const req = https.default.get(apiUrl, { headers: { 'Accept-Version': 'v1', 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-          let body = '';
-          res.setEncoding('utf8');
-          res.on('data', (c: string) => { body += c; });
-          res.on('end', () => resolve(body));
-        });
-        req.on('error', reject);
-        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
-      });
-      const data = JSON.parse(jsonStr);
-      const imageUrl: string = data?.urls?.small || data?.urls?.regular;
-      if (!imageUrl) return null;
-      const { buf, ct } = await new Promise<{ buf: Buffer; ct: string }>((resolve, reject) => {
-        const req2 = https.default.get(imageUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-          const chunks: Buffer[] = [];
-          const contentType = (res.headers['content-type'] as string) || 'image/jpeg';
-          res.on('data', (c: Buffer) => { chunks.push(Buffer.from(c)); });
-          res.on('end', () => resolve({ buf: Buffer.concat(chunks), ct: contentType }));
-        });
-        req2.on('error', reject);
-        req2.setTimeout(15000, () => { req2.destroy(); reject(new Error('timeout')); });
-      });
-      const mime = ct.split(';')[0].trim();
-      return `data:${mime};base64,${buf.toString('base64')}`;
+      return await generateSlideImage(apiKey, imagePrompt);
     } catch {
       return null;
     }
