@@ -7,6 +7,7 @@ import { extractTextFromHwpx } from '../lib/hwpx-parser';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -36,7 +37,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
+
   // UI State for Adding New Activity
   const [isAddingActivity, setIsAddingActivity] = useState(false);
   const [newActivityName, setNewActivityName] = useState('');
@@ -441,6 +443,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: creativeState.lengthUnit
               }));
               newStudents[i].generatedContent = result;
+              saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
               updateProgress(pct);
@@ -503,6 +506,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: creativeState.lengthUnit
               }));
               newStudents[index].generatedContent = result;
+              saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / selectedIndices.length) * 100);
               updateProgress(pct);
@@ -553,6 +557,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...creativeState.activeStudents];
       newStudents[index].generatedContent = result;
+      saveHistory('creative', creativeState.activeStudents[index].name, result);
       updateCreativeState({ activeStudents: newStudents });
     } catch (err: any) {
       const error = err;
@@ -1256,6 +1261,21 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             </>
                                         )}
                                     </button>
+                                    {(() => {
+                                      const hist = getHistory('creative', student.name);
+                                      return hist.length > 0 ? (
+                                        <button
+                                          onClick={() => setExpandedHistory(prev => {
+                                            const next = new Set(prev);
+                                            next.has(student.id) ? next.delete(student.id) : next.add(student.id);
+                                            return next;
+                                          })}
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                        >
+                                          이전 기록 ({hist.length})
+                                        </button>
+                                      ) : null;
+                                    })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
                                         disabled={generatingIds.has(student.id) || isGlobalGenerating}
@@ -1290,6 +1310,26 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
+                             {expandedHistory.has(student.id) && (() => {
+                               const hist: HistoryEntry[] = getHistory('creative', student.name);
+                               return hist.length > 0 ? (
+                                 <div className="mt-3 space-y-2">
+                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   {hist.map((entry, hi) => (
+                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                       <div className="flex justify-between items-center mb-1">
+                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <button
+                                           onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
+                                           className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
+                                         >복원</button>
+                                       </div>
+                                       <p className="leading-relaxed line-clamp-3">{entry.content}</p>
+                                     </div>
+                                   ))}
+                                 </div>
+                               ) : null;
+                             })()}
                         </div>
                     ))}
                 </div>

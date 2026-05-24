@@ -5,6 +5,7 @@ import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -35,6 +36,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
 
   // NEIS Upload States
   const [showNeisModal, setShowNeisModal] = useState(false);
@@ -622,6 +624,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: subjectState.lengthUnit as LengthUnit
               }));
               newStudents[i].generatedContent = result;
+              saveHistory('subject', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
               setGlobalProgress(pct);
@@ -687,6 +690,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: subjectState.lengthUnit as LengthUnit
               }));
               newStudents[index].generatedContent = result;
+              saveHistory('subject', student.name, result);
               completedCount++;
               const selPct = Math.round((completedCount / selectedIndices.length) * 100);
               setGlobalProgress(selPct);
@@ -745,6 +749,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...subjectState.activeStudents];
       newStudents[index].generatedContent = result;
+      saveHistory('subject', subjectState.activeStudents[index].name, result);
       updateSubjectState({ activeStudents: newStudents });
 
     } catch (err: any) {
@@ -1684,6 +1689,21 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             </>
                                         )}
                                     </button>
+                                    {(() => {
+                                      const hist = getHistory('subject', student.name);
+                                      return hist.length > 0 ? (
+                                        <button
+                                          onClick={() => setExpandedHistory(prev => {
+                                            const next = new Set(prev);
+                                            next.has(student.id) ? next.delete(student.id) : next.add(student.id);
+                                            return next;
+                                          })}
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                        >
+                                          이전 기록 ({hist.length})
+                                        </button>
+                                      ) : null;
+                                    })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
                                         disabled={generatingIds.has(student.id) || isGlobalGenerating}
@@ -1718,6 +1738,26 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
+                             {expandedHistory.has(student.id) && (() => {
+                               const hist: HistoryEntry[] = getHistory('subject', student.name);
+                               return hist.length > 0 ? (
+                                 <div className="mt-3 space-y-2">
+                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   {hist.map((entry, hi) => (
+                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                       <div className="flex justify-between items-center mb-1">
+                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <button
+                                           onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
+                                           className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                                         >복원</button>
+                                       </div>
+                                       <p className="leading-relaxed line-clamp-3">{entry.content}</p>
+                                     </div>
+                                   ))}
+                                 </div>
+                               ) : null;
+                             })()}
                         </div>
                     ))}
                 </div>

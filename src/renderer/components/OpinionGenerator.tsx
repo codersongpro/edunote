@@ -5,6 +5,7 @@ import { generateOpinion } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -25,6 +26,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
 
   // Helper to update opinion state
   const updateOpState = (updates: Partial<typeof state.opinion>) => {
@@ -203,6 +205,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit
               }));
               newStudents[i].generatedContent = result;
+              saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
             } catch (err) {
@@ -259,6 +262,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit
               }));
               newStudents[index].generatedContent = result;
+              saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
             } catch (err) {
@@ -306,6 +310,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...opState.students];
       newStudents[index].generatedContent = result;
+      saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
     } catch (err: any) {
       const error = err;
@@ -765,6 +770,21 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             </>
                                         )}
                                     </button>
+                                    {(() => {
+                                      const hist = getHistory('opinion', student.name);
+                                      return hist.length > 0 ? (
+                                        <button
+                                          onClick={() => setExpandedHistory(prev => {
+                                            const next = new Set(prev);
+                                            next.has(student.id) ? next.delete(student.id) : next.add(student.id);
+                                            return next;
+                                          })}
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                        >
+                                          이전 기록 ({hist.length})
+                                        </button>
+                                      ) : null;
+                                    })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
                                         disabled={generatingIds.has(student.id) || isGlobalGenerating}
@@ -799,6 +819,26 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
+                             {expandedHistory.has(student.id) && (() => {
+                               const hist: HistoryEntry[] = getHistory('opinion', student.name);
+                               return hist.length > 0 ? (
+                                 <div className="mt-3 space-y-2">
+                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   {hist.map((entry, hi) => (
+                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                       <div className="flex justify-between items-center mb-1">
+                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <button
+                                           onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
+                                           className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
+                                         >복원</button>
+                                       </div>
+                                       <p className="leading-relaxed line-clamp-3">{entry.content}</p>
+                                     </div>
+                                   ))}
+                                 </div>
+                               ) : null;
+                             })()}
                         </div>
                     ))}
                 </div>
