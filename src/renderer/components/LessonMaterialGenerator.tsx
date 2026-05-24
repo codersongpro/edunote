@@ -94,10 +94,12 @@ const LessonMaterialGenerator: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
-  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
+  const [quizHtml, setQuizHtml] = useState<string | null>(null);
   const [planContent, setPlanContent] = useState<string>('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
-  const [isFetchingImages, setIsFetchingImages] = useState(false);
+  const [generatingImageSlides, setGeneratingImageSlides] = useState<Set<number>>(new Set());
+  const [allImagesProgress, setAllImagesProgress] = useState<{ done: number; total: number } | null>(null);
   const [isPresentMode, setIsPresentMode] = useState(false);
   const [presentIndex, setPresentIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(true);
@@ -118,22 +120,44 @@ const LessonMaterialGenerator: React.FC = () => {
     return () => { if (loadingIntervalRef.current) clearInterval(loadingIntervalRef.current); };
   }, [isGenerating]);
 
-  useEffect(() => {
-    if (!slides || slides.length === 0) return;
-    const fetchImages = async () => {
-      setIsFetchingImages(true);
-      setSlideImages({});
-      for (const slide of slides) {
-        if (!slide.imagePrompt) continue;
-        try {
-          const img = await window.electronAPI.fetchSlideImage(slide.imagePrompt);
-          if (img) setSlideImages(prev => ({ ...prev, [slide.page]: img }));
-        } catch { /* no-op */ }
-      }
-      setIsFetchingImages(false);
-    };
-    fetchImages();
-  }, [slides]);
+  const SLIDE_IMAGE_STYLE = 'flat vector illustration, Korean educational style, bright colors, no text, clean design — ';
+
+  const handleGenerateSlideImage = async (slide: LessonSlide) => {
+    if (!slide.imagePrompt || generatingImageSlides.has(slide.page)) return;
+    setGeneratingImageSlides(prev => new Set(prev).add(slide.page));
+    try {
+      const img = await window.electronAPI.fetchSlideImage(SLIDE_IMAGE_STYLE + slide.imagePrompt);
+      if (img) setSlideImages(prev => ({ ...prev, [slide.page]: img }));
+    } catch { /* no-op */ }
+    setGeneratingImageSlides(prev => {
+      const next = new Set(prev);
+      next.delete(slide.page);
+      return next;
+    });
+  };
+
+  const handleGenerateAllImages = async () => {
+    if (!slides) return;
+    const slidesWithPrompts = slides.filter(s => s.imagePrompt);
+    if (slidesWithPrompts.length === 0) return;
+    setAllImagesProgress({ done: 0, total: slidesWithPrompts.length });
+    setGeneratingImageSlides(new Set(slidesWithPrompts.map(s => s.page)));
+    let done = 0;
+    for (const slide of slidesWithPrompts) {
+      try {
+        const img = await window.electronAPI.fetchSlideImage(SLIDE_IMAGE_STYLE + slide.imagePrompt!);
+        if (img) setSlideImages(prev => ({ ...prev, [slide.page]: img }));
+      } catch { /* no-op */ }
+      done++;
+      setGeneratingImageSlides(prev => {
+        const next = new Set(prev);
+        next.delete(slide.page);
+        return next;
+      });
+      setAllImagesProgress({ done, total: slidesWithPrompts.length });
+    }
+    setAllImagesProgress(null);
+  };
 
   const handlePresentKey = useCallback((e: KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
@@ -171,11 +195,19 @@ const LessonMaterialGenerator: React.FC = () => {
     }
     setError(null);
     setIsGenerating(true);
-    setSlides(null);
-    setHtmlContent(null);
-    setPlanContent('');
-    setSlideImages({});
-    setIsPresentMode(false);
+    if (contentType === 'SLIDE') {
+      setSlides(null);
+      setSlideImages({});
+      setGeneratingImageSlides(new Set());
+      setAllImagesProgress(null);
+      setIsPresentMode(false);
+    } else if (contentType === 'WORKSHEET') {
+      setWorksheetHtml(null);
+    } else if (contentType === 'QUIZ') {
+      setQuizHtml(null);
+    } else {
+      setPlanContent('');
+    }
     startGeneration();
 
     const standardText = selectedStandard
@@ -193,10 +225,10 @@ const LessonMaterialGenerator: React.FC = () => {
         setSlides(result);
       } else if (contentType === 'WORKSHEET') {
         const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore);
-        setHtmlContent(extractHtml(html));
+        setWorksheetHtml(extractHtml(html));
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount);
-        setHtmlContent(extractHtml(html));
+        setQuizHtml(extractHtml(html));
       } else {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
@@ -251,22 +283,28 @@ li{margin-bottom:5pt;line-height:1.6;}
   };
 
   const handleSaveHtmlPdf = async () => {
-    if (!htmlContent) return;
+    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
+    if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     try {
-      await (window.electronAPI as any).savePdf(htmlContent, `${topic}(${d}).pdf`);
+      await (window.electronAPI as any).savePdf(content, `${topic}(${d}).pdf`);
     } catch { alert('PDF 저장 중 오류가 발생했습니다.'); }
   };
 
   const handleSaveHtml = async () => {
-    if (!htmlContent) return;
+    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
+    if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    await window.electronAPI.saveFile(htmlContent, `${topic}(${d}).html`, 'html');
+    await window.electronAPI.saveFile(content, `${topic}(${d}).html`, 'html');
   };
 
-  const hasResult = slides !== null || htmlContent !== null || planContent !== '';
+  const currentTypeHasResult =
+    (contentType === 'SLIDE' && slides !== null) ||
+    (contentType === 'WORKSHEET' && worksheetHtml !== null) ||
+    (contentType === 'QUIZ' && quizHtml !== null) ||
+    (contentType === 'PLAN' && planContent !== '');
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA]">
@@ -490,23 +528,30 @@ li{margin-bottom:5pt;line-height:1.6;}
         {/* Right: output panel */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Slide result */}
-          {slides && (
+          {contentType === 'SLIDE' && slides && (
             <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
                 <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
-                  {isFetchingImages && (
-                    <span className="flex items-center gap-1 text-xs font-normal text-gray-400">
+                  {allImagesProgress && (
+                    <span className="flex items-center gap-1 text-xs font-normal text-amber-600">
                       <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                       </svg>
-                      이미지 불러오는 중...
+                      이미지 생성 중 {allImagesProgress.done}/{allImagesProgress.total} ({Math.round(allImagesProgress.done / allImagesProgress.total * 100)}%)
                     </span>
                   )}
                 </span>
                 <div className="flex gap-2">
+                  <button
+                    onClick={handleGenerateAllImages}
+                    disabled={!!allImagesProgress}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 rounded transition-colors"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
+                  </button>
                   <button
                     onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors"
@@ -533,9 +578,22 @@ li{margin-bottom:5pt;line-height:1.6;}
                     </div>
                     {slideImages[slide.page] ? (
                       <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
-                    ) : slide.imagePrompt && isFetchingImages ? (
-                      <div className="w-full bg-gray-100 flex items-center justify-center" style={{height: 80}}>
-                        <ImageIcon className="w-5 h-5 text-gray-300" />
+                    ) : generatingImageSlides.has(slide.page) ? (
+                      <div className="w-full bg-gray-100 flex flex-col items-center justify-center gap-1" style={{height: 80}}>
+                        <svg className="animate-spin w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                        <span className="text-[10px] text-gray-400">이미지 생성 중...</span>
+                      </div>
+                    ) : slide.imagePrompt ? (
+                      <div className="w-full bg-gray-50 flex items-center justify-center border-b border-gray-100" style={{height: 56}}>
+                        <button
+                          onClick={() => handleGenerateSlideImage(slide)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-md transition-colors"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성
+                        </button>
                       </div>
                     ) : null}
                     <div className="px-4 py-3">
@@ -559,34 +617,54 @@ li{margin-bottom:5pt;line-height:1.6;}
             </div>
           )}
 
-          {/* HTML result (worksheet / quiz) */}
-          {htmlContent && (
+          {/* HTML result (worksheet) */}
+          {contentType === 'WORKSHEET' && worksheetHtml && (
             <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
                 <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
-                  {contentType === 'QUIZ' ? '퀴즈 앱 미리보기' : '워크시트 미리보기'}
+                  워크시트 미리보기
                 </span>
-                <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
-                  <FileDown className="w-3.5 h-3.5" />PDF 저장
-                </button>
-                <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
-                  <Download className="w-3.5 h-3.5" />HTML 저장
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
+                    <FileDown className="w-3.5 h-3.5" />PDF 저장
+                  </button>
+                  <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                    <Download className="w-3.5 h-3.5" />HTML 저장
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <iframe
-                  srcDoc={htmlContent}
-                  sandbox="allow-scripts"
-                  className="w-full h-full border-0"
-                  title="수업 자료 미리보기"
-                />
+                <iframe srcDoc={worksheetHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="워크시트 미리보기" />
+              </div>
+            </div>
+          )}
+
+          {/* HTML result (quiz) */}
+          {contentType === 'QUIZ' && quizHtml && (
+            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-amber-500" />
+                  퀴즈 앱 미리보기
+                </span>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
+                    <FileDown className="w-3.5 h-3.5" />PDF 저장
+                  </button>
+                  <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                    <Download className="w-3.5 h-3.5" />HTML 저장
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <iframe srcDoc={quizHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="퀴즈 미리보기" />
               </div>
             </div>
           )}
 
           {/* Plan result */}
-          {planContent && (
+          {contentType === 'PLAN' && planContent && (
             <GeneratedDisplay
               content={planContent}
               title={`${topic} 수업 계획서`}
@@ -594,7 +672,7 @@ li{margin-bottom:5pt;line-height:1.6;}
           )}
 
           {/* Empty / loading state */}
-          {!hasResult && (
+          {!currentTypeHasResult && (
             <div className="flex-1 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col items-center justify-center text-center p-8">
               <div className="bg-amber-50 p-4 rounded-full mb-4">
                 <BookOpen className="w-10 h-10 text-amber-400" />
