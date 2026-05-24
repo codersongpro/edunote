@@ -18,11 +18,16 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Sync content prop to the editable div whenever it changes (new generation)
+  // Sync content prop to the editable div whenever it changes (new generation).
+  // Use execCommand so the replacement is recorded in the browser undo stack,
+  // allowing Ctrl+Z to restore the previous generated result.
   useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.innerHTML = content;
-    }
+    const el = contentRef.current;
+    if (!el || !content) return;
+    el.focus();
+    document.execCommand('selectAll', false);
+    document.execCommand('insertHTML', false, content);
+    window.getSelection()?.collapse(el, 0);
   }, [content]);
 
   const getCurrentContent = (): string => {

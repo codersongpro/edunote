@@ -16,7 +16,7 @@ interface DuplicateResult {
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress } = useGlobalState();
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
 
   // Local UI State
@@ -596,6 +596,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
+    startGeneration(0);
     const newStudents = [...subjectState.activeStudents];
     let completedCount = 0;
 
@@ -624,15 +625,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[i].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / newStudents.length) * 100));
+            const pct = Math.round((completedCount / newStudents.length) * 100);
+            setGlobalProgress(pct);
+            updateProgress(pct);
         }
-        
-        updateSubjectState({ 
+
+        updateSubjectState({
             activeStudents: newStudents,
             step: 'RESULT'
         });
-        
-    } catch (err: any) { // Updated
+
+    } catch (err: any) {
         const error = err;
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(errorMessage);
@@ -640,6 +643,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 
@@ -657,6 +661,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
+    startGeneration(0);
     const newStudents = [...subjectState.activeStudents];
     let completedCount = 0;
 
@@ -687,15 +692,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[index].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / selectedIndices.length) * 100));
+            const selPct = Math.round((completedCount / selectedIndices.length) * 100);
+            setGlobalProgress(selPct);
+            updateProgress(selPct);
         }
-        
-        updateSubjectState({ 
+
+        updateSubjectState({
             activeStudents: newStudents,
             step: 'RESULT'
         });
-        
-    } catch (err: any) { // Updated
+
+    } catch (err: any) {
         const error = err;
         const errorMessage = error instanceof Error ? error.message : String(error);
         console.error(errorMessage);
@@ -703,6 +710,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 

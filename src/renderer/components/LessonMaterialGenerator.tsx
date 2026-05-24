@@ -2,26 +2,27 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
-  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code,
+  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, Gamepad2,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
-  generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan,
+  generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan, generateLessonGame,
   LessonSlide, LessonParams,
 } from '../services/geminiService';
-import { LOADING_MESSAGES } from '../constants';
+import { LESSON_LOADING_MESSAGES } from '../constants';
 import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
 
-type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
+type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN' | 'GAME';
 
 const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
   { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
   { value: 'WORKSHEET', icon: ClipboardList, label: '워크시트', desc: '워크시트 및 평가지 (HTML/인쇄용)' },
   { value: 'QUIZ', icon: Zap, label: '퀴즈 앱', desc: '인터랙티브 퀴즈 (선택형/O×)' },
   { value: 'PLAN', icon: FileText, label: '수업 계획서', desc: '교수·학습 과정안 (A4 인쇄용)' },
+  { value: 'GAME', icon: Gamepad2, label: '게임 제작', desc: '수업 주제 교육용 미니 게임' },
 ];
 
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
@@ -96,6 +97,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
   const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
+  const [gameHtml, setGameHtml] = useState<string | null>(null);
   const [planContent, setPlanContent] = useState<string>('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
   const [generatingImageSlides, setGeneratingImageSlides] = useState<Set<number>>(new Set());
@@ -111,10 +113,10 @@ const LessonMaterialGenerator: React.FC = () => {
   useEffect(() => {
     if (isGenerating) {
       let idx = 0;
-      setLoadingMessage(LOADING_MESSAGES[0]);
+      setLoadingMessage(LESSON_LOADING_MESSAGES[0]);
       loadingIntervalRef.current = setInterval(() => {
-        idx = (idx + 1) % LOADING_MESSAGES.length;
-        setLoadingMessage(LOADING_MESSAGES[idx]);
+        idx = (idx + 1) % LESSON_LOADING_MESSAGES.length;
+        setLoadingMessage(LESSON_LOADING_MESSAGES[idx]);
       }, 2500);
     } else {
       if (loadingIntervalRef.current) { clearInterval(loadingIntervalRef.current); loadingIntervalRef.current = null; }
@@ -217,6 +219,8 @@ const LessonMaterialGenerator: React.FC = () => {
       setWorksheetHtml(null);
     } else if (contentType === 'QUIZ') {
       setQuizHtml(null);
+    } else if (contentType === 'GAME') {
+      setGameHtml(null);
     } else {
       setPlanContent('');
     }
@@ -241,6 +245,9 @@ const LessonMaterialGenerator: React.FC = () => {
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount);
         setQuizHtml(extractHtml(html));
+      } else if (contentType === 'GAME') {
+        const html = await generateLessonGame(params);
+        setGameHtml(extractHtml(html));
       } else {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
@@ -316,6 +323,7 @@ li{margin-bottom:5pt;line-height:1.6;}
     (contentType === 'SLIDE' && slides !== null) ||
     (contentType === 'WORKSHEET' && worksheetHtml !== null) ||
     (contentType === 'QUIZ' && quizHtml !== null) ||
+    (contentType === 'GAME' && gameHtml !== null) ||
     (contentType === 'PLAN' && planContent !== '');
 
   return (
@@ -688,8 +696,28 @@ li{margin-bottom:5pt;line-height:1.6;}
                     spellCheck={false}
                   />
                 ) : (
-                  <iframe srcDoc={quizHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="퀴즈 미리보기" />
+                  <iframe srcDoc={quizHtml} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="퀴즈 미리보기" />
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Game result */}
+          {contentType === 'GAME' && gameHtml && (
+            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
+              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <Gamepad2 className="w-4 h-4 text-amber-500" />
+                  교육용 게임
+                </span>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
+                    <Download className="w-3.5 h-3.5" />HTML 저장
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <iframe srcDoc={gameHtml} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="게임 미리보기" />
               </div>
             </div>
           )}

@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera } from 'lucide-react';
+import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera, SearchIcon, ArrowLeft, ArrowRight, RefreshCw, PlusCircle } from 'lucide-react';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        src?: string; allowpopups?: string; useragent?: string;
+      }, HTMLElement>;
+    }
+  }
+}
 
 interface Resource {
   id: string;
@@ -71,10 +81,48 @@ const MyResourceLibrary: React.FC = () => {
   const [newCatManagerInput, setNewCatManagerInput] = useState('');
 
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const webviewRef = useRef<any>(null);
+  const [showWebSearch, setShowWebSearch] = useState(false);
+  const [webSearchEngine, setWebSearchEngine] = useState<'google' | 'youtube'>('google');
+  const [webSearchQuery, setWebSearchQuery] = useState('');
+  const [webviewSrc, setWebviewSrc] = useState('');
+  const [webviewCurrentUrl, setWebviewCurrentUrl] = useState('');
 
   useEffect(() => { saveResources(resources); }, [resources]);
   useEffect(() => { saveCategories(categories); }, [categories]);
   useEffect(() => { if (showAdd) setTimeout(() => urlInputRef.current?.focus(), 50); }, [showAdd]);
+
+  useEffect(() => {
+    const wv = webviewRef.current;
+    if (!wv) return;
+    const onNav = () => setWebviewCurrentUrl(wv.getURL?.() ?? '');
+    wv.addEventListener('did-navigate', onNav);
+    wv.addEventListener('did-navigate-in-page', onNav);
+    return () => {
+      wv.removeEventListener('did-navigate', onNav);
+      wv.removeEventListener('did-navigate-in-page', onNav);
+    };
+  }, [webviewSrc]);
+
+  const handleWebSearch = () => {
+    if (!webSearchQuery.trim()) return;
+    const q = encodeURIComponent(webSearchQuery.trim());
+    if (webSearchEngine === 'google') {
+      setWebviewSrc(`https://www.google.com/search?q=${q}`);
+    } else {
+      setWebviewSrc(`https://www.youtube.com/results?search_query=${q}`);
+    }
+    setWebviewCurrentUrl('');
+  };
+
+  const handleAddCurrentWebPage = () => {
+    const url = webviewRef.current?.getURL?.() || webviewCurrentUrl || webviewSrc;
+    if (!url || url === 'about:blank') return;
+    setAddUrl(url);
+    setShowWebSearch(false);
+    setShowAdd(true);
+    setTimeout(() => urlInputRef.current?.focus(), 100);
+  };
 
   const addCategory_save = (name: string) => {
     const trimmed = name.trim();
@@ -247,7 +295,14 @@ const MyResourceLibrary: React.FC = () => {
                 주제 관리
               </button>
               <button
-                onClick={() => setShowAdd(!showAdd)}
+                onClick={() => { setShowWebSearch(s => !s); setShowAdd(false); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors font-semibold ${showWebSearch ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+              >
+                <SearchIcon className="w-4 h-4" />
+                웹 검색
+              </button>
+              <button
+                onClick={() => { setShowAdd(!showAdd); setShowWebSearch(false); }}
                 className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white text-sm font-semibold rounded-lg hover:bg-teal-600 transition-colors"
               >
                 <Plus className="w-4 h-4" />
@@ -289,6 +344,82 @@ const MyResourceLibrary: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-gray-400">아직 주제가 없습니다.</p>
+            )}
+          </div>
+        )}
+
+        {/* Web search panel */}
+        {showWebSearch && (
+          <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+            {/* Search controls */}
+            <div className="p-3 border-b border-gray-100 space-y-2">
+              <div className="flex gap-2">
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+                  <button
+                    onClick={() => setWebSearchEngine('google')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'google' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />구글
+                  </button>
+                  <button
+                    onClick={() => setWebSearchEngine('youtube')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'youtube' ? 'bg-red-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    <Youtube className="w-3.5 h-3.5" />유튜브
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  className="flex-1 bg-white rounded-lg border border-gray-200 text-gray-800 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none px-3 py-1.5"
+                  placeholder="검색어를 입력하세요..."
+                  value={webSearchQuery}
+                  onChange={e => setWebSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleWebSearch()}
+                />
+                <button
+                  onClick={handleWebSearch}
+                  disabled={!webSearchQuery.trim()}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-semibold disabled:opacity-50 shrink-0"
+                >
+                  <SearchIcon className="w-4 h-4" />검색
+                </button>
+              </div>
+              {webviewSrc && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => webviewRef.current?.goBack?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="뒤로">
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => webviewRef.current?.goForward?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="앞으로">
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => webviewRef.current?.reload?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="새로고침">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="flex-1 text-xs text-gray-400 truncate px-1">{webviewCurrentUrl || webviewSrc}</span>
+                  <button
+                    onClick={handleAddCurrentWebPage}
+                    className="flex items-center gap-1.5 px-3 py-1 text-xs bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold shrink-0"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />현재 페이지 추가
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* Webview */}
+            {webviewSrc ? (
+              <div style={{ height: 500 }}>
+                <webview
+                  ref={webviewRef}
+                  src={webviewSrc}
+                  style={{ width: '100%', height: '100%', display: 'flex' }}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
+                <Globe className="w-12 h-12 text-gray-200" />
+                <p className="text-sm text-gray-400">검색어를 입력하고 검색 버튼을 눌러주세요.</p>
+                <p className="text-xs text-gray-300">원하는 페이지를 찾으면 <strong>현재 페이지 추가</strong> 버튼으로 자료실에 저장하세요.</p>
+              </div>
             )}
           </div>
         )}

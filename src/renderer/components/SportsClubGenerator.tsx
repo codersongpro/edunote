@@ -13,14 +13,33 @@ interface DuplicateResult {
   students: string[];
 }
 
+const SPORTS_POSITIVE_TRAITS = [
+  '주장', '부주장', '협력', '준비성', '자율', '끈기', '협응력', '리더십',
+  '팀워크', '책임감', '적극성', '열정', '집중력', '체력 우수', '기술 향상',
+  '규칙 준수', '매너', '배려', '경청', '성실성', '창의적 플레이', '빠른 판단력',
+  '페어플레이', '자기 관리', '도전 정신', '회복 탄력성', '전략적 사고',
+  '소통 능력', '긍정적 태도', '안전 의식',
+];
+
+const SPORTS_NEGATIVE_TRAITS = [
+  '집중력 부족', '규칙 미준수', '소극적 참여', '팀워크 부족', '준비 부족',
+  '체력 부족', '지각', '무단 불참', '불성실한 태도', '비매너 행동',
+  '거친 플레이', '개인 플레이 위주', '자세 불량', '갈등 야기', '책임감 부족',
+  '경청 미흡', '부정 언어 사용', '기술 습득 저조', '협력 거부', '반칙',
+  '안전 규칙 미준수', '부상 유발 행동', '자기 관리 미흡', '도전 회피',
+  '불만 표출', '과도한 승부욕', '의사소통 문제', '비협력적 태도',
+  '장비 관리 소홀', '경기 중 이탈',
+];
+
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
 
   // Local UI State
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const wasGenerating = useRef(false);
+  const [traitMode, setTraitMode] = useState<'positive' | 'negative'>('positive');
 
   useEffect(() => {
     const isNow = generatingIds.size > 0;
@@ -154,6 +173,19 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     updateSportsState({ students: newStudents });
   };
 
+  const handleTraitToggle = (trait: string) => {
+    const current = sportsState.students[sportsState.currentStudentIndex].additionalContext || '';
+    const hasTag = current.includes(`[${trait}]`);
+    const updated = hasTag
+      ? current.replace(`[${trait}]`, '').replace(/  +/g, ' ').trim()
+      : `${current}${current && !current.endsWith(' ') ? ' ' : ''}[${trait}]`;
+    handleContextChange(updated);
+  };
+
+  const isTraitSelected = (trait: string) => {
+    return (sportsState.students[sportsState.currentStudentIndex]?.additionalContext || '').includes(`[${trait}]`);
+  };
+
   // --- Generation Handlers ---
   const handleGenerateAll = async () => {
     if (!sportsState.sportName || !sportsState.clubName) {
@@ -163,6 +195,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
+    startGeneration(0);
     const newStudents = [...sportsState.students];
     let completedCount = 0;
 
@@ -181,9 +214,11 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[i].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / newStudents.length) * 100));
+            const pct = Math.round((completedCount / newStudents.length) * 100);
+            setGlobalProgress(pct);
+            updateProgress(pct);
         }
-        
+
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -193,6 +228,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 
@@ -213,6 +249,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
+    startGeneration(0);
     const newStudents = [...sportsState.students];
     let completedCount = 0;
 
@@ -232,9 +269,11 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[index].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / selectedIndices.length) * 100));
+            const selPct = Math.round((completedCount / selectedIndices.length) * 100);
+            setGlobalProgress(selPct);
+            updateProgress(selPct);
         }
-        
+
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -244,6 +283,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
+        endGeneration();
     }
   };
 
@@ -532,13 +572,51 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 <div className="text-sm text-slate-500">{sportsState.currentStudentIndex + 1} / {sportsState.students.length}</div>
                             </div>
 
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">개별 활동 내용 및 태도</label>
+                            <div className="mb-2">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">특성 선택 (클릭하면 아래 입력란에 추가)</label>
+                                <div className="flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden text-xs">
+                                  <button
+                                    onClick={() => setTraitMode('positive')}
+                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'positive' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}
+                                  >긍정 요소</button>
+                                  <button
+                                    onClick={() => setTraitMode('negative')}
+                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'negative' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}
+                                  >부정 요소</button>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 max-h-28 overflow-y-auto">
+                                {(traitMode === 'positive' ? SPORTS_POSITIVE_TRAITS : SPORTS_NEGATIVE_TRAITS).map(trait => {
+                                  const selected = isTraitSelected(trait);
+                                  return (
+                                    <button
+                                      key={trait}
+                                      onClick={() => handleTraitToggle(trait)}
+                                      disabled={isGlobalGenerating}
+                                      className={`px-2.5 py-1 text-xs rounded-full border transition-all font-medium disabled:opacity-50 ${
+                                        selected
+                                          ? traitMode === 'positive'
+                                            ? 'bg-emerald-500 text-white border-emerald-500'
+                                            : 'bg-rose-500 text-white border-rose-500'
+                                          : traitMode === 'positive'
+                                          ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50'
+                                          : 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700 hover:bg-rose-50'
+                                      }`}
+                                    >
+                                      {trait}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">개별 활동 내용 및 태도 <span className="text-xs font-normal text-slate-400">(특성 선택 시 자동으로 추가됨)</span></label>
                             <textarea
                                 value={sportsState.students[sportsState.currentStudentIndex].additionalContext}
                                 onChange={(e) => handleContextChange(e.target.value)}
                                 disabled={isGlobalGenerating}
                                 placeholder="이 학생의 구체적인 활동 내용, 역할(주장 등), 성장한 점, 태도 등을 입력하세요."
-                                className="w-full h-32 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50"
+                                className="w-full h-28 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50"
                             />
                         </div>
 
