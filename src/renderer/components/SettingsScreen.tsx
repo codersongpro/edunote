@@ -259,6 +259,21 @@ const SettingsScreen: React.FC = () => {
               {saved ? '저장됨!' : 'API 키 저장'}
             </button>
           </div>
+          {hasKey && (
+            <button
+              onClick={async () => {
+                if (!window.confirm('저장된 API 키를 삭제하시겠습니까?')) return;
+                await window.electronAPI.deleteApiKey();
+                setHasKey(false);
+                setApiKey('');
+                setTestStatus('idle');
+                setGuideExpanded(true);
+              }}
+              className="w-full py-2 rounded-md text-sm font-semibold border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+            >
+              저장된 API 키 삭제
+            </button>
+          )}
         </div>
 
         {/* General Settings */}

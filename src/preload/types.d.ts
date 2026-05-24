@@ -22,6 +22,7 @@ export interface ElectronAPI {
   setConfig(data: Record<string, unknown>): Promise<void>;
   setApiKey(key: string): Promise<void>;
   hasApiKey(): Promise<boolean>;
+  deleteApiKey(): Promise<void>;
 
   selectFolder(): Promise<string | null>;
   fetchUrlMeta(url: string): Promise<{ title: string; description: string; image: string; domain: string }>;

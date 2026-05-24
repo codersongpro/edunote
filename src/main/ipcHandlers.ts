@@ -163,6 +163,10 @@ export function registerIpcHandlers(): void {
     return typeof key === 'string' && key.trim().length > 0;
   });
 
+  ipcMain.handle('config:delete-api-key', () => {
+    store.set('geminiApiKey', '');
+  });
+
   // ── Dialog ────────────────────────────────────────────────────────
   ipcMain.handle('dialog:select-folder', async () => {
     const result = await dialog.showOpenDialog({
