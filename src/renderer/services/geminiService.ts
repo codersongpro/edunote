@@ -940,18 +940,20 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
 - 반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요
 - 각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요
-- 제목, 이름/날짜 기입란, 활동별 구분선 포함
+- 머리글 구조: 문서 제목(h1)은 반드시 단독 행으로 배치하고, 학년/반/이름 기입란은 그 아래 별도 행에 배치하세요. 제목과 기입란을 절대 같은 flex 행에 넣지 마세요.
+- 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
 <style> 태그에 다음 CSS를 반드시 포함하세요:
 @page { size: A4; margin: 10mm 12mm; }
-body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: ${baseFontSize}; color: #000; margin: 0; padding: 0; }
-h1 { font-size: ${h1Size}; margin: 0 0 4pt; }
-h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; }
-.header-row { display: flex; gap: 16pt; margin-bottom: 6pt; font-size: ${baseFontSize}; }
+body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: ${baseFontSize}; color: #000; margin: 0; padding: 0; word-break: keep-all; overflow-wrap: break-word; }
+h1 { font-size: ${h1Size}; margin: 0 0 3pt; word-break: keep-all; }
+h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-break: keep-all; }
+.student-info { display: flex; gap: 12pt; margin-bottom: 6pt; font-size: ${baseFontSize}; border-bottom: 1pt solid #000; padding-bottom: 2pt; }
+.student-info span { white-space: nowrap; }
 .activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
-table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; }
+table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
 p { margin: 2pt 0; line-height: 1.5; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
