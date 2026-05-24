@@ -62,7 +62,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
             )}
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-            교직원을 위한 AI 도우미<br />학생 생활기록부 · 교무 행정 문서를 AI가 도와드립니다.
+            교무 행정, 수업준비, 학생기록을 AI가 도와드립니다.
           </p>
         </div>
 

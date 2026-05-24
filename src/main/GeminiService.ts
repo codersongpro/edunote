@@ -159,45 +159,27 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
   return { ok: false, error: '알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' };
 }
 
-const INTERACTION_IMAGE_MODELS = [
-  'gemini-2.5-flash-image',
-  'gemini-3.1-flash-image-preview',
-  'gemini-3-pro-image-preview',
-];
-
-const GENERATE_IMAGE_MODELS = [
+const IMAGE_MODELS_TO_TRY = [
   'gemini-2.0-flash-preview-image-generation',
   'gemini-2.0-flash-exp-image-generation',
 ];
 
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
+
 export async function generateSlideImage(apiKey: string, imagePrompt: string): Promise<string | null> {
   const ai = new GoogleGenAI({ apiKey });
 
-  // Try interactions API (SDK v1.x new-gen models)
-  for (const model of INTERACTION_IMAGE_MODELS) {
+  for (const model of IMAGE_MODELS_TO_TRY) {
     try {
-      const interaction = await (ai as any).interactions.create({
-        model,
-        input: imagePrompt,
-        response_modalities: ['image'],
-      });
-      const outputs: any[] = (interaction as any).outputs ?? [];
-      for (const output of outputs) {
-        if (output.type === 'image' && output.data) {
-          return `data:${output.mime_type || 'image/png'};base64,${output.data}`;
-        }
-      }
-    } catch { /* try next */ }
-  }
-
-  // Fall back to generateContent with image responseModality
-  for (const model of GENERATE_IMAGE_MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: imagePrompt,
-        config: { responseModalities: ['IMAGE', 'TEXT'] },
-      });
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model,
+          contents: imagePrompt,
+          config: { responseModalities: ['IMAGE', 'TEXT'] },
+        }),
+        15000,
+      );
       const imageData = response.data;
       if (imageData) return `data:image/png;base64,${imageData}`;
       const parts = (response as any).candidates?.[0]?.content?.parts ?? [];
@@ -207,6 +189,8 @@ export async function generateSlideImage(apiKey: string, imagePrompt: string): P
         }
       }
     } catch (error: unknown) {
+      const msg = (error as any)?.message ?? '';
+      console.error(`[slideImage] ${model} failed:`, msg);
       if (isQuotaError(error)) await new Promise(r => setTimeout(r, 2000));
     }
   }
