@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
-  Play, X, ChevronLeft, Image as ImageIcon,
+  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -103,6 +103,8 @@ const LessonMaterialGenerator: React.FC = () => {
   const [isPresentMode, setIsPresentMode] = useState(false);
   const [presentIndex, setPresentIndex] = useState(0);
   const [showNotes, setShowNotes] = useState(true);
+  const [quizEditMode, setQuizEditMode] = useState(false);
+  const [quizEditSource, setQuizEditSource] = useState('');
 
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -157,6 +159,16 @@ const LessonMaterialGenerator: React.FC = () => {
       setAllImagesProgress({ done, total: slidesWithPrompts.length });
     }
     setAllImagesProgress(null);
+  };
+
+  const handleSlideFieldEdit = (pageNum: number, field: 'title' | 'notes', value: string) => {
+    setSlides(prev => prev ? prev.map(s => s.page === pageNum ? { ...s, [field]: value } : s) : null);
+  };
+
+  const handleSlideBulletEdit = (pageNum: number, bulletIndex: number, value: string) => {
+    setSlides(prev => prev ? prev.map(s =>
+      s.page === pageNum ? { ...s, content: s.content.map((c, i) => i === bulletIndex ? value : c) } : s
+    ) : null);
   };
 
   const handlePresentKey = useCallback((e: KeyboardEvent) => {
@@ -573,11 +585,24 @@ li{margin-bottom:5pt;line-height:1.6;}
                 {slides.map((slide) => (
                   <div key={slide.page} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 flex items-center gap-2">
-                      <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full">{slide.page}</span>
-                      <h3 className="text-sm font-black text-white truncate">{slide.title}</h3>
+                      <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full shrink-0">{slide.page}</span>
+                      <h3
+                        contentEditable
+                        suppressContentEditableWarning
+                        className="text-sm font-black text-white outline-none focus:bg-white/10 rounded px-1 -mx-1 min-w-0 flex-1"
+                        onBlur={e => handleSlideFieldEdit(slide.page, 'title', e.currentTarget.textContent || '')}
+                      >{slide.title}</h3>
                     </div>
                     {slideImages[slide.page] ? (
-                      <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
+                      <div className="relative group">
+                        <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
+                        <button
+                          onClick={() => handleGenerateSlideImage(slide)}
+                          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white bg-black/50 hover:bg-black/70 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <ImageIcon className="w-3 h-3" />재생성
+                        </button>
+                      </div>
                     ) : generatingImageSlides.has(slide.page) ? (
                       <div className="w-full bg-gray-100 flex flex-col items-center justify-center gap-1" style={{height: 80}}>
                         <svg className="animate-spin w-5 h-5 text-violet-400" viewBox="0 0 24 24" fill="none">
@@ -601,13 +626,24 @@ li{margin-bottom:5pt;line-height:1.6;}
                         {slide.content.slice(0, 3).map((item, i) => (
                           <li key={i} className="flex items-start gap-2 text-base text-gray-700">
                             <span className="text-amber-400 mt-0.5 shrink-0">•</span>
-                            <span className="line-clamp-2">{item}</span>
+                            <span
+                              contentEditable
+                              suppressContentEditableWarning
+                              className="outline-none focus:bg-amber-50 rounded px-1 -mx-1 flex-1"
+                              onBlur={e => handleSlideBulletEdit(slide.page, i, e.currentTarget.textContent || '')}
+                            >{item}</span>
                           </li>
                         ))}
                       </ul>
-                      {slide.notes && (
-                        <div className="border-t border-gray-100 pt-2 mt-2">
-                          <p className="text-xs text-gray-400 italic">[교사 메모] {slide.notes}</p>
+                      {slide.notes !== undefined && (
+                        <div className="border-t border-gray-100 pt-2 mt-2 flex items-start gap-1">
+                          <p className="text-xs text-gray-400 italic shrink-0">[교사 메모]</p>
+                          <p
+                            contentEditable
+                            suppressContentEditableWarning
+                            className="text-xs text-gray-400 italic outline-none focus:bg-gray-50 rounded px-1 -mx-1 flex-1"
+                            onBlur={e => handleSlideFieldEdit(slide.page, 'notes', e.currentTarget.textContent || '')}
+                          >{slide.notes}</p>
                         </div>
                       )}
                     </div>
@@ -617,30 +653,15 @@ li{margin-bottom:5pt;line-height:1.6;}
             </div>
           )}
 
-          {/* HTML result (worksheet) */}
+          {/* Worksheet result — editable via GeneratedDisplay */}
           {contentType === 'WORKSHEET' && worksheetHtml && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                  <Monitor className="w-4 h-4 text-amber-500" />
-                  워크시트 미리보기
-                </span>
-                <div className="flex gap-2">
-                  <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
-                    <FileDown className="w-3.5 h-3.5" />PDF 저장
-                  </button>
-                  <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
-                    <Download className="w-3.5 h-3.5" />HTML 저장
-                  </button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <iframe srcDoc={worksheetHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="워크시트 미리보기" />
-              </div>
-            </div>
+            <GeneratedDisplay
+              content={worksheetHtml}
+              title={`${topic} 워크시트`}
+            />
           )}
 
-          {/* HTML result (quiz) */}
+          {/* Quiz result — iframe preview + HTML source editor */}
           {contentType === 'QUIZ' && quizHtml && (
             <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
               <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
@@ -649,6 +670,23 @@ li{margin-bottom:5pt;line-height:1.6;}
                   퀴즈 앱 미리보기
                 </span>
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      if (!quizEditMode) setQuizEditSource(quizHtml);
+                      else setQuizHtml(quizEditSource);
+                      setQuizEditMode(m => !m);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+                      quizEditMode
+                        ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {quizEditMode
+                      ? <><PenLine className="w-3.5 h-3.5" />적용</>
+                      : <><Code className="w-3.5 h-3.5" />HTML 편집</>
+                    }
+                  </button>
                   <button onClick={handleSaveHtmlPdf} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors">
                     <FileDown className="w-3.5 h-3.5" />PDF 저장
                   </button>
@@ -658,7 +696,16 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <iframe srcDoc={quizHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="퀴즈 미리보기" />
+                {quizEditMode ? (
+                  <textarea
+                    className="w-full h-full p-3 text-xs font-mono text-gray-800 bg-gray-950 border-0 resize-none focus:outline-none"
+                    value={quizEditSource}
+                    onChange={e => setQuizEditSource(e.target.value)}
+                    spellCheck={false}
+                  />
+                ) : (
+                  <iframe srcDoc={quizHtml} sandbox="allow-scripts" className="w-full h-full border-0" title="퀴즈 미리보기" />
+                )}
               </div>
             </div>
           )}
