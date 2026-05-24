@@ -174,10 +174,22 @@ export async function generateContentMultipart(
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)
+//
+// 검증 전략:
+//   1. 여러 모델을 순서대로 시도하여 "한 모델이라도 성공"하면 키 유효 판정
+//   2. 403 발생 시 즉시 종료하지 않고 다음 모델도 시도 (모델별로 활성화 상태가 다를 수 있음)
+//   3. 모든 모델이 403일 때만 원인 분석 후 정확한 안내 제공
+//      - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
+//      - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
+//      - 그 외 → 원본 에러 메시지와 함께 일반 안내
 export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  // 검증용 모델 — 무료 계정에서도 접근 가능한 모델 위주로 시도
+  const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+
   let quotaHit = false;
+  let permissionDeniedCount = 0;
+  let firstPermissionErrorRawMsg = ''; // 첫 403 에러의 원본 메시지 (원인 분석용)
 
   for (const model of testModels) {
     try {
@@ -187,9 +199,11 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
           setTimeout(() => reject(new Error('timeout')), 12000)
         ),
       ]);
+      // 하나라도 성공하면 키 유효
       return { ok: true };
     } catch (error: unknown) {
-      const msg = ((error as any)?.message || '').toLowerCase();
+      const rawMsg = (error as any)?.message || '';
+      const msg = rawMsg.toLowerCase();
       const status = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
       const errStatus = ((error as any)?.error?.status || '').toLowerCase();
 
@@ -200,6 +214,7 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
       }
 
       // 명시적인 "키 잘못됨" 에러 (401 또는 메시지에 키 관련 문구)
+      // → 즉시 실패 처리 (다른 모델 시도해도 동일하게 실패할 것)
       const isKeyInvalid =
         status === 401 ||
         msg.includes('api_key_invalid') ||
@@ -211,12 +226,12 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
         return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
       }
 
-      // 403 PERMISSION_DENIED → 학교/조직 Workspace 계정 제한일 가능성 높음
+      // 403 PERMISSION_DENIED → 즉시 실패하지 않고 다른 모델도 시도
+      // (특정 모델만 막혀 있고 다른 모델은 사용 가능한 경우가 있음)
       if (status === 403 || errStatus === 'permission_denied') {
-        return {
-          ok: false,
-          error: 'Gemini API 접근이 거부되었습니다 (403).\n\n학교/기관 Google Workspace 계정으로 발급한 키는 조직 관리자가 Gemini API를 차단한 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.',
-        };
+        if (!firstPermissionErrorRawMsg) firstPermissionErrorRawMsg = rawMsg;
+        permissionDeniedCount++;
+        continue;
       }
 
       // 쿼터 초과 → 키는 유효, 일시적 제한
@@ -241,6 +256,42 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
     return {
       ok: true,
       warning: '무료 요청 한도가 일시적으로 초과된 상태입니다. 1~2분 후 정상적으로 사용할 수 있습니다.',
+    };
+  }
+
+  // 모든 모델이 403 PERMISSION_DENIED → 원본 메시지 분석하여 정확한 안내
+  if (permissionDeniedCount > 0) {
+    const lowerRaw = firstPermissionErrorRawMsg.toLowerCase();
+
+    // (1) GCP 프로젝트의 Generative Language API 미활성화
+    //     → 새 계정에서 키 발급 직후 자주 발생. API 활성화 또는 1~2분 대기 필요
+    if (lowerRaw.includes('has not been used') ||
+        lowerRaw.includes('not enabled') ||
+        lowerRaw.includes('service is disabled') ||
+        lowerRaw.includes('enable it') ||
+        lowerRaw.includes('serviceusage')) {
+      return {
+        ok: false,
+        error: 'Generative Language API가 활성화되지 않았습니다 (403).\n\n📌 해결 방법 (둘 중 하나):\n\n방법 1: 1~2분 기다린 후 다시 시도\n  • 새로 발급한 키는 API 활성화에 시간이 걸립니다.\n\n방법 2: 키를 새로 발급\n  • aistudio.google.com 접속 → 기존 키 삭제 → 새 키 발급\n  • 새 키는 자동으로 API가 활성화됩니다.\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
+      };
+    }
+
+    // (2) 학교/조직 Workspace 계정 차단
+    if (lowerRaw.includes('workspace') ||
+        lowerRaw.includes('consumer api') ||
+        lowerRaw.includes('organization') ||
+        lowerRaw.includes('admin') ||
+        lowerRaw.includes('policy')) {
+      return {
+        ok: false,
+        error: 'Gemini API가 학교/기관 정책으로 차단되었습니다 (403).\n\n학교/기관 Google Workspace 계정의 키는 조직 관리자가 차단해 놓은 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
+      };
+    }
+
+    // (3) 그 외 일반 403 — 원본 메시지와 함께 가능한 원인 모두 안내
+    return {
+      ok: false,
+      error: 'Gemini API 접근이 거부되었습니다 (403).\n\n📌 가능한 원인:\n  ① 키 발급 직후라면 1~2분 후 다시 시도해 주세요 (API 활성화 지연)\n  ② 학교/기관 Workspace 계정이라면 개인 Gmail 키를 사용하세요\n  ③ 키가 만료되었거나 삭제됐다면 새로 발급받으세요\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
     };
   }
 
