@@ -1,9 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, RefreshCw } from 'lucide-react';
 import { SchoolLevel } from '../types';
+import { useGlobalState } from '../GlobalStateContext';
 
 const SettingsScreen: React.FC = () => {
+  const { showToast } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
+
+  // API 키 활성화 자동 감지를 위한 폴링 상태
+  // 새 GCP 프로젝트의 키는 발급 직후 1~2분간 활성화 중일 수 있으므로,
+  // 백그라운드에서 점진적 백오프 폴링을 수행하여 첫 성공 시점에 토스트로 알림
+  const [activationPolling, setActivationPolling] = useState(false);
+  const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollingCancelRef = useRef<boolean>(false);
+
+  // 컴포넌트 언마운트 시 폴링 정리
+  useEffect(() => {
+    return () => {
+      pollingCancelRef.current = true;
+      if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
+    };
+  }, []);
+
+  // 점진적 백오프 폴링: 10초 → 20초 → 40초 → 60초 → 60초... (최대 5분)
+  // 첫 성공(쿼터 경고 포함) 시 토스트로 알림 후 종료
+  const startActivationPolling = () => {
+    pollingCancelRef.current = false;
+    setActivationPolling(true);
+
+    const delays = [10_000, 20_000, 40_000, 60_000, 60_000, 60_000]; // 합계 약 5분
+    let attempt = 0;
+
+    const poll = async () => {
+      if (pollingCancelRef.current) { setActivationPolling(false); return; }
+
+      try {
+        // 저장된 키로 빈 프롬프트 호출 — 키가 활성화됐는지만 확인
+        const hasKeyNow = await window.electronAPI.hasApiKey();
+        if (!hasKeyNow) { setActivationPolling(false); return; }
+
+        // testApiKey를 사용하기 위해 저장된 키를 알아야 하는데, 보안상 키 조회 불가.
+        // 대신 ai:generate를 짧은 프롬프트로 호출하여 성공 여부만 판단
+        await window.electronAPI.aiGenerate('Hi', undefined);
+        // 성공!
+        if (!pollingCancelRef.current) {
+          showToast({
+            type: 'success',
+            title: 'API 키 활성화 완료!',
+            description: 'Gemini AI를 이제 사용할 수 있습니다.',
+          });
+        }
+        setActivationPolling(false);
+        return;
+      } catch (e) {
+        // 아직 활성화 안 됨 → 다음 시도 예약
+        attempt++;
+        if (attempt >= delays.length || pollingCancelRef.current) {
+          // 5분 경과 — 폴링 중단 (사용자가 수동 테스트하면 됨)
+          setActivationPolling(false);
+          return;
+        }
+        pollingTimerRef.current = setTimeout(poll, delays[attempt]);
+      }
+    };
+
+    // 첫 시도는 즉시 후 10초 후 재시도
+    pollingTimerRef.current = setTimeout(poll, delays[0]);
+  };
+
+  // 즉시 활성화 확인 (사용자가 "지금 확인" 클릭 시)
+  const checkActivationNow = async () => {
+    try {
+      await window.electronAPI.aiGenerate('Hi', undefined);
+      showToast({
+        type: 'success',
+        title: 'API 키 활성화 완료!',
+        description: 'Gemini AI를 이제 사용할 수 있습니다.',
+      });
+      // 폴링 중단
+      pollingCancelRef.current = true;
+      if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
+      setActivationPolling(false);
+    } catch (e: any) {
+      showToast({
+        type: 'warning',
+        title: '아직 활성화 중입니다',
+        description: '1~2분 더 기다린 후 다시 확인해 주세요.',
+      });
+    }
+  };
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
@@ -105,6 +190,25 @@ const SettingsScreen: React.FC = () => {
     setGuideExpanded(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+
+    // 즉시 사용 가능한지 한 번 확인 후, 아직 활성화 중이면 백그라운드 폴링 시작
+    try {
+      await window.electronAPI.aiGenerate('Hi', undefined);
+      // 즉시 사용 가능 → 토스트 1회 표시
+      showToast({
+        type: 'success',
+        title: 'API 키가 즉시 활성화됐습니다',
+        description: '바로 사용 가능합니다.',
+      });
+    } catch {
+      // 아직 활성화 중 → 백그라운드 폴링 시작 + 안내 토스트
+      showToast({
+        type: 'info',
+        title: 'API 키 활성화 대기 중...',
+        description: '백그라운드에서 자동 확인 중입니다. 완료되면 알려드릴게요.',
+      });
+      startActivationPolling();
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -201,9 +305,30 @@ const SettingsScreen: React.FC = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">5</span>
+                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-gray-500">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">6</span>
                     <span>생성된 키 <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
                   </li>
                 </ol>
+
+                {/* 무료 등급 확인 강조 박스 — 결제 등급이 잘못되면 과금 우려가 있어 별도 안내 */}
+                <div className="mt-3 bg-amber-50 border border-amber-200 rounded-md p-3">
+                  <p className="text-xs font-bold text-amber-800 mb-1.5 flex items-center gap-1">
+                    💰 발급 후 반드시 "무료 등급"인지 확인하세요
+                  </p>
+                  <ol className="text-xs text-amber-700 space-y-1 leading-relaxed pl-4 list-decimal">
+                    <li>aistudio.google.com → 좌측 메뉴 <strong>"API 키"</strong> 목록 화면 열기</li>
+                    <li>방금 만든 키의 <strong>"결제 설정"</strong> 컬럼 확인</li>
+                    <li><span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-bold">무료 등급</span>이면 OK — 분당 15회 / 일 1500회까지 무료</li>
+                    <li><span className="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">유료 등급</span>이면 사용량 따라 과금 → 결제 계정 미연결된 새 프로젝트에서 키를 다시 발급</li>
+                  </ol>
+                  <p className="text-[11px] text-amber-600 mt-2">
+                    팁: 신규 Gmail 계정으로 처음 발급하면 자동으로 무료 등급이 됩니다.
+                  </p>
+                </div>
+
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <p className="text-xs text-gray-500">
                     참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
@@ -236,6 +361,26 @@ const SettingsScreen: React.FC = () => {
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>API 키가 안전하게 저장되어 있습니다. 변경하려면 새 키를 입력하세요.</span>
+            </div>
+          )}
+
+          {/* 키 활성화 자동 폴링 중 안내 — 사용자가 수동으로도 확인 가능 */}
+          {activationPolling && (
+            <div className="flex items-start gap-2 text-sm text-blue-700 bg-blue-50 p-3 rounded-md border border-blue-200">
+              <RefreshCw className="w-4 h-4 shrink-0 mt-0.5 animate-spin" />
+              <div className="flex-1">
+                <p className="font-bold">API 키 활성화 확인 중...</p>
+                <p className="text-xs mt-0.5 text-blue-600">
+                  새 키는 1~2분간 활성화 대기 시간이 있을 수 있습니다. 완료되면 알림으로 알려드립니다.
+                </p>
+                <button
+                  onClick={checkActivationNow}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300 rounded px-2.5 py-1 hover:bg-blue-200"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  지금 확인
+                </button>
+              </div>
             </div>
           )}
 

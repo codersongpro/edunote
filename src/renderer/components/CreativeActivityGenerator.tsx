@@ -20,7 +20,7 @@ const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '�
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
-  const { startGeneration, endGeneration, updateProgress } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
+  const { startGeneration, endGeneration, updateProgress, isCancelRequested } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
   // Local UI State
@@ -424,6 +424,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
+            if (isCancelRequested()) break;
             const student = newStudents[i];
             const result = await generateCreativeActivityReport({
                 schoolLevel,
@@ -477,6 +478,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
+            if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
             const result = await generateCreativeActivityReport({

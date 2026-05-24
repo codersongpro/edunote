@@ -16,7 +16,7 @@ interface DuplicateResult {
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
 
   // Local UI State
@@ -602,6 +602,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
+            if (isCancelRequested()) break;
             const student = newStudents[i];
             let mergedTasks = subjectState.activeTasks.map(t => {
                 const studentEval = student.evaluations?.find(e => e.id === t.id);
@@ -667,9 +668,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
+            if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-            
+
             let mergedTasks = subjectState.activeTasks.map(t => {
                 const studentEval = student.evaluations?.find(e => e.id === t.id);
                 return {

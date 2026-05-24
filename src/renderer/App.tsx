@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AppMode, SchoolLevel, DocType } from './types';
+import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { GlobalState } from './types';
 
@@ -86,6 +86,28 @@ const App: React.FC = () => {
     });
   };
   const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
+
+  // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
+  // useRef로 관리하여 리렌더 없이 즉시 반영
+  const cancelFlagsRef = useRef<Set<string>>(new Set());
+  const requestCancel = (modeKey: string) => { cancelFlagsRef.current.add(modeKey); };
+  const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
+  const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
+
+  // 토스트 알림 큐
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const showToast = (toast: Omit<ToastMessage, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    setToasts(prev => [...prev, { ...toast, id }]);
+    // 5초 후 자동 제거
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  };
+  const dismissToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
   const goTo = (newMode: AppMode) => {
     setMode(newMode);
     setMountedModes(prev => new Set([...prev, newMode]));
@@ -266,7 +288,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, showToast }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
@@ -671,6 +693,7 @@ const App: React.FC = () => {
               : LESSON_AI_MODES.includes(mode)
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300'
               : 'bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-600';
+            const cancelled = isCancelled(mode);
             return (
               <div className={`shrink-0 flex items-center gap-3 px-4 py-1.5 border-b ${colorBg}`}>
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
@@ -680,8 +703,18 @@ const App: React.FC = () => {
                   />
                 </div>
                 <span className="text-xs font-semibold tabular-nums shrink-0">
-                  {pct === -1 ? 'AI 생성 중...' : `AI 생성 중 ${pct}%`}
+                  {cancelled ? '중단 중...' : pct === -1 ? 'AI 생성 중...' : `AI 생성 중 ${pct}%`}
                 </span>
+                {/* 중단 버튼 — 클릭 시 다음 항목 처리를 막음 (진행 중인 단일 호출은 끝까지 진행) */}
+                <button
+                  onClick={() => requestCancel(mode)}
+                  disabled={cancelled}
+                  className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold border border-current/40 hover:bg-white/40 dark:hover:bg-black/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="다음 항목 처리를 중단합니다 (진행 중인 항목은 마무리됨)"
+                >
+                  <X className="w-3 h-3" />
+                  <span>중단</span>
+                </button>
               </div>
             );
           })()}
@@ -695,6 +728,46 @@ const App: React.FC = () => {
 
       </div>
       </div>
+
+      {/* 토스트 알림 — 우상단에 슬라이드인 형태로 표시 */}
+      {toasts.length > 0 && (
+        <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none">
+          {toasts.map(t => {
+            const tone =
+              t.type === 'success' ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-900/40 dark:text-green-200' :
+              t.type === 'error'   ? 'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/40 dark:text-red-200' :
+              t.type === 'warning' ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' :
+                                     'bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200';
+            const Icon =
+              t.type === 'success' ? CheckCircle :
+              t.type === 'error'   ? AlertTriangle :
+              t.type === 'warning' ? AlertTriangle :
+                                     Info;
+            return (
+              <div
+                key={t.id}
+                className={`pointer-events-auto flex items-start gap-2.5 px-4 py-3 border rounded-lg shadow-lg ${tone}`}
+                style={{ animation: 'slideInRight 0.3s ease-out' }}
+              >
+                <Icon className="w-5 h-5 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold leading-tight">{t.title}</p>
+                  {t.description && <p className="text-xs mt-1 opacity-90 leading-relaxed">{t.description}</p>}
+                </div>
+                <button onClick={() => dismissToast(t.id)} className="shrink-0 p-0.5 hover:opacity-70" aria-label="닫기">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
+          <style>{`
+            @keyframes slideInRight {
+              from { transform: translateX(100%); opacity: 0; }
+              to   { transform: translateX(0); opacity: 1; }
+            }
+          `}</style>
+        </div>
+      )}
     </GlobalStateContext.Provider>
   );
 };

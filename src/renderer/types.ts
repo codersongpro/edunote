@@ -231,6 +231,13 @@ export interface GlobalState {
   };
 }
 
+export interface ToastMessage {
+  id: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+  title: string;
+  description?: string;
+}
+
 export interface GlobalStateContextType {
   state: GlobalState;
   setState: React.Dispatch<React.SetStateAction<GlobalState>>;
@@ -240,6 +247,12 @@ export interface GlobalStateContextType {
   setGlobalProgress: (v: number) => void;
   generatingModes: Map<string, number>;       // AppMode string → progress (-1=indeterminate, 0-100)
   setGeneratingMode: (mode: string, progress: number | null) => void;  // null = done
+  // 생성 중단 요청 관리 — modeKey별로 사용자 중단 요청 플래그
+  requestCancel: (modeKey: string) => void;
+  isCancelled: (modeKey: string) => boolean;
+  clearCancel: (modeKey: string) => void;
+  // 토스트 알림
+  showToast: (toast: Omit<ToastMessage, 'id'>) => void;
 }
 
 // ─── School Doc Types ─────────────────────────────────────────────

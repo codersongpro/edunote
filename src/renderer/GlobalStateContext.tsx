@@ -67,6 +67,10 @@ export const GlobalStateContext = createContext<GlobalStateContextType>({
   setGlobalProgress: () => {},
   generatingModes: new Map(),
   setGeneratingMode: () => {},
+  requestCancel: () => {},
+  isCancelled: () => false,
+  clearCancel: () => {},
+  showToast: () => {},
 });
 
 export const useGlobalState = () => useContext(GlobalStateContext);

@@ -33,7 +33,7 @@ const SPORTS_NEGATIVE_TRAITS = [
 
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
 
   // Local UI State
@@ -201,6 +201,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
+            if (isCancelRequested()) break;
             const student = newStudents[i];
             const result = await generateSportsClubReport({
                 schoolLevel,
@@ -255,6 +256,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
+            if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
             const result = await generateSportsClubReport({

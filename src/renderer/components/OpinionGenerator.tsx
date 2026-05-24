@@ -16,7 +16,7 @@ interface DuplicateResult {
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration } = useGenerationTracker(AppMode.GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
 
   // Local UI State
@@ -188,6 +188,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
+            // 사용자 중단 요청 확인 — 다음 학생 처리를 막고 루프 종료
+            if (isCancelRequested()) break;
             const student = newStudents[i];
             const result = await generateOpinion({
                 schoolLevel,
@@ -235,6 +237,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
+            if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
             const result = await generateOpinion({
