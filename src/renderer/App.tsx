@@ -453,7 +453,7 @@ const App: React.FC = () => {
                 <div className="px-1.5 pb-1.5 space-y-0.5">
                   <button onClick={() => goTo(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
                     <GraduationCap className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">교육AI챗봇</span>
+                    <span className="flex-1 text-left truncate">교무행정AI 챗봇</span>
                     {generatingModes.has(AppMode.EDUCATION_QA) && mode !== AppMode.EDUCATION_QA && (
                       <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
                         {generatingModes.get(AppMode.EDUCATION_QA)}%

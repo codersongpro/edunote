@@ -77,7 +77,7 @@ const EducationAssistantQA: React.FC = () => {
             <GraduationCap className="w-4 h-4 text-green-600" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-800">교육 도우미 AI</h2>
+            <h2 className="text-sm font-bold text-slate-800">교무행정AI 챗봇</h2>
             <p className="text-xs text-slate-500">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
           </div>
         </div>
