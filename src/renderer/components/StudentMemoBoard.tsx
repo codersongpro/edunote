@@ -70,7 +70,13 @@ const StudentMemoBoard: React.FC = () => {
 
   const handleExportCSV = async () => {
     const header = '학생 이름,메모 내용,작성일,수정일';
-    const rows = memos.map(m =>
+    // 편집 중인 메모가 있으면 현재 입력값을 반영
+    const exportMemos = memos.map(m =>
+      m.id === editingId
+        ? { ...m, studentName: editName, content: editContent }
+        : m
+    );
+    const rows = exportMemos.map(m =>
       `"${m.studentName}","${m.content.replace(/"/g, '""')}","${new Date(m.createdAt).toLocaleString('ko-KR')}","${new Date(m.updatedAt).toLocaleString('ko-KR')}"`
     );
     const csv = [header, ...rows].join('\n');
