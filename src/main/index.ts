@@ -63,7 +63,7 @@ function buildAppMenu() {
       submenu: [
         { label: `EduNote v${app.getVersion()}`, enabled: false },
         { type: 'separator' },
-        { label: '개발자: 송동석 (교사)', enabled: false },
+        { label: '개발자: 송동석', enabled: false },
         {
           label: '이메일 문의: dungst.me@gmail.com',
           click: () => shell.openExternal('mailto:dungst.me@gmail.com?subject=EduNote 문의'),
