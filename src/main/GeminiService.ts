@@ -1,10 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
 const MODELS_TO_TRY = [
-  'gemini-3.5-flash',   // Latest GA (2026.05)
-  'gemini-2.5-flash',   // Previous stable
-  'gemini-2.0-flash',   // Legacy fallback
-  'gemini-1.5-flash',   // Last resort
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
 ];
 
 const isQuotaError = (error: unknown): boolean => {
@@ -60,6 +59,12 @@ export async function generateContent(
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
+      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
+      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
+        console.warn(`Model ${model} not available. Trying next...`);
+        continue;
+      }
       throw error;
     }
   }
@@ -95,6 +100,12 @@ export async function generateContentMultipart(
         await new Promise((r) => setTimeout(r, delay));
         continue;
       }
+      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
+      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
+        console.warn(`Model ${model} not available. Trying next...`);
+        continue;
+      }
       throw error;
     }
   }
@@ -103,8 +114,7 @@ export async function generateContentMultipart(
 
 export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  // Stable models first — free-tier new keys work best with non-preview GA models
-  const testModels = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-2.0-flash'];
+  const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
   let quotaHit = false;
 
   for (const model of testModels) {
@@ -123,12 +133,24 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
 
       if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
 
-      // Definitively invalid key
-      if (status === 400 || status === 401 || status === 403 ||
-          errStatus === 'permission_denied' || errStatus === 'invalid_argument' ||
-          msg.includes('api_key_invalid') || msg.includes('api key not valid') ||
-          msg.includes('permission_denied')) {
-        return { ok: false, error: 'API 키를 인식하지 못했습니다. 방금 발급한 경우 1~2분 후 다시 시도해 주세요. 계속 실패하면 키를 다시 확인해 주세요.' };
+      // Network error
+      if (msg.includes('failed to fetch') || msg.includes('network error') || msg.includes('networkerror')) {
+        return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+      }
+
+      // Definitively invalid key — only when the error message explicitly says so,
+      // or HTTP 401 (unauthenticated). Do NOT include 400/INVALID_ARGUMENT here
+      // because Google also returns 400 for invalid model names, not just bad keys.
+      const isKeyInvalid =
+        status === 401 ||
+        msg.includes('api_key_invalid') ||
+        msg.includes('api key not valid') ||
+        msg.includes('api key invalid') ||
+        msg.includes('invalid api key') ||
+        (status === 403 && (errStatus === 'permission_denied' || msg.includes('permission')));
+
+      if (isKeyInvalid) {
+        return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
       }
 
       // Quota / rate limit — key IS valid, just limited; try next model
@@ -138,9 +160,9 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
         continue;
       }
 
-      // Network error
-      if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
-        return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+      // Model not found or bad request (400/404/INVALID_ARGUMENT) → try next model
+      if (status === 400 || status === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
+        continue;
       }
 
       // Unknown — try next model

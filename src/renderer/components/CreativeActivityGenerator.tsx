@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student, AppMode } from '../types';
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
-import { generateCreativeActivityReport, parseAnnualPlanFromImages } from '../services/geminiService';
+import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualPlanFromDocuments } from '../services/geminiService';
+import { extractTextFromHwpx } from '../lib/hwpx-parser';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
@@ -19,7 +20,7 @@ const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '�
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
+  const { startGeneration, endGeneration, updateProgress } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
   // Local UI State
@@ -244,44 +245,74 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     setIsAnalyzingPlan(true);
     const base64Images: string[] = [];
+    const textChunks: string[] = [];
+    const pdfParts: Array<{ data: string; mimeType: string }> = [];
 
     try {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            if (!file.type.startsWith('image/')) continue;
+            const name = file.name.toLowerCase();
 
-            const base64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const result = reader.result as string;
-                    resolve(result.split(',')[1]);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            base64Images.push(base64);
+            if (file.type.startsWith('image/')) {
+                const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                base64Images.push(base64);
+
+            } else if (file.type === 'application/pdf' || name.endsWith('.pdf')) {
+                const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+                pdfParts.push({ data: base64, mimeType: 'application/pdf' });
+
+            } else if (name.endsWith('.hwpx')) {
+                try {
+                    const text = await extractTextFromHwpx(file);
+                    if (text.trim()) textChunks.push(text.trim());
+                } catch {
+                    alert(`${file.name}: HWPX 텍스트 추출 실패. 다른 형식으로 시도해 주세요.`);
+                }
+
+            } else if (name.endsWith('.hwp')) {
+                alert(`${file.name}: HWP(구형) 파일은 직접 읽기가 어렵습니다. HWPX 또는 PDF로 변환 후 업로드해 주세요.`);
+            }
         }
 
-        if (base64Images.length === 0) {
-            alert('이미지 파일만 업로드 가능합니다.');
-            return;
+        let extractedText = '';
+
+        if (base64Images.length > 0) {
+            const t = await parseAnnualPlanFromImages(base64Images);
+            if (t) extractedText += (extractedText ? '\n\n' : '') + t;
         }
 
-        const extractedText = await parseAnnualPlanFromImages(base64Images);
+        if (pdfParts.length > 0) {
+            const t = await parseAnnualPlanFromDocuments(pdfParts);
+            if (t) extractedText += (extractedText ? '\n\n' : '') + t;
+        }
+
+        if (textChunks.length > 0) {
+            extractedText += (extractedText ? '\n\n' : '') + textChunks.join('\n\n');
+        }
+
         if (extractedText) {
-            const newPlan = creativeState.currentAnnualPlan 
-                ? creativeState.currentAnnualPlan + "\n\n" + extractedText 
+            const newPlan = creativeState.currentAnnualPlan
+                ? creativeState.currentAnnualPlan + '\n\n' + extractedText
                 : extractedText;
             updateCreativeState({ currentAnnualPlan: newPlan });
         } else {
-            alert('이미지에서 내용을 추출하지 못했습니다.');
+            alert('파일에서 내용을 추출하지 못했습니다.');
         }
 
     } catch (err) {
         const error = err as any;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert('이미지 분석 중 오류가 발생했습니다.');
+        console.error(error instanceof Error ? error.message : String(error));
+        alert('파일 분석 중 오류가 발생했습니다.');
     } finally {
         setIsAnalyzingPlan(false);
         if (planFileInputRef.current) planFileInputRef.current.value = '';
@@ -385,6 +416,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const handleGenerateAll = async () => {
     if (!creativeState.currentActivityName) return;
 
+    startGeneration(0);
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
     const newStudents = [...creativeState.activeStudents];
@@ -407,9 +439,11 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[i].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / newStudents.length) * 100));
+            const pct = Math.round((completedCount / newStudents.length) * 100);
+            updateProgress(pct);
+            setGlobalProgress(pct);
         }
-        
+
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -417,6 +451,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         console.error(errorMessage);
         alert("생성 중 오류가 발생했습니다.");
     } finally {
+        endGeneration();
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
     }
@@ -434,6 +469,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     if (!creativeState.currentActivityName) return;
 
+    startGeneration(0);
     setIsGlobalGenerating(true);
     setGlobalProgress(0);
     const newStudents = [...creativeState.activeStudents];
@@ -457,9 +493,11 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             newStudents[index].generatedContent = result;
             completedCount++;
-            setGlobalProgress(Math.round((completedCount / selectedIndices.length) * 100));
+            const pct = Math.round((completedCount / selectedIndices.length) * 100);
+            updateProgress(pct);
+            setGlobalProgress(pct);
         }
-        
+
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
         const error = err;
@@ -467,6 +505,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         console.error(errorMessage);
         alert("생성 중 오류가 발생했습니다.");
     } finally {
+        endGeneration();
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
     }
@@ -835,7 +874,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                          type="file" 
                                          ref={planFileInputRef}
                                          className="hidden" 
-                                         accept="image/*"
+                                         accept="image/*,.pdf,.hwpx,.hwp"
                                          multiple
                                          onChange={(e) => handlePlanImages(e.target.files)}
                                      />
@@ -852,7 +891,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                 </svg>
                                                 분석 중...
                                             </>
-                                         ) : '📷 이미지에서 추출'}
+                                         ) : '📂 파일에서 추출 (이미지/PDF/HWPX)'}
                                      </button>
                                  </div>
                              </div>

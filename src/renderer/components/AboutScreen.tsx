@@ -106,7 +106,6 @@ const AboutScreen: React.FC = () => {
               <span className="text-sm text-gray-600 dark:text-gray-300">송동석</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">직업</span>
               <span className="text-sm text-gray-600 dark:text-gray-300">Teacher · Data Analytics · App Developer</span>
             </div>
             <div className="flex items-center gap-2 mt-3">
@@ -157,7 +156,6 @@ const AboutScreen: React.FC = () => {
         {/* License */}
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 pb-4 space-y-1">
           <p>Copyright © 2026 송동석. All rights reserved.</p>
-          <p>Built with Electron · React · Google Gemini API</p>
         </div>
 
       </div>

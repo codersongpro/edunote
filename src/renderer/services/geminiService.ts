@@ -1068,3 +1068,16 @@ export const parseAnnualPlanFromImages = async (images: string[]): Promise<strin
   parts.push({ text: prompt });
   return await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
 };
+
+export const parseAnnualPlanFromDocuments = async (
+  docs: Array<{ data: string; mimeType: string }>
+): Promise<string> => {
+  if (docs.length === 0) return '';
+  const prompt = `이 문서들은 학교 생활기록부 기재를 위한 연간 지도 계획 또는 활동 계획표입니다.
+문서에 포함된 내용을 분석하여 월별/시기별 활동을 시간 순서대로 텍스트로 정리해주세요.
+예시: - [3월]: 학급 임원 선출`;
+  const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [];
+  docs.forEach((doc) => parts.push({ inlineData: doc }));
+  parts.push({ text: prompt });
+  return await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
+};
