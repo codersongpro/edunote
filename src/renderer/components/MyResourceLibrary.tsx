@@ -204,18 +204,29 @@ const MyResourceLibrary: React.FC = () => {
           if (cat) setAddCategory(cat);
         }
       } else {
-        // YouTube
-        if (!addTitle) setAddTitle('YouTube 영상');
-        // 2b. Fetch YouTube thumbnail
+        // YouTube — 실제 영상 제목 가져오기
+        // (React 클로저 이슈 방지를 위해 로컬 변수로 최종 제목 관리)
+        let resolvedTitle = addTitle;
+        if (!resolvedTitle) {
+          setFetchStep('YouTube 영상 정보 가져오는 중...');
+          const meta = await window.electronAPI.fetchUrlMeta(url);
+          // <title> 태그는 "영상제목 - YouTube" 형식 → " - YouTube" 제거
+          const rawTitle = meta.title || '';
+          const cleanTitle = rawTitle.replace(/\s*[-–—]\s*YouTube\s*$/i, '').trim();
+          resolvedTitle = cleanTitle || 'YouTube 영상';
+          setAddTitle(resolvedTitle);
+          if (!addDesc && meta.description) setAddDesc(meta.description);
+        }
+        // 2b. YouTube 썸네일
         setFetchStep('YouTube 썸네일 가져오는 중...');
         const ytThumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
         const imgData = await (window.electronAPI as any).fetchImage(ytThumbUrl);
         if (imgData) setAddThumbnail(imgData);
 
-        // Auto-classify YouTube by title
-        if (categories.length > 0 && !addCategory && addTitle) {
+        // 자동 분류 — resolvedTitle 사용 (클로저의 addTitle은 아직 업데이트 안 됨)
+        if (categories.length > 0 && !addCategory && resolvedTitle) {
           setFetchStep('자동 분류 중...');
-          const cat = await autoClassify(addTitle, addDesc, url);
+          const cat = await autoClassify(resolvedTitle, addDesc, url);
           if (cat) setAddCategory(cat);
         }
       }

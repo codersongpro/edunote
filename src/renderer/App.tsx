@@ -98,6 +98,9 @@ const App: React.FC = () => {
     cancelFlagsRef.current.add(modeKey);
     abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
+    // 즉시 진행바 숨김 — useRef 변경은 리렌더를 유발하지 않으므로 state도 함께 업데이트
+    setIsGlobalGenerating(false);
+    setGlobalProgress(0);
   };
   const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
   const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
