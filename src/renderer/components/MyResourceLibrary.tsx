@@ -679,6 +679,17 @@ const MyResourceLibrary: React.FC = () => {
                                     {cat}
                                   </button>
                                 ))}
+                                {categories.length === 0 && (
+                                  <div className="border-t border-gray-100 dark:border-gray-600 my-1" />
+                                )}
+                                {categories.length === 0 && (
+                                  <button
+                                    onClick={() => { setCategoryEditId(null); setShowCatManager(true); }}
+                                    className="w-full text-left px-3 py-1.5 text-xs text-teal-600 dark:text-teal-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                  >
+                                    + 주제 만들기
+                                  </button>
+                                )}
                               </div>
                             )}
                           </div>

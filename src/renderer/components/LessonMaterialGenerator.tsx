@@ -25,8 +25,8 @@ const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label:
   { value: 'GAME', icon: Gamepad2, label: '게임 제작', desc: '수업 주제 교육용 미니 게임' },
 ];
 
-const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
-const labelClass = 'block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide';
+const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
+const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide';
 
 const extractHtml = (raw: string): string => {
   const m = raw.match(/```(?:html)?\s*([\s\S]*?)```/);
@@ -331,9 +331,9 @@ li{margin-bottom:5pt;line-height:1.6;}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
 
         {/* Left: input panel */}
-        <div className="w-[360px] shrink-0 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col overflow-hidden">
-          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 shrink-0">
-            <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+        <div className="w-[360px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm flex flex-col overflow-hidden">
+          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-amber-500" />
               수업 정보 입력
             </h3>
@@ -367,7 +367,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 {selectedStandard && (
                   <button
                     onClick={() => setSelectedStandardCode('')}
-                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
                   >
                     선택 해제
                   </button>
@@ -375,9 +375,9 @@ li{margin-bottom:5pt;line-height:1.6;}
               </div>
 
               {currentStandards.length > 0 ? (
-                <div className="border border-gray-200 rounded-md overflow-hidden">
+                <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
                   {selectedStandard && (
-                    <div className="bg-amber-50 border-b border-amber-200 px-3 py-2">
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700 px-3 py-2">
                       <span className="text-[10px] font-bold text-amber-700 font-mono block">{selectedStandard.code}</span>
                       <p className="text-[11px] text-amber-800 leading-snug mt-0.5">{selectedStandard.text}</p>
                     </div>
@@ -387,25 +387,25 @@ li{margin-bottom:5pt;line-height:1.6;}
                       <div key={domain}>
                         <button
                           onClick={() => toggleDomain(domain)}
-                          className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                          className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
                         >
                           {expandedDomains.has(domain)
-                            ? <ChevronDown className="w-3 h-3 text-gray-400 shrink-0" />
-                            : <ChevronRight className="w-3 h-3 text-gray-400 shrink-0" />
+                            ? <ChevronDown className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
+                            : <ChevronRight className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
                           }
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">영역 {domain}</span>
-                          <span className="text-[10px] text-gray-400 ml-auto">{standardsByDomain[domain].length}개</span>
+                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">영역 {domain}</span>
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto">{standardsByDomain[domain].length}개</span>
                         </button>
                         {expandedDomains.has(domain) && standardsByDomain[domain].map(std => (
                           <button
                             key={std.code}
                             onClick={() => setSelectedStandardCode(prev => prev === std.code ? '' : std.code)}
-                            className={`w-full text-left px-3 py-2 border-t border-gray-50 hover:bg-amber-50 transition-colors ${
-                              selectedStandardCode === std.code ? 'bg-amber-100' : ''
+                            className={`w-full text-left px-3 py-2 border-t border-gray-50 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors ${
+                              selectedStandardCode === std.code ? 'bg-amber-100 dark:bg-amber-800/30' : ''
                             }`}
                           >
                             <span className="text-[10px] font-bold text-amber-600 font-mono block">{std.code}</span>
-                            <span className="text-[11px] text-gray-700 leading-snug">{std.text}</span>
+                            <span className="text-[11px] text-gray-700 dark:text-gray-200 leading-snug">{std.text}</span>
                           </button>
                         ))}
                       </div>
@@ -413,7 +413,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-gray-400 bg-gray-50 border border-gray-200 rounded-md px-3 py-2">
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2">
                   {selectedGradeLabel.includes('고등학교')
                     ? '고등학교 성취기준은 추가 요청사항란에 직접 입력해 주세요.'
                     : '해당 학년/교과의 성취기준을 찾을 수 없습니다.'}
@@ -431,7 +431,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               <input type="text" className={inputClass} placeholder="예: 소화 기관의 역할과 구조" value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* Content Type */}
             <div>
@@ -443,15 +443,15 @@ li{margin-bottom:5pt;line-height:1.6;}
                     onClick={() => setContentType(value)}
                     className={`flex flex-col items-start gap-1 p-2.5 rounded-lg border-2 text-left transition-all ${
                       contentType === value
-                        ? 'border-amber-500 bg-amber-50 text-amber-900'
-                        : 'border-gray-200 hover:border-amber-300 text-gray-600'
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-amber-300 text-gray-600 dark:text-gray-300'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${contentType === value ? 'text-amber-600' : 'text-gray-400'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${contentType === value ? 'text-amber-600' : 'text-gray-400 dark:text-gray-500'}`} />
                       <span className="text-xs font-bold">{label}</span>
                     </div>
-                    <span className="text-[10px] text-gray-400 leading-tight">{desc}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{desc}</span>
                   </button>
                 ))}
               </div>
@@ -472,7 +472,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <div className="flex gap-2">
                     {[{ val: 'activity', label: '워크시트' }, { val: 'assessment', label: '평가지' }].map(opt => (
                       <button key={opt.val} onClick={() => setWorksheetType(opt.val as any)}
-                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:border-amber-400'}`}>
+                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-amber-400'}`}>
                         {opt.label}
                       </button>
                     ))}
@@ -482,7 +482,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <label className={labelClass}>활동 수</label>
                   <input type="number" className={inputClass} min={1} max={10} value={worksheetCount} onChange={e => setWorksheetCount(Math.max(1, parseInt(e.target.value) || 2))} />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-300">
                   <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
                   점수란 포함
                 </label>
@@ -519,7 +519,7 @@ li{margin-bottom:5pt;line-height:1.6;}
             )}
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 shrink-0">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0">
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
@@ -549,9 +549,9 @@ li{margin-bottom:5pt;line-height:1.6;}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Slide result */}
           {contentType === 'SLIDE' && slides && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
+              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
                   {allImagesProgress && (
@@ -568,10 +568,10 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <button
                     disabled
                     title="이미지 생성 기능은 현재 구현 중입니다"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 bg-gray-100 border border-dashed border-gray-300 rounded cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
                   >
                     <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
-                    <span className="ml-1 text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">구현중</span>
+                    <span className="ml-1 text-[10px] bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">구현중</span>
                   </button>
                   <button
                     onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
@@ -585,14 +585,14 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <button onClick={handleSaveSlidesMd} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors">
                     <FileType className="w-3.5 h-3.5" />MD 저장
                   </button>
-                  <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded transition-colors">
+                  <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />TXT 저장
                   </button>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#EAECEF]">
                 {slides.map((slide) => (
-                  <div key={slide.page} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div key={slide.page} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 flex items-center gap-2">
                       <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full shrink-0">{slide.page}</span>
                       <h3
@@ -607,16 +607,16 @@ li{margin-bottom:5pt;line-height:1.6;}
                         <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
                       </div>
                     ) : slide.imagePrompt ? (
-                      <div className="w-full bg-gray-50 flex items-center justify-center border-b border-gray-100" style={{height: 48}}>
-                        <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
-                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성 <span className="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full text-[10px]">구현중</span>
+                      <div className="w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center border-b border-gray-100 dark:border-gray-700" style={{height: 48}}>
+                        <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성 <span className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full text-[10px]">구현중</span>
                         </span>
                       </div>
                     ) : null}
                     <div className="px-4 py-3">
                       <ul className="space-y-1.5 mb-3">
                         {slide.content.slice(0, 3).map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-base text-gray-700">
+                          <li key={i} className="flex items-start gap-2 text-base text-gray-700 dark:text-gray-200">
                             <span className="text-amber-400 mt-0.5 shrink-0">•</span>
                             <span
                               contentEditable
@@ -628,12 +628,12 @@ li{margin-bottom:5pt;line-height:1.6;}
                         ))}
                       </ul>
                       {slide.notes !== undefined && (
-                        <div className="border-t border-gray-100 pt-2 mt-2 flex items-start gap-1">
-                          <p className="text-xs text-gray-400 italic shrink-0">[교사 메모]</p>
+                        <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2 flex items-start gap-1">
+                          <p className="text-xs text-gray-400 dark:text-gray-500 italic shrink-0">[교사 메모]</p>
                           <p
                             contentEditable
                             suppressContentEditableWarning
-                            className="text-xs text-gray-400 italic outline-none focus:bg-gray-50 rounded px-1 -mx-1 flex-1"
+                            className="text-xs text-gray-400 dark:text-gray-500 italic outline-none focus:bg-gray-50 dark:focus:bg-gray-700 rounded px-1 -mx-1 flex-1"
                             onBlur={e => handleSlideFieldEdit(slide.page, 'notes', e.currentTarget.textContent || '')}
                           >{slide.notes}</p>
                         </div>
@@ -655,9 +655,9 @@ li{margin-bottom:5pt;line-height:1.6;}
 
           {/* Quiz result — iframe preview + HTML source editor */}
           {contentType === 'QUIZ' && quizHtml && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
+              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
                   퀴즈 앱 미리보기
                 </span>
@@ -671,7 +671,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
                       quizEditMode
                         ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
                     }`}
                   >
                     {quizEditMode
@@ -704,9 +704,9 @@ li{margin-bottom:5pt;line-height:1.6;}
 
           {/* Game result */}
           {contentType === 'GAME' && gameHtml && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
-              <div className="bg-gray-50 border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
+              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
                   <Gamepad2 className="w-4 h-4 text-amber-500" />
                   교육용 게임
                 </span>

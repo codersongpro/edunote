@@ -128,7 +128,7 @@ export async function generateContent(
   }
 
   // 모든 모델이 실패한 경우 마지막 에러 전파
-  throw lastError;
+  throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
 }
 
 // 멀티파트(텍스트+파일) 생성
@@ -170,7 +170,7 @@ export async function generateContentMultipart(
     }
   }
 
-  throw lastError;
+  throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)

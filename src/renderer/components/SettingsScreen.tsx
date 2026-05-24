@@ -249,43 +249,43 @@ const SettingsScreen: React.FC = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
   };
 
-  const inputClass = 'w-full bg-white rounded-md border border-gray-300 text-gray-800 text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
-  const labelClass = 'block text-sm font-bold text-gray-700 mb-1.5';
+  const inputClass = 'w-full bg-white dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
+  const labelClass = 'block text-sm font-bold text-gray-700 dark:text-gray-200 mb-1.5';
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
       <div className="max-w-xl mx-auto w-full p-4 space-y-4">
 
         {/* Header */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div className="flex items-center gap-2 mb-1">
-            <div className="bg-gray-100 p-1.5 rounded-lg">
-              <Settings className="w-4 h-4 text-gray-600" />
+            <div className="bg-gray-100 dark:bg-gray-700 p-1.5 rounded-lg">
+              <Settings className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </div>
-            <h2 className="font-bold text-gray-800">EduNote 설정</h2>
+            <h2 className="font-bold text-gray-800 dark:text-gray-100">EduNote 설정</h2>
           </div>
-          <p className="text-xs text-gray-500">Gemini API 키와 기본 정보를 설정합니다.</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Gemini API 키와 기본 정보를 설정합니다.</p>
         </div>
 
         {/* API Key Guide */}
-        <div className={`rounded-lg border shadow-sm ${!hasKey ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+        <div className={`rounded-lg border shadow-sm ${!hasKey ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
           <button
             onClick={() => setGuideExpanded(!guideExpanded)}
             className="w-full px-4 py-3 flex items-center justify-between text-left"
           >
             <div className="flex items-center gap-2">
-              <ExternalLink className={`w-4 h-4 ${!hasKey ? 'text-blue-600' : 'text-gray-500'}`} />
-              <span className={`text-sm font-bold ${!hasKey ? 'text-blue-800' : 'text-gray-700'}`}>
+              <ExternalLink className={`w-4 h-4 ${!hasKey ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+              <span className={`text-sm font-bold ${!hasKey ? 'text-blue-800 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'}`}>
                 Gemini API 키 무료 발급 방법
               </span>
-              {!hasKey && <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-medium">필수</span>}
+              {!hasKey && <span className="text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">필수</span>}
             </div>
-            {guideExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+            {guideExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 dark:text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500" />}
           </button>
           {guideExpanded && (
             <div className="px-4 pb-4">
-              <div className="bg-white rounded-md border border-blue-100 p-4 space-y-3">
-                <ol className="space-y-2.5 text-sm text-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-md border border-blue-100 dark:border-blue-800 p-4 space-y-3">
+                <ol className="space-y-2.5 text-sm text-gray-700 dark:text-gray-200">
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">1</span>
                     <span>크롬 브라우저에서{' '}
@@ -300,44 +300,44 @@ const SettingsScreen: React.FC = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">2</span>
-                    <span>구글 계정으로 로그인 <span className="text-gray-500">(무료 Google 계정으로 충분)</span></span>
+                    <span>구글 계정으로 로그인 <span className="text-gray-500 dark:text-gray-400">(무료 Google 계정으로 충분)</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">3</span>
-                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-gray-500">(영문 메뉴인 경우 "Get API key")</span></span>
+                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-gray-500 dark:text-gray-400">(영문 메뉴인 경우 "Get API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">4</span>
-                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-gray-500">(영문: "Create API key")</span></span>
+                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-gray-500 dark:text-gray-400">(영문: "Create API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">5</span>
-                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-gray-500">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
+                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-gray-500 dark:text-gray-400">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">6</span>
-                    <span>생성된 키 <span className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
+                    <span>생성된 키 <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
                   </li>
                 </ol>
 
                 {/* 무료 등급 확인 강조 박스 — 결제 등급이 잘못되면 과금 우려가 있어 별도 안내 */}
-                <div className="mt-3 bg-amber-50 border border-amber-200 rounded-md p-3">
-                  <p className="text-xs font-bold text-amber-800 mb-1.5 flex items-center gap-1">
+                <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-3">
+                  <p className="text-xs font-bold text-amber-800 dark:text-amber-300 mb-1.5 flex items-center gap-1">
                     💰 발급 후 반드시 "무료 등급"인지 확인하세요
                   </p>
-                  <ol className="text-xs text-amber-700 space-y-1 leading-relaxed pl-4 list-decimal">
+                  <ol className="text-xs text-amber-700 dark:text-amber-400 space-y-1 leading-relaxed pl-4 list-decimal">
                     <li>aistudio.google.com → 좌측 메뉴 <strong>"API 키"</strong> 목록 화면 열기</li>
                     <li>방금 만든 키의 <strong>"결제 설정"</strong> 컬럼 확인</li>
-                    <li><span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-bold">무료 등급</span>이면 OK — 분당 15회 / 일 1500회까지 무료</li>
-                    <li><span className="bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold">유료 등급</span>이면 사용량 따라 과금 → 결제 계정 미연결된 새 프로젝트에서 키를 다시 발급</li>
+                    <li><span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded font-bold">무료 등급</span>이면 OK — 분당 15회 / 일 1500회까지 무료</li>
+                    <li><span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-1.5 py-0.5 rounded font-bold">유료 등급</span>이면 사용량 따라 과금 → 결제 계정 미연결된 새 프로젝트에서 키를 다시 발급</li>
                   </ol>
-                  <p className="text-[11px] text-amber-600 mt-2">
+                  <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-2">
                     팁: 신규 Gmail 계정으로 처음 발급하면 자동으로 무료 등급이 됩니다.
                   </p>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
                   </p>
                 </div>
@@ -347,17 +347,17 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* API Key Input */}
-        <div className={`rounded-lg border shadow-sm p-4 space-y-3 transition-all ${!hasKey ? 'bg-amber-50 border-amber-400 animate-pulse' : 'bg-white border-gray-200'}`}>
+        <div className={`rounded-lg border shadow-sm p-4 space-y-3 transition-all ${!hasKey ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-600 animate-pulse' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
           <div className="flex items-center gap-2 mb-2">
-            <Key className={`w-4 h-4 ${!hasKey ? 'text-amber-600' : 'text-gray-500'}`} />
-            <h3 className={`text-sm font-bold ${!hasKey ? 'text-amber-800' : 'text-gray-700'}`}>API 키 설정</h3>
+            <Key className={`w-4 h-4 ${!hasKey ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`} />
+            <h3 className={`text-sm font-bold ${!hasKey ? 'text-amber-800 dark:text-amber-300' : 'text-gray-700 dark:text-gray-200'}`}>API 키 설정</h3>
             {!hasKey && (
-              <span className="flex items-center gap-1 text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">
+              <span className="flex items-center gap-1 text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold">
                 ⚠ 미입력
               </span>
             )}
             {hasKey && (
-              <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full">
                 <CheckCircle className="w-3 h-3" />
                 등록됨
               </span>
@@ -365,7 +365,7 @@ const SettingsScreen: React.FC = () => {
           </div>
 
           {hasKey && (
-            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100">
+            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>API 키가 안전하게 저장되어 있습니다. 변경하려면 새 키를 입력하세요.</span>
             </div>
@@ -373,16 +373,16 @@ const SettingsScreen: React.FC = () => {
 
           {/* 키 활성화 자동 폴링 중 안내 — 사용자가 수동으로도 확인 가능 */}
           {activationPolling && (
-            <div className="flex items-start gap-2 text-sm text-blue-700 bg-blue-50 p-3 rounded-md border border-blue-200">
+            <div className="flex items-start gap-2 text-sm text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-200 dark:border-blue-700">
               <RefreshCw className="w-4 h-4 shrink-0 mt-0.5 animate-spin" />
               <div className="flex-1">
                 <p className="font-bold">API 키 활성화 확인 중...</p>
-                <p className="text-xs mt-0.5 text-blue-600">
+                <p className="text-xs mt-0.5 text-blue-600 dark:text-blue-500">
                   새 키는 1~2분간 활성화 대기 시간이 있을 수 있습니다. 완료되면 알림으로 알려드립니다.
                 </p>
                 <button
                   onClick={checkActivationNow}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300 rounded px-2.5 py-1 hover:bg-blue-200"
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600 rounded px-2.5 py-1 hover:bg-blue-200 dark:hover:bg-blue-700"
                 >
                   <RefreshCw className="w-3 h-3" />
                   지금 확인
@@ -395,7 +395,7 @@ const SettingsScreen: React.FC = () => {
             <label className={`${labelClass} flex items-center gap-2`}>
               <span>새 API 키 {!hasKey && <span className="text-red-500">*</span>}</span>
               {hasKey && (
-                <span className="flex items-center gap-1 text-xs font-bold bg-green-100 text-green-700 border border-green-300 rounded-full px-2 py-0.5">
+                <span className="flex items-center gap-1 text-xs font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 rounded-full px-2 py-0.5">
                   <CheckCircle className="w-3 h-3" />
                   API 키 설정 완료
                 </span>
@@ -411,22 +411,22 @@ const SettingsScreen: React.FC = () => {
           </div>
 
           {testStatus === 'ok' && (
-            <div className="flex items-center gap-2 text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100 text-sm">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800 text-sm">
               <CheckCircle className="w-4 h-4" />
               API 키가 정상적으로 확인되었습니다.
             </div>
           )}
           {testStatus === 'warn' && (
-            <div className="flex items-start gap-2 text-green-700 bg-green-50 p-2.5 rounded-md border border-green-100 text-sm">
+            <div className="flex items-start gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800 text-sm">
               <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold">API 키 정상 — 바로 사용 가능합니다!</p>
-                <p className="text-xs mt-0.5 text-green-600">{testWarn}</p>
+                <p className="text-xs mt-0.5 text-green-600 dark:text-green-500">{testWarn}</p>
               </div>
             </div>
           )}
           {testStatus === 'fail' && (
-            <div className="flex items-start gap-2 text-red-600 bg-red-50 p-2.5 rounded-md border border-red-100 text-sm">
+            <div className="flex items-start gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2.5 rounded-md border border-red-100 dark:border-red-800 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span className="whitespace-pre-line">{testError}</span>
             </div>
@@ -436,7 +436,7 @@ const SettingsScreen: React.FC = () => {
             <button
               onClick={handleTestKey}
               disabled={!apiKey.trim() || testStatus === 'testing'}
-              className="flex-1 py-2.5 rounded-md text-sm font-bold border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {testStatus === 'testing' ? '테스트 중...' : '키 테스트'}
             </button>
@@ -458,7 +458,7 @@ const SettingsScreen: React.FC = () => {
                 setTestStatus('idle');
                 setGuideExpanded(true);
               }}
-              className="w-full py-2 rounded-md text-sm font-semibold border border-red-200 text-red-500 hover:bg-red-50 transition-colors"
+              className="w-full py-2 rounded-md text-sm font-semibold border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               저장된 API 키 삭제
             </button>
@@ -466,12 +466,12 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* General Settings */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <User className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-bold text-gray-700">기본 정보</h3>
+            <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">기본 정보</h3>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2 text-xs text-blue-700 leading-relaxed">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
             💡 이름, 소속기관, 담당 학년/반을 입력하면 <strong>공문서·수업자료·학생기록 생성 결과물</strong>에 자동으로 반영됩니다.
           </div>
 
@@ -494,8 +494,8 @@ const SettingsScreen: React.FC = () => {
                   onClick={() => setSchoolLevel(level)}
                   className={`flex-1 py-2 text-sm rounded-md border font-medium transition-all ${
                     schoolLevel === level
-                      ? 'bg-blue-50 border-[#1E88E5] text-[#1E88E5]'
-                      : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-[#1E88E5] text-[#1E88E5]'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {level}
@@ -518,12 +518,12 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Student Roster */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <Users className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-bold text-gray-700">우리반 학생 명단</h3>
+            <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">우리반 학생 명단</h3>
           </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-md px-3 py-2 text-xs text-blue-700 leading-relaxed">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
             💡 학생 명단을 입력하면 <strong>수업자료·럭키드로우</strong> 등에서 "우리반 자동 입력" 버튼으로 바로 불러올 수 있습니다.
           </div>
 

@@ -425,10 +425,10 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={toggleDarkMode}
-              className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={darkMode ? '라이트 모드' : '다크 모드'}
+              className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-amber-500 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
             >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-500" />}
             </button>
           </div>
 
