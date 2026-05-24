@@ -1,10 +1,19 @@
 import { GoogleGenAI } from '@google/genai';
 
+// gemini-2.5-pro 시도 → 유료 계정이면 성공, 무료 계정이면 403으로 즉시 실패 후 flash로 폴백
 const MODELS_TO_TRY = [
+  'gemini-2.5-pro',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-1.5-flash',
 ];
+
+// 첫 성공 모델 인덱스를 캐시 — 이후 호출은 검증된 모델부터 바로 시작
+let cachedStartIndex = 0;
+
+export function resetModelCache(): void {
+  cachedStartIndex = 0;
+}
 
 const isQuotaError = (error: unknown): boolean => {
   const msg = (error as any)?.message?.toLowerCase() || '';
@@ -18,6 +27,14 @@ const isQuotaError = (error: unknown): boolean => {
     msg.includes('resource exhausted') || msg.includes('rate limit') ||
     msg.includes('exceeded') || msg.includes('overloaded') ||
     str.includes('quota') || str.includes('exceeded');
+};
+
+// 생성 호출 중 모델 접근 불가 판단 (키 검증은 이미 완료된 상태이므로 403도 모델 문제로 처리)
+const isModelUnavailable = (error: unknown): boolean => {
+  const errStatus = ((error as any)?.error?.status || '').toLowerCase();
+  const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
+  return httpStatus === 400 || httpStatus === 403 || httpStatus === 404 ||
+    errStatus === 'invalid_argument' || errStatus === 'not_found' || errStatus === 'permission_denied';
 };
 
 export interface GenerateOptions {
@@ -38,31 +55,25 @@ export async function generateContent(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config,
-      });
+      const result = await ai.models.generateContent({ model, contents: prompt, config });
+      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
       if (isQuotaError(error)) {
-        console.warn(`Model ${model} quota limit. Trying next...`);
-        const delay = 2000 * Math.pow(2, i);
-        await new Promise((r) => setTimeout(r, delay));
+        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
+        await new Promise((r) => setTimeout(r, 1000));
         continue;
       }
-      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
-      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
-      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
-        console.warn(`Model ${model} not available. Trying next...`);
+      if (isModelUnavailable(error)) {
+        console.warn(`[${model}] 접근 불가 (무료 계정 또는 미지원) → 다음 모델로`);
         continue;
       }
       throw error;
@@ -79,31 +90,25 @@ export async function generateContentMultipart(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
+  for (let i = cachedStartIndex; i < MODELS_TO_TRY.length; i++) {
     const model = MODELS_TO_TRY[i];
     try {
       const config: Record<string, unknown> = {};
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({
-        model,
-        contents: { parts },
-        config,
-      });
+      const result = await ai.models.generateContent({ model, contents: { parts }, config });
+      cachedStartIndex = i;
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
       if (isQuotaError(error)) {
-        console.warn(`Model ${model} quota limit. Trying next...`);
-        const delay = 2000 * Math.pow(2, i);
-        await new Promise((r) => setTimeout(r, delay));
+        console.warn(`[${model}] 쿼터 제한 → 다음 모델로`);
+        await new Promise((r) => setTimeout(r, 1000));
         continue;
       }
-      const errStatus = ((error as any)?.error?.status || '').toLowerCase();
-      const httpStatus = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
-      if (httpStatus === 400 || httpStatus === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
-        console.warn(`Model ${model} not available. Trying next...`);
+      if (isModelUnavailable(error)) {
+        console.warn(`[${model}] 접근 불가 → 다음 모델로`);
         continue;
       }
       throw error;
