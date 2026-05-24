@@ -3,6 +3,7 @@ import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } fr
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
 import { generateOpinion } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { playSuccessSound } from '../lib/soundEffect';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 
 interface Props {
@@ -16,7 +17,7 @@ interface DuplicateResult {
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
 
   // Local UI State
@@ -188,30 +189,36 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
         for (let i = 0; i < newStudents.length; i++) {
-            // 사용자 중단 요청 확인 — 다음 학생 처리를 막고 루프 종료
             if (isCancelRequested()) break;
             const student = newStudents[i];
-            const result = await generateOpinion({
-                schoolLevel,
-                studentName: student.name,
-                positiveTags: student.positiveTags,
-                negativeTags: student.negativeTags,
-                additionalContext: student.additionalContext,
-                lengthOption: opState.lengthOption as LengthOption,
-                customLength: opState.customLength as number,
-                lengthUnit: opState.lengthUnit as LengthUnit
-            });
-            newStudents[i].generatedContent = result;
-            setGlobalProgress(Math.round((i + 1) / total * 100));
-            updateProgress(Math.round((i + 1) / total * 100));
+            try {
+              const result = await callWithAbort(() => generateOpinion({
+                  schoolLevel,
+                  studentName: student.name,
+                  positiveTags: student.positiveTags,
+                  negativeTags: student.negativeTags,
+                  additionalContext: student.additionalContext,
+                  lengthOption: opState.lengthOption as LengthOption,
+                  customLength: opState.customLength as number,
+                  lengthUnit: opState.lengthUnit as LengthUnit
+              }));
+              newStudents[i].generatedContent = result;
+              setGlobalProgress(Math.round((i + 1) / total * 100));
+              updateProgress(Math.round((i + 1) / total * 100));
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateOpState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateOpState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
@@ -240,27 +247,34 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-            const result = await generateOpinion({
-                schoolLevel,
-                studentName: student.name,
-                positiveTags: student.positiveTags,
-                negativeTags: student.negativeTags,
-                additionalContext: student.additionalContext,
-                lengthOption: opState.lengthOption as LengthOption,
-                customLength: opState.customLength as number,
-                lengthUnit: opState.lengthUnit as LengthUnit
-            });
-            newStudents[index].generatedContent = result;
-            setGlobalProgress(Math.round((i + 1) / total * 100));
-            updateProgress(Math.round((i + 1) / total * 100));
+            try {
+              const result = await callWithAbort(() => generateOpinion({
+                  schoolLevel,
+                  studentName: student.name,
+                  positiveTags: student.positiveTags,
+                  negativeTags: student.negativeTags,
+                  additionalContext: student.additionalContext,
+                  lengthOption: opState.lengthOption as LengthOption,
+                  customLength: opState.customLength as number,
+                  lengthUnit: opState.lengthUnit as LengthUnit
+              }));
+              newStudents[index].generatedContent = result;
+              setGlobalProgress(Math.round((i + 1) / total * 100));
+              updateProgress(Math.round((i + 1) / total * 100));
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateOpState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateOpState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);

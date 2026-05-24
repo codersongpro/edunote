@@ -87,12 +87,21 @@ const App: React.FC = () => {
   };
   const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
 
+  // API 키 실제 활성화 여부 (단순 저장 여부와 구분)
+  const [apiKeyActivated, setApiKeyActivated] = useState(false);
+
   // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
-  // useRef로 관리하여 리렌더 없이 즉시 반영
   const cancelFlagsRef = useRef<Set<string>>(new Set());
-  const requestCancel = (modeKey: string) => { cancelFlagsRef.current.add(modeKey); };
+  // AbortController — AI 호출 즉시 중단용
+  const abortControllerRef = useRef<AbortController>(new AbortController());
+  const requestCancel = (modeKey: string) => {
+    cancelFlagsRef.current.add(modeKey);
+    abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+  };
   const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
   const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
+  const getCancelSignal = () => abortControllerRef.current.signal;
 
   // 토스트 알림 큐
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -132,6 +141,10 @@ const App: React.FC = () => {
           window.electronAPI.getConfig('darkMode'),
         ]);
         setHasApiKey(hn as boolean);
+        if (hn) {
+          // 저장된 키가 실제로 동작하는지 빠르게 확인
+          window.electronAPI.aiGenerate('Hi', undefined).then(() => setApiKeyActivated(true)).catch(() => {});
+        }
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
         setShowDisclaimerModal(true);
@@ -288,7 +301,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, showToast }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyActivated, setApiKeyActivated, showToast }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
@@ -622,7 +635,7 @@ const App: React.FC = () => {
           </nav>
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
-            {hasApiKey ? (
+            {apiKeyActivated ? (
               <button
                 onClick={() => goTo(AppMode.SETTINGS)}
                 className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"

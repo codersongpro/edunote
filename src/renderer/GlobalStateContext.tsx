@@ -70,6 +70,9 @@ export const GlobalStateContext = createContext<GlobalStateContextType>({
   requestCancel: () => {},
   isCancelled: () => false,
   clearCancel: () => {},
+  getCancelSignal: () => new AbortController().signal,
+  apiKeyActivated: false,
+  setApiKeyActivated: () => {},
   showToast: () => {},
 });
 

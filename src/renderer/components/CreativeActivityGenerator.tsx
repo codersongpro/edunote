@@ -6,6 +6,7 @@ import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualP
 import { extractTextFromHwpx } from '../lib/hwpx-parser';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -20,7 +21,7 @@ const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '�
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
-  const { startGeneration, endGeneration, updateProgress, isCancelRequested } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
+  const { startGeneration, endGeneration, updateProgress, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
   // Local UI State
@@ -426,31 +427,38 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         for (let i = 0; i < newStudents.length; i++) {
             if (isCancelRequested()) break;
             const student = newStudents[i];
-            const result = await generateCreativeActivityReport({
-                schoolLevel,
-                studentName: student.name,
-                activityName: creativeState.currentActivityName,
-                activityType: creativeState.currentActivityType,
-                annualPlan: creativeState.currentAnnualPlan || "특이사항 없음",
-                keywords: student.selectedTags,
-                additionalContext: student.additionalContext,
-                lengthOption: creativeState.lengthOption,
-                customLength: creativeState.customLength,
-                lengthUnit: creativeState.lengthUnit
-            });
-            newStudents[i].generatedContent = result;
-            completedCount++;
-            const pct = Math.round((completedCount / newStudents.length) * 100);
-            updateProgress(pct);
-            setGlobalProgress(pct);
+            try {
+              const result = await callWithAbort(() => generateCreativeActivityReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  activityName: creativeState.currentActivityName,
+                  activityType: creativeState.currentActivityType,
+                  annualPlan: creativeState.currentAnnualPlan || "특이사항 없음",
+                  keywords: student.selectedTags,
+                  additionalContext: student.additionalContext,
+                  lengthOption: creativeState.lengthOption,
+                  customLength: creativeState.customLength,
+                  lengthUnit: creativeState.lengthUnit
+              }));
+              newStudents[i].generatedContent = result;
+              completedCount++;
+              const pct = Math.round((completedCount / newStudents.length) * 100);
+              updateProgress(pct);
+              setGlobalProgress(pct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
         endGeneration();
         setIsGlobalGenerating(false);
@@ -481,31 +489,38 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-            const result = await generateCreativeActivityReport({
-                schoolLevel,
-                studentName: student.name,
-                activityName: creativeState.currentActivityName,
-                activityType: creativeState.currentActivityType,
-                annualPlan: creativeState.currentAnnualPlan || "특이사항 없음",
-                keywords: student.selectedTags,
-                additionalContext: student.additionalContext,
-                lengthOption: creativeState.lengthOption,
-                customLength: creativeState.customLength,
-                lengthUnit: creativeState.lengthUnit
-            });
-            newStudents[index].generatedContent = result;
-            completedCount++;
-            const pct = Math.round((completedCount / selectedIndices.length) * 100);
-            updateProgress(pct);
-            setGlobalProgress(pct);
+            try {
+              const result = await callWithAbort(() => generateCreativeActivityReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  activityName: creativeState.currentActivityName,
+                  activityType: creativeState.currentActivityType,
+                  annualPlan: creativeState.currentAnnualPlan || "특이사항 없음",
+                  keywords: student.selectedTags,
+                  additionalContext: student.additionalContext,
+                  lengthOption: creativeState.lengthOption,
+                  customLength: creativeState.customLength,
+                  lengthUnit: creativeState.lengthUnit
+              }));
+              newStudents[index].generatedContent = result;
+              completedCount++;
+              const pct = Math.round((completedCount / selectedIndices.length) * 100);
+              updateProgress(pct);
+              setGlobalProgress(pct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
         endGeneration();
         setIsGlobalGenerating(false);

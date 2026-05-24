@@ -3,7 +3,7 @@ import { GlobalStateContext } from '../GlobalStateContext';
 import { AppMode } from '../types';
 
 export function useGenerationTracker(mode: AppMode) {
-  const { setGeneratingMode, isCancelled, clearCancel } = useContext(GlobalStateContext);
+  const { setGeneratingMode, isCancelled, clearCancel, getCancelSignal } = useContext(GlobalStateContext);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const subKeyRef = useRef<string | undefined>(undefined);
 
@@ -66,5 +66,18 @@ export function useGenerationTracker(mode: AppMode) {
     clearCancel(mode);
   };
 
-  return { startGeneration, updateProgress, endGeneration, isCancelRequested };
+  // AI 호출을 취소 신호와 함께 실행 — 중단 버튼 클릭 시 즉시 reject
+  const callWithAbort = <T>(fn: () => Promise<T>): Promise<T> => {
+    const signal = getCancelSignal();
+    if (signal.aborted) return Promise.reject(new Error('CANCELLED'));
+    return new Promise<T>((resolve, reject) => {
+      const onAbort = () => reject(new Error('CANCELLED'));
+      signal.addEventListener('abort', onAbort, { once: true });
+      fn().then(resolve).catch(reject).finally(() => {
+        signal.removeEventListener('abort', onAbort);
+      });
+    });
+  };
+
+  return { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort };
 }

@@ -3,6 +3,7 @@ import { SchoolLevel, LengthOption, LengthUnit, StudentSportsData, AppMode } fro
 import { generateSportsClubReport } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -33,7 +34,7 @@ const SPORTS_NEGATIVE_TRAITS = [
 
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
 
   // Local UI State
@@ -203,29 +204,36 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         for (let i = 0; i < newStudents.length; i++) {
             if (isCancelRequested()) break;
             const student = newStudents[i];
-            const result = await generateSportsClubReport({
-                schoolLevel,
-                studentName: student.name,
-                sportName: sportsState.sportName,
-                clubName: sportsState.clubName,
-                additionalContext: student.additionalContext,
-                lengthOption: sportsState.lengthOption as LengthOption,
-                customLength: sportsState.customLength as number,
-                lengthUnit: sportsState.lengthUnit as LengthUnit
-            });
-            newStudents[i].generatedContent = result;
-            completedCount++;
-            const pct = Math.round((completedCount / newStudents.length) * 100);
-            setGlobalProgress(pct);
-            updateProgress(pct);
+            try {
+              const result = await callWithAbort(() => generateSportsClubReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  sportName: sportsState.sportName,
+                  clubName: sportsState.clubName,
+                  additionalContext: student.additionalContext,
+                  lengthOption: sportsState.lengthOption as LengthOption,
+                  customLength: sportsState.customLength as number,
+                  lengthUnit: sportsState.lengthUnit as LengthUnit
+              }));
+              newStudents[i].generatedContent = result;
+              completedCount++;
+              const pct = Math.round((completedCount / newStudents.length) * 100);
+              setGlobalProgress(pct);
+              updateProgress(pct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
@@ -259,29 +267,36 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-            const result = await generateSportsClubReport({
-                schoolLevel,
-                studentName: student.name,
-                sportName: sportsState.sportName,
-                clubName: sportsState.clubName,
-                additionalContext: student.additionalContext,
-                lengthOption: sportsState.lengthOption as LengthOption,
-                customLength: sportsState.customLength as number,
-                lengthUnit: sportsState.lengthUnit as LengthUnit
-            });
-            newStudents[index].generatedContent = result;
-            completedCount++;
-            const selPct = Math.round((completedCount / selectedIndices.length) * 100);
-            setGlobalProgress(selPct);
-            updateProgress(selPct);
+            try {
+              const result = await callWithAbort(() => generateSportsClubReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  sportName: sportsState.sportName,
+                  clubName: sportsState.clubName,
+                  additionalContext: student.additionalContext,
+                  lengthOption: sportsState.lengthOption as LengthOption,
+                  customLength: sportsState.customLength as number,
+                  lengthUnit: sportsState.lengthUnit as LengthUnit
+              }));
+              newStudents[index].generatedContent = result;
+              completedCount++;
+              const selPct = Math.round((completedCount / selectedIndices.length) * 100);
+              setGlobalProgress(selPct);
+              updateProgress(selPct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
+        if (!isCancelRequested()) playSuccessSound();
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);

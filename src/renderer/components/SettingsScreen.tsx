@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, RefreshCw } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
+import { playSuccessSound } from '../lib/soundEffect';
 
 const SettingsScreen: React.FC = () => {
-  const { showToast } = useGlobalState();
+  const { showToast, setApiKeyActivated } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
 
   // API 키 활성화 자동 감지를 위한 폴링 상태
@@ -44,6 +45,8 @@ const SettingsScreen: React.FC = () => {
         await window.electronAPI.aiGenerate('Hi', undefined);
         // 성공!
         if (!pollingCancelRef.current) {
+          setApiKeyActivated(true);
+          playSuccessSound();
           showToast({
             type: 'success',
             title: 'API 키 활성화 완료!',
@@ -72,6 +75,8 @@ const SettingsScreen: React.FC = () => {
   const checkActivationNow = async () => {
     try {
       await window.electronAPI.aiGenerate('Hi', undefined);
+      setApiKeyActivated(true);
+      playSuccessSound();
       showToast({
         type: 'success',
         title: 'API 키 활성화 완료!',
@@ -194,7 +199,9 @@ const SettingsScreen: React.FC = () => {
     // 즉시 사용 가능한지 한 번 확인 후, 아직 활성화 중이면 백그라운드 폴링 시작
     try {
       await window.electronAPI.aiGenerate('Hi', undefined);
-      // 즉시 사용 가능 → 토스트 1회 표시
+      // 즉시 사용 가능
+      setApiKeyActivated(true);
+      playSuccessSound();
       showToast({
         type: 'success',
         title: 'API 키가 즉시 활성화됐습니다',

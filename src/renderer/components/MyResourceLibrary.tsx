@@ -293,19 +293,19 @@ const MyResourceLibrary: React.FC = () => {
   const allTabs = ['전체', ...categories, ...(resources.some(r => !r.category) ? ['미분류'] : [])];
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-3">
 
         {/* Header */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-teal-100 p-2 rounded-lg">
                 <BookMarked className="w-5 h-5 text-teal-600" />
               </div>
               <div>
-                <h2 className="font-bold text-gray-800">나만의 자료실</h2>
-                <p className="text-xs text-gray-500">유용한 웹사이트·영상을 주제별로 모아두세요.</p>
+                <h2 className="font-bold text-gray-800 dark:text-gray-100">나만의 자료실</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">유용한 웹사이트·영상을 주제별로 모아두세요.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -603,11 +603,11 @@ const MyResourceLibrary: React.FC = () => {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 gap-3">
             {filtered.map(r => (
-              <div key={r.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div key={r.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex">
                   {/* Thumbnail */}
                   {r.thumbnail ? (
-                    <div className={`shrink-0 relative overflow-hidden bg-black ${r.type === 'youtube' ? 'w-36' : 'w-36'}`} style={{ minHeight: 80 }}>
+                    <div className="shrink-0 relative overflow-hidden bg-black rounded-l-xl w-36" style={{ minHeight: 80 }}>
                       <img src={r.thumbnail} alt="" className="w-full h-full object-cover" style={{ minHeight: 80 }} />
                       {r.type === 'youtube' && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -618,7 +618,7 @@ const MyResourceLibrary: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="w-14 shrink-0 flex items-center justify-center bg-gray-50 border-r border-gray-100">
+                    <div className="w-14 shrink-0 flex items-center justify-center bg-gray-50 dark:bg-gray-700 border-r border-gray-100 dark:border-gray-600 rounded-l-xl">
                       {r.type === 'youtube'
                         ? <Youtube className="w-6 h-6 text-red-300" />
                         : <Globe className="w-6 h-6 text-gray-300" />}
@@ -639,14 +639,14 @@ const MyResourceLibrary: React.FC = () => {
                     ) : (
                       <>
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="text-sm font-bold text-gray-800 leading-snug line-clamp-1">{r.title}</h3>
+                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-snug line-clamp-1">{r.title}</h3>
                           <div className="flex items-center gap-1 shrink-0">
                             <button onClick={() => { setEditId(r.id); setEditTitle(r.title); setEditDesc(r.description); }} className="p-1 text-gray-400 hover:text-teal-600 rounded transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
                             <button onClick={() => window.electronAPI.openExternal(r.url)} className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"><ExternalLink className="w-3.5 h-3.5" /></button>
                             <button onClick={() => handleDelete(r.id)} className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </div>
-                        {r.description && <p className="text-xs text-gray-500 leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
+                        {r.description && <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* 분류 태그 — 클릭하면 드롭다운으로 분류 변경 가능 */}
                           <div className="relative" data-category-dropdown>
@@ -662,19 +662,19 @@ const MyResourceLibrary: React.FC = () => {
                               {r.category || '+ 분류'}
                             </button>
                             {categoryEditId === r.id && (
-                              <div className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[120px] max-h-[200px] overflow-y-auto">
+                              <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px] max-h-[200px] overflow-y-auto">
                                 <button
                                   onClick={() => handleCategoryChange(r.id, '')}
-                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${!r.category ? 'font-bold text-teal-600 bg-teal-50' : 'text-gray-700'}`}
+                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-600 ${!r.category ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-gray-700 dark:text-gray-200'}`}
                                 >
                                   미분류
                                 </button>
-                                {categories.length > 0 && <div className="border-t border-gray-100 my-1" />}
+                                {categories.length > 0 && <div className="border-t border-gray-100 dark:border-gray-600 my-1" />}
                                 {categories.map(cat => (
                                   <button
                                     key={cat}
                                     onClick={() => handleCategoryChange(r.id, cat)}
-                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 ${r.category === cat ? 'font-bold text-teal-600 bg-teal-50' : 'text-gray-700'}`}
+                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-600 ${r.category === cat ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-gray-700 dark:text-gray-200'}`}
                                   >
                                     {cat}
                                   </button>
@@ -697,7 +697,7 @@ const MyResourceLibrary: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 flex flex-col items-center justify-center text-center gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-12 flex flex-col items-center justify-center text-center gap-3">
             <BookMarked className="w-14 h-14 text-gray-200" />
             <p className="text-sm text-gray-400 whitespace-pre-line">
               {search || activeCategory !== '전체'

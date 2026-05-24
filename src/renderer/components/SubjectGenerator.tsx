@@ -4,6 +4,7 @@ import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -16,7 +17,7 @@ interface DuplicateResult {
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress } = useGlobalState();
-  const { startGeneration, updateProgress, endGeneration, isCancelRequested } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
+  const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
 
   // Local UI State
@@ -606,41 +607,39 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const student = newStudents[i];
             let mergedTasks = subjectState.activeTasks.map(t => {
                 const studentEval = student.evaluations?.find(e => e.id === t.id);
-                return {
-                    ...t,
-                    level: studentEval ? studentEval.level : '상'
-                };
+                return { ...t, level: studentEval ? studentEval.level : '상' };
             });
-
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
-
-            const result = await generateSubjectReport({
-                schoolLevel,
-                studentName: student.name,
-                subject: subjectState.currentSubject,
-                tasks: mergedTasks, 
-                additionalContext: student.additionalContext,
-                lengthOption: subjectState.lengthOption as LengthOption,
-                customLength: subjectState.customLength as number,
-                lengthUnit: subjectState.lengthUnit as LengthUnit
-            });
-            newStudents[i].generatedContent = result;
-            completedCount++;
-            const pct = Math.round((completedCount / newStudents.length) * 100);
-            setGlobalProgress(pct);
-            updateProgress(pct);
+            try {
+              const result = await callWithAbort(() => generateSubjectReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  subject: subjectState.currentSubject,
+                  tasks: mergedTasks,
+                  additionalContext: student.additionalContext,
+                  lengthOption: subjectState.lengthOption as LengthOption,
+                  customLength: subjectState.customLength as number,
+                  lengthUnit: subjectState.lengthUnit as LengthUnit
+              }));
+              newStudents[i].generatedContent = result;
+              completedCount++;
+              const pct = Math.round((completedCount / newStudents.length) * 100);
+              setGlobalProgress(pct);
+              updateProgress(pct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
-        updateSubjectState({
-            activeStudents: newStudents,
-            step: 'RESULT'
-        });
-
+        if (!isCancelRequested()) playSuccessSound();
+        updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
@@ -671,44 +670,41 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-
             let mergedTasks = subjectState.activeTasks.map(t => {
                 const studentEval = student.evaluations?.find(e => e.id === t.id);
-                return {
-                    ...t,
-                    level: studentEval ? studentEval.level : '상'
-                };
+                return { ...t, level: studentEval ? studentEval.level : '상' };
             });
-
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
-
-            const result = await generateSubjectReport({
-                schoolLevel,
-                studentName: student.name,
-                subject: subjectState.currentSubject,
-                tasks: mergedTasks, 
-                additionalContext: student.additionalContext,
-                lengthOption: subjectState.lengthOption as LengthOption,
-                customLength: subjectState.customLength as number,
-                lengthUnit: subjectState.lengthUnit as LengthUnit
-            });
-            newStudents[index].generatedContent = result;
-            completedCount++;
-            const selPct = Math.round((completedCount / selectedIndices.length) * 100);
-            setGlobalProgress(selPct);
-            updateProgress(selPct);
+            try {
+              const result = await callWithAbort(() => generateSubjectReport({
+                  schoolLevel,
+                  studentName: student.name,
+                  subject: subjectState.currentSubject,
+                  tasks: mergedTasks,
+                  additionalContext: student.additionalContext,
+                  lengthOption: subjectState.lengthOption as LengthOption,
+                  customLength: subjectState.customLength as number,
+                  lengthUnit: subjectState.lengthUnit as LengthUnit
+              }));
+              newStudents[index].generatedContent = result;
+              completedCount++;
+              const selPct = Math.round((completedCount / selectedIndices.length) * 100);
+              setGlobalProgress(selPct);
+              updateProgress(selPct);
+            } catch (err) {
+              if (err instanceof Error && err.message === 'CANCELLED') break;
+              throw err;
+            }
         }
 
-        updateSubjectState({
-            activeStudents: newStudents,
-            step: 'RESULT'
-        });
-
+        if (!isCancelRequested()) playSuccessSound();
+        updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } catch (err: any) {
-        const error = err;
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(errorMessage);
-        alert("생성 중 오류가 발생했습니다.");
+        if (!(err instanceof Error && err.message === 'CANCELLED')) {
+          console.error(err instanceof Error ? err.message : String(err));
+          alert("생성 중 오류가 발생했습니다.");
+        }
+        updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
         setGlobalProgress(0);
