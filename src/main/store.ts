@@ -16,6 +16,7 @@ interface StoreSchema {
   studentMaleNames: string;
   studentFemaleNames: string;
   darkMode: boolean;
+  apiKeyLastUsable: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -35,5 +36,6 @@ export const store = new Store<StoreSchema>({
     studentMaleNames: '',
     studentFemaleNames: '',
     darkMode: false,
+    apiKeyLastUsable: false,
   },
 });

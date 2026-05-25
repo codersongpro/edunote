@@ -37,6 +37,16 @@ const extractHtml = (raw: string): string => {
   return raw.replace(/```html/g, '').replace(/```/g, '').trim();
 };
 
+const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작'): string => {
+  if (html.includes(label)) return html;
+  if (!/<body[\s>]/i.test(html) || !/<\/body>/i.test(html)) return html;
+
+  const safeId = label === '퀴즈 시작' ? 'edunote-quiz-start' : 'edunote-game-start';
+  return html
+    .replace(/<body([^>]*)>/i, `<body$1><div id="${safeId}-cover" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#f59e0b,#38bdf8);font-family:'Malgun Gothic',sans-serif;"><button id="${safeId}" style="font-size:24px;font-weight:900;padding:18px 34px;border:0;border-radius:18px;background:#ffffff;color:#111827;box-shadow:0 14px 35px rgba(0,0,0,.22);cursor:pointer;">${label}</button></div><div id="${safeId}-content" style="display:none;">`)
+    .replace(/<\/body>/i, `</div><script>(function(){var b=document.getElementById('${safeId}');if(!b)return;b.addEventListener('click',function(){var cover=document.getElementById('${safeId}-cover');var content=document.getElementById('${safeId}-content');if(cover)cover.style.display='none';if(content)content.style.display='block';});})();</script></body>`);
+};
+
 const LessonMaterialGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_MATERIAL);
 
@@ -245,10 +255,10 @@ const LessonMaterialGenerator: React.FC = () => {
         setWorksheetHtml(extractHtml(html));
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount);
-        setQuizHtml(extractHtml(html));
+        setQuizHtml(ensureStartButton(extractHtml(html), '퀴즈 시작'));
       } else if (contentType === 'GAME') {
         const html = await generateLessonGame(params);
-        setGameHtml(extractHtml(html));
+        setGameHtml(ensureStartButton(extractHtml(html), '게임 시작'));
       } else {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
@@ -304,7 +314,7 @@ li{margin-bottom:5pt;line-height:1.6;}
   };
 
   const handleSaveHtmlPdf = async () => {
-    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
+    const content = contentType === 'QUIZ' ? quizHtml : contentType === 'GAME' ? gameHtml : worksheetHtml;
     if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -314,7 +324,7 @@ li{margin-bottom:5pt;line-height:1.6;}
   };
 
   const handleSaveHtml = async () => {
-    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
+    const content = contentType === 'QUIZ' ? quizHtml : contentType === 'GAME' ? gameHtml : worksheetHtml;
     if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;

@@ -30,7 +30,7 @@ import {
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical,
+  GripVertical, ClipboardList,
 } from 'lucide-react';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
@@ -176,13 +176,14 @@ const App: React.FC = () => {
     initAudioUnlock();
     const init = async () => {
       try {
-        const [hn, sl, dm] = await Promise.all([
+        const [hn, sl, dm, lastUsable] = await Promise.all([
           window.electronAPI.hasApiKey(),
           window.electronAPI.getConfig('schoolLevel'),
           window.electronAPI.getConfig('darkMode'),
+          window.electronAPI.getConfig('apiKeyLastUsable'),
         ]);
         setHasApiKey(hn as boolean);
-        if (hn) setApiKeyAvailability('unknown');
+        if (hn) setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
         setShowDisclaimerModal(true);
@@ -706,6 +707,13 @@ const App: React.FC = () => {
                 className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
               >
                 API 사용을 위해 잠시 기다리세요!
+              </button>
+            ) : hasApiKey ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full mb-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-left"
+              >
+                API 키 저장됨 · 사용 확인 필요
               </button>
             ) : (
               <button

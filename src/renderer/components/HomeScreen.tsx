@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, Mail, AlertTriangle, Info, ExternalLink } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, Mail, AlertTriangle, Info, ExternalLink, X, MonitorDown } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -18,6 +18,28 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
   const [version, setVersion] = useState('1.0.0');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [showOtherApps, setShowOtherApps] = useState(false);
+
+  const otherApps = [
+    {
+      name: '소통픽',
+      tag: '학급 소통',
+      desc: '학교 현장에서 바로 쓸 수 있는 소통 자료와 안내 도구를 모아 둔 앱입니다.',
+      tone: 'from-sky-500 to-cyan-500',
+    },
+    {
+      name: '업무 자료 도구',
+      tag: '행정 업무',
+      desc: '반복 작성하는 안내문, 서식, 업무 자료를 빠르게 찾고 활용하는 도구입니다.',
+      tone: 'from-emerald-500 to-teal-500',
+    },
+    {
+      name: '수업 활동 도구',
+      tag: '수업 지원',
+      desc: '수업 중 바로 보여주거나 배포할 수 있는 활동형 자료 제작 도구입니다.',
+      tone: 'from-amber-500 to-orange-500',
+    },
+  ];
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
@@ -142,7 +164,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
 
         {/* Survey */}
         <button
-          onClick={() => window.electronAPI.openExternal('https://sotong-omega.vercel.app/')}
+          onClick={() => setShowOtherApps(true)}
           className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
         >
           <div className="flex items-center gap-3">
@@ -156,6 +178,60 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
           </div>
           <ChevronRight className="w-4 h-4 text-sky-400 shrink-0" />
         </button>
+
+        {showOtherApps && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+            <div className="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                <div>
+                  <p className="text-base font-black text-gray-900 dark:text-white">개발자의 다른 앱</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">미리보고 필요한 앱을 다운로드 페이지에서 확인하세요.</p>
+                </div>
+                <button
+                  onClick={() => setShowOtherApps(false)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700"
+                  aria-label="닫기"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-5 grid gap-3 sm:grid-cols-3">
+                {otherApps.map(app => (
+                  <div key={app.name} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+                    <div className={`h-20 bg-gradient-to-br ${app.tone} p-3 flex items-end`}>
+                      <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
+                        <MonitorDown className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
+                        {app.tag}
+                      </span>
+                      <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-2">{app.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed min-h-[48px]">{app.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-end gap-2">
+                <button
+                  onClick={() => setShowOtherApps(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-800"
+                >
+                  닫기
+                </button>
+                <button
+                  onClick={() => window.electronAPI.openExternal('https://sotong-omega.vercel.app/')}
+                  className="px-4 py-2 rounded-lg text-sm font-bold bg-sky-600 hover:bg-sky-700 text-white inline-flex items-center gap-2"
+                >
+                  다운로드 페이지 열기 <ExternalLink className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <button
           onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}

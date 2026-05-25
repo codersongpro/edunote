@@ -117,6 +117,7 @@ const SettingsScreen: React.FC = () => {
     }
 
     await window.electronAPI.setApiKey(key.trim(), apiTier);
+    await window.electronAPI.setConfig({ apiKeyLastUsable: true });
     setHasKey(true);
     setApiKey('');
     setPaidApiKey('');
@@ -132,7 +133,15 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleSaveSettings = async () => {
-    await window.electronAPI.setConfig({ teacherName, institution, schoolLevel, gradeClass, studentNames });
+    await window.electronAPI.setConfig({
+      teacherName,
+      institution,
+      schoolLevel,
+      gradeClass,
+      studentNames,
+      studentMaleNames,
+      studentFemaleNames,
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -379,6 +388,7 @@ const SettingsScreen: React.FC = () => {
               onClick={async () => {
                 if (!window.confirm('저장된 API 키를 삭제하시겠습니까?')) return;
                 await window.electronAPI.deleteApiKey(apiTier);
+                await window.electronAPI.setConfig({ apiKeyLastUsable: false });
                 setHasKey(false);
                 setApiKey('');
                 setTestStatus('idle');
@@ -500,7 +510,15 @@ const SettingsScreen: React.FC = () => {
 
           <button
             onClick={async () => {
-              await window.electronAPI.setConfig({ studentNames, studentMaleNames, studentFemaleNames });
+              await window.electronAPI.setConfig({
+                teacherName,
+                institution,
+                schoolLevel,
+                gradeClass,
+                studentNames,
+                studentMaleNames,
+                studentFemaleNames,
+              });
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}
