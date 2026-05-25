@@ -1,6 +1,6 @@
 appId: com.edunote.app
 productName: EduNote
-copyright: Copyright © 2026
+copyright: Copyright 2026
 
 directories:
   buildResources: build
