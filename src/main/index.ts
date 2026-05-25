@@ -100,6 +100,9 @@ function buildAppMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
+// 데스크톱 앱에서 Web Audio API 즉시 재생 허용 (사용자 제스처 없이도 소리 재생)
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 app.whenReady().then(() => {
   buildAppMenu();
   createWindow();
