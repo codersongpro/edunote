@@ -88,11 +88,15 @@ const App: React.FC = () => {
   };
   const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
 
-  // API 키 실제 활성화 여부 (단순 저장 여부와 구분)
-  const [apiKeyActivated, setApiKeyActivated] = useState(false);
-  // API 키 활성화 완료 팝업
-  const [showApiActivationModal, setShowApiActivationModal] = useState(false);
-  const showActivationModal = () => setShowApiActivationModal(true);
+  // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
+  const [apiKeyAvailability, setApiKeyAvailability] = useState<'unknown' | 'usable' | 'wait'>('unknown');
+  const showActivationModal = () => {
+    showToast({
+      type: 'success',
+      title: 'API 사용 가능!',
+      description: 'Gemini API로 결과물을 생성할 수 있습니다.',
+    });
+  };
 
   // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
   const cancelFlagsRef = useRef<Set<string>>(new Set());
@@ -150,14 +154,7 @@ const App: React.FC = () => {
           window.electronAPI.getConfig('darkMode'),
         ]);
         setHasApiKey(hn as boolean);
-        if (hn) {
-          // 저장된 키가 있으면 즉시 활성화 표시 (사이드바 바로 반영)
-          setApiKeyActivated(true);
-          // 백그라운드에서 실제 동작 여부 확인 — 키가 만료됐을 경우에만 경고
-          window.electronAPI.aiGenerate('Hi', undefined).catch(() => {
-            setApiKeyActivated(false);
-          });
-        }
+        if (hn) setApiKeyAvailability('unknown');
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
         setShowDisclaimerModal(true);
@@ -314,7 +311,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyActivated, setApiKeyActivated, showActivationModal, showToast }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
@@ -648,13 +645,20 @@ const App: React.FC = () => {
           </nav>
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
-            {apiKeyActivated ? (
+            {apiKeyAvailability === 'usable' ? (
               <button
                 onClick={() => goTo(AppMode.SETTINGS)}
                 className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
               >
                 <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>API 키 활성화 완료!</span>
+                <span>API 사용 가능!</span>
+              </button>
+            ) : apiKeyAvailability === 'wait' ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
+              >
+                API 사용을 위해 잠시 기다리세요!
               </button>
             ) : (
               <button
@@ -754,32 +758,6 @@ const App: React.FC = () => {
 
       </div>
       </div>
-
-      {/* API 키 활성화 완료 팝업 */}
-      {showApiActivationModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-9 h-9 text-green-500" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">API 키 활성화 완료!</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  Gemini AI가 준비됐습니다.<br />
-                  EduNote를 이제 자유롭게 사용하실 수 있습니다.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowApiActivationModal(false)}
-                className="w-full py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 토스트 알림 — 우상단에 슬라이드인 형태로 표시 */}
       {toasts.length > 0 && (

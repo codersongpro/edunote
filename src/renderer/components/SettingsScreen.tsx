@@ -5,7 +5,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 
 const SettingsScreen: React.FC = () => {
-  const { showToast, setApiKeyActivated, showActivationModal } = useGlobalState();
+  const { showToast, setApiKeyAvailability, showActivationModal } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
@@ -55,16 +55,19 @@ const SettingsScreen: React.FC = () => {
     setTestError('');
     setTestWarn('');
     try {
-      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string };
+      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
       if (result?.ok) {
         if (result.warning) {
           setTestStatus('warn');
           setTestWarn(result.warning);
+          setApiKeyAvailability(result.wait ? 'wait' : 'usable');
         } else {
           setTestStatus('ok');
+          setApiKeyAvailability('usable');
         }
       } else {
         setTestStatus('fail');
+        setApiKeyAvailability(result?.wait ? 'wait' : 'unknown');
         setTestError(result?.error || 'API 키가 유효하지 않습니다.');
       }
     } catch (e) {
@@ -82,17 +85,20 @@ const SettingsScreen: React.FC = () => {
       setTestError('');
       setTestWarn('');
       try {
-        const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string };
+        const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
         if (!result?.ok) {
           setTestStatus('fail');
+          setApiKeyAvailability(result?.wait ? 'wait' : 'unknown');
           setTestError(result?.error || 'API 키가 유효하지 않습니다.');
           return; // 저장 차단
         }
         if (result.warning) {
           setTestStatus('warn');
           setTestWarn(result.warning);
+          setApiKeyAvailability(result.wait ? 'wait' : 'usable');
         } else {
           setTestStatus('ok');
+          setApiKeyAvailability('usable');
         }
       } catch (e) {
         setTestStatus('fail');
@@ -109,8 +115,8 @@ const SettingsScreen: React.FC = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
 
-    // testApiKey가 이미 유효성을 확인했으므로 즉시 활성화 처리
-    setApiKeyActivated(true);
+    // testApiKey가 이미 실제 생성 가능 여부를 확인했으므로 즉시 사용 가능 처리
+    setApiKeyAvailability('usable');
     playSuccessSound();
     showActivationModal();
   };
@@ -290,14 +296,14 @@ const SettingsScreen: React.FC = () => {
           {testStatus === 'ok' && (
             <div className="flex items-center gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800 text-sm">
               <CheckCircle className="w-4 h-4" />
-              API 키가 정상적으로 확인되었습니다.
+              API 사용 가능!
             </div>
           )}
           {testStatus === 'warn' && (
             <div className="flex items-start gap-2 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800 text-sm">
               <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">API 키 정상 — 바로 사용 가능합니다!</p>
+                <p className="font-bold">API 사용 가능!</p>
                 <p className="text-xs mt-0.5 text-green-600 dark:text-green-500">{testWarn}</p>
               </div>
             </div>
@@ -333,6 +339,7 @@ const SettingsScreen: React.FC = () => {
                 setHasKey(false);
                 setApiKey('');
                 setTestStatus('idle');
+                setApiKeyAvailability('unknown');
                 setGuideExpanded(true);
               }}
               className="w-full py-2 rounded-md text-sm font-semibold border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

@@ -29,7 +29,9 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('ai:test-key', async (_e, key: string) => {
-    if (!key || typeof key !== 'string') return false;
+    if (!key || typeof key !== 'string') {
+      return { ok: false, error: 'API 키를 입력해 주세요.' };
+    }
     return testApiKey(key);
   });
 

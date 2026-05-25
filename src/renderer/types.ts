@@ -238,6 +238,8 @@ export interface ToastMessage {
   description?: string;
 }
 
+export type ApiKeyAvailability = 'unknown' | 'usable' | 'wait';
+
 export interface GlobalStateContextType {
   state: GlobalState;
   setState: React.Dispatch<React.SetStateAction<GlobalState>>;
@@ -254,8 +256,8 @@ export interface GlobalStateContextType {
   // AI 호출 즉시 중단을 위한 AbortSignal 공급
   getCancelSignal: () => AbortSignal;
   // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
-  apiKeyActivated: boolean;
-  setApiKeyActivated: (v: boolean) => void;
+  apiKeyAvailability: ApiKeyAvailability;
+  setApiKeyAvailability: (v: ApiKeyAvailability) => void;
   // API 키 활성화 성공 팝업
   showActivationModal: () => void;
   // 토스트 알림

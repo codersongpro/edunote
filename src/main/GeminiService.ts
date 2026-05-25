@@ -18,7 +18,6 @@ import { GoogleGenAI } from '@google/genai';
 
 // 시도할 모델 우선순위 (위에서부터 시도)
 const MODELS_TO_TRY = [
-  'gemini-2.5-pro',
   'gemini-2.5-flash',
   'gemini-2.0-flash',
   'gemini-1.5-flash',
@@ -149,6 +148,10 @@ export async function generateContent(
     }
   }
 
+  if (lastError && isQuotaError(lastError)) {
+    throw new Error('API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.');
+  }
+
   // 모든 모델이 실패한 경우 마지막 에러 전파
   throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
 }
@@ -192,6 +195,10 @@ export async function generateContentMultipart(
     }
   }
 
+  if (lastError && isQuotaError(lastError)) {
+    throw new Error('API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.');
+  }
+
   throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
 }
 
@@ -204,10 +211,10 @@ export async function generateContentMultipart(
 //      - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
 //      - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
 //      - 그 외 → 원본 에러 메시지와 함께 일반 안내
-export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
+export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }> {
   const ai = new GoogleGenAI({ apiKey });
-  // 실제 생성에 쓰는 모델과 동일한 우선순위로 병렬 테스트
-  const testModels = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  // 실제 생성에 쓰는 모델과 동일한 Flash 우선순위로 테스트
+  const testModels = MODELS_TO_TRY;
   const TIMEOUT_MS = 10_000;
 
   type ErrKind = 'invalid_key' | 'network' | 'timeout' | 'permission' | 'quota' | 'model_unavailable' | 'other';
@@ -278,7 +285,26 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
       ),
     ]).catch((error: unknown) => classifyError(error, model));
 
-  const results = await Promise.all(testModels.map(tryModel));
+  const results = await new Promise<ModelResult[]>((resolve) => {
+    const collected: ModelResult[] = [];
+    let settled = false;
+
+    testModels.forEach((model) => {
+      tryModel(model).then((result) => {
+        if (settled) return;
+        collected.push(result);
+        if (result.ok) {
+          settled = true;
+          resolve([result]);
+          return;
+        }
+        if (collected.length === testModels.length) {
+          settled = true;
+          resolve(collected);
+        }
+      });
+    });
+  });
 
   // 디버그 로그 — 실제로 테스트가 이뤄졌는지 확인 가능
   console.log('[API키 테스트]', results.map((r) => `${r.model}: ${r.ok ? '✓' : r.kind}(${r.status})`).join(' | '));
@@ -310,8 +336,9 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
     .every((r) => r.kind === 'model_unavailable' || r.kind === 'other' || r.kind === 'timeout');
   if (hasQuota && allNonQuotaAreModelIssue) {
     return {
-      ok: true,
-      warning: '무료 요청 한도가 일시적으로 초과된 상태입니다. 1~2분 후 정상적으로 사용할 수 있습니다.',
+      ok: false,
+      wait: true,
+      error: 'API 사용을 위해 잠시 기다리세요!\n\n토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다. 1~2분 후 다시 테스트해 주세요.',
     };
   }
 
