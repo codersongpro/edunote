@@ -16,6 +16,7 @@ win:
       arch:
         - x64
   artifactName: edunote_${version}.exe
+  signAndEditExecutable: false
 
 nsis:
   oneClick: false
