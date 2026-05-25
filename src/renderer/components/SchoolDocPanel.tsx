@@ -6,6 +6,7 @@ import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 // ─── Example Documents ───────────────────────────────────────────────────────
 
@@ -313,6 +314,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       const { cleanContent, fillData } = extractResult(result);
       setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));
+      playSuccessSound();
     } catch (err: any) {
       setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');
     } finally {

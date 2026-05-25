@@ -559,6 +559,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       newStudents[index].generatedContent = result;
       saveHistory('creative', creativeState.activeStudents[index].name, result);
       updateCreativeState({ activeStudents: newStudents });
+      playSuccessSound();
     } catch (err: any) {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);

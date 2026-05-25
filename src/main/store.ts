@@ -2,6 +2,9 @@ import Store from 'electron-store';
 
 interface StoreSchema {
   geminiApiKey: string;
+  geminiPaidApiKey: string;
+  apiTier: 'free' | 'paid';
+  appDataDir: string;
   saveDir: string;
   alwaysAskPath: boolean;
   teacherName: string;
@@ -18,6 +21,9 @@ interface StoreSchema {
 export const store = new Store<StoreSchema>({
   defaults: {
     geminiApiKey: '',
+    geminiPaidApiKey: '',
+    apiTier: 'free',
+    appDataDir: '',
     saveDir: '',
     alwaysAskPath: true,
     teacherName: '',

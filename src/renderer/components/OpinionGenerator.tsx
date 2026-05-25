@@ -312,6 +312,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       newStudents[index].generatedContent = result;
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
+      playSuccessSound();
     } catch (err: any) {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);

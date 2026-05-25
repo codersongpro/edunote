@@ -3,6 +3,7 @@ import { ClipboardList, Loader2, Copy, Download, AlertCircle } from 'lucide-reac
 import { generateLessonObservation } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
+import { playSuccessSound } from '../lib/soundEffect';
 
 const EXAMPLE_RESULT = `【 수업관찰기록 】
 
@@ -71,6 +72,7 @@ const LessonObservationGenerator: React.FC = () => {
     try {
       const output = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName });
       setResult(output);
+      playSuccessSound();
     } catch (e) {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
     } finally {

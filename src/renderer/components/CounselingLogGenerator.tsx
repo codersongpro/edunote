@@ -3,6 +3,7 @@ import { MessageCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-reac
 import { generateCounselingLog } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
+import { playSuccessSound } from '../lib/soundEffect';
 
 const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심리상담', '기타'];
 
@@ -65,6 +66,7 @@ const CounselingLogGenerator: React.FC = () => {
     try {
       const output = await generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan });
       setResult(output);
+      playSuccessSound();
     } catch (e) {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
     } finally {

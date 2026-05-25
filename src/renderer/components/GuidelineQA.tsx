@@ -4,6 +4,7 @@ import { SchoolLevel, ChatMessage } from '../types';
 import { askGuidelineQuestion } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { useGlobalState } from '../GlobalStateContext';
+import { playSuccessSound } from '../lib/soundEffect';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -60,6 +61,7 @@ const GuidelineQA: React.FC<Props> = ({ schoolLevel }) => {
       const answer = await askGuidelineQuestion(schoolLevel, userMsg.text);
       const modelMsg: ChatMessage = { role: 'model', text: answer, timestamp: Date.now() };
       setMessages((prev) => [...prev, modelMsg]);
+      playSuccessSound();
     } catch (error) {
       console.error(error);
       const errorMsg: ChatMessage = {

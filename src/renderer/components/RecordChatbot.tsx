@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { useGlobalState } from '../GlobalStateContext';
 import { Bot, Trash2 } from 'lucide-react';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -60,6 +61,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
     try {
       const answer = await askRecordChatbot(schoolLevel, history, userMsg.text);
       setMessages(prev => [...prev, { role: 'model', text: answer, timestamp: Date.now() }]);
+      playSuccessSound();
     } catch {
       setMessages(prev => [...prev, {
         role: 'model',

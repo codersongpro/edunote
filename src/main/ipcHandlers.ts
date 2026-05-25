@@ -3,10 +3,10 @@ import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import { store } from './store';
-import { generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
+import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);
@@ -14,25 +14,38 @@ function validatePath(p: string): string {
   return resolved;
 }
 
+function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
+  const apiTier = (store.get('apiTier') || 'free') as ApiTier;
+  const apiKey = apiTier === 'paid' ? store.get('geminiPaidApiKey') : store.get('geminiApiKey');
+  return { apiKey, apiTier };
+}
+
+function safeDataFile(name: string): string {
+  const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
+  const dir = store.get('appDataDir') || path.join(app.getPath('userData'), 'data');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return path.join(dir, `${safeName}.json`);
+}
+
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
   ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
-    const apiKey = store.get('geminiApiKey');
+    const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
-    return generateContent(apiKey, prompt, { systemInstruction, ...options });
+    return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
   ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number }) => {
-    const apiKey = store.get('geminiApiKey');
+    const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
-    return generateContentMultipart(apiKey, parts, { systemInstruction, ...options });
+    return generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
   });
 
-  ipcMain.handle('ai:test-key', async (_e, key: string) => {
+  ipcMain.handle('ai:test-key', async (_e, key: string, apiTier: ApiTier = 'free') => {
     if (!key || typeof key !== 'string') {
       return { ok: false, error: 'API 키를 입력해 주세요.' };
     }
-    return testApiKey(key);
+    return testApiKey(key, apiTier);
   });
 
   // ── File Save ─────────────────────────────────────────────────────
@@ -153,22 +166,46 @@ export function registerIpcHandlers(): void {
         store.set(key as any, value as any);
       }
     }
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safeSettings } = store.store;
+    try {
+      fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
+    } catch {
+      // 설정 저장 자체는 electron-store가 처리하므로 폴더 동기화 실패는 무시합니다.
+    }
   });
 
-  ipcMain.handle('config:set-api-key', (_e, key: string) => {
+  ipcMain.handle('config:set-api-key', (_e, key: string, apiTier: ApiTier = 'free') => {
     if (typeof key !== 'string') return;
-    store.set('geminiApiKey', key.trim());
+    if (apiTier === 'paid') store.set('geminiPaidApiKey', key.trim());
+    else store.set('geminiApiKey', key.trim());
+    store.set('apiTier', apiTier);
     resetModelCache();
   });
 
   ipcMain.handle('config:has-api-key', () => {
-    const key = store.get('geminiApiKey');
+    const { apiKey: key } = getActiveApi();
     return typeof key === 'string' && key.trim().length > 0;
   });
 
-  ipcMain.handle('config:delete-api-key', () => {
-    store.set('geminiApiKey', '');
+  ipcMain.handle('config:delete-api-key', (_e, apiTier?: ApiTier) => {
+    const target = apiTier || store.get('apiTier') || 'free';
+    if (target === 'paid') store.set('geminiPaidApiKey', '');
+    else store.set('geminiApiKey', '');
   });
+
+  ipcMain.handle('data:read-json', async (_e, name: string) => {
+    const file = safeDataFile(name);
+    if (!fs.existsSync(file)) return null;
+    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+  });
+
+  ipcMain.handle('data:write-json', async (_e, name: string, data: unknown) => {
+    const file = safeDataFile(name);
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+    return file;
+  });
+
+  ipcMain.handle('data:get-file-path', (_e, name: string) => safeDataFile(name));
 
   // ── Dialog ────────────────────────────────────────────────────────
   ipcMain.handle('dialog:select-folder', async () => {
@@ -242,6 +279,39 @@ export function registerIpcHandlers(): void {
       return `data:${mime};base64,${buf.toString('base64')}`;
     } catch {
       return null;
+    }
+  });
+
+  ipcMain.handle('resource:youtube-meta', async (_e, rawUrl: string) => {
+    const match = rawUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    const videoId = match?.[1] || '';
+    try {
+      const parsed = new URL(rawUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol) || !videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
+      const https = await import('https');
+      const html = await new Promise<string>((resolve, reject) => {
+        const req = https.default.get(rawUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+          let body = '';
+          res.setEncoding('utf8');
+          res.on('data', (chunk: string) => { body += chunk; if (body.length > 120000) req.destroy(); });
+          res.on('end', () => resolve(body));
+        });
+        req.on('error', reject);
+        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+      });
+      const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<title[^>]*>([^<]+)<\/title>/i);
+      const descMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
+      const title = (titleMatch?.[1] || '').replace(/\s*[-–—]\s*YouTube\s*$/i, '').trim();
+      const description = (descMatch?.[1] || '').trim();
+      return {
+        title,
+        description,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        videoId,
+      };
+    } catch {
+      return { title: '', description: '', thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '', videoId };
     }
   });
 

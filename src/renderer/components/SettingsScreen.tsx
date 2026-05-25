@@ -7,6 +7,8 @@ import { playSuccessSound } from '../lib/soundEffect';
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
+  const [paidApiKey, setPaidApiKey] = useState('');
+  const [apiTier, setApiTier] = useState<'free' | 'paid'>('free');
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
@@ -15,6 +17,7 @@ const SettingsScreen: React.FC = () => {
   const [studentMaleNames, setStudentMaleNames] = useState('');
   const [studentFemaleNames, setStudentFemaleNames] = useState('');
   const [saveDir, setSaveDir] = useState('');
+  const [appDataDir, setAppDataDir] = useState('');
   const [hasKey, setHasKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'ok' | 'warn' | 'fail'>('idle');
   const [testError, setTestError] = useState('');
@@ -24,7 +27,7 @@ const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
@@ -34,6 +37,8 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('studentMaleNames'),
         window.electronAPI.getConfig('studentFemaleNames'),
         window.electronAPI.getConfig('saveDir'),
+        window.electronAPI.getConfig('appDataDir'),
+        window.electronAPI.getConfig('apiTier'),
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
@@ -44,18 +49,21 @@ const SettingsScreen: React.FC = () => {
       setStudentMaleNames(stMale as string || '');
       setStudentFemaleNames(stFemale as string || '');
       setSaveDir(sd as string || '');
+      setAppDataDir(add as string || '');
+      setApiTier((tier as 'free' | 'paid') || 'free');
       setGuideExpanded(!(hn as boolean));
     };
     load();
   }, []);
 
   const handleTestKey = async () => {
-    if (!apiKey.trim()) return;
+    const key = apiTier === 'paid' ? paidApiKey : apiKey;
+    if (!key.trim()) return;
     setTestStatus('testing');
     setTestError('');
     setTestWarn('');
     try {
-      const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
+      const result = await window.electronAPI.testApiKey(key.trim(), apiTier) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
       if (result?.ok) {
         if (result.warning) {
           setTestStatus('warn');
@@ -77,7 +85,8 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleSaveKey = async () => {
-    if (!apiKey.trim()) return;
+    const key = apiTier === 'paid' ? paidApiKey : apiKey;
+    if (!key.trim()) return;
 
     // 아직 테스트 통과 상태가 아니면 자동으로 테스트 먼저 실행
     if (testStatus !== 'ok' && testStatus !== 'warn') {
@@ -85,7 +94,7 @@ const SettingsScreen: React.FC = () => {
       setTestError('');
       setTestWarn('');
       try {
-        const result = await window.electronAPI.testApiKey(apiKey.trim()) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
+        const result = await window.electronAPI.testApiKey(key.trim(), apiTier) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
         if (!result?.ok) {
           setTestStatus('fail');
           setApiKeyAvailability(result?.wait ? 'wait' : 'unknown');
@@ -107,9 +116,10 @@ const SettingsScreen: React.FC = () => {
       }
     }
 
-    await window.electronAPI.setApiKey(apiKey.trim());
+    await window.electronAPI.setApiKey(key.trim(), apiTier);
     setHasKey(true);
     setApiKey('');
+    setPaidApiKey('');
     setTestStatus('idle');
     setGuideExpanded(false);
     setSaved(true);
@@ -145,6 +155,14 @@ const SettingsScreen: React.FC = () => {
     if (dir) {
       setSaveDir(dir as string);
       await window.electronAPI.setConfig({ saveDir: dir });
+    }
+  };
+
+  const handleSelectAppDataFolder = async () => {
+    const dir = await window.electronAPI.selectFolder();
+    if (dir) {
+      setAppDataDir(dir as string);
+      await window.electronAPI.setConfig({ appDataDir: dir });
     }
   };
 
@@ -275,8 +293,33 @@ const SettingsScreen: React.FC = () => {
           )}
 
           <div>
+            <label className={labelClass}>API 사용 방식</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { setApiTier('free'); window.electronAPI.setConfig({ apiTier: 'free' }); setTestStatus('idle'); }}
+                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'free' ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
+              >
+                <span className="block font-bold">무료 Gmail 기본</span>
+                <span className="block text-xs opacity-80">빠르고 저렴한 Flash-Lite 고정</span>
+              </button>
+              <button
+                onClick={() => { setApiTier('paid'); window.electronAPI.setConfig({ apiTier: 'paid' }); setTestStatus('idle'); }}
+                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'paid' ? 'border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
+              >
+                <span className="block font-bold">유료 API</span>
+                <span className="block text-xs opacity-80">최상위 Gemini Pro 사용</span>
+              </button>
+            </div>
+            {apiTier === 'paid' && (
+              <div className="mt-2 rounded-md border border-purple-200 bg-purple-50 p-2.5 text-xs text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
+                유료 API 키는 Google Cloud/AI Studio 결제 프로젝트에서 과금될 수 있습니다. 비용과 한도는 Google 계정 설정을 확인한 뒤 사용하세요.
+              </div>
+            )}
+          </div>
+
+          <div>
             <label className={`${labelClass} flex items-center gap-2`}>
-              <span>새 API 키 {!hasKey && <span className="text-red-500">*</span>}</span>
+              <span>{apiTier === 'paid' ? '유료 API 키' : '무료 Gmail API 키'} {!hasKey && <span className="text-red-500">*</span>}</span>
               {hasKey && (
                 <span className="flex items-center gap-1 text-xs font-bold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700 rounded-full px-2 py-0.5">
                   <CheckCircle className="w-3 h-3" />
@@ -287,9 +330,9 @@ const SettingsScreen: React.FC = () => {
             <input
               type="password"
               className={inputClass}
-              placeholder={hasKey ? '새 키를 입력하면 기존 키가 교체됩니다' : 'AIza로 시작하는 API 키를 붙여넣으세요'}
-              value={apiKey}
-              onChange={e => { setApiKey(e.target.value); setTestStatus('idle'); }}
+              placeholder={apiTier === 'paid' ? '유료 결제 프로젝트의 API 키를 붙여넣으세요' : '개인 Gmail 무료 API 키를 붙여넣으세요'}
+              value={apiTier === 'paid' ? paidApiKey : apiKey}
+              onChange={e => { apiTier === 'paid' ? setPaidApiKey(e.target.value) : setApiKey(e.target.value); setTestStatus('idle'); }}
             />
           </div>
 
@@ -318,14 +361,14 @@ const SettingsScreen: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={handleTestKey}
-              disabled={!apiKey.trim() || testStatus === 'testing'}
+              disabled={!(apiTier === 'paid' ? paidApiKey : apiKey).trim() || testStatus === 'testing'}
               className="flex-1 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {testStatus === 'testing' ? '테스트 중...' : '키 테스트'}
             </button>
             <button
               onClick={handleSaveKey}
-              disabled={!apiKey.trim() || testStatus === 'testing'}
+              disabled={!(apiTier === 'paid' ? paidApiKey : apiKey).trim() || testStatus === 'testing'}
               className="flex-1 py-2.5 rounded-md text-sm font-bold bg-[#1E88E5] text-white hover:bg-[#1565C0] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {testStatus === 'testing' ? '확인 중...' : saved ? '저장 완료!' : 'API 키 저장'}
@@ -335,7 +378,7 @@ const SettingsScreen: React.FC = () => {
             <button
               onClick={async () => {
                 if (!window.confirm('저장된 API 키를 삭제하시겠습니까?')) return;
-                await window.electronAPI.deleteApiKey();
+                await window.electronAPI.deleteApiKey(apiTier);
                 setHasKey(false);
                 setApiKey('');
                 setTestStatus('idle');
@@ -466,6 +509,31 @@ const SettingsScreen: React.FC = () => {
             <Save className="w-4 h-4" />
             학생 명단 저장
           </button>
+        </div>
+
+        {/* App Data Folder */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Folder className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">앱 데이터 저장 폴더</h3>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            나만의 자료실, 학생 메모처럼 앱 안에서 계속 불러올 데이터가 이 폴더의 JSON 파일로 저장됩니다.
+          </p>
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              readOnly
+              value={appDataDir || '기본 앱 데이터 폴더'}
+              className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-200 text-sm p-2.5 cursor-not-allowed"
+            />
+            <button
+              onClick={handleSelectAppDataFolder}
+              className="px-4 py-2.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap"
+            >
+              폴더 선택
+            </button>
+          </div>
         </div>
 
         {/* Save Folder */}

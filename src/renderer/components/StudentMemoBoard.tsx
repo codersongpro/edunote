@@ -19,19 +19,40 @@ const StudentMemoBoard: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [dataPath, setDataPath] = useState('');
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setMemos(JSON.parse(stored));
-    } catch {
-      setMemos([]);
-    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [fileData, filePath] = await Promise.all([
+          window.electronAPI.readJsonData('student-memos'),
+          window.electronAPI.getJsonDataPath('student-memos'),
+        ]);
+        if (cancelled) return;
+        setDataPath(filePath);
+        if (Array.isArray(fileData)) {
+          setMemos(fileData as Memo[]);
+          return;
+        }
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setMemos(parsed);
+          window.electronAPI.writeJsonData('student-memos', parsed).catch(() => {});
+        }
+      } catch {
+        setMemos([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   const saveMemos = (updated: Memo[]) => {
     setMemos(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    window.electronAPI.writeJsonData('student-memos', updated).catch(() => {});
   };
 
   const handleAdd = () => {
@@ -108,7 +129,7 @@ const StudentMemoBoard: React.FC = () => {
           </div>
           <div>
             <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">학생 메모 보드</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">메모 {memos.length}개 · 앱 재시작 후에도 유지됩니다</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">메모 {memos.length}개 · {dataPath ? '지정 폴더에 자동 저장됨' : '앱 재시작 후에도 유지됩니다'}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -179,14 +200,14 @@ const StudentMemoBoard: React.FC = () => {
                       value={editName}
                       onChange={e => setEditName(e.target.value)}
                       placeholder="학생 이름"
-                      className="w-full text-sm font-bold bg-white/60 border border-white/80 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+                      className="w-full text-sm font-bold bg-white/75 border border-white/80 rounded px-2 py-1 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
                       autoFocus
                     />
                     <textarea
                       value={editContent}
                       onChange={e => setEditContent(e.target.value)}
                       placeholder="메모 내용..."
-                      className="flex-1 text-xs bg-white/60 border border-white/80 rounded px-2 py-1 resize-none focus:outline-none focus:ring-1 focus:ring-[#1E88E5] min-h-[70px]"
+                      className="flex-1 text-xs bg-white/75 border border-white/80 rounded px-2 py-1 resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5] min-h-[70px]"
                     />
                     <div className="flex gap-1">
                       <button
@@ -206,7 +227,7 @@ const StudentMemoBoard: React.FC = () => {
                 ) : (
                   <div className="p-3 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-1.5">
-                      <span className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate flex-1">
+                      <span className="text-sm font-bold text-gray-900 truncate flex-1">
                         {memo.studentName || '이름 없음'}
                       </span>
                       <button
@@ -216,10 +237,10 @@ const StudentMemoBoard: React.FC = () => {
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
-                    <p className="text-xs text-gray-700 dark:text-gray-200 flex-1 whitespace-pre-wrap break-words">
+                    <p className="text-xs text-gray-800 flex-1 whitespace-pre-wrap break-words">
                       {memo.content || <span className="text-gray-400 italic">메모 없음</span>}
                     </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">{formatDate(memo.updatedAt)}</p>
+                    <p className="text-[10px] text-gray-500 mt-2">{formatDate(memo.updatedAt)}</p>
                   </div>
                 )}
               </div>

@@ -1,27 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
-// ─────────────────────────────────────────────────────────────
-// Gemini 모델 스마트 폴백 전략
-//
-// 동작 원리:
-//   1. 매 호출마다 사용 가능한 "가장 상위" 모델부터 시도
-//   2. 쿼터 초과(429) → 해당 모델만 60초간 임시 차단 → 다음 모델로 폴백
-//      → 60초가 지나면 자동으로 차단 해제 → 다시 상위 모델로 복귀
-//   3. 권한 거부/모델 미지원(400/403/404) → 영구 차단 (재시도 무의미)
-//      → 앱 재시작 또는 API 키 변경 시에만 초기화
-//
-// 계정별 자동 결과:
-//   • 유료 계정: 항상 gemini-2.5-pro 사용
-//   • 무료 gmail: 첫 호출 시 2.5-pro 403 → 영구 차단 → 이후 2.5-flash 사용
-//     쿼터 시 2.0-flash로 일시 폴백 → 1분 후 자동으로 2.5-flash 복귀
-// ─────────────────────────────────────────────────────────────
+export type ApiTier = 'free' | 'paid';
 
-// 시도할 모델 우선순위 (위에서부터 시도)
-const MODELS_TO_TRY = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-];
+const FREE_MODEL = 'gemini-2.5-flash-lite';
+const PAID_MODEL = 'gemini-2.5-pro';
 
 // 권한 거부/모델 미지원으로 차단된 모델 → 차단 해제 시각(unix ms)
 // 1시간 후 자동 해제 → 상위 모델을 주기적으로 재시도하여 계정 상황 변화에 대응
@@ -98,6 +80,7 @@ const isPermanentBlockError = (error: unknown): boolean => {
 export interface GenerateOptions {
   systemInstruction?: string;
   temperature?: number;
+  apiTier?: ApiTier;
 }
 
 export interface MultipartPart {
@@ -114,9 +97,8 @@ export async function generateContent(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  // 우선순위 순서대로 모델 시도, 차단된 모델은 자동 skip
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
-    const model = MODELS_TO_TRY[i];
+  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
+  for (let i = 0; i < 1; i++) {
     if (isBlocked(model)) continue; // 차단된 모델 건너뜀
 
     try {
@@ -132,14 +114,14 @@ export async function generateContent(
       // 쿼터 초과 → 60초 임시 차단 후 다음 모델로
       if (isQuotaError(error)) {
         quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
         continue;
       }
 
       // 권한 거부/모델 미지원 → 영구 차단
       if (isPermanentBlockError(error)) {
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 영구 차단, 다음 모델로 폴백`);
+        console.warn(`[${model}] 접근 불가 → 임시 차단`);
         continue;
       }
 
@@ -165,8 +147,8 @@ export async function generateContentMultipart(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  for (let i = 0; i < MODELS_TO_TRY.length; i++) {
-    const model = MODELS_TO_TRY[i];
+  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
+  for (let i = 0; i < 1; i++) {
     if (isBlocked(model)) continue;
 
     try {
@@ -181,13 +163,13 @@ export async function generateContentMultipart(
 
       if (isQuotaError(error)) {
         quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
         continue;
       }
 
       if (isPermanentBlockError(error)) {
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 영구 차단, 다음 모델로 폴백`);
+        console.warn(`[${model}] 접근 불가 → 임시 차단`);
         continue;
       }
 
@@ -211,10 +193,9 @@ export async function generateContentMultipart(
 //      - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
 //      - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
 //      - 그 외 → 원본 에러 메시지와 함께 일반 안내
-export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }> {
+export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }> {
   const ai = new GoogleGenAI({ apiKey });
-  // 실제 생성에 쓰는 모델과 동일한 Flash 우선순위로 테스트
-  const testModels = MODELS_TO_TRY;
+  const testModels = [apiTier === 'paid' ? PAID_MODEL : FREE_MODEL];
   const TIMEOUT_MS = 10_000;
 
   type ErrKind = 'invalid_key' | 'network' | 'timeout' | 'permission' | 'quota' | 'model_unavailable' | 'other';

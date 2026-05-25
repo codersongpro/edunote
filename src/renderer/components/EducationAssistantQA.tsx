@@ -4,6 +4,7 @@ import { askEducationQuestion } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { GraduationCap, Trash2 } from 'lucide-react';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 
 const EducationAssistantQA: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.EDUCATION_QA);
@@ -42,6 +43,7 @@ const EducationAssistantQA: React.FC = () => {
     try {
       const answer = await askEducationQuestion(userMsg.text, history);
       setMessages(prev => [...prev, { role: 'model', text: answer, timestamp: Date.now() }]);
+      playSuccessSound();
     } catch {
       setMessages(prev => [...prev, {
         role: 'model',

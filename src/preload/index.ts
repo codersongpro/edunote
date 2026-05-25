@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     options?: { temperature?: number },
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
 
-  testApiKey: (key: string) => ipcRenderer.invoke('ai:test-key', key),
+  testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
 
   // File Save
   saveFile: (content: string, suggestedName: string, ext: string) =>
@@ -37,15 +37,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getConfig: (key: string) => ipcRenderer.invoke('config:get', key),
   getAllConfig: () => ipcRenderer.invoke('config:get-all'),
   setConfig: (data: Record<string, unknown>) => ipcRenderer.invoke('config:set', data),
-  setApiKey: (key: string) => ipcRenderer.invoke('config:set-api-key', key),
+  setApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('config:set-api-key', key, apiTier),
   hasApiKey: () => ipcRenderer.invoke('config:has-api-key'),
-  deleteApiKey: () => ipcRenderer.invoke('config:delete-api-key'),
+  deleteApiKey: (apiTier?: 'free' | 'paid') => ipcRenderer.invoke('config:delete-api-key', apiTier),
+  readJsonData: (name: string) => ipcRenderer.invoke('data:read-json', name),
+  writeJsonData: (name: string, data: unknown) => ipcRenderer.invoke('data:write-json', name, data),
+  getJsonDataPath: (name: string) => ipcRenderer.invoke('data:get-file-path', name),
 
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),
 
   // URL Metadata & Resource thumbnails
   fetchUrlMeta: (url: string) => ipcRenderer.invoke('url:fetch-meta', url),
+  fetchYoutubeMeta: (url: string) => ipcRenderer.invoke('resource:youtube-meta', url),
   fetchImage: (url: string) => ipcRenderer.invoke('resource:fetch-image', url),
   screenshotUrl: (url: string) => ipcRenderer.invoke('resource:screenshot', url),
   fetchSlideImage: (keyword: string) => ipcRenderer.invoke('resource:slide-image', keyword),

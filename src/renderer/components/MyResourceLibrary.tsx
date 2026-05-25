@@ -57,6 +57,8 @@ function saveCategories(cats: string[]) { localStorage.setItem(CATEGORIES_KEY, J
 const MyResourceLibrary: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>(loadResources);
   const [categories, setCategories] = useState<string[]>(loadCategories);
+  const [loadedFromFolder, setLoadedFromFolder] = useState(false);
+  const [dataPath, setDataPath] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('전체');
   const [search, setSearch] = useState('');
 
@@ -91,8 +93,41 @@ const MyResourceLibrary: React.FC = () => {
   const [webviewSrc, setWebviewSrc] = useState('');
   const [webviewCurrentUrl, setWebviewCurrentUrl] = useState('');
 
-  useEffect(() => { saveResources(resources); }, [resources]);
-  useEffect(() => { saveCategories(categories); }, [categories]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const [savedResources, savedCategories, filePath] = await Promise.all([
+          window.electronAPI.readJsonData('resource-library'),
+          window.electronAPI.readJsonData('resource-categories'),
+          window.electronAPI.getJsonDataPath('resource-library'),
+        ]);
+        if (cancelled) return;
+        setDataPath(filePath);
+        if (Array.isArray(savedResources)) setResources(savedResources as Resource[]);
+        if (Array.isArray(savedCategories)) setCategories(savedCategories as string[]);
+        if (!savedResources) {
+          window.electronAPI.writeJsonData('resource-library', loadResources()).catch(() => {});
+          window.electronAPI.writeJsonData('resource-categories', loadCategories()).catch(() => {});
+        }
+      } finally {
+        if (!cancelled) setLoadedFromFolder(true);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!loadedFromFolder) return;
+    saveResources(resources);
+    window.electronAPI.writeJsonData('resource-library', resources).catch(() => {});
+  }, [resources, loadedFromFolder]);
+  useEffect(() => {
+    if (!loadedFromFolder) return;
+    saveCategories(categories);
+    window.electronAPI.writeJsonData('resource-categories', categories).catch(() => {});
+  }, [categories, loadedFromFolder]);
   useEffect(() => { if (showAdd) setTimeout(() => urlInputRef.current?.focus(), 50); }, [showAdd]);
 
   useEffect(() => {
@@ -204,22 +239,18 @@ const MyResourceLibrary: React.FC = () => {
           if (cat) setAddCategory(cat);
         }
       } else {
-        // YouTube — 실제 영상 제목 가져오기
-        // (React 클로저 이슈 방지를 위해 로컬 변수로 최종 제목 관리)
+        // YouTube — 제목과 썸네일 자동 가져오기
         let resolvedTitle = addTitle;
         if (!resolvedTitle) {
           setFetchStep('YouTube 영상 정보 가져오는 중...');
-          const meta = await window.electronAPI.fetchUrlMeta(url);
-          // <title> 태그는 "영상제목 - YouTube" 형식 → " - YouTube" 제거
-          const rawTitle = meta.title || '';
-          const cleanTitle = rawTitle.replace(/\s*[-–—]\s*YouTube\s*$/i, '').trim();
-          resolvedTitle = cleanTitle || 'YouTube 영상';
+          const meta = await window.electronAPI.fetchYoutubeMeta(url);
+          resolvedTitle = meta.title || 'YouTube 영상';
           setAddTitle(resolvedTitle);
           if (!addDesc && meta.description) setAddDesc(meta.description);
         }
-        // 2b. YouTube 썸네일
         setFetchStep('YouTube 썸네일 가져오는 중...');
-        const ytThumbUrl = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+        const ytMeta = await window.electronAPI.fetchYoutubeMeta(url);
+        const ytThumbUrl = ytMeta.thumbnail || `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
         const imgData = await (window.electronAPI as any).fetchImage(ytThumbUrl);
         if (imgData) setAddThumbnail(imgData);
 
@@ -237,6 +268,14 @@ const MyResourceLibrary: React.FC = () => {
       setFetchStep('');
     }
   };
+
+  useEffect(() => {
+    if (!showAdd || fetching || addTitle || addThumbnail || !isYoutubeUrl(addUrl)) return;
+    const id = window.setTimeout(() => {
+      handleFetchMeta();
+    }, 700);
+    return () => window.clearTimeout(id);
+  }, [addUrl, showAdd, fetching, addTitle, addThumbnail]);
 
   const resetForm = () => {
     setAddUrl(''); setAddTitle(''); setAddDesc(''); setAddTags('');
@@ -316,7 +355,9 @@ const MyResourceLibrary: React.FC = () => {
               </div>
               <div>
                 <h2 className="font-bold text-gray-800 dark:text-gray-100">나만의 자료실</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">유용한 웹사이트·영상을 주제별로 모아두세요.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  유용한 웹사이트·영상을 주제별로 모아두세요. {dataPath && '지정 폴더에 자동 저장됩니다.'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">

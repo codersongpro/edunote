@@ -751,6 +751,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       newStudents[index].generatedContent = result;
       saveHistory('subject', subjectState.activeStudents[index].name, result);
       updateSubjectState({ activeStudents: newStudents });
+      playSuccessSound();
 
     } catch (err: any) {
       const error = err;

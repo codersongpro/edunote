@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { generateClassManagementLog } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
+import { playSuccessSound } from '../lib/soundEffect';
 
 const EXAMPLE_RESULT = `【 학급경영일지 】
 
@@ -67,6 +68,7 @@ const ClassManagementLogGenerator: React.FC = () => {
         teacherNotes,
       });
       setResult(generated);
+      playSuccessSound();
     } catch (err: any) {
       setError(err?.message || '생성 중 오류가 발생했습니다.');
     } finally {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { GlobalState } from './types';
@@ -227,22 +227,22 @@ const App: React.FC = () => {
   const studentNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
       mode === m
-        ? 'bg-blue-600 text-white font-semibold shadow-sm'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300'
+        ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
       (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
-        ? 'bg-teal-600 text-white font-semibold shadow-sm'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-700 dark:hover:text-teal-300'
+        ? 'bg-emerald-600 text-white font-semibold shadow-sm'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
   const docSubNavClass = (dt: DocType) =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === AppMode.SCHOOL_DOC && activeDocType === dt
-        ? 'bg-teal-500 text-white font-semibold'
-        : 'text-gray-500 dark:text-gray-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 hover:text-teal-700 dark:hover:text-teal-300'
+        ? 'bg-emerald-500 text-white font-semibold'
+        : 'text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
   const studentMenuItems = [
@@ -267,9 +267,9 @@ const App: React.FC = () => {
 
   const contentAccent =
     STUDENT_RECORD_MODES.includes(mode)
-      ? 'from-blue-400 via-blue-500 to-indigo-500'
+      ? 'from-indigo-400 via-indigo-500 to-sky-500'
       : ADMIN_MODES.includes(mode)
-      ? 'from-teal-400 via-teal-500 to-emerald-500'
+      ? 'from-emerald-400 via-emerald-500 to-emerald-500'
       : LESSON_AI_MODES.includes(mode)
       ? 'from-amber-400 via-amber-500 to-orange-500'
       : 'from-transparent to-transparent';
@@ -429,7 +429,7 @@ const App: React.FC = () => {
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
               onClick={() => setMode(AppMode.HOME)}
-              className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
             >
               EduNote
             </button>
@@ -459,18 +459,18 @@ const App: React.FC = () => {
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
             {/* ── 교무행정AI ── */}
-            <div className="rounded-xl overflow-hidden border border-teal-100 dark:border-teal-900/50 bg-teal-50/40 dark:bg-teal-950/20">
+            <div className="rounded-xl overflow-hidden border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20">
               <button
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-teal-50/80 dark:hover:bg-teal-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-teal-500 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center shrink-0">
                     <FileText className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-teal-700 dark:text-teal-300 tracking-wide">교무행정AI</span>
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 tracking-wide">교무행정AI</span>
                 </div>
-                {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-teal-400" /> : <ChevronRight className="w-3 h-3 text-teal-400" />}
+                {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-emerald-400" /> : <ChevronRight className="w-3 h-3 text-emerald-400" />}
               </button>
               {adminSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
@@ -478,7 +478,7 @@ const App: React.FC = () => {
                     <GraduationCap className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">교무행정AI 챗봇</span>
                     {generatingModes.has(AppMode.EDUCATION_QA) && mode !== AppMode.EDUCATION_QA && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
                         {generatingModes.get(AppMode.EDUCATION_QA)}%
                       </span>
                     )}
@@ -488,20 +488,20 @@ const App: React.FC = () => {
                       <FileText className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">공문서 작성기</span>
                       {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
                           {generatingModes.get(AppMode.SCHOOL_DOC)}%
                         </span>
                       )}
                       {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
                     </button>
                     {schoolDocSubOpen && (
-                      <div className="mt-0.5 space-y-0.5 border-l-2 border-teal-200 dark:border-teal-700 ml-3">
+                      <div className="mt-0.5 space-y-0.5 border-l-2 border-emerald-200 dark:border-emerald-700 ml-3">
                         {ALL_DOC_TYPES.map(dt => (
                           <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
                             <File className="w-3 h-3 shrink-0" />
                             <span className="flex-1 truncate">{DOC_TYPE_LABELS[dt]}</span>
                             {generatingModes.has(`SCHOOL_DOC_${dt}`) && (
-                              <span className="text-[9px] px-1 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                              <span className="text-[9px] px-1 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
                                 {generatingModes.get(`SCHOOL_DOC_${dt}`)}%
                               </span>
                             )}
@@ -515,7 +515,7 @@ const App: React.FC = () => {
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
                       {generatingModes.has(m) && mode !== m && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-teal-200 dark:bg-teal-800 text-teal-700 dark:text-teal-200 rounded font-bold shrink-0 tabular-nums">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
                           {generatingModes.get(m)}%
                         </span>
                       )}
@@ -528,18 +528,18 @@ const App: React.FC = () => {
             <div className="h-1.5" />
 
             {/* ── 수업자료AI ── */}
-            <div className="rounded-xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20">
+            <div className="rounded-xl overflow-hidden border border-amber-100 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20">
               <button
                 onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-violet-50/80 dark:hover:bg-violet-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50/80 dark:hover:bg-amber-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-violet-500 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">수업자료AI</span>
+                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
                 </div>
-                {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-violet-400" /> : <ChevronRight className="w-3 h-3 text-violet-400" />}
+                {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
               </button>
               {lessonSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
@@ -547,14 +547,14 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.LESSON_MATERIAL)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.LESSON_MATERIAL
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
                     }`}
                   >
                     <Presentation className="w-4 h-4 shrink-0" />
                     <span className="flex-1 text-left truncate">수업자료 생성</span>
                     {generatingModes.has(AppMode.LESSON_MATERIAL) && mode !== AppMode.LESSON_MATERIAL && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-violet-200 dark:bg-violet-800 text-violet-700 dark:text-violet-200 rounded font-bold shrink-0 tabular-nums">
+                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
                         {generatingModes.get(AppMode.LESSON_MATERIAL)}%
                       </span>
                     )}
@@ -563,8 +563,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.QR_MAKER)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.QR_MAKER
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
                     }`}
                   >
                     <QrCode className="w-4 h-4 shrink-0" />
@@ -574,8 +574,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.MY_RESOURCES)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_RESOURCES
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
                     }`}
                   >
                     <BookMarked className="w-4 h-4 shrink-0" />
@@ -585,8 +585,8 @@ const App: React.FC = () => {
                     onClick={() => goTo(AppMode.LUCKY_DRAW)}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                       mode === AppMode.LUCKY_DRAW
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
                     }`}
                   >
                     <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>
@@ -599,22 +599,22 @@ const App: React.FC = () => {
             <div className="h-1.5" />
 
             {/* ── 학생기록AI ── */}
-            <div className="rounded-xl overflow-hidden border border-blue-100 dark:border-blue-900/50 bg-blue-50/40 dark:bg-blue-950/20">
+            <div className="rounded-xl overflow-hidden border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20">
               <button
                 onClick={() => setStudentSectionOpen(!studentSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-blue-50/80 dark:hover:bg-blue-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-indigo-50/80 dark:hover:bg-indigo-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-blue-500 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center shrink-0">
                     <Bot className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-blue-700 dark:text-blue-300 tracking-wide">학생기록AI</span>
+                  <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tracking-wide">학생기록AI</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
-                    <span className="text-[9px] bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded-full font-medium">{schoolLevel}</span>
+                    <span className="text-[9px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 px-1.5 py-0.5 rounded-full font-medium">{schoolLevel}</span>
                   )}
-                  {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-blue-400" /> : <ChevronRight className="w-3 h-3 text-blue-400" />}
+                  {studentSectionOpen ? <ChevronDown className="w-3 h-3 text-indigo-400" /> : <ChevronRight className="w-3 h-3 text-indigo-400" />}
                 </div>
               </button>
               {studentSectionOpen && (
@@ -624,7 +624,7 @@ const App: React.FC = () => {
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left truncate">{label}</span>
                       {generatingModes.has(m) && mode !== m && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-700 dark:text-blue-200 rounded font-bold shrink-0 tabular-nums">
+                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded font-bold shrink-0 tabular-nums">
                           {generatingModes.get(m)}%
                         </span>
                       )}
@@ -633,7 +633,7 @@ const App: React.FC = () => {
                   {hasEnteredStudentSection && (
                     <button
                       onClick={() => setShowSchoolLevelModal(true)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-blue-500 dark:text-blue-400 hover:bg-blue-100/60 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30 rounded-md transition-colors"
                     >
                       <School className="w-3.5 h-3.5" />
                       학교급 변경
@@ -710,16 +710,16 @@ const App: React.FC = () => {
           {generatingModes.has(mode) && (() => {
             const pct = generatingModes.get(mode) ?? -1;
             const colorBar = STUDENT_RECORD_MODES.includes(mode)
-              ? 'from-blue-400 to-blue-600'
+              ? 'from-indigo-400 to-indigo-600'
               : ADMIN_MODES.includes(mode)
-              ? 'from-teal-400 to-teal-600'
+              ? 'from-emerald-400 to-emerald-600'
               : LESSON_AI_MODES.includes(mode)
               ? 'from-amber-400 to-amber-600'
               : 'from-gray-400 to-gray-500';
             const colorBg = STUDENT_RECORD_MODES.includes(mode)
-              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300'
+              ? 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300'
               : ADMIN_MODES.includes(mode)
-              ? 'bg-teal-50 dark:bg-teal-950/30 border-teal-100 dark:border-teal-900 text-teal-700 dark:text-teal-300'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300'
               : LESSON_AI_MODES.includes(mode)
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300'
               : 'bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-600';
@@ -803,3 +803,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

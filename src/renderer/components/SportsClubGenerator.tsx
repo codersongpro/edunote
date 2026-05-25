@@ -333,6 +333,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       newStudents[index].generatedContent = result;
       saveHistory('sports', sportsState.students[index].name, result);
       updateSportsState({ students: newStudents });
+      playSuccessSound();
     } catch (err: any) {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);

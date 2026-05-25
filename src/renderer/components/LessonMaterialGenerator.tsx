@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { playSuccessSound } from '../lib/soundEffect';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
   generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan, generateLessonGame,
@@ -252,6 +253,7 @@ const LessonMaterialGenerator: React.FC = () => {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
       }
+      playSuccessSound();
     } catch (err: any) {
       setError(err.message || '자료 생성 중 오류가 발생했습니다.');
     } finally {
