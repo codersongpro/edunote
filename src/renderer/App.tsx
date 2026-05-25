@@ -22,6 +22,7 @@ import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
 import AboutScreen from './components/AboutScreen';
+import { initAudioUnlock } from './lib/soundEffect';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
@@ -136,6 +137,8 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
+    // 첫 사용자 상호작용에서 오디오 컨텍스트 unlock (생성 완료 효과음 보장)
+    initAudioUnlock();
     const init = async () => {
       try {
         const [hn, sl, dm] = await Promise.all([

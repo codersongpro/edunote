@@ -33,6 +33,20 @@ const quotaBlockedModels = new Map<string, number>();
 // 쿼터 초과 시 재시도 대기 시간 (60초)
 const QUOTA_COOLDOWN_MS = 60_000;
 
+// AI 호출 최대 대기 시간 (90초) — 응답이 멈춰도 무한정 기다리지 않도록
+const REQUEST_TIMEOUT_MS = 90_000;
+
+// Promise에 타임아웃을 거는 헬퍼 — 네트워크 hang으로 인한 무한 대기 방지
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('요청 시간이 초과되었습니다. 네트워크 상태를 확인하고 다시 시도해주세요.')),
+      ms,
+    );
+    p.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
 // API 키 변경 시 모든 차단 상태를 초기화 (외부에서 호출)
 export function resetModelCache(): void {
   permanentlyBlockedModels.clear();
@@ -103,7 +117,7 @@ export async function generateContent(
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({ model, contents: prompt, config });
+      const result = await withTimeout(ai.models.generateContent({ model, contents: prompt, config }), REQUEST_TIMEOUT_MS);
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
@@ -149,7 +163,7 @@ export async function generateContentMultipart(
       if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
       if (options?.temperature !== undefined) config.temperature = options.temperature;
 
-      const result = await ai.models.generateContent({ model, contents: { parts }, config });
+      const result = await withTimeout(ai.models.generateContent({ model, contents: { parts }, config }), REQUEST_TIMEOUT_MS);
       return result.text ?? '';
     } catch (error: unknown) {
       lastError = error;
@@ -303,9 +317,6 @@ const IMAGE_MODELS_TO_TRY = [
   'gemini-2.0-flash-preview-image-generation',
   'gemini-2.0-flash-exp-image-generation',
 ];
-
-const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
-  Promise.race([promise, new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))]);
 
 export async function generateSlideImage(apiKey: string, imagePrompt: string): Promise<string | null> {
   const ai = new GoogleGenAI({ apiKey });
