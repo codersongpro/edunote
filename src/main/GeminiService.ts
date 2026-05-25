@@ -198,87 +198,87 @@ export async function generateContentMultipart(
 //      - 그 외 → 원본 에러 메시지와 함께 일반 안내
 export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning?: string; error?: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  // 검증용 모델 — 무료 계정에서도 접근 가능한 모델 위주로 시도
+  // 검증용 모델 — 4개를 동시에 요청해서 가장 빨리 응답한 결과로 판단
   const testModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+  const TIMEOUT_MS = 10000; // 단일 timeout — 병렬이므로 12s→10s로 줄여도 충분
 
-  let quotaHit = false;
-  let permissionDeniedCount = 0;
-  let firstPermissionErrorRawMsg = ''; // 첫 403 에러의 원본 메시지 (원인 분석용)
+  // 에러 분류 결과 타입
+  type ErrKind = 'invalid_key' | 'network' | 'timeout' | 'permission' | 'quota' | 'other';
+  interface ModelResult {
+    ok: boolean;
+    kind?: ErrKind;
+    rawMsg?: string;
+  }
 
-  for (const model of testModels) {
-    try {
-      await Promise.race([
-        ai.models.generateContent({ model, contents: 'Hi' }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 12000)
-        ),
-      ]);
-      // 하나라도 성공하면 키 유효
-      return { ok: true };
-    } catch (error: unknown) {
+  // 각 모델을 독립적으로 요청하는 함수 — 절대 throw하지 않고 결과 객체를 반환
+  const tryModel = (model: string): Promise<ModelResult> =>
+    Promise.race([
+      ai.models.generateContent({ model, contents: 'Hi' }).then(() => ({ ok: true } as ModelResult)),
+      new Promise<ModelResult>((resolve) =>
+        setTimeout(() => resolve({ ok: false, kind: 'timeout' as ErrKind, rawMsg: '' }), TIMEOUT_MS)
+      ),
+    ]).catch((error: unknown): ModelResult => {
       const rawMsg = (error as any)?.message || '';
       const msg = rawMsg.toLowerCase();
       const status = (error as any)?.status ?? (error as any)?.error?.code ?? 0;
       const errStatus = ((error as any)?.error?.status || '').toLowerCase();
 
-      if (msg === 'timeout') return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
-
       if (msg.includes('failed to fetch') || msg.includes('network error') || msg.includes('networkerror')) {
-        return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+        return { ok: false, kind: 'network', rawMsg };
       }
 
-      // 명시적인 "키 잘못됨" 에러 (401 또는 메시지에 키 관련 문구)
-      // → 즉시 실패 처리 (다른 모델 시도해도 동일하게 실패할 것)
       const isKeyInvalid =
         status === 401 ||
         msg.includes('api_key_invalid') ||
         msg.includes('api key not valid') ||
         msg.includes('api key invalid') ||
         msg.includes('invalid api key');
+      if (isKeyInvalid) return { ok: false, kind: 'invalid_key', rawMsg };
 
-      if (isKeyInvalid) {
-        return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
-      }
+      if (status === 403 || errStatus === 'permission_denied') return { ok: false, kind: 'permission', rawMsg };
 
-      // 403 PERMISSION_DENIED → 즉시 실패하지 않고 다른 모델도 시도
-      // (특정 모델만 막혀 있고 다른 모델은 사용 가능한 경우가 있음)
-      if (status === 403 || errStatus === 'permission_denied') {
-        if (!firstPermissionErrorRawMsg) firstPermissionErrorRawMsg = rawMsg;
-        permissionDeniedCount++;
-        continue;
-      }
-
-      // 쿼터 초과 → 키는 유효, 일시적 제한
       if (status === 429 || errStatus === 'resource_exhausted' ||
           msg.includes('quota') || msg.includes('resource_exhausted') || msg.includes('rate limit')) {
-        quotaHit = true;
-        continue;
+        return { ok: false, kind: 'quota', rawMsg };
       }
 
-      // 모델 미지원 (400/404) → 다음 모델 시도
-      if (status === 400 || status === 404 || errStatus === 'invalid_argument' || errStatus === 'not_found') {
-        continue;
-      }
+      return { ok: false, kind: 'other', rawMsg };
+    });
 
-      // 그 외 → 다음 모델 시도
-      continue;
-    }
-  }
+  // 4개 모델 동시 요청 — 가장 빨리 성공한 것으로 유효 판정
+  const results = await Promise.all(testModels.map(tryModel));
 
-  // 모든 모델이 쿼터 초과 → 키는 유효함
-  if (quotaHit) {
+  // 하나라도 성공하면 키 유효
+  if (results.some((r) => r.ok)) return { ok: true };
+
+  // 모든 모델이 쿼터 초과 → 키는 유효, 일시적 제한
+  if (results.every((r) => r.kind === 'quota')) {
     return {
       ok: true,
       warning: '무료 요청 한도가 일시적으로 초과된 상태입니다. 1~2분 후 정상적으로 사용할 수 있습니다.',
     };
   }
 
-  // 모든 모델이 403 PERMISSION_DENIED → 원본 메시지 분석하여 정확한 안내
-  if (permissionDeniedCount > 0) {
-    const lowerRaw = firstPermissionErrorRawMsg.toLowerCase();
+  // 에러 우선순위: 키 잘못됨 > 네트워크 > timeout > 권한 거부 > 기타
+  const firstOfKind = (kind: ErrKind) => results.find((r) => r.kind === kind);
 
-    // (1) GCP 프로젝트의 Generative Language API 미활성화
-    //     → 새 계정에서 키 발급 직후 자주 발생. API 활성화 또는 1~2분 대기 필요
+  if (firstOfKind('invalid_key')) {
+    return { ok: false, error: 'API 키가 유효하지 않습니다. 키를 다시 확인해 주세요.' };
+  }
+
+  if (firstOfKind('network')) {
+    return { ok: false, error: '네트워크 오류. 인터넷 연결을 확인하세요.' };
+  }
+
+  if (results.every((r) => r.kind === 'timeout')) {
+    return { ok: false, error: '응답 시간 초과. 인터넷 연결을 확인하세요.' };
+  }
+
+  // 403 PERMISSION_DENIED 분석 — 원본 메시지로 원인 파악
+  const permResult = firstOfKind('permission');
+  if (permResult) {
+    const lowerRaw = (permResult.rawMsg || '').toLowerCase();
+
     if (lowerRaw.includes('has not been used') ||
         lowerRaw.includes('not enabled') ||
         lowerRaw.includes('service is disabled') ||
@@ -286,11 +286,10 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
         lowerRaw.includes('serviceusage')) {
       return {
         ok: false,
-        error: 'Generative Language API가 활성화되지 않았습니다 (403).\n\n📌 해결 방법 (둘 중 하나):\n\n방법 1: 1~2분 기다린 후 다시 시도\n  • 새로 발급한 키는 API 활성화에 시간이 걸립니다.\n\n방법 2: 키를 새로 발급\n  • aistudio.google.com 접속 → 기존 키 삭제 → 새 키 발급\n  • 새 키는 자동으로 API가 활성화됩니다.\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
+        error: 'Generative Language API가 활성화되지 않았습니다 (403).\n\n📌 해결 방법 (둘 중 하나):\n\n방법 1: 1~2분 기다린 후 다시 시도\n  • 새로 발급한 키는 API 활성화에 시간이 걸립니다.\n\n방법 2: 키를 새로 발급\n  • aistudio.google.com 접속 → 기존 키 삭제 → 새 키 발급\n  • 새 키는 자동으로 API가 활성화됩니다.\n\n원본 오류:\n' + (permResult.rawMsg || '').substring(0, 250),
       };
     }
 
-    // (2) 학교/조직 Workspace 계정 차단
     if (lowerRaw.includes('workspace') ||
         lowerRaw.includes('consumer api') ||
         lowerRaw.includes('organization') ||
@@ -298,14 +297,13 @@ export async function testApiKey(apiKey: string): Promise<{ ok: boolean; warning
         lowerRaw.includes('policy')) {
       return {
         ok: false,
-        error: 'Gemini API가 학교/기관 정책으로 차단되었습니다 (403).\n\n학교/기관 Google Workspace 계정의 키는 조직 관리자가 차단해 놓은 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
+        error: 'Gemini API가 학교/기관 정책으로 차단되었습니다 (403).\n\n학교/기관 Google Workspace 계정의 키는 조직 관리자가 차단해 놓은 경우 이 오류가 발생합니다.\n\n해결 방법: 개인 Gmail 계정(gmail.com)으로 aistudio.google.com에 접속하여 새 API 키를 발급받아 주세요.\n\n원본 오류:\n' + (permResult.rawMsg || '').substring(0, 250),
       };
     }
 
-    // (3) 그 외 일반 403 — 원본 메시지와 함께 가능한 원인 모두 안내
     return {
       ok: false,
-      error: 'Gemini API 접근이 거부되었습니다 (403).\n\n📌 가능한 원인:\n  ① 키 발급 직후라면 1~2분 후 다시 시도해 주세요 (API 활성화 지연)\n  ② 학교/기관 Workspace 계정이라면 개인 Gmail 키를 사용하세요\n  ③ 키가 만료되었거나 삭제됐다면 새로 발급받으세요\n\n원본 오류:\n' + firstPermissionErrorRawMsg.substring(0, 250),
+      error: 'Gemini API 접근이 거부되었습니다 (403).\n\n📌 가능한 원인:\n  ① 키 발급 직후라면 1~2분 후 다시 시도해 주세요 (API 활성화 지연)\n  ② 학교/기관 Workspace 계정이라면 개인 Gmail 키를 사용하세요\n  ③ 키가 만료되었거나 삭제됐다면 새로 발급받으세요\n\n원본 오류:\n' + (permResult.rawMsg || '').substring(0, 250),
     };
   }
 
