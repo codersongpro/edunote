@@ -122,9 +122,9 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     if (!hwpxTemplate || !hwpxFillData) return;
     setHwpxDownloading(true);
     try {
-      const { fillHwpxTemplate } = await import('../lib/hwpx-template');
-      const uint8 = await fillHwpxTemplate(hwpxTemplate, hwpxFillData);
-      await window.electronAPI.saveBuffer(uint8.buffer, getFormattedFilename("hwpx"));
+      const { fillHwpxTemplate } = await import('../lib/hwpx-parser');
+      const blob = await fillHwpxTemplate(hwpxTemplate, hwpxFillData);
+      await window.electronAPI.saveBuffer(await blob.arrayBuffer(), getFormattedFilename("hwpx"));
     } catch (error) {
       console.error("Failed to merge HWPX file", error);
       alert("HWPX 양식 채우기 중 오류가 발생했습니다.");
@@ -260,15 +260,21 @@ h2,h3{page-break-after:avoid;}
             </button>
           )}
 
-          <button
-            disabled
-            title="HWPX 저장 기능은 현재 구현 중입니다"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded cursor-not-allowed"
-          >
-            <FileType className="w-4 h-4" />
-            <span>HWPX 저장</span>
-            <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-1.5 py-0.5 rounded-full leading-none">구현중</span>
-          </button>
+          {content && (
+            <button
+              onClick={handleDownloadHwpx}
+              disabled={!hwpxTemplate || !hwpxFillData || hwpxDownloading}
+              title={hwpxTemplate && hwpxFillData ? '업로드한 HWPX 양식에 생성 결과를 채워 저장' : 'HWPX 양식 파일을 업로드하고 문서를 생성하면 저장할 수 있습니다'}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm ${
+                hwpxTemplate && hwpxFillData && !hwpxDownloading
+                  ? 'text-white bg-emerald-600 hover:bg-emerald-700'
+                  : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed'
+              }`}
+            >
+              <FileType className="w-4 h-4" />
+              <span>{hwpxDownloading ? 'HWPX 저장 중...' : 'HWPX 양식 저장'}</span>
+            </button>
+          )}
 
           <button
             onClick={handleDownloadWord}
