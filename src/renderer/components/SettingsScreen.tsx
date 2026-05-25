@@ -1,99 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, RefreshCw } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 
 const SettingsScreen: React.FC = () => {
-  const { showToast, setApiKeyActivated } = useGlobalState();
-  const [apiKey, setApiKey] = useState('');
-
-  // API 키 활성화 자동 감지를 위한 폴링 상태
-  // 새 GCP 프로젝트의 키는 발급 직후 1~2분간 활성화 중일 수 있으므로,
-  // 백그라운드에서 점진적 백오프 폴링을 수행하여 첫 성공 시점에 토스트로 알림
-  const [activationPolling, setActivationPolling] = useState(false);
-  const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pollingCancelRef = useRef<boolean>(false);
-
-  // 컴포넌트 언마운트 시 폴링 정리
-  useEffect(() => {
-    return () => {
-      pollingCancelRef.current = true;
-      if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
-    };
-  }, []);
-
-  // 점진적 백오프 폴링: 10초 → 20초 → 40초 → 60초 → 60초... (최대 5분)
-  // 첫 성공(쿼터 경고 포함) 시 토스트로 알림 후 종료
-  const startActivationPolling = () => {
-    pollingCancelRef.current = false;
-    setActivationPolling(true);
-
-    const delays = [10_000, 20_000, 40_000, 60_000, 60_000, 60_000]; // 합계 약 5분
-    let attempt = 0;
-
-    const poll = async () => {
-      if (pollingCancelRef.current) { setActivationPolling(false); return; }
-
-      try {
-        // 저장된 키로 빈 프롬프트 호출 — 키가 활성화됐는지만 확인
-        const hasKeyNow = await window.electronAPI.hasApiKey();
-        if (!hasKeyNow) { setActivationPolling(false); return; }
-
-        // testApiKey를 사용하기 위해 저장된 키를 알아야 하는데, 보안상 키 조회 불가.
-        // 대신 ai:generate를 짧은 프롬프트로 호출하여 성공 여부만 판단
-        await window.electronAPI.aiGenerate('Hi', undefined);
-        // 성공!
-        if (!pollingCancelRef.current) {
-          setApiKeyActivated(true);
-          playSuccessSound();
-          showToast({
-            type: 'success',
-            title: 'API 키 활성화 완료!',
-            description: 'Gemini AI를 이제 사용할 수 있습니다.',
-          });
-        }
-        setActivationPolling(false);
-        return;
-      } catch (e) {
-        // 아직 활성화 안 됨 → 다음 시도 예약
-        attempt++;
-        if (attempt >= delays.length || pollingCancelRef.current) {
-          // 5분 경과 — 폴링 중단 (사용자가 수동 테스트하면 됨)
-          setActivationPolling(false);
-          return;
-        }
-        pollingTimerRef.current = setTimeout(poll, delays[attempt]);
-      }
-    };
-
-    // 첫 시도는 즉시 후 10초 후 재시도
-    pollingTimerRef.current = setTimeout(poll, delays[0]);
-  };
-
-  // 즉시 활성화 확인 (사용자가 "지금 확인" 클릭 시)
-  const checkActivationNow = async () => {
-    try {
-      await window.electronAPI.aiGenerate('Hi', undefined);
-      setApiKeyActivated(true);
-      playSuccessSound();
-      showToast({
-        type: 'success',
-        title: 'API 키 활성화 완료!',
-        description: 'Gemini AI를 이제 사용할 수 있습니다.',
-      });
-      // 폴링 중단
-      pollingCancelRef.current = true;
-      if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
-      setActivationPolling(false);
-    } catch (e: any) {
-      showToast({
-        type: 'warning',
-        title: '아직 활성화 중입니다',
-        description: '1~2분 더 기다린 후 다시 확인해 주세요.',
-      });
-    }
-  };
+  const { showToast, setApiKeyActivated, showActivationModal } = useGlobalState();
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
@@ -196,26 +108,10 @@ const SettingsScreen: React.FC = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
 
-    // 즉시 사용 가능한지 한 번 확인 후, 아직 활성화 중이면 백그라운드 폴링 시작
-    try {
-      await window.electronAPI.aiGenerate('Hi', undefined);
-      // 즉시 사용 가능
-      setApiKeyActivated(true);
-      playSuccessSound();
-      showToast({
-        type: 'success',
-        title: 'API 키가 즉시 활성화됐습니다',
-        description: '바로 사용 가능합니다.',
-      });
-    } catch {
-      // 아직 활성화 중 → 백그라운드 폴링 시작 + 안내 토스트
-      showToast({
-        type: 'info',
-        title: 'API 키 활성화 대기 중...',
-        description: '백그라운드에서 자동 확인 중입니다. 완료되면 알려드릴게요.',
-      });
-      startActivationPolling();
-    }
+    // testApiKey가 이미 유효성을 확인했으므로 즉시 활성화 처리
+    setApiKeyActivated(true);
+    playSuccessSound();
+    showActivationModal();
   };
 
   const handleSaveSettings = async () => {
@@ -368,26 +264,6 @@ const SettingsScreen: React.FC = () => {
             <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800">
               <CheckCircle className="w-4 h-4 shrink-0" />
               <span>API 키가 안전하게 저장되어 있습니다. 변경하려면 새 키를 입력하세요.</span>
-            </div>
-          )}
-
-          {/* 키 활성화 자동 폴링 중 안내 — 사용자가 수동으로도 확인 가능 */}
-          {activationPolling && (
-            <div className="flex items-start gap-2 text-sm text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-200 dark:border-blue-700">
-              <RefreshCw className="w-4 h-4 shrink-0 mt-0.5 animate-spin" />
-              <div className="flex-1">
-                <p className="font-bold">API 키 활성화 확인 중...</p>
-                <p className="text-xs mt-0.5 text-blue-600 dark:text-blue-500">
-                  새 키는 1~2분간 활성화 대기 시간이 있을 수 있습니다. 완료되면 알림으로 알려드립니다.
-                </p>
-                <button
-                  onClick={checkActivationNow}
-                  className="mt-2 inline-flex items-center gap-1 text-xs font-bold bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-600 rounded px-2.5 py-1 hover:bg-blue-200 dark:hover:bg-blue-700"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  지금 확인
-                </button>
-              </div>
             </div>
           )}
 

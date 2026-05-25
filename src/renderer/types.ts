@@ -256,6 +256,8 @@ export interface GlobalStateContextType {
   // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
   apiKeyActivated: boolean;
   setApiKeyActivated: (v: boolean) => void;
+  // API 키 활성화 성공 팝업
+  showActivationModal: () => void;
   // 토스트 알림
   showToast: (toast: Omit<ToastMessage, 'id'>) => void;
 }

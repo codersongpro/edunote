@@ -90,6 +90,9 @@ const App: React.FC = () => {
 
   // API 키 실제 활성화 여부 (단순 저장 여부와 구분)
   const [apiKeyActivated, setApiKeyActivated] = useState(false);
+  // API 키 활성화 완료 팝업
+  const [showApiActivationModal, setShowApiActivationModal] = useState(false);
+  const showActivationModal = () => setShowApiActivationModal(true);
 
   // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
   const cancelFlagsRef = useRef<Set<string>>(new Set());
@@ -148,8 +151,12 @@ const App: React.FC = () => {
         ]);
         setHasApiKey(hn as boolean);
         if (hn) {
-          // 저장된 키가 실제로 동작하는지 빠르게 확인
-          window.electronAPI.aiGenerate('Hi', undefined).then(() => setApiKeyActivated(true)).catch(() => {});
+          // 저장된 키가 있으면 즉시 활성화 표시 (사이드바 바로 반영)
+          setApiKeyActivated(true);
+          // 백그라운드에서 실제 동작 여부 확인 — 키가 만료됐을 경우에만 경고
+          window.electronAPI.aiGenerate('Hi', undefined).catch(() => {
+            setApiKeyActivated(false);
+          });
         }
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
@@ -307,7 +314,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyActivated, setApiKeyActivated, showToast }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyActivated, setApiKeyActivated, showActivationModal, showToast }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
@@ -747,6 +754,32 @@ const App: React.FC = () => {
 
       </div>
       </div>
+
+      {/* API 키 활성화 완료 팝업 */}
+      {showApiActivationModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-9 h-9 text-green-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">API 키 활성화 완료!</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Gemini AI가 준비됐습니다.<br />
+                  EduNote를 이제 자유롭게 사용하실 수 있습니다.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowApiActivationModal(false)}
+                className="w-full py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 토스트 알림 — 우상단에 슬라이드인 형태로 표시 */}
       {toasts.length > 0 && (
