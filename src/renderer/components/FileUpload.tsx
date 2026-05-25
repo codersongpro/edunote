@@ -109,7 +109,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className="mb-6">
-      <label className="block text-sm font-bold text-gray-800 mb-2">{label}</label>
+      <label className="block text-sm font-bold text-gray-800 dark:text-gray-100 mb-2">{label}</label>
       
       <div className="flex flex-col gap-3">
         <div 
@@ -117,15 +117,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`group border bg-gray-50 hover:bg-white rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-500"}`}
+          className={`group border rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40" : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 hover:bg-white dark:hover:bg-gray-800 hover:border-blue-500"}`}
         >
-          <div className="bg-white p-2 rounded-full border border-gray-200 group-hover:border-blue-200 group-hover:bg-blue-50 mb-2 transition-colors">
-             <Upload className="w-5 h-5 text-gray-500 group-hover:text-blue-600" />
+          <div className="bg-white dark:bg-gray-800 p-2 rounded-full border border-gray-200 dark:border-gray-700 group-hover:border-blue-200 dark:group-hover:border-blue-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-950 mb-2 transition-colors">
+             <Upload className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-300" />
           </div>
-          <p className="text-sm text-gray-600 font-medium group-hover:text-blue-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-300">
             파일 업로드
           </p>
-          <span className="text-xs text-gray-400 mt-1">드래그 가능 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">드래그 가능 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
         </div>
         <input 
           type="file" 
@@ -139,16 +139,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         {files.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
             {files.map((f, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-md border border-gray-200 shadow-sm hover:border-blue-300 transition-colors">
+              <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-900 p-2.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm hover:border-blue-300 transition-colors">
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="bg-blue-50 p-1 rounded">
+                  <div className="bg-blue-50 dark:bg-blue-950 p-1 rounded">
                     <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
                   </div>
-                  <span className="text-sm text-gray-700 truncate font-medium">{f.file.name}</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200 truncate font-medium">{f.file.name}</span>
                 </div>
                 <button 
                   onClick={() => removeFile(idx)}
-                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                  className="text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 p-1 rounded transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>

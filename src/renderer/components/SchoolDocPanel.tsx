@@ -11,7 +11,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 // ─── Example Documents ───────────────────────────────────────────────────────
 
 const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
-  [DocType.GONGMUN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000;">  수신 &nbsp;수신자 참조<br>  (경유)<br>  제목 &nbsp;<strong>2026. 충북GEG 워크숍 참여 요청</strong><br><br>  1. 관련: 창의특수교육과-1234(2026. 3. 2.)「2026학년도 충북GEG 운영 계획」<br>  2. 위 호와 관련하여 2026. 충북GEG 워크숍을 다음과 같이 실시하오니, 각급 학교 및 기관의 교직원이 참여할 수 있도록 안내하여 주시기 바랍니다.<br>  &nbsp;&nbsp;가. 일시: 2026. 4. 18.(토) 10:00 ~ 16:00<br>  &nbsp;&nbsp;나. 장소: 충청북도교육청 교육연구정보원 시청각실<br>  &nbsp;&nbsp;다. 대상: 관내 초·중·고등학교 희망 교원 및 교육전문직원<br>  &nbsp;&nbsp;라. 내용: 구글 교육용 도구를 활용한 미래형 수업 설계 및 에듀테크 실습<br><br>  붙임 &nbsp;2026. 충북GEG 워크숍 운영 계획서 1부. &nbsp;끝.</div></body></html>`,
+  [DocType.GONGMUN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000;">  수신 &nbsp;수신자 참조<br>  (경유)<br>  제목 &nbsp;<strong>2026학년도 AI활용 수업 연수계획</strong><br><br>  1. 관련: 창의특수교육과-1234(2026. 3. 2.)「2026학년도 충북GEG 운영 계획」<br>  2. 위 호와 관련하여 2026. 충북GEG 워크숍을 다음과 같이 실시하오니, 각급 학교 및 기관의 교직원이 참여할 수 있도록 안내하여 주시기 바랍니다.<br>  &nbsp;&nbsp;가. 일시: 2026. 4. 18.(토) 10:00 ~ 16:00<br>  &nbsp;&nbsp;나. 장소: 충청북도교육청 교육연구정보원 시청각실<br>  &nbsp;&nbsp;다. 대상: 관내 초·중·고등학교 희망 교원 및 교육전문직원<br>  &nbsp;&nbsp;라. 내용: 구글 교육용 도구를 활용한 미래형 수업 설계 및 에듀테크 실습<br><br>  붙임 &nbsp;2026. 충북GEG 워크숍 운영 계획서 1부. &nbsp;끝.</div></body></html>`,
   [DocType.PLAN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width: 800px; margin: 0 auto;">    <!-- 문서 제목 영역 -->    <div style="text-align: center; margin-bottom: 30px;">        <h1 style="font-size: 22pt; font-weight: bold; margin-bottom: 10px;">2026학년도 교원 AI 활용 수업 역량 강화 연수 운영 계획</h1>        <p style="font-size: 14pt; font-style: italic; color: #4b5563; margin: 0;">- AI와 함께 열어가는 미래 교육, 교실 속 디지털 혁신의 첫걸음 -</p>    </div>    <!-- 1. 추진배경 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">1. 추진배경</h2>        <div style="margin-left: 10px;">            가. 2022 개정 교육과정 도입에 따른 디지털 소양 교육 강화 및 AI 디지털교과서(AIDT) 현장 적용 대비 필요성 증대<br>            나. 인공지능(AI) 기술의 급격한 발전에 발맞추어 교원의 디지털 기반 교수·학습 설계 및 실행 역량 강화 요구<br>            다. 학생 맞춤형 개별화 교육 실현을 위한 교사의 AI 도구 활용 능력 및 에듀테크 활용 수업 전문성 신장 필요        </div>    </div>    <!-- 2. 목적 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">2. 목적</h2>        <div style="margin-left: 10px;">            가. AI 및 에듀테크 도구를 활용한 맞춤형 수업 설계 및 평가 역량 강화<br>            나. 교실 수업 개선을 위한 교원 간 공동체적 연구 및 실천 문화 조성<br>            다. 디지털 대전환 시대에 부합하는 미래지향적 공교육 신뢰도 제고        </div>    </div>    <!-- 3. 운영방침 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">3. 운영방침</h2>        <div style="margin-left: 10px;">            가. 본 연수는 전 교원을 대상으로 하며, 자발적 참여와 실습 중심의 워크숍 형태로 운영한다.<br>            나. 학교 교육과정 운영에 지장이 없는 방과후 시간 또는 전문적 학습공동체의 날을 활용하여 실시한다.<br>            다. 연수 강사는 AI 교육 분야의 외부 전문가 또는 교내 전문 교사를 초빙하여 전문성을 확보한다.<br>            라. 연수 이수 시간에 대한 상시 연수 학점(직무연수) 인정을 추진한다.        </div>    </div>    <!-- 4. 세부추진계획 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">4. 세부추진계획</h2>        <div style="margin-left: 10px;">            가. 연수 개요<br>            &nbsp;&nbsp;1) 일시: 2026년 4월 ~ 6월 (총 3회, 회당 2시간, 총 6시간)<br>            &nbsp;&nbsp;2) 대상: 전 교원<br>            &nbsp;&nbsp;3) 장소: 컴퓨터실 및 각 학년 연구실<br>            &nbsp;&nbsp;4) 방법: 대면 실습 및 토론 중심 워크숍<br>            <br>            나. 회차별 연수 세부 내용            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:10%;">회차</th>                        <th style="padding:8px; border:1px solid black; width:15%;">일시</th>                        <th style="padding:8px; border:1px solid black; width:30%;">주제</th>                        <th style="padding:8px; border:1px solid black; width:35%;">주요 내용</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">1회차</td>                        <td style="padding:8px; border:1px solid black;">4월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 교육의 이해와 트렌드</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 생성형 AI(ChatGPT, 뤼튼 등) 기초<br>- 교육용 AI 도구의 윤리적 활용 방안</td>                        <td style="padding:8px; border:1px solid black;">외부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">2회차</td>                        <td style="padding:8px; border:1px solid black;">5월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 도구를 활용한 수업 설계</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 교과별 AI 활용 수업 지도안 작성 실습<br>- Canva, Gamma 등 시각 자료 제작 도구 활용</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">3회차</td>                        <td style="padding:8px; border:1px solid black;">6월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 기반 평가 및 피드백</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- AI 평가 도구를 활용한 과정중심 평가 설계<br>- 학생 맞춤형 피드백 자동화 사례 공유</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 페이지 분할선 (A4 2장 분량 조절을 위한 페이지 브레이크) -->    <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;">    <!-- 5. 소요예산 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">5. 소요예산</h2>        <div style="margin-left: 10px;">            가. 총 예산액: 금500,000원 (금오십만원)<br>            나. 예산 과목: 학교운영비 - 교원연수운영 - 교원역량강화연수<br>            다. 세부 집행 내역            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:20%;">목</th>                        <th style="padding:8px; border:1px solid black; width:20%;">세목</th>                        <th style="padding:8px; border:1px solid black; width:35%;">산출내역</th>                        <th style="padding:8px; border:1px solid black; width:15%;">금액(원)</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">강사료</td>                        <td style="padding:8px; border:1px solid black;">강사수당</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">외부 강사 초빙료 (150,000원 × 2시간)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">300,000</td>                        <td style="padding:8px; border:1px solid black;">1회차</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">수수료및임차료</td>                        <td style="padding:8px; border:1px solid black;">교재인쇄비</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 교재 및 실습 자료 인쇄 (10,000원 × 10부)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">자체제작</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">운영비</td>                        <td style="padding:8px; border:1px solid black;">급량비(다과)</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 참석자 다과 및 음료 구매 (5,000원 × 20명)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                    <tr style="background-color:#f9fafb; font-weight:bold;">                        <td colspan="3" style="padding:8px; border:1px solid black; text-align:center;">합 계</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">500,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 6. 기대효과 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">6. 기대효과</h2>        <div style="margin-left: 10px;">            가. 교원의 AI 및 에듀테크 활용 능력 향상으로 학생 맞춤형 개별화 수업 활성화<br>            나. 디지털 기반의 다양한 수업 모델 개발 및 적용을 통한 교실 수업의 질적 개선<br>            다. 미래 교육 환경 변화에 능동적으로 대처하는 교원의 전문성 및 자신감 고취        </div>    </div></div></body></html>`,
   [DocType.REPORT]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width:800px; margin:0 auto;"><div style="text-align:center; margin-bottom:30px;"><h1 style="font-size:22pt; font-weight:bold; margin-bottom:10px;">2026학년도 교원 AI 활용 수업 역량 강화 연수 운영 결과 보고서</h1><p style="font-size:14pt; font-style:italic; color:#4b5563; margin:0;">- AI와 함께 열어가는 미래 교육, 교실 속 디지털 혁신의 첫걸음 -</p></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">1. 추진 개요</h2><div style="margin-left:10px;">사업명: 2026학년도 교원 AI 활용 수업 역량 강화 연수 / 기간: 2026. 4. 15. ~ 6. 17. (총 3회, 6시간) / 대상: 전 교원 20명 / 예산: 500,000원 (집행률 100%)</div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">2. 추진 실적</h2><div style="margin-left:10px;"><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:30%;">항목</th><th style="padding:8px; border:1px solid black; width:35%;">계획</th><th style="padding:8px; border:1px solid black; width:35%;">결과</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">운영 횟수</td><td style="padding:8px; border:1px solid black;">3회</td><td style="padding:8px; border:1px solid black;">3회</td></tr><tr><td style="padding:8px; border:1px solid black;">총 연수 시간</td><td style="padding:8px; border:1px solid black;">6시간</td><td style="padding:8px; border:1px solid black;">6시간</td></tr><tr><td style="padding:8px; border:1px solid black;">참여 인원</td><td style="padding:8px; border:1px solid black;">전 교원</td><td style="padding:8px; border:1px solid black;">20명</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">3. 세부 운영 결과</h2><div style="margin-left:10px;">가. 회차별 결과<br><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:10%;">회차</th><th style="padding:8px; border:1px solid black; width:15%;">일시</th><th style="padding:8px; border:1px solid black; width:30%;">주제</th><th style="padding:8px; border:1px solid black; width:35%;">주요 내용 및 결과</th><th style="padding:8px; border:1px solid black; width:10%;">비고</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">1회차</td><td style="padding:8px; border:1px solid black;">4.15.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 교육의 이해와 트렌드</td><td style="padding:8px; border:1px solid black; text-align:left;">- 생성형 AI(ChatGPT, 뤼튼 등) 기초 실습 완료<br>- 교육용 AI 윤리 가이드라인 학습 및 토론 실시</td><td style="padding:8px; border:1px solid black;">외부강사</td></tr><tr><td style="padding:8px; border:1px solid black;">2회차</td><td style="padding:8px; border:1px solid black;">5.20.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 도구를 활용한 수업 설계</td><td style="padding:8px; border:1px solid black; text-align:left;">- 교과별 AI 활용 수업 지도안 작성 실습 완료<br>- Canva, Gamma 활용 시각 자료 제작 완료</td><td style="padding:8px; border:1px solid black;">내부강사</td></tr><tr><td style="padding:8px; border:1px solid black;">3회차</td><td style="padding:8px; border:1px solid black;">6.17.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 기반 평가 및 피드백</td><td style="padding:8px; border:1px solid black; text-align:left;">- AI 평가 도구 활용 과정중심 평가 설계 실습<br>- 학생 맞춤형 피드백 자동화 사례 공유 완료</td><td style="padding:8px; border:1px solid black;">내부강사</td></tr></tbody></table><br>나. 연수 운영 사진<table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><tbody><tr><td style="padding:8px; border:1px solid black; width:50%; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>1회차 생성형 AI 기초 실습 및 윤리 교육 전경</td><td style="padding:8px; border:1px solid black; width:50%; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>2회차 AI 활용 수업 지도안 작성 및 실습 장면</td></tr><tr><td style="padding:8px; border:1px solid black; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>3회차 과정중심 평가 도구 실습 및 피드백 공유</td><td style="padding:8px; border:1px solid black; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>연수 결과 종합 토론 및 소감 발표</td></tr></tbody></table></div></div><hr style="page-break-after:always; border:none; border-top:2px dashed #9ca3af; margin:40px 0;"><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">4. 만족도 조사 결과</h2><div style="margin-left:10px;"><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:35%;">조사 항목</th><th style="padding:8px; border:1px solid black; width:20%;">만족도(5점)</th><th style="padding:8px; border:1px solid black; width:45%;">주요 의견</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">연수 내용의 유익성</td><td style="padding:8px; border:1px solid black;">4.8</td><td style="padding:8px; border:1px solid black; text-align:left;">실제 수업에 바로 적용 가능한 내용 구성 호평</td></tr><tr><td style="padding:8px; border:1px solid black;">강사 전문성 및 진행 방식</td><td style="padding:8px; border:1px solid black;">4.7</td><td style="padding:8px; border:1px solid black; text-align:left;">실습 중심 운영 방식 만족도 높음</td></tr><tr><td style="padding:8px; border:1px solid black;">연수 시간 및 환경</td><td style="padding:8px; border:1px solid black;">4.5</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 시간 확대 및 후속 연수 요구</td></tr><tr style="background-color:#f9fafb; font-weight:bold;"><td style="padding:8px; border:1px solid black;">종합 만족도</td><td style="padding:8px; border:1px solid black;">4.7</td><td style="padding:8px; border:1px solid black; text-align:left;">응답자 20명 기준</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">5. 소요예산 정산</h2><div style="margin-left:10px;">가. 총 집행액: 금500,000원 (금오십만원) — 집행률 100%<br>나. 예산 과목: 학교운영비 - 교원연수운영 - 교원역량강화연수<br>다. 세부 정산 내역<table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:13%;">목</th><th style="padding:8px; border:1px solid black; width:13%;">세목</th><th style="padding:8px; border:1px solid black; width:30%;">산출내역</th><th style="padding:8px; border:1px solid black; width:12%;">계획액(원)</th><th style="padding:8px; border:1px solid black; width:12%;">집행액(원)</th><th style="padding:8px; border:1px solid black; width:10%;">잔액(원)</th><th style="padding:8px; border:1px solid black; width:10%;">비고</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">강사료</td><td style="padding:8px; border:1px solid black;">강사수당</td><td style="padding:8px; border:1px solid black; text-align:left;">외부 강사 초빙료 (150,000원 × 2시간)</td><td style="padding:8px; border:1px solid black; text-align:right;">300,000</td><td style="padding:8px; border:1px solid black; text-align:right;">300,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">1회차</td></tr><tr><td style="padding:8px; border:1px solid black;">수수료</td><td style="padding:8px; border:1px solid black;">교재인쇄비</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 교재 및 실습 자료 인쇄 (10,000원 × 10부)</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">자체제작</td></tr><tr><td style="padding:8px; border:1px solid black;">운영비</td><td style="padding:8px; border:1px solid black;">급량비</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 참석자 다과 및 음료 (5,000원 × 20명)</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">-</td></tr><tr style="background-color:#f9fafb; font-weight:bold;"><td colspan="3" style="padding:8px; border:1px solid black; text-align:center;">합 계</td><td style="padding:8px; border:1px solid black; text-align:right;">500,000</td><td style="padding:8px; border:1px solid black; text-align:right;">500,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">-</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">6. 운영 성과 및 제언</h2><div style="margin-left:10px;">가. 운영 성과<br>&nbsp;&nbsp;1) 전 교원(20명) 대상 3회 연수 완료, 직무연수 6시간 이수 처리 완료하였음.<br>&nbsp;&nbsp;2) AI 수업 설계 실습을 통해 교과별 AI 활용 지도안 20종 이상 개발하였음.<br>&nbsp;&nbsp;3) 연수 후 참여 교원의 85%가 수업 내 AI 도구 활용 의향을 밝혔음.<br>나. 제언 및 향후 계획<br>&nbsp;&nbsp;1) 일회성 연수에 그치지 않도록 교내 전문적 학습공동체와 연계한 지속적 수업 나눔 및 모니터링이 필요함.<br>&nbsp;&nbsp;2) 하반기에는 교과별 특성에 맞춘 심화 과정(AI 디지털교과서 활용 구체화) 연수 개설을 검토할 필요가 있음.</div></div></div></body></html>`,
   [DocType.PUMUI]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; padding: 20px; max-width: 800px; margin: 0 auto;">  <div style="text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 30px; letter-spacing: 10px;">지출품의서</div>    <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; margin-bottom: 25px; text-align: center;">    <tbody><tr>      <td style="width: 20%; padding: 10px; font-weight: bold; background-color: #f3f4f6;">기안자</td>      <td style="width: 30%; padding: 10px;">교사 OOO</td>      <td style="width: 20%; padding: 10px; font-weight: bold; background-color: #f3f4f6;">기안일자</td>      <td style="width: 30%; padding: 10px;">2026. 05. 26.</td>    </tr>    <tr>      <td style="padding: 10px; font-weight: bold; background-color: #f3f4f6;">건명</td>      <td colspan="3" style="padding: 10px; text-align: left; font-weight: bold; padding-left: 15px;">2026. AI수업 역량강화 연수 운영 물품 구입</td>    </tr>  </tbody></table>  <div style="line-height: 2.0; margin-bottom: 20px;">    1. 관련: 창의특수교육과-1234(2026.5.24.)<br>    2. 2026. AI수업 역량강화 연수 운영을 위해 다음과 같이 물품을 구입하고자 합니다.<br>    &nbsp;&nbsp;가. 내역: 2026. AI수업 역량강화 연수 운영 물품<br>    &nbsp;&nbsp;나. 용도: 교원 역량 강화<br>    &nbsp;&nbsp;다. 소요예산: 금500,000원 (금오십만원)<br>    &nbsp;&nbsp;라. 산출내역: 노트 100개 * 3,000원 + 펜 100개 * 2,000원 = 500,000원  </div></div></body></html>`,
@@ -339,8 +339,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // ─── Style helpers ─────────────────────────────────────────────────────────
 
-  const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
-  const labelClass = 'block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide';
+  const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+  const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide';
   const sectionClass = 'mb-4';
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -348,14 +348,14 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const hwpxTemplateFile = uploadedTemplates.length > 0 ? uploadedTemplates[0].file : undefined;
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA]">
+    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left: input panel */}
-        <div className="w-[360px] shrink-0 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col overflow-hidden">
+        <div className="w-[360px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
-          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3 shrink-0">
-            <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-100 flex items-center gap-2">
               <PenTool className="w-4 h-4 text-blue-500" />
               입력 정보
             </h3>
@@ -390,7 +390,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               )}
             </div>
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* Dynamic form by tab */}
 
@@ -410,7 +410,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
                           gongmunData.type === opt.val
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                         }`}
                       >
                         {opt.label}
@@ -432,7 +432,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
                           gongmunData.complexity === opt.val
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                         }`}
                       >
                         {opt.label}
@@ -448,7 +448,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 )}
                 <div>
                   <label className={labelClass}>제목 (건명)</label>
-                  <input type="text" className={inputClass} placeholder="예: 2026학년도 현장체험학습 운영 계획 안내" value={gongmunData.title} onChange={e => setGongmunData({ ...gongmunData, title: e.target.value })} />
+                  <input type="text" className={inputClass} placeholder="예: 2026학년도 AI활용 수업 연수계획" value={gongmunData.title} onChange={e => setGongmunData({ ...gongmunData, title: e.target.value })} />
                 </div>
                 <div>
                   <label className={labelClass}>본문 요청 사항</label>
@@ -506,7 +506,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
                           pumuiData.type === opt.val
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                         }`}
                       >
                         {opt.label}
@@ -672,7 +672,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
                           messageData.target === t
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                         }`}
                       >
                         {t}
@@ -693,7 +693,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
                           messageData.type === opt.val
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                         }`}
                       >
                         {opt.label}
@@ -703,7 +703,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 </div>
 
                 {/* Reply toggle */}
-                <div className="flex items-center gap-2 py-2 border-t border-gray-100">
+                <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -711,9 +711,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                       onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
                       className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="text-sm font-semibold text-gray-700">답장 생성</span>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
                   </label>
-                  <span className="text-xs text-gray-400">받은 메시지에 대한 답장을 생성합니다.</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
                 </div>
 
                 {messageData.isReply && (
@@ -728,7 +728,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                             className={`px-3 py-1 text-xs rounded-full border transition-all ${
                               messageData.relationship === r
                                 ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400'
+                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
                             }`}
                           >
                             {r}
@@ -785,7 +785,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               </div>
             )}
 
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
 
             {/* File uploads */}
             <div>
@@ -820,7 +820,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
             {/* Error display */}
             {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-200">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
                 <span>{error}</span>
               </div>
@@ -828,13 +828,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           </div>
 
           {/* Generate button */}
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 shrink-0">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0">
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
                 isGenerating
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-[0.98]'
               }`}
             >
@@ -874,21 +874,21 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               hwpxTemplate={hwpxTemplateFile}
             />
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white rounded-lg border border-gray-300 shadow-sm">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm">
               {isGenerating ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                   <svg className="animate-spin w-8 h-8 text-blue-500 mb-4" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">문서를 생성하는 중...</p>
-                  <p className="text-sm text-gray-400">{loadingMessage}</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-200 mb-1">문서를 생성하는 중...</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500">{loadingMessage}</p>
                 </div>
               ) : EXAMPLE_DOCS[activeTab] ? (
                 <>
-                  <div className="shrink-0 bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full uppercase tracking-wide">예시 문서</span>
-                    <span className="text-xs text-blue-500">정보를 입력하고 생성하면 아래와 유사한 형식으로 만들어집니다.</span>
+                  <div className="shrink-0 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-100 dark:border-blue-900 px-4 py-2 flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-200 bg-blue-100 dark:bg-blue-900 px-2 py-0.5 rounded-full uppercase tracking-wide">예시 문서</span>
+                    <span className="text-xs text-blue-500 dark:text-blue-300">정보를 입력하고 생성하면 아래와 유사한 형식으로 만들어집니다.</span>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <iframe
@@ -901,11 +901,11 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 </>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                  <div className="bg-blue-50 p-4 rounded-full mb-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-full mb-4">
                     <FileText className="w-10 h-10 text-blue-400" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-600 mb-2">문서를 생성해 주세요</h3>
-                  <p className="text-sm text-gray-400 max-w-xs">
+                  <h3 className="text-base font-semibold text-gray-600 dark:text-gray-200 mb-2">문서를 생성해 주세요</h3>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
                     왼쪽 패널에서 필요한 정보를 입력한 후<br />생성 버튼을 눌러주세요.
                   </p>
                 </div>

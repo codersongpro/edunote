@@ -218,13 +218,13 @@ h2,h3{page-break-after:avoid;}
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-300 flex flex-col h-full overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 flex flex-col h-full overflow-hidden">
       {/* Toolbar / Header */}
-      <div className="bg-[#F8F9FA] px-4 py-3 border-b border-gray-300 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="bg-[#F8F9FA] dark:bg-gray-900 px-4 py-3 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-2 mr-4">
           <FileText className="w-5 h-5 text-blue-600 shrink-0" />
-          <h2 className="font-bold text-gray-800 text-base">미리보기 및 편집</h2>
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+          <h2 className="font-bold text-gray-800 dark:text-gray-100 text-base">미리보기 및 편집</h2>
+          <span className="text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
              <PenLine className="w-3 h-3" />
              수정 가능
           </span>
@@ -232,7 +232,7 @@ h2,h3{page-break-after:avoid;}
         <div className="flex gap-2 shrink-0">
            <button
             onClick={handlePrint}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+            className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="인쇄하기"
           >
             <Printer className="w-4 h-4" />
@@ -263,16 +263,16 @@ h2,h3{page-break-after:avoid;}
           <button
             disabled
             title="HWPX 저장 기능은 현재 구현 중입니다"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-400 bg-gray-100 border border-dashed border-gray-300 rounded cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 rounded cursor-not-allowed"
           >
             <FileType className="w-4 h-4" />
             <span>HWPX 저장</span>
-            <span className="text-[10px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full leading-none">구현중</span>
+            <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-1.5 py-0.5 rounded-full leading-none">구현중</span>
           </button>
 
           <button
             onClick={handleDownloadWord}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
             title="HWP에서 열기 좋은 Word 파일로 저장"
           >
             <Download className="w-4 h-4" />
@@ -282,7 +282,7 @@ h2,h3{page-break-after:avoid;}
 
           <button 
             onClick={handleDownloadHtml}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400 rounded transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
             title="HTML 파일로 저장"
           >
             <FileType className="w-4 h-4" />
@@ -303,7 +303,7 @@ h2,h3{page-break-after:avoid;}
       </div>
       
       {/* Editor Viewport */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
         <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] cursor-text print-section"
              style={{ 
                minHeight: "297mm",
@@ -325,7 +325,7 @@ h2,h3{page-break-after:avoid;}
       </div>
       
       {/* Status Bar */}
-      <div className="bg-white border-t border-gray-300 px-4 py-1 flex justify-between items-center text-xs text-gray-500">
+      <div className="bg-white dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 px-4 py-1 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1">
           <PenLine className="w-3 h-3" />
           내용을 직접 클릭하여 수정할 수 있습니다.

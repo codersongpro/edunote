@@ -29,14 +29,20 @@ import {
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
+  ArrowUp, ArrowDown,
 } from 'lucide-react';
 
-const STUDENT_RECORD_MODES: AppMode[] = [
+const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
   AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.QR_MAKER, AppMode.MY_RESOURCES, AppMode.LUCKY_DRAW];
+const STUDENT_RECORD_MODES: AppMode[] = [
+  ...SCHOOL_LEVEL_REQUIRED_MODES,
+  AppMode.COUNSELING_LOG, AppMode.CLASS_LOG, AppMode.STUDENT_MEMO,
+];
+
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.LESSON_OBSERVATION, AppMode.QR_MAKER, AppMode.MY_RESOURCES, AppMode.LUCKY_DRAW];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -55,6 +61,27 @@ const ALL_DOC_TYPES = [
   DocType.MEETING_MINUTES, DocType.PROMOTION, DocType.NEWSLETTER,
   DocType.MESSAGE, DocType.GONGGO,
 ];
+
+type SidebarMenuItem = {
+  mode: AppMode;
+  icon?: React.ElementType;
+  label: string;
+};
+
+const orderStorageKey = (section: string) => `edunote_menu_order_${section}_v1`;
+
+const restoreMenuOrder = (section: string, items: SidebarMenuItem[]) => {
+  try {
+    const stored = JSON.parse(localStorage.getItem(orderStorageKey(section)) || '[]') as AppMode[];
+    if (!Array.isArray(stored) || stored.length === 0) return items;
+    const byMode = new Map(items.map(item => [item.mode, item]));
+    const ordered = stored.map(mode => byMode.get(mode)).filter(Boolean) as SidebarMenuItem[];
+    const missing = items.filter(item => !stored.includes(item.mode));
+    return [...ordered, ...missing];
+  } catch {
+    return items;
+  }
+};
 
 const App: React.FC = () => {
   const [state, setState] = useState<GlobalState>(initialGlobalState);
@@ -180,7 +207,7 @@ const App: React.FC = () => {
   };
 
   const handleModeChange = (newMode: AppMode) => {
-    if (STUDENT_RECORD_MODES.includes(newMode) && !hasEnteredStudentSection) {
+    if (SCHOOL_LEVEL_REQUIRED_MODES.includes(newMode) && !hasEnteredStudentSection) {
       setShowSchoolLevelModal(true);
       setState(prev => ({ ...prev, _pendingMode: newMode } as any));
       return;
@@ -197,8 +224,6 @@ const App: React.FC = () => {
     if (pendingMode) {
       goTo(pendingMode);
       setState(prev => { const s = { ...prev }; delete (s as any)._pendingMode; return s; });
-    } else {
-      goTo(AppMode.RECORD_CHATBOT);
     }
   };
 
@@ -245,25 +270,73 @@ const App: React.FC = () => {
         : 'text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
-  const studentMenuItems = [
+  const defaultStudentMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
     { mode: AppMode.GENERATOR, icon: User2, label: '행동특성 및 종합의견' },
     { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
     { mode: AppMode.SPORTS_CLUB_GENERATOR, icon: Dumbbell, label: '학교스포츠클럽' },
     { mode: AppMode.CREATIVE_ACTIVITY_GENERATOR, icon: Palette, label: '창체 특기사항' },
-  ];
-
-  const adminMenuItems = [
-    { mode: AppMode.LESSON_OBSERVATION, icon: Eye, label: '수업관찰기록' },
     { mode: AppMode.COUNSELING_LOG, icon: MessageCircle, label: '상담일지' },
     { mode: AppMode.CLASS_LOG, icon: CalendarDays, label: '학급경영일지' },
     { mode: AppMode.STUDENT_MEMO, icon: StickyNote, label: '학생 메모 보드' },
   ];
 
-  const ADMIN_MODES: AppMode[] = [
-    AppMode.EDUCATION_QA, AppMode.SCHOOL_DOC, AppMode.LESSON_OBSERVATION,
-    AppMode.COUNSELING_LOG, AppMode.CLASS_LOG, AppMode.STUDENT_MEMO,
+  const defaultLessonMenuItems: SidebarMenuItem[] = [
+    { mode: AppMode.LESSON_MATERIAL, icon: Presentation, label: '수업자료 생성' },
+    { mode: AppMode.LESSON_OBSERVATION, icon: Eye, label: '수업관찰기록' },
+    { mode: AppMode.QR_MAKER, icon: QrCode, label: 'QR 메이커' },
+    { mode: AppMode.MY_RESOURCES, icon: BookMarked, label: '나만의 자료실' },
+    { mode: AppMode.LUCKY_DRAW, label: '럭키드로우' },
   ];
+
+  const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
+  const [lessonMenuItems, setLessonMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('lesson', defaultLessonMenuItems));
+
+  const moveMenuItem = (
+    section: 'student' | 'lesson',
+    index: number,
+    direction: -1 | 1,
+  ) => {
+    const update = (items: SidebarMenuItem[]) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= items.length) return items;
+      const next = [...items];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      localStorage.setItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
+      return next;
+    };
+    if (section === 'student') setStudentMenuItems(update);
+    else setLessonMenuItems(update);
+  };
+
+  const menuOrderButtons = (section: 'student' | 'lesson', index: number, total: number, color: 'indigo' | 'amber') => (
+    <div className="flex items-center gap-0.5 shrink-0">
+      <button
+        type="button"
+        onClick={(event) => { event.stopPropagation(); moveMenuItem(section, index, -1); }}
+        disabled={index === 0}
+        className={`p-1 rounded opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-not-allowed ${
+          color === 'indigo' ? 'hover:bg-indigo-100 dark:hover:bg-indigo-900/40' : 'hover:bg-amber-100 dark:hover:bg-amber-900/40'
+        }`}
+        title="위로 이동"
+      >
+        <ArrowUp className="w-3 h-3" />
+      </button>
+      <button
+        type="button"
+        onClick={(event) => { event.stopPropagation(); moveMenuItem(section, index, 1); }}
+        disabled={index === total - 1}
+        className={`p-1 rounded opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-not-allowed ${
+          color === 'indigo' ? 'hover:bg-indigo-100 dark:hover:bg-indigo-900/40' : 'hover:bg-amber-100 dark:hover:bg-amber-900/40'
+        }`}
+        title="아래로 이동"
+      >
+        <ArrowDown className="w-3 h-3" />
+      </button>
+    </div>
+  );
+
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.SCHOOL_DOC];
 
   const contentAccent =
     STUDENT_RECORD_MODES.includes(mode)
@@ -456,6 +529,15 @@ const App: React.FC = () => {
               <span>홈</span>
             </button>
 
+            <button
+              onClick={() => setShowSchoolLevelModal(true)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all shadow-sm"
+            >
+              <School className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left text-sm font-bold">학교급 변경</span>
+              <span className="text-[10px] bg-white dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
+            </button>
+
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
             {/* ── 교무행정AI ── */}
@@ -510,17 +592,6 @@ const App: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {adminMenuItems.map(({ mode: m, icon: Icon, label }) => (
-                    <button key={m} onClick={() => goTo(m)} className={adminNavClass(m)}>
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 text-left truncate">{label}</span>
-                      {generatingModes.has(m) && mode !== m && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                          {generatingModes.get(m)}%
-                        </span>
-                      )}
-                    </button>
-                  ))}
                 </div>
               )}
             </div>
@@ -543,55 +614,27 @@ const App: React.FC = () => {
               </button>
               {lessonSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  <button
-                    onClick={() => goTo(AppMode.LESSON_MATERIAL)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.LESSON_MATERIAL
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-                    }`}
-                  >
-                    <Presentation className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">수업자료 생성</span>
-                    {generatingModes.has(AppMode.LESSON_MATERIAL) && mode !== AppMode.LESSON_MATERIAL && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
-                        {generatingModes.get(AppMode.LESSON_MATERIAL)}%
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => goTo(AppMode.QR_MAKER)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.QR_MAKER
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-                    }`}
-                  >
-                    <QrCode className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">QR 메이커</span>
-                  </button>
-                  <button
-                    onClick={() => goTo(AppMode.MY_RESOURCES)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.MY_RESOURCES
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-                    }`}
-                  >
-                    <BookMarked className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">나만의 자료실</span>
-                  </button>
-                  <button
-                    onClick={() => goTo(AppMode.LUCKY_DRAW)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.LUCKY_DRAW
-                        ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-                    }`}
-                  >
-                    <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>
-                    <span className="flex-1 text-left truncate">럭키드로우</span>
-                  </button>
+                  {lessonMenuItems.map(({ mode: m, icon: Icon, label }, index) => (
+                    <div key={m} className="flex items-center gap-1">
+                      <button
+                        onClick={() => goTo(m)}
+                        className={`min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                          mode === m
+                            ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                            : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+                        }`}
+                      >
+                        {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
+                        <span className="flex-1 text-left truncate">{label}</span>
+                        {generatingModes.has(m) && mode !== m && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
+                            {generatingModes.get(m)}%
+                          </span>
+                        )}
+                      </button>
+                      {menuOrderButtons('lesson', index, lessonMenuItems.length, 'amber')}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -619,26 +662,20 @@ const App: React.FC = () => {
               </button>
               {studentSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
-                    <button key={m} onClick={() => handleModeChange(m)} className={studentNavClass(m)}>
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 text-left truncate">{label}</span>
-                      {generatingModes.has(m) && mode !== m && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded font-bold shrink-0 tabular-nums">
-                          {generatingModes.get(m)}%
-                        </span>
-                      )}
-                    </button>
+                  {studentMenuItems.map(({ mode: m, icon: Icon, label }, index) => (
+                    <div key={m} className="flex items-center gap-1">
+                      <button onClick={() => handleModeChange(m)} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
+                        {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                        <span className="flex-1 text-left truncate">{label}</span>
+                        {generatingModes.has(m) && mode !== m && (
+                          <span className="text-[9px] px-1.5 py-0.5 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded font-bold shrink-0 tabular-nums">
+                            {generatingModes.get(m)}%
+                          </span>
+                        )}
+                      </button>
+                      {menuOrderButtons('student', index, studentMenuItems.length, 'indigo')}
+                    </div>
                   ))}
-                  {hasEnteredStudentSection && (
-                    <button
-                      onClick={() => setShowSchoolLevelModal(true)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-indigo-500 dark:text-indigo-400 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/30 rounded-md transition-colors"
-                    >
-                      <School className="w-3.5 h-3.5" />
-                      학교급 변경
-                    </button>
-                  )}
                 </div>
               )}
             </div>
