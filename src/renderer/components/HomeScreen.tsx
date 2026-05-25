@@ -89,11 +89,11 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
         )}
 
         {/* AI 활용 안내 */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl p-4">
+        <div className="bg-fuchsia-50 dark:bg-fuchsia-950/30 border-2 border-fuchsia-300 dark:border-fuchsia-700 rounded-xl p-4 shadow-sm shadow-fuchsia-100/60 dark:shadow-none">
           <div className="flex gap-3 items-start">
-            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-              AI가 초안 문구를 제안합니다. 생성된 내용은 학생 특성에 맞게 <strong>검토·수정</strong>하여 활용해 주세요.
+            <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0 mt-0.5" />
+            <p className="text-xs text-fuchsia-900 dark:text-fuchsia-100 leading-relaxed">
+              AI가 초안 문구를 제안합니다. 생성된 내용은 반드시 <strong className="font-black text-rose-600 dark:text-rose-300">검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
         </div>
