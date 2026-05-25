@@ -15,6 +15,7 @@ import {
   NeisAnalyzedData,
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
+import { stripGeneratedCodeFences } from '../lib/generatedContent';
 
 // ─── IPC Helper ───────────────────────────────────────────────────
 
@@ -675,7 +676,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
   });
 
   try {
-    return await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 });
+    return stripGeneratedCodeFences(await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }));
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error('AI 문서 생성 중 오류가 발생했습니다. (잠시 후 다시 시도해주세요)');
@@ -778,6 +779,56 @@ export const generateClassManagementLog = async (inputs: {
     prompt,
     '당신은 담임교사의 학급경영일지 문서 작성을 보조하는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요.',
     { temperature: 0.4 },
+  );
+};
+
+export const analyzeOfficialDocument = async (inputs: {
+  title: string;
+  pastedText: string;
+  files: FileData[];
+}): Promise<string> => {
+  const prompt = `
+학교 또는 교육청 공문을 분석하여 교사가 바로 업무에 활용할 수 있는 요약 보고를 작성해주세요.
+
+[사용자가 입력한 제목/메모]
+${inputs.title || '미입력'}
+
+[사용자가 붙여넣은 공문 내용]
+${inputs.pastedText || '없음'}
+
+[분석 지침]
+1. 공문에 없는 사실을 추측하거나 추가하지 마세요.
+2. 핵심 내용을 5줄 이내로 요약하세요.
+3. 해야 할 일을 체크리스트로 정리하세요.
+4. 마감일, 제출처, 제출 방법, 담당 부서, 필요한 붙임/서류가 있으면 별도 항목으로 정리하세요.
+5. 날짜나 제출 기한이 불명확하면 "공문 원문 확인 필요"라고 표시하세요.
+6. 출력은 아래 형식을 지켜주세요.
+
+## 핵심 요약
+## 해야 할 일
+## 마감/제출 정보
+## 필요 서류 및 붙임
+## 담당자가 확인할 사항`;
+
+  const fileParts = inputs.files.map(file => ({
+    inlineData: {
+      data: file.base64.split(',')[1] || file.base64,
+      mimeType: file.mimeType,
+    },
+  }));
+
+  if (fileParts.length > 0) {
+    return await aiGenerateMultipart(
+      [{ text: prompt }, ...fileParts],
+      '당신은 학교와 교육청 공문을 교사 업무 체크리스트로 정리하는 행정 보조자입니다. 원문에 없는 사실을 만들지 말고, 마감과 제출 업무를 정확히 드러내세요.',
+      { temperature: 0.2 },
+    );
+  }
+
+  return await aiGenerate(
+    prompt,
+    '당신은 학교와 교육청 공문을 교사 업무 체크리스트로 정리하는 행정 보조자입니다. 원문에 없는 사실을 만들지 말고, 마감과 제출 업무를 정확히 드러내세요.',
+    { temperature: 0.2 },
   );
 };
 
@@ -965,7 +1016,7 @@ th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
 p { margin: 2pt 0; line-height: 1.5; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
 }
 
 export async function generateLessonQuiz(params: LessonParams, questionCount: number): Promise<string> {
@@ -993,7 +1044,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 한국어 폰트와 밝은 색상을 사용하여 학생들이 흥미를 가질 수 있는 디자인으로 작성하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
 }
 
 export async function generateLessonPlan(params: LessonParams): Promise<string> {
@@ -1025,7 +1076,7 @@ section, .section, tr, h2, h3 { page-break-inside: avoid; }
 h1, h2, h3 { page-break-after: avoid; }
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 });
+  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 }));
 }
 
 export async function generateLessonGame(params: LessonParams): Promise<string> {
@@ -1055,7 +1106,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 한국어 UI, 밝은 색상, 학생 친화적인 디자인으로 작성하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.7 });
+  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.7 }));
 }
 
 export const parseAnnualPlanFromImages = async (images: string[]): Promise<string> => {

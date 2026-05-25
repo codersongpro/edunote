@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown } from 'lucide-react';
+import { stripGeneratedCodeFences } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -24,14 +25,15 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   useEffect(() => {
     const el = contentRef.current;
     if (!el || !content) return;
+    const cleanContent = stripGeneratedCodeFences(content);
     el.focus();
     document.execCommand('selectAll', false);
-    document.execCommand('insertHTML', false, content);
+    document.execCommand('insertHTML', false, cleanContent);
     window.getSelection()?.collapse(el, 0);
   }, [content]);
 
   const getCurrentContent = (): string => {
-    return contentRef.current?.innerHTML || content;
+    return stripGeneratedCodeFences(contentRef.current?.innerHTML || content);
   };
 
   const handleCopy = async () => {
@@ -137,6 +139,15 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const currentHtml = getCurrentContent();
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body>${currentHtml}</body></html>`;
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename("html"), "html");
+  };
+
+  const handleDownloadBasicHwpx = async () => {
+    const currentHtml = getCurrentContent();
+    const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
+    await window.electronAPI.saveHwpx(docTitle, currentHtml, {
+      title: docTitle,
+      date: new Date().toISOString().slice(0, 10),
+    });
   };
 
   const handleDownloadWord = async () => {
@@ -276,6 +287,17 @@ h2,h3{page-break-after:avoid;}
             </button>
           )}
 
+          {content && (
+            <button
+              onClick={handleDownloadBasicHwpx}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded transition-colors shadow-sm"
+              title="현재 문서를 기본 HWPX 문서로 저장합니다. 복잡한 표와 레이아웃은 제한될 수 있습니다."
+            >
+              <FileType className="w-4 h-4" />
+              <span>HWPX 기본 저장</span>
+            </button>
+          )}
+
           <button
             onClick={handleDownloadWord}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
@@ -325,7 +347,7 @@ h2,h3{page-break-after:avoid;}
                 contentEditable
                 suppressContentEditableWarning
                 className="prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full"
-                style={{ minHeight: "100%" }}
+                style={{ minHeight: "100%", color: "#000000" }}
              />
         </div>
       </div>

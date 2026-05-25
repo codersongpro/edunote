@@ -14,6 +14,7 @@ import CounselingLogGenerator from './components/CounselingLogGenerator';
 import ClassManagementLogGenerator from './components/ClassManagementLogGenerator';
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
+import OfficialDocAnalyzer from './components/OfficialDocAnalyzer';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
 import QRMaker from './components/QRMaker';
 import MyResourceLibrary from './components/MyResourceLibrary';
@@ -29,7 +30,7 @@ import {
   FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  ArrowUp, ArrowDown,
+  GripVertical,
 } from 'lucide-react';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
@@ -250,7 +251,7 @@ const App: React.FC = () => {
   };
 
   const studentNavClass = (m: AppMode) =>
-    `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+    `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
@@ -291,17 +292,20 @@ const App: React.FC = () => {
 
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
   const [lessonMenuItems, setLessonMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('lesson', defaultLessonMenuItems));
+  const [draggedMenu, setDraggedMenu] = useState<{ section: 'student' | 'lesson'; mode: AppMode } | null>(null);
 
-  const moveMenuItem = (
+  const reorderMenuItem = (
     section: 'student' | 'lesson',
-    index: number,
-    direction: -1 | 1,
+    fromMode: AppMode,
+    toMode: AppMode,
   ) => {
     const update = (items: SidebarMenuItem[]) => {
-      const targetIndex = index + direction;
-      if (targetIndex < 0 || targetIndex >= items.length) return items;
+      const fromIndex = items.findIndex(item => item.mode === fromMode);
+      const toIndex = items.findIndex(item => item.mode === toMode);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return items;
       const next = [...items];
-      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
       localStorage.setItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
       return next;
     };
@@ -309,34 +313,13 @@ const App: React.FC = () => {
     else setLessonMenuItems(update);
   };
 
-  const menuOrderButtons = (section: 'student' | 'lesson', index: number, total: number, color: 'indigo' | 'amber') => (
-    <div className="flex items-center gap-0.5 shrink-0">
-      <button
-        type="button"
-        onClick={(event) => { event.stopPropagation(); moveMenuItem(section, index, -1); }}
-        disabled={index === 0}
-        className={`p-1 rounded opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-not-allowed ${
-          color === 'indigo' ? 'hover:bg-indigo-100 dark:hover:bg-indigo-900/40' : 'hover:bg-amber-100 dark:hover:bg-amber-900/40'
-        }`}
-        title="위로 이동"
-      >
-        <ArrowUp className="w-3 h-3" />
-      </button>
-      <button
-        type="button"
-        onClick={(event) => { event.stopPropagation(); moveMenuItem(section, index, 1); }}
-        disabled={index === total - 1}
-        className={`p-1 rounded opacity-60 hover:opacity-100 disabled:opacity-20 disabled:cursor-not-allowed ${
-          color === 'indigo' ? 'hover:bg-indigo-100 dark:hover:bg-indigo-900/40' : 'hover:bg-amber-100 dark:hover:bg-amber-900/40'
-        }`}
-        title="아래로 이동"
-      >
-        <ArrowDown className="w-3 h-3" />
-      </button>
-    </div>
-  );
+  const handleMenuDrop = (section: 'student' | 'lesson', targetMode: AppMode) => {
+    if (!draggedMenu || draggedMenu.section !== section) return;
+    reorderMenuItem(section, draggedMenu.mode, targetMode);
+    setDraggedMenu(null);
+  };
 
-  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.SCHOOL_DOC];
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.SCHOOL_DOC];
 
   const contentAccent =
     STUDENT_RECORD_MODES.includes(mode)
@@ -357,6 +340,7 @@ const App: React.FC = () => {
       case AppMode.SPORTS_CLUB_GENERATOR: return <SportsClubGenerator schoolLevel={schoolLevel} />;
       case AppMode.CREATIVE_ACTIVITY_GENERATOR: return <CreativeActivityGenerator schoolLevel={schoolLevel} />;
       case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
+      case AppMode.OFFICIAL_DOC_ANALYZER: return <OfficialDocAnalyzer />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.LESSON_OBSERVATION: return <LessonObservationGenerator />;
       case AppMode.COUNSELING_LOG: return <CounselingLogGenerator />;
@@ -565,6 +549,15 @@ const App: React.FC = () => {
                       </span>
                     )}
                   </button>
+                  <button onClick={() => goTo(AppMode.OFFICIAL_DOC_ANALYZER)} className={adminNavClass(AppMode.OFFICIAL_DOC_ANALYZER)}>
+                    <ClipboardList className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">공문 요약 / 업무 추출</span>
+                    {generatingModes.has(AppMode.OFFICIAL_DOC_ANALYZER) && mode !== AppMode.OFFICIAL_DOC_ANALYZER && (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
+                        {generatingModes.get(AppMode.OFFICIAL_DOC_ANALYZER)}%
+                      </span>
+                    )}
+                  </button>
                   <div>
                     <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
                       <FileText className="w-4 h-4 shrink-0" />
@@ -614,11 +607,21 @@ const App: React.FC = () => {
               </button>
               {lessonSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  {lessonMenuItems.map(({ mode: m, icon: Icon, label }, index) => (
-                    <div key={m} className="flex items-center gap-1">
+                  {lessonMenuItems.map(({ mode: m, icon: Icon, label }) => (
+                    <div
+                      key={m}
+                      draggable
+                      onDragStart={() => setDraggedMenu({ section: 'lesson', mode: m })}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleMenuDrop('lesson', m)}
+                      onDragEnd={() => setDraggedMenu(null)}
+                      className={`flex items-center gap-1 rounded-md ${draggedMenu?.section === 'lesson' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                    >
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-amber-400 cursor-grab" />
                       <button
                         onClick={() => goTo(m)}
-                        className={`min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+                        title={label}
+                        className={`min-w-0 flex-1 flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
                           mode === m
                             ? 'bg-amber-500 text-white font-semibold shadow-sm'
                             : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
@@ -632,7 +635,6 @@ const App: React.FC = () => {
                           </span>
                         )}
                       </button>
-                      {menuOrderButtons('lesson', index, lessonMenuItems.length, 'amber')}
                     </div>
                   ))}
                 </div>
@@ -662,9 +664,18 @@ const App: React.FC = () => {
               </button>
               {studentSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  {studentMenuItems.map(({ mode: m, icon: Icon, label }, index) => (
-                    <div key={m} className="flex items-center gap-1">
-                      <button onClick={() => handleModeChange(m)} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
+                  {studentMenuItems.map(({ mode: m, icon: Icon, label }) => (
+                    <div
+                      key={m}
+                      draggable
+                      onDragStart={() => setDraggedMenu({ section: 'student', mode: m })}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleMenuDrop('student', m)}
+                      onDragEnd={() => setDraggedMenu(null)}
+                      className={`flex items-center gap-1 rounded-md ${draggedMenu?.section === 'student' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                    >
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-indigo-400 cursor-grab" />
+                      <button onClick={() => handleModeChange(m)} title={label} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
                         {Icon && <Icon className="w-4 h-4 shrink-0" />}
                         <span className="flex-1 text-left truncate">{label}</span>
                         {generatingModes.has(m) && mode !== m && (
@@ -673,7 +684,6 @@ const App: React.FC = () => {
                           </span>
                         )}
                       </button>
-                      {menuOrderButtons('student', index, studentMenuItems.length, 'indigo')}
                     </div>
                   ))}
                 </div>

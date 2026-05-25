@@ -127,6 +127,13 @@ const AboutScreen: React.FC = () => {
             앱 만족도 설문 참여하기
             <ExternalLink className="w-3.5 h-3.5 opacity-60" />
           </button>
+          <button
+            onClick={() => openLink('https://sotong-omega.vercel.app/')}
+            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/30 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-700 rounded-xl text-sm font-semibold text-sky-700 dark:text-sky-300 transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            개발자의 다른 앱 다운로드
+          </button>
         </div>
 
         {/* Usage precautions */}

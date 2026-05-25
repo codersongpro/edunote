@@ -7,6 +7,7 @@ import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { stripGeneratedCodeFences } from '../lib/generatedContent';
 
 // ─── Example Documents ───────────────────────────────────────────────────────
 
@@ -262,9 +263,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     const END = '___HWPX_FILL_END___';
     const si = raw.indexOf(START);
     const ei = raw.indexOf(END);
-    if (si === -1 || ei === -1 || ei <= si) return { cleanContent: raw.trim(), fillData: null };
+    if (si === -1 || ei === -1 || ei <= si) return { cleanContent: stripGeneratedCodeFences(raw), fillData: null };
     const jsonStr = raw.substring(si + START.length, ei).trim();
-    const cleanContent = raw.substring(0, si).trim();
+    const cleanContent = stripGeneratedCodeFences(raw.substring(0, si));
     try {
       const parsed = JSON.parse(jsonStr);
       return { cleanContent, fillData: Array.isArray(parsed) ? parsed : null };
@@ -346,6 +347,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const hwpxTemplateFile = uploadedTemplates.length > 0 ? uploadedTemplates[0].file : undefined;
+  const previewHtml = EXAMPLE_DOCS[activeTab]?.replace(
+    /<body([^>]*)>/i,
+    '<body$1 style="margin:0; background:#ffffff; color:#000000;">',
+  );
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
@@ -892,9 +897,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <iframe
-                      srcDoc={EXAMPLE_DOCS[activeTab]}
+                      srcDoc={previewHtml}
                       sandbox=""
-                      className="w-full h-full border-0"
+                      className="w-full h-full border-0 bg-white"
                       title="예시 문서"
                     />
                   </div>

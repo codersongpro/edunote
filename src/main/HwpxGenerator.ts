@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DOMParser } from '@xmldom/xmldom';
 
 interface HwpxMetadata {
   title?: string;
@@ -29,6 +30,39 @@ function makeParagraph(text: string): string {
     .join('\n');
 }
 
+function htmlToText(content: string): string {
+  const normalized = content
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h1|h2|h3|li|tr)>/gi, '\n')
+    .replace(/<\/td>/gi, '\t');
+
+  try {
+    const doc = new DOMParser().parseFromString(`<root>${normalized}</root>`, 'text/xml');
+    const walk = (node: any): string => {
+      if (!node) return '';
+      if (node.nodeType === 3) return node.nodeValue || '';
+      let text = '';
+      for (let i = 0; i < (node.childNodes?.length || 0); i += 1) {
+        text += walk(node.childNodes.item(i));
+      }
+      return text;
+    };
+    return walk(doc.documentElement)
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+  } catch {
+    return normalized
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+}
+
 function buildHwpxXml(title: string, content: string, meta: HwpxMetadata): string {
   const headerLines = Object.entries(meta)
     .filter(([, v]) => v)
@@ -36,7 +70,7 @@ function buildHwpxXml(title: string, content: string, meta: HwpxMetadata): strin
     .join('\n');
 
   const titleLine = `<hp:p><hp:run><hp:t>${escapeXml(title)}</hp:t></hp:run></hp:p>`;
-  const body = makeParagraph(content);
+  const body = makeParagraph(htmlToText(content));
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <hsp:HWPMLPar xmlns:hsp="http://www.hancom.co.kr/hwpml/2012/paragraph"

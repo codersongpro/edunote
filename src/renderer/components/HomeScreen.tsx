@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, Mail, AlertTriangle, Info } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, Mail, AlertTriangle, Info, ExternalLink } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -141,6 +141,22 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, darkMode }) => {
         </div>
 
         {/* Survey */}
+        <button
+          onClick={() => window.electronAPI.openExternal('https://sotong-omega.vercel.app/')}
+          className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center shrink-0">
+              <ExternalLink className="w-5 h-5 text-sky-600 dark:text-sky-300" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-100">개발자의 다른 앱 보기</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">교육 현장에 필요한 다른 도구를 다운로드할 수 있습니다</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-sky-400 shrink-0" />
+        </button>
+
         <button
           onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
           className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
