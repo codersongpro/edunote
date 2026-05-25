@@ -6,6 +6,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyActivated, showActivationModal } = useGlobalState();
+  const [apiKey, setApiKey] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
