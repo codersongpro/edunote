@@ -18,6 +18,16 @@ const OfficialDocAnalyzer: React.FC = () => {
 
   const canAnalyze = title.trim() || pastedText.trim() || files.length > 0;
 
+  const buildOriginalSection = () => {
+    const originalText = pastedText.trim();
+    if (originalText) return `\n\n---\n\n## 원문\n\n${originalText}`;
+    if (files.length > 0) {
+      const fileList = files.map(file => `- ${file.file.name}`).join('\n');
+      return `\n\n---\n\n## 원문\n\n첨부 파일로 분석했습니다.\n\n${fileList}`;
+    }
+    return '';
+  };
+
   const getCalendarDate = () => {
     const source = `${result}\n${pastedText}\n${title}`;
     const match = source.match(/(20\d{2})[-.년\s]+(\d{1,2})[-.월\s]+(\d{1,2})/);
@@ -51,7 +61,7 @@ const OfficialDocAnalyzer: React.FC = () => {
     startGeneration();
     try {
       const output = await analyzeOfficialDocument({ title, pastedText, files });
-      setResult(output);
+      setResult(`${output.trim()}${buildOriginalSection()}`);
       playSuccessSound();
     } catch (err: any) {
       setError(err?.message || '공문 분석 중 오류가 발생했습니다.');

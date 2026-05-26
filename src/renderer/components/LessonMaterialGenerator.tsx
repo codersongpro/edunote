@@ -29,6 +29,23 @@ const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label:
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
 const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide';
 
+const normalizeStudentNames = (names: string): string =>
+  names
+    .split(/[\n,]+/)
+    .map(name => name.trim())
+    .filter(Boolean)
+    .join(', ');
+
+const getGradeLabelFromConfig = (schoolLevel: string, gradeClass: string): string => {
+  const gradeMatch = gradeClass.match(/(\d)\s*학년/);
+  if (!gradeMatch) return '';
+  const gradeNumber = gradeMatch[1];
+  const schoolKey = schoolLevel.includes('초') ? 'elementary' : schoolLevel.includes('중') ? 'middle' : schoolLevel.includes('고') ? 'high' : '';
+  return CURRICULUM_GRADES.find(grade =>
+    grade.label.includes(`${gradeNumber}학년`) && (!schoolKey || grade.school === schoolKey)
+  )?.label ?? '';
+};
+
 const extractHtml = (raw: string): string => {
   const m = raw.match(/```(?:html)?\s*([\s\S]*?)```/);
   if (m) return m[1].trim();
@@ -37,14 +54,90 @@ const extractHtml = (raw: string): string => {
   return raw.replace(/```html/g, '').replace(/```/g, '').trim();
 };
 
+const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 시작'): string => `
+<script data-edunote-start-guard="true">
+(function(){
+  var startLabel = ${JSON.stringify(label)};
+  var safeId = ${JSON.stringify(safeId)};
+
+  function showElement(el) {
+    if (!el) return;
+    el.hidden = false;
+    el.style.display = '';
+    el.style.visibility = 'visible';
+    el.classList.remove('hidden', 'is-hidden', 'd-none');
+    if (/\b(screen|page|view)\b/i.test(String(el.className || ''))) el.classList.add('active');
+  }
+
+  function revealGameArea() {
+    var fallbackContent = document.getElementById(safeId + '-content');
+    if (fallbackContent) showElement(fallbackContent);
+
+    document.querySelectorAll('[id], [class], [data-screen], main, section').forEach(function(el) {
+      var name = [
+        el.id || '',
+        String(el.className || ''),
+        el.getAttribute('data-screen') || ''
+      ].join(' ').toLowerCase();
+      if (/(game|quiz|play|question|stage|board|main|content)/.test(name) && !/(start|intro|cover|welcome)/.test(name)) {
+        showElement(el);
+      }
+    });
+  }
+
+  function hideStartArea(button) {
+    var fallbackCover = document.getElementById(safeId + '-cover');
+    if (fallbackCover) fallbackCover.style.display = 'none';
+
+    var startArea = button;
+    while (startArea && startArea !== document.body) {
+      var name = [
+        startArea.id || '',
+        String(startArea.className || ''),
+        startArea.getAttribute ? startArea.getAttribute('data-screen') || '' : ''
+      ].join(' ').toLowerCase();
+      if (/(start|intro|cover|welcome)/.test(name)) {
+        startArea.style.display = 'none';
+        return;
+      }
+      startArea = startArea.parentElement;
+    }
+    if (button) button.style.display = 'none';
+  }
+
+  function handleStart(button) {
+    window.setTimeout(function(){
+      hideStartArea(button);
+      revealGameArea();
+    }, 80);
+  }
+
+  document.addEventListener('click', function(event) {
+    var button = event.target && event.target.closest ? event.target.closest('button, [role="button"], a') : null;
+    if (!button) return;
+    var text = (button.textContent || '').replace(/\\s+/g, ' ').trim();
+    if (button.id !== safeId && text.indexOf(startLabel) === -1) return;
+    handleStart(button);
+  }, true);
+
+  var fallbackButton = document.getElementById(safeId);
+  if (fallbackButton) fallbackButton.addEventListener('click', function(){ handleStart(fallbackButton); });
+})();
+</script>`;
+
 const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작'): string => {
-  if (html.includes(label)) return html;
   if (!/<body[\s>]/i.test(html) || !/<\/body>/i.test(html)) return html;
 
   const safeId = label === '퀴즈 시작' ? 'edunote-quiz-start' : 'edunote-game-start';
-  return html
-    .replace(/<body([^>]*)>/i, `<body$1><div id="${safeId}-cover" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#f59e0b,#38bdf8);font-family:'Malgun Gothic',sans-serif;"><button id="${safeId}" style="font-size:24px;font-weight:900;padding:18px 34px;border:0;border-radius:18px;background:#ffffff;color:#111827;box-shadow:0 14px 35px rgba(0,0,0,.22);cursor:pointer;">${label}</button></div><div id="${safeId}-content" style="display:none;">`)
-    .replace(/<\/body>/i, `</div><script>(function(){var b=document.getElementById('${safeId}');if(!b)return;b.addEventListener('click',function(){var cover=document.getElementById('${safeId}-cover');var content=document.getElementById('${safeId}-content');if(cover)cover.style.display='none';if(content)content.style.display='block';});})();</script></body>`);
+  const needsFallbackStart = !html.includes(label);
+  const htmlWithStart = needsFallbackStart
+    ? html
+        .replace(/<body([^>]*)>/i, `<body$1><div id="${safeId}-cover" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#f59e0b,#38bdf8);font-family:'Malgun Gothic',sans-serif;"><button id="${safeId}" style="font-size:24px;font-weight:900;padding:18px 34px;border:0;border-radius:18px;background:#ffffff;color:#111827;box-shadow:0 14px 35px rgba(0,0,0,.22);cursor:pointer;">${label}</button></div><div id="${safeId}-content" style="display:none;">`)
+        .replace(/<\/body>/i, '</div></body>')
+    : html;
+
+  if (htmlWithStart.includes('data-edunote-start-guard')) return htmlWithStart;
+  return htmlWithStart.replace(/<\/body>/i, `${buildStartGuardScript(safeId, label)}</body>`);
 };
 
 const LessonMaterialGenerator: React.FC = () => {
@@ -199,6 +292,34 @@ const LessonMaterialGenerator: React.FC = () => {
     document.addEventListener('keydown', handlePresentKey);
     return () => document.removeEventListener('keydown', handlePresentKey);
   }, [isPresentMode, handlePresentKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      window.electronAPI.getConfig('teacherName'),
+      window.electronAPI.getConfig('institution'),
+      window.electronAPI.getConfig('schoolLevel'),
+      window.electronAPI.getConfig('gradeClass'),
+      window.electronAPI.getConfig('studentNames'),
+    ]).then(([teacherName, institution, schoolLevel, gradeClass, studentNames]) => {
+      if (cancelled) return;
+      const configuredGrade = getGradeLabelFromConfig(String(schoolLevel || ''), String(gradeClass || ''));
+      if (configuredGrade) handleGradeChange(configuredGrade);
+
+      const profileLines = [
+        institution ? `소속기관: ${institution}` : '',
+        teacherName ? `사용자/교사 이름: ${teacherName}` : '',
+        gradeClass ? `담당 학년/반: ${gradeClass}` : '',
+        studentNames ? `학생 명단: ${normalizeStudentNames(String(studentNames))}` : '',
+      ].filter(Boolean);
+
+      if (profileLines.length > 0) {
+        const profileBlock = `[설정 기본정보]\n${profileLines.join('\n')}`;
+        setDetails(prev => prev.trim() ? prev : profileBlock);
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleLoadStudentNames = async () => {
     const names = await window.electronAPI.getConfig('studentNames');

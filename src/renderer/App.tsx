@@ -262,7 +262,7 @@ const App: React.FC = () => {
     }`;
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
-    `w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
+    `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
       (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
         ? 'bg-emerald-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'

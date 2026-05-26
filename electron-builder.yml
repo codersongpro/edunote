@@ -11,6 +11,7 @@ files:
 
 win:
   icon: build/icon.ico
+  signAndEditExecutable: false
   target:
     - target: portable
       arch:

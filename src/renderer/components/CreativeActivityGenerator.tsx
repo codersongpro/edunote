@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student, AppMode } from '../types';
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
 import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualPlanFromDocuments } from '../services/geminiService';
-import { extractTextFromHwpx } from '../lib/hwpx-parser';
 import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -276,6 +275,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
             } else if (name.endsWith('.hwpx')) {
                 try {
+                    const { extractTextFromHwpx } = await import('../lib/hwpx-parser');
                     const text = await extractTextFromHwpx(file);
                     if (text.trim()) textChunks.push(text.trim());
                 } catch {

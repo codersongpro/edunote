@@ -44,9 +44,29 @@ interface SchoolDocPanelProps {
   initialTab?: DocType;
 }
 
+interface SettingsProfile {
+  teacherName: string;
+  institution: string;
+  gradeClass: string;
+  studentNames: string;
+}
+
+const normalizeStudentNames = (names: string): string =>
+  names
+    .split(/[\n,]+/)
+    .map(name => name.trim())
+    .filter(Boolean)
+    .join(', ');
+
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
+  const [settingsProfile, setSettingsProfile] = useState<SettingsProfile>({
+    teacherName: '',
+    institution: '',
+    gradeClass: '',
+    studentNames: '',
+  });
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -170,11 +190,27 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load school name from config on mount
+  // Load saved user info from config on mount
   useEffect(() => {
-    window.electronAPI.getConfig('schoolName').then((v: unknown) => {
-      const val = v as string;
-      setMeetingMinutesData(prev => ({ ...prev, schoolName: prev.schoolName || val || '' }));
+    Promise.all([
+      window.electronAPI.getConfig('teacherName'),
+      window.electronAPI.getConfig('institution'),
+      window.electronAPI.getConfig('schoolName'),
+      window.electronAPI.getConfig('gradeClass'),
+      window.electronAPI.getConfig('studentNames'),
+    ]).then(([teacherName, institution, schoolName, gradeClass, studentNames]) => {
+      const school = String(institution || schoolName || '');
+      const className = String(gradeClass || '');
+      setSettingsProfile({
+        teacherName: String(teacherName || ''),
+        institution: school,
+        gradeClass: className,
+        studentNames: String(studentNames || ''),
+      });
+      setPlanData(prev => ({ ...prev, target: prev.target || className }));
+      setNewsletterData(prev => ({ ...prev, target: prev.target || (className ? `${className} 학부모` : '') }));
+      setMeetingMinutesData(prev => ({ ...prev, schoolName: prev.schoolName || school }));
+      setPromotionData(prev => ({ ...prev, schoolName: prev.schoolName || school, target: prev.target || className }));
     });
   }, []);
 
@@ -242,6 +278,22 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     }
   };
 
+  const buildProfileContext = (): string => {
+    const lines = [
+      settingsProfile.institution ? `소속기관: ${settingsProfile.institution}` : '',
+      settingsProfile.teacherName ? `사용자/교사 이름: ${settingsProfile.teacherName}` : '',
+      settingsProfile.gradeClass ? `담당 학년/반: ${settingsProfile.gradeClass}` : '',
+      settingsProfile.studentNames ? `학생 명단: ${normalizeStudentNames(settingsProfile.studentNames)}` : '',
+    ].filter(Boolean);
+    return lines.length > 0 ? `[설정 기본정보]\n${lines.join('\n')}` : '';
+  };
+
+  const buildContextWithProfile = (): string => {
+    const profileContext = buildProfileContext();
+    const promptContext = buildPromptContext();
+    return [profileContext, promptContext].filter(Boolean).join('\n\n');
+  };
+
   // ─── Get HWPX data for template filling ───────────────────────────────────
 
   const getHwpxTitleFromContent = (content: string, tab: DocType): string => {
@@ -285,7 +337,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       if (activeTab === DocType.GONGGO) {
         result = await generateDocument(
           activeTab,
-          '',
+          buildProfileContext(),
           undefined,
           pageCount,
           schoolYear,
@@ -296,7 +348,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           gonggoData,
         );
       } else {
-        const context = buildPromptContext();
+        const context = buildContextWithProfile();
         const gongmunType = activeTab === DocType.GONGMUN ? gongmunData.type : undefined;
         const gongmunComplexity = activeTab === DocType.GONGMUN ? gongmunData.complexity : GongmunComplexity.MEDIUM;
         result = await generateDocument(
