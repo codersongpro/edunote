@@ -348,7 +348,7 @@ const MyResourceLibrary: React.FC = () => {
 
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-teal-100 p-2 rounded-lg">
                 <BookMarked className="w-5 h-5 text-teal-600" />
@@ -360,24 +360,24 @@ const MyResourceLibrary: React.FC = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2 flex-wrap">
               <button
                 onClick={() => setShowCatManager(s => !s)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap shrink-0"
               >
                 <FolderPlus className="w-4 h-4" />
                 주제 관리
               </button>
               <button
                 onClick={() => { setShowWebSearch(s => !s); setShowAdd(false); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors font-semibold ${showWebSearch ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors font-semibold whitespace-nowrap shrink-0 ${showWebSearch ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
               >
                 <SearchIcon className="w-4 h-4" />
                 웹 검색
               </button>
               <button
                 onClick={() => { setShowAdd(!showAdd); setShowWebSearch(false); }}
-                className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white text-sm font-semibold rounded-lg hover:bg-teal-600 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-teal-500 text-white text-sm font-semibold rounded-lg hover:bg-teal-600 transition-colors whitespace-nowrap shrink-0"
               >
                 <Plus className="w-4 h-4" />
                 추가

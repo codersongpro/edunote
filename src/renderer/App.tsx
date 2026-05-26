@@ -291,7 +291,7 @@ const App: React.FC = () => {
     { mode: AppMode.LESSON_OBSERVATION, icon: Eye, label: '수업관찰기록' },
     { mode: AppMode.QR_MAKER, icon: QrCode, label: 'QR 메이커' },
     { mode: AppMode.MY_RESOURCES, icon: BookMarked, label: '나만의 자료실' },
-    { mode: AppMode.LUCKY_DRAW, label: '럭키드로우' },
+    { mode: AppMode.LUCKY_DRAW, label: '오늘의 주인공' },
   ];
 
   const defaultAdminMenuItems: SidebarMenuItem[] = [
@@ -877,4 +877,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

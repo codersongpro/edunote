@@ -3,7 +3,9 @@ import { StickyNote, Plus, Trash2, Download, Search } from 'lucide-react';
 
 interface Memo {
   id: string;
+  title?: string;
   studentName: string;
+  studentNames?: string[];
   content: string;
   createdAt: number;
   updatedAt: number;
@@ -16,10 +18,24 @@ const STORAGE_KEY = 'eduNote_studentMemos_v1';
 const StudentMemoBoard: React.FC = () => {
   const [memos, setMemos] = useState<Memo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [studentFilter, setStudentFilter] = useState('전체');
+  const [classStudentNames, setClassStudentNames] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
   const [editName, setEditName] = useState('');
+  const [editStudentNames, setEditStudentNames] = useState<string[]>([]);
   const [editContent, setEditContent] = useState('');
   const [dataPath, setDataPath] = useState('');
+
+  const getMemoStudents = (memo: Memo): string[] => {
+    if (memo.studentNames?.length) return memo.studentNames;
+    return memo.studentName ? [memo.studentName] : [];
+  };
+
+  const joinStudents = (names: string[]): string => names.join(', ');
+
+  const parseNames = (value: string): string[] =>
+    value.split(/[\n,]+/).map(name => name.trim()).filter(Boolean);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +65,12 @@ const StudentMemoBoard: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    window.electronAPI.getConfig('studentNames')
+      .then(value => setClassStudentNames(parseNames(String(value || ''))))
+      .catch(() => setClassStudentNames([]));
+  }, []);
+
   const saveMemos = (updated: Memo[]) => {
     setMemos(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -59,6 +81,8 @@ const StudentMemoBoard: React.FC = () => {
     const newMemo: Memo = {
       id: Date.now().toString(),
       studentName: '',
+      studentNames: [],
+      title: '',
       content: '',
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -66,19 +90,25 @@ const StudentMemoBoard: React.FC = () => {
     };
     saveMemos([newMemo, ...memos]);
     setEditingId(newMemo.id);
+    setEditTitle('');
     setEditName('');
+    setEditStudentNames([]);
     setEditContent('');
   };
 
   const handleEdit = (memo: Memo) => {
     setEditingId(memo.id);
-    setEditName(memo.studentName);
+    setEditTitle(memo.title || '');
+    const students = getMemoStudents(memo);
+    setEditStudentNames(students);
+    setEditName(joinStudents(students));
     setEditContent(memo.content);
   };
 
   const handleSave = (id: string) => {
+    const names = editStudentNames.length > 0 ? editStudentNames : parseNames(editName);
     const updated = memos.map(m =>
-      m.id === id ? { ...m, studentName: editName, content: editContent, updatedAt: Date.now() } : m
+      m.id === id ? { ...m, title: editTitle, studentName: joinStudents(names), studentNames: names, content: editContent, updatedAt: Date.now() } : m
     );
     saveMemos(updated);
     setEditingId(null);
@@ -87,32 +117,47 @@ const StudentMemoBoard: React.FC = () => {
   const handleDelete = (id: string) => {
     const memo = memos.find(m => m.id === id);
     // 내용이 있는 메모는 실수 삭제를 막기 위해 확인을 받음
-    const hasContent = !!(memo && (memo.studentName.trim() || memo.content.trim()));
+    const hasContent = !!(memo && ((memo.title || '').trim() || getMemoStudents(memo).length > 0 || memo.content.trim()));
     if (hasContent && !window.confirm('이 메모를 삭제할까요? 삭제하면 되돌릴 수 없습니다.')) return;
     saveMemos(memos.filter(m => m.id !== id));
     if (editingId === id) setEditingId(null);
   };
 
   const handleExportCSV = async () => {
-    const header = '학생 이름,메모 내용,작성일,수정일';
+    const header = '제목,학생 이름,메모 내용,작성일,수정일';
     // 편집 중인 메모가 있으면 현재 입력값을 반영
     const exportMemos = memos.map(m =>
       m.id === editingId
-        ? { ...m, studentName: editName, content: editContent }
+        ? {
+            ...m,
+            title: editTitle,
+            studentName: joinStudents(editStudentNames.length > 0 ? editStudentNames : parseNames(editName)),
+            studentNames: editStudentNames.length > 0 ? editStudentNames : parseNames(editName),
+            content: editContent,
+          }
         : m
     );
     const rows = exportMemos.map(m =>
-      `"${m.studentName}","${m.content.replace(/"/g, '""')}","${new Date(m.createdAt).toLocaleString('ko-KR')}","${new Date(m.updatedAt).toLocaleString('ko-KR')}"`
+      `"${(m.title || '').replace(/"/g, '""')}","${joinStudents(getMemoStudents(m)).replace(/"/g, '""')}","${m.content.replace(/"/g, '""')}","${new Date(m.createdAt).toLocaleString('ko-KR')}","${new Date(m.updatedAt).toLocaleString('ko-KR')}"`
     );
     const csv = [header, ...rows].join('\n');
     await window.electronAPI.saveCsv(csv, `학생메모_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
-  const filtered = memos.filter(m =>
-    searchQuery === '' ||
-    m.studentName.includes(searchQuery) ||
-    m.content.includes(searchQuery)
-  );
+  const allStudentOptions = Array.from(new Set([
+    ...classStudentNames,
+    ...memos.flatMap(getMemoStudents),
+  ])).filter(Boolean);
+
+  const filtered = memos.filter(m => {
+    const students = getMemoStudents(m);
+    const matchesStudent = studentFilter === '전체' || students.includes(studentFilter);
+    if (!matchesStudent) return false;
+    return searchQuery === '' ||
+      (m.title || '').includes(searchQuery) ||
+      joinStudents(students).includes(searchQuery) ||
+      m.content.includes(searchQuery);
+  });
 
   const formatDate = (ts: number) => {
     const d = new Date(ts);
@@ -153,15 +198,25 @@ const StudentMemoBoard: React.FC = () => {
 
       {/* Search */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-2 shrink-0">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="학생 이름 또는 메모 내용으로 검색..."
-            className="w-full pl-8 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5] dark:placeholder-gray-400"
-          />
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="제목, 학생 이름, 내용으로 검색..."
+              className="w-full pl-8 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5] dark:placeholder-gray-400"
+            />
+          </div>
+          <select
+            value={studentFilter}
+            onChange={e => setStudentFilter(e.target.value)}
+            className="w-40 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+          >
+            <option value="전체">전체 학생</option>
+            {allStudentOptions.map(name => <option key={name} value={name}>{name}</option>)}
+          </select>
         </div>
       </div>
 
@@ -197,16 +252,47 @@ const StudentMemoBoard: React.FC = () => {
                   <div className="p-3 flex flex-col gap-2 h-full" onClick={e => e.stopPropagation()}>
                     <input
                       type="text"
-                      value={editName}
-                      onChange={e => setEditName(e.target.value)}
-                      placeholder="학생 이름"
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      placeholder="제목"
                       className="w-full text-sm font-bold bg-white/75 border border-white/80 rounded px-2 py-1 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
                       autoFocus
                     />
+                    {classStudentNames.length > 0 ? (
+                      <div className="max-h-20 overflow-y-auto bg-white/60 border border-white/80 rounded px-2 py-1">
+                        <p className="text-[10px] font-bold text-gray-500 mb-1">우리반 학생 이름</p>
+                        <div className="flex flex-wrap gap-1">
+                          {classStudentNames.map(name => {
+                            const selected = editStudentNames.includes(name);
+                            return (
+                              <button
+                                key={name}
+                                type="button"
+                                onClick={() => {
+                                  setEditStudentNames(prev => selected ? prev.filter(n => n !== name) : [...prev, name]);
+                                  setEditName('');
+                                }}
+                                className={`text-[11px] rounded-full px-2 py-0.5 border ${selected ? 'bg-[#1E88E5] text-white border-[#1E88E5]' : 'bg-white/80 text-gray-700 border-white'}`}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={e => { setEditName(e.target.value); setEditStudentNames(parseNames(e.target.value)); }}
+                        placeholder="학생 이름 (쉼표로 여러 명 입력)"
+                        className="w-full text-xs bg-white/75 border border-white/80 rounded px-2 py-1 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+                      />
+                    )}
                     <textarea
                       value={editContent}
                       onChange={e => setEditContent(e.target.value)}
-                      placeholder="메모 내용..."
+                      placeholder="내용..."
                       className="flex-1 text-xs bg-white/75 border border-white/80 rounded px-2 py-1 resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5] min-h-[70px]"
                     />
                     <div className="flex gap-1">
@@ -227,9 +313,10 @@ const StudentMemoBoard: React.FC = () => {
                 ) : (
                   <div className="p-3 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-1.5">
-                      <span className="text-sm font-bold text-gray-900 truncate flex-1">
-                        {memo.studentName || '이름 없음'}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-gray-900 truncate">{memo.title || '제목 없음'}</p>
+                        <p className="text-[11px] text-gray-600 truncate">{joinStudents(getMemoStudents(memo)) || '학생 미선택'}</p>
+                      </div>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(memo.id); }}
                         className="text-gray-400 hover:text-red-500 ml-1 shrink-0"

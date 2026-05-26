@@ -240,7 +240,7 @@ const LuckyDraw: React.FC = () => {
 
     const record: DrawRecord = {
       id: Date.now().toString(),
-      topic: topic || '이름 뽑기',
+      topic: topic || '오늘의 주인공',
       winners: selected,
       drawnAt: Date.now(),
     };
@@ -385,11 +385,11 @@ const LuckyDraw: React.FC = () => {
 
           {/* Settings */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 space-y-3">
-            <span className="font-bold text-gray-800 text-sm">뽑기 설정</span>
+            <span className="font-bold text-gray-800 text-sm">선정 설정</span>
 
             <div>
               <label className={labelCls}>주제 (선택)</label>
-              <input type="text" className={inputCls} placeholder="발표자, 청소 당번..." value={topic} onChange={e => setTopic(e.target.value)} />
+              <input type="text" className={inputCls} placeholder="오늘의 주인공, 발표, 칭찬 릴레이..." value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
 
             {genderMode ? (
@@ -405,7 +405,7 @@ const LuckyDraw: React.FC = () => {
               </div>
             ) : (
               <div>
-                <label className={labelCls}>뽑을 인원</label>
+                <label className={labelCls}>선정 인원</label>
                 <input type="number" min={1} max={50} className={inputCls} value={count} onChange={e => setCount(Math.max(1, parseInt(e.target.value) || 1))} />
               </div>
             )}
@@ -417,7 +417,7 @@ const LuckyDraw: React.FC = () => {
                 onChange={e => setExcludeDrawn(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
               />
-              <span className="text-sm text-gray-600">뽑힌 학생 이후 제외</span>
+              <span className="text-sm text-gray-600">선정된 학생 이후 제외</span>
             </label>
 
             {isSessionActive && (
@@ -441,7 +441,7 @@ const LuckyDraw: React.FC = () => {
             {phase === 'idle' ? (
               <div className="flex flex-col items-center gap-3 text-center z-10">
                 <div className="text-8xl select-none">🎲</div>
-                <p className="text-gray-400 text-sm leading-relaxed">이름과 설정을 입력하고<br />뽑기를 시작하세요!</p>
+                <p className="text-gray-400 text-sm leading-relaxed">이름과 주제를 입력하고<br />오늘의 주인공을 선정하세요!</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5 z-10 w-full">
@@ -502,7 +502,7 @@ const LuckyDraw: React.FC = () => {
                   : 'bg-orange-500 hover:bg-orange-600 text-white hover:shadow-orange-300/60 hover:shadow-xl'
               }`}
             >
-              {phase === 'spinning' ? '🎲 뽑는 중...' : phase === 'done' ? '🔄 다시 뽑기' : '🎲 뽑기 시작!'}
+              {phase === 'spinning' ? '🎲 선정 중...' : phase === 'done' ? '🔄 다시 선정' : '🎲 선정 시작!'}
             </button>
           </div>
 
@@ -512,7 +512,7 @@ const LuckyDraw: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-200 shadow-sm text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
           >
             <History className="w-4 h-4 text-gray-400" />
-            <span>뽑기 기록</span>
+            <span>선정 기록</span>
             <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 ml-1">{history.length}</span>
             <span className="ml-auto text-gray-400 text-xs">{showHistory ? '▲' : '▼'}</span>
           </button>
@@ -520,7 +520,7 @@ const LuckyDraw: React.FC = () => {
           {showHistory && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden max-h-56 flex flex-col">
               <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100 shrink-0">
-                <span className="text-sm font-bold text-gray-700">뽑기 기록</span>
+                <span className="text-sm font-bold text-gray-700">선정 기록</span>
                 <button onClick={clearHistory} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-semibold">
                   <Trash2 className="w-3 h-3" />전체 삭제
                 </button>

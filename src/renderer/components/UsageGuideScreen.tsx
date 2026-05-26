@@ -118,8 +118,8 @@ const UsageGuideScreen: React.FC = () => {
               <p className="text-xs leading-relaxed">링크와 YouTube 자료를 보관합니다. YouTube 링크는 가능한 경우 제목과 썸네일을 자동으로 불러옵니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">럭키드로우</p>
-              <p className="text-xs leading-relaxed">설정에 저장한 학생 명단을 활용해 발표자, 모둠, 활동 순서를 뽑을 수 있습니다.</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">오늘의 주인공</p>
+              <p className="text-xs leading-relaxed">설정에 저장한 학생 명단을 활용해 오늘의 주인공, 발표자, 칭찬 릴레이 대상을 선정할 수 있습니다.</p>
             </div>
           </div>
         </Section>
@@ -184,7 +184,7 @@ const UsageGuideScreen: React.FC = () => {
             <li>• <strong>이름:</strong> 교사명 자동 입력에 사용됩니다.</li>
             <li>• <strong>소속기관:</strong> 공문서와 일부 생성 결과에 반영됩니다.</li>
             <li>• <strong>학교급과 담당 학년/반:</strong> 학생기록과 수업 관련 결과의 기준으로 사용됩니다.</li>
-            <li>• <strong>학생 명단:</strong> 수업자료, 럭키드로우, 학생 메모 등에서 불러올 수 있습니다.</li>
+            <li>• <strong>학생 명단:</strong> 수업자료, 오늘의 주인공, 학생 메모 등에서 불러올 수 있습니다.</li>
             <li>• <strong>저장 폴더:</strong> 결과물과 앱 데이터를 원하는 폴더에 저장할 수 있습니다.</li>
           </ul>
         </Section>

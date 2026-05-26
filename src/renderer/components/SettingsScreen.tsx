@@ -461,7 +461,7 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">우리반 학생 명단</h3>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
-            💡 학생 명단을 입력하면 <strong>수업자료·럭키드로우</strong> 등에서 "우리반 자동 입력" 버튼으로 바로 불러올 수 있습니다.
+            💡 학생 명단을 입력하면 <strong>수업자료·오늘의 주인공</strong> 등에서 "우리반 자동 입력" 버튼으로 바로 불러올 수 있습니다.
           </div>
 
           {/* 번호+이름 통합 명단 */}
@@ -481,7 +481,7 @@ const SettingsScreen: React.FC = () => {
 
           {/* 성별 구분 명단 */}
           <div>
-            <label className={labelClass}>성별 구분 명단 <span className="text-xs font-normal text-gray-400">(럭키드로우 남/녀 모드용)</span></label>
+            <label className={labelClass}>성별 구분 명단 <span className="text-xs font-normal text-gray-400">(오늘의 주인공 남/녀 모드용)</span></label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">

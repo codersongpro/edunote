@@ -45,27 +45,14 @@ interface SchoolDocPanelProps {
 }
 
 interface SettingsProfile {
-  teacherName: string;
   institution: string;
-  gradeClass: string;
-  studentNames: string;
 }
-
-const normalizeStudentNames = (names: string): string =>
-  names
-    .split(/[\n,]+/)
-    .map(name => name.trim())
-    .filter(Boolean)
-    .join(', ');
 
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
   const [settingsProfile, setSettingsProfile] = useState<SettingsProfile>({
-    teacherName: '',
     institution: '',
-    gradeClass: '',
-    studentNames: '',
   });
 
   useEffect(() => {
@@ -193,24 +180,15 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   // Load saved user info from config on mount
   useEffect(() => {
     Promise.all([
-      window.electronAPI.getConfig('teacherName'),
       window.electronAPI.getConfig('institution'),
       window.electronAPI.getConfig('schoolName'),
-      window.electronAPI.getConfig('gradeClass'),
-      window.electronAPI.getConfig('studentNames'),
-    ]).then(([teacherName, institution, schoolName, gradeClass, studentNames]) => {
+    ]).then(([institution, schoolName]) => {
       const school = String(institution || schoolName || '');
-      const className = String(gradeClass || '');
       setSettingsProfile({
-        teacherName: String(teacherName || ''),
         institution: school,
-        gradeClass: className,
-        studentNames: String(studentNames || ''),
       });
-      setPlanData(prev => ({ ...prev, target: prev.target || className }));
-      setNewsletterData(prev => ({ ...prev, target: prev.target || (className ? `${className} 학부모` : '') }));
       setMeetingMinutesData(prev => ({ ...prev, schoolName: prev.schoolName || school }));
-      setPromotionData(prev => ({ ...prev, schoolName: prev.schoolName || school, target: prev.target || className }));
+      setPromotionData(prev => ({ ...prev, schoolName: prev.schoolName || school }));
     });
   }, []);
 
@@ -279,13 +257,17 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   };
 
   const buildProfileContext = (): string => {
+    const today = new Date().toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
     const lines = [
+      `학년도: ${schoolYear}학년도`,
+      `오늘 날짜: ${today}`,
       settingsProfile.institution ? `소속기관: ${settingsProfile.institution}` : '',
-      settingsProfile.teacherName ? `사용자/교사 이름: ${settingsProfile.teacherName}` : '',
-      settingsProfile.gradeClass ? `담당 학년/반: ${settingsProfile.gradeClass}` : '',
-      settingsProfile.studentNames ? `학생 명단: ${normalizeStudentNames(settingsProfile.studentNames)}` : '',
     ].filter(Boolean);
-    return lines.length > 0 ? `[설정 기본정보]\n${lines.join('\n')}` : '';
+    return `[참고 기본정보]\n${lines.join('\n')}\n위 정보는 문서 맥락상 필요한 경우에만 반영하세요.`;
   };
 
   const buildContextWithProfile = (): string => {
