@@ -273,28 +273,23 @@ h2,h3{page-break-after:avoid;}
 
           {content && (
             <button
-              onClick={handleDownloadHwpx}
-              disabled={!hwpxTemplate || !hwpxFillData || hwpxDownloading}
-              title={hwpxTemplate && hwpxFillData ? '업로드한 HWPX 양식에 생성 결과를 채워 저장' : 'HWPX 양식 파일을 업로드하고 문서를 생성하면 저장할 수 있습니다'}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm ${
-                hwpxTemplate && hwpxFillData && !hwpxDownloading
-                  ? 'text-white bg-emerald-600 hover:bg-emerald-700'
-                  : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed'
-              }`}
+              disabled
+              title="HWPX 저장 기능은 현재 구현중입니다."
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
             >
               <FileType className="w-4 h-4" />
-              <span>{hwpxDownloading ? 'HWPX 저장 중...' : 'HWPX 양식 저장'}</span>
+              <span>HWPX 양식 저장 (구현중)</span>
             </button>
           )}
 
           {content && (
             <button
-              onClick={handleDownloadBasicHwpx}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded transition-colors shadow-sm"
-              title="현재 문서를 기본 HWPX 문서로 저장합니다. 복잡한 표와 레이아웃은 제한될 수 있습니다."
+              disabled
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+              title="HWPX 저장 기능은 현재 구현중입니다."
             >
               <FileType className="w-4 h-4" />
-              <span>HWPX 기본 저장</span>
+              <span>HWPX 기본 저장 (구현중)</span>
             </button>
           )}
 

@@ -18,21 +18,24 @@ const OfficialDocAnalyzer: React.FC = () => {
 
   const canAnalyze = title.trim() || pastedText.trim() || files.length > 0;
 
-  const buildOriginalSection = () => {
-    const originalText = pastedText.trim();
-    if (originalText) return `\n\n---\n\n## 원문\n\n${originalText}`;
-    if (files.length > 0) {
-      const fileList = files.map(file => `- ${file.file.name}`).join('\n');
-      return `\n\n---\n\n## 원문\n\n첨부 파일로 분석했습니다.\n\n${fileList}`;
-    }
-    return '';
-  };
-
   const getCalendarDate = () => {
     const source = `${result}\n${pastedText}\n${title}`;
     const match = source.match(/(20\d{2})[-.년\s]+(\d{1,2})[-.월\s]+(\d{1,2})/);
     if (!match) return null;
     return `${match[1]}${match[2].padStart(2, '0')}${match[3].padStart(2, '0')}`;
+  };
+
+  const getCalendarEndDate = (startDate: string) => {
+    const date = new Date(
+      Number(startDate.slice(0, 4)),
+      Number(startDate.slice(4, 6)) - 1,
+      Number(startDate.slice(6, 8)) + 1
+    );
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('');
   };
 
   const getCalendarTitle = () => {
@@ -43,11 +46,11 @@ const OfficialDocAnalyzer: React.FC = () => {
         .replace(/\s+/g, ' ')
         .trim();
 
-    const topicSection = result.match(/##\s*업무 주제\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/);
-    const topic = cleanup(topicSection?.[1]?.split('\n').find(line => cleanup(line)));
+    const topicSection = result.match(/##\s*(한 줄 요약|업무 주제)\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/);
+    const topic = cleanup(topicSection?.[2]?.split('\n').find(line => cleanup(line)));
     if (topic) return topic.slice(0, 80);
 
-    const firstTask = cleanup(result.match(/##\s*해야 할 일\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[1]?.split('\n').find(line => /^[-*]\s+/.test(line)));
+    const firstTask = cleanup(result.match(/##\s*(할 일|해야 할 일)\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[2]?.split('\n').find(line => /^[-*]\s+/.test(line)));
     if (firstTask) return firstTask.slice(0, 80);
 
     const firstSummary = cleanup(result.match(/##\s*핵심 요약\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[1]?.split('\n').find(line => cleanup(line)));
@@ -61,7 +64,7 @@ const OfficialDocAnalyzer: React.FC = () => {
     startGeneration();
     try {
       const output = await analyzeOfficialDocument({ title, pastedText, files });
-      setResult(`${output.trim()}${buildOriginalSection()}`);
+      setResult(output.trim());
       playSuccessSound();
     } catch (err: any) {
       setError(err?.message || '공문 분석 중 오류가 발생했습니다.');
@@ -96,7 +99,7 @@ const OfficialDocAnalyzer: React.FC = () => {
         '원문 마감일과 제출처를 확인한 뒤 저장하세요.',
       ].join('\n').slice(0, 1800),
     });
-    if (date) params.set('dates', `${date}/${date}`);
+    if (date) params.set('dates', `${date}/${getCalendarEndDate(date)}`);
     await window.electronAPI.openExternal(`https://calendar.google.com/calendar/render?${params.toString()}`);
   };
 
@@ -131,7 +134,7 @@ const OfficialDocAnalyzer: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">공문 요약 / 업무 추출</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">마감, 제출물, 담당 부서와 보낸 사람을 정리합니다.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">핵심 업무와 마감만 짧게 정리합니다.</p>
             </div>
           </div>
         </div>

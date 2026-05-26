@@ -167,7 +167,6 @@ const App: React.FC = () => {
   };
 
   const handleDismissConcurrentNotice = () => {
-    localStorage.setItem('edunote_concurrent_v1', 'seen');
     concurrentNoticeDismissed.current = true;
     setShowConcurrentNotice(false);
   };
@@ -190,7 +189,6 @@ const App: React.FC = () => {
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
         setShowDisclaimerModal(true);
-        if (localStorage.getItem('edunote_concurrent_v1')) concurrentNoticeDismissed.current = true;
         setMode(AppMode.HOME);
       } catch {
         setMode(AppMode.HOME);

@@ -9,6 +9,12 @@ directories:
 files:
   - out/**/*
 
+extraResources:
+  - from: build/icon.ico
+    to: build/icon.ico
+  - from: build/icon.png
+    to: build/icon.png
+
 win:
   icon: build/icon.ico
   signAndEditExecutable: false

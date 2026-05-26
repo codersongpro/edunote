@@ -409,7 +409,7 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">기본 정보</h3>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
-            💡 이름, 소속기관, 담당 학년/반을 입력하면 <strong>공문서·수업자료·학생기록 생성 결과물</strong>에 자동으로 반영됩니다.
+            💡 소속기관은 필요한 공문서 맥락에만 참고되고, 이름·담당 학년/반·학생 명단은 수업자료와 학생기록에서 활용됩니다.
           </div>
 
           <div className="grid grid-cols-2 gap-3">

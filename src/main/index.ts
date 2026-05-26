@@ -1,10 +1,17 @@
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { registerIpcHandlers } from './ipcHandlers';
 
 function getAppIcon() {
   try {
-    const iconPath = join(__dirname, '../../build/icon.ico');
+    const iconPath = [
+      join(process.resourcesPath || '', 'build', 'icon.ico'),
+      join(app.getAppPath(), 'build', 'icon.ico'),
+      join(__dirname, '../../build/icon.ico'),
+      join(__dirname, '../../../build/icon.ico'),
+    ].find(path => path && existsSync(path));
+    if (!iconPath) return undefined;
     return nativeImage.createFromPath(iconPath);
   } catch {
     return undefined;

@@ -105,7 +105,30 @@ const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 
     if (button) button.style.display = 'none';
   }
 
+  function callGeneratedStart(button) {
+    var primaryButton = document.getElementById(safeId.indexOf('game') >= 0 ? 'gameStartBtn' : 'quizStartBtn');
+    if (primaryButton && primaryButton !== button) {
+      try { primaryButton.click(); } catch (error) {}
+    }
+
+    [
+      'startGame',
+      'beginGame',
+      'initGame',
+      'showGame',
+      'restartGame',
+      'startQuiz',
+      'beginQuiz',
+      'initQuiz'
+    ].forEach(function(name) {
+      if (typeof window[name] === 'function') {
+        try { window[name](); } catch (error) {}
+      }
+    });
+  }
+
   function handleStart(button) {
+    callGeneratedStart(button);
     window.setTimeout(function(){
       hideStartArea(button);
       revealGameArea();
@@ -296,27 +319,12 @@ const LessonMaterialGenerator: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     Promise.all([
-      window.electronAPI.getConfig('teacherName'),
-      window.electronAPI.getConfig('institution'),
       window.electronAPI.getConfig('schoolLevel'),
       window.electronAPI.getConfig('gradeClass'),
-      window.electronAPI.getConfig('studentNames'),
-    ]).then(([teacherName, institution, schoolLevel, gradeClass, studentNames]) => {
+    ]).then(([schoolLevel, gradeClass]) => {
       if (cancelled) return;
       const configuredGrade = getGradeLabelFromConfig(String(schoolLevel || ''), String(gradeClass || ''));
       if (configuredGrade) handleGradeChange(configuredGrade);
-
-      const profileLines = [
-        institution ? `소속기관: ${institution}` : '',
-        teacherName ? `사용자/교사 이름: ${teacherName}` : '',
-        gradeClass ? `담당 학년/반: ${gradeClass}` : '',
-        studentNames ? `학생 명단: ${normalizeStudentNames(String(studentNames))}` : '',
-      ].filter(Boolean);
-
-      if (profileLines.length > 0) {
-        const profileBlock = `[설정 기본정보]\n${profileLines.join('\n')}`;
-        setDetails(prev => prev.trim() ? prev : profileBlock);
-      }
     });
     return () => { cancelled = true; };
   }, []);
@@ -324,8 +332,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const handleLoadStudentNames = async () => {
     const names = await window.electronAPI.getConfig('studentNames');
     if (names && typeof names === 'string' && names.trim()) {
-      // 번호 포함 그대로 유지 (예: "1. 홍○수, 2. 김○영")
-      const nameList = names.split(/[\n,]+/).map((s: string) => s.trim()).filter(Boolean).join(', ');
+      const nameList = normalizeStudentNames(names);
       const tag = `[우리반 학생: ${nameList}]`;
       setDetails(prev => {
         if (prev.includes('[우리반 학생:')) return prev.replace(/\[우리반 학생:[^\]]*\]/, tag);
@@ -829,7 +836,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     spellCheck={false}
                   />
                 ) : (
-                  <iframe srcDoc={quizHtml} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="퀴즈 미리보기" />
+                  <iframe srcDoc={quizHtml} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" className="w-full h-full border-0" title="퀴즈 미리보기" />
                 )}
               </div>
             </div>
@@ -850,7 +857,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <iframe srcDoc={gameHtml} sandbox="allow-scripts allow-same-origin" className="w-full h-full border-0" title="게임 미리보기" />
+                <iframe srcDoc={gameHtml} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" className="w-full h-full border-0" title="게임 미리보기" />
               </div>
             </div>
           )}
