@@ -54,6 +54,12 @@ const extractHtml = (raw: string): string => {
   return raw.replace(/```html/g, '').replace(/```/g, '').trim();
 };
 
+const normalizeHtmlDocument = (html: string): string => {
+  const withoutCsp = html.replace(/<meta[^>]+http-equiv=["']?Content-Security-Policy["']?[^>]*>/gi, '');
+  if (/<html[\s>]/i.test(withoutCsp) && /<body[\s>]/i.test(withoutCsp)) return withoutCsp;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${withoutCsp}</body></html>`;
+};
+
 const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 시작'): string => `
 <script data-edunote-start-guard="true">
 (function(){
@@ -149,6 +155,7 @@ const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 
 </script>`;
 
 const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작'): string => {
+  html = normalizeHtmlDocument(html);
   if (!/<body[\s>]/i.test(html) || !/<\/body>/i.test(html)) return html;
 
   const safeId = label === '퀴즈 시작' ? 'edunote-quiz-start' : 'edunote-game-start';
@@ -161,6 +168,28 @@ const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작
 
   if (htmlWithStart.includes('data-edunote-start-guard')) return htmlWithStart;
   return htmlWithStart.replace(/<\/body>/i, `${buildStartGuardScript(safeId, label)}</body>`);
+};
+
+const htmlPreviewSandbox = 'allow-scripts allow-same-origin allow-forms allow-modals allow-popups';
+
+const HtmlPreviewFrame: React.FC<{ html: string; title: string }> = ({ html, title }) => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const nextUrl = URL.createObjectURL(blob);
+    setUrl(nextUrl);
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [html]);
+
+  return (
+    <iframe
+      src={url || 'about:blank'}
+      sandbox={htmlPreviewSandbox}
+      className="w-full h-full border-0"
+      title={title}
+    />
+  );
 };
 
 const LessonMaterialGenerator: React.FC = () => {
@@ -836,7 +865,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     spellCheck={false}
                   />
                 ) : (
-                  <iframe srcDoc={quizHtml} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" className="w-full h-full border-0" title="퀴즈 미리보기" />
+                  <HtmlPreviewFrame html={quizHtml} title="퀴즈 미리보기" />
                 )}
               </div>
             </div>
@@ -857,7 +886,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <iframe srcDoc={gameHtml} sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups" className="w-full h-full border-0" title="게임 미리보기" />
+                <HtmlPreviewFrame html={gameHtml} title="게임 미리보기" />
               </div>
             </div>
           )}
