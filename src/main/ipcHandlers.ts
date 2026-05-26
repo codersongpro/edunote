@@ -16,7 +16,9 @@ function validatePath(p: string): string {
 
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
-  const apiKey = apiTier === 'paid' ? store.get('geminiPaidApiKey') : store.get('geminiApiKey');
+  const freeKey = store.get('geminiApiKey');
+  const paidKey = store.get('geminiPaidApiKey');
+  const apiKey = apiTier === 'paid' ? (paidKey || freeKey) : (freeKey || paidKey);
   return { apiKey, apiTier };
 }
 
@@ -183,8 +185,9 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('config:has-api-key', () => {
-    const { apiKey: key } = getActiveApi();
-    return typeof key === 'string' && key.trim().length > 0;
+    const freeKey = store.get('geminiApiKey');
+    const paidKey = store.get('geminiPaidApiKey');
+    return [freeKey, paidKey].some(key => typeof key === 'string' && key.trim().length > 0);
   });
 
   ipcMain.handle('config:delete-api-key', (_e, apiTier?: ApiTier) => {

@@ -20,12 +20,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
 
-  const handleFiles = async (fileList: FileList) => {
-    if (fileList.length > 0) {
+  const handleFileArray = async (fileArray: File[]) => {
+    if (fileArray.length > 0) {
       const newFiles: FileData[] = [];
       
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
+      for (const file of fileArray) {
         
         const isHwp = file.name.toLowerCase().endsWith('.hwp') && !file.name.toLowerCase().endsWith('.hwpx');
         const isHwpx = file.name.toLowerCase().endsWith('.hwpx');
@@ -69,6 +68,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
   };
 
+  const handleFiles = async (fileList: FileList) => {
+    await handleFileArray(Array.from(fileList));
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       handleFiles(e.target.files);
@@ -90,6 +93,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setIsDragging(false);
     if (e.dataTransfer.files) {
       handleFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const pastedImages: File[] = [];
+    Array.from(e.clipboardData.items).forEach((item, index) => {
+      if (!item.type.startsWith('image/')) return;
+      const imageFile = item.getAsFile();
+      if (!imageFile) return;
+      const ext = item.type.includes('jpeg') ? 'jpg' : 'png';
+      pastedImages.push(new File([imageFile], `clipboard-screenshot-${Date.now()}-${index}.${ext}`, { type: item.type }));
+    });
+
+    if (pastedImages.length > 0) {
+      e.preventDefault();
+      await handleFileArray(pastedImages);
     }
   };
 
@@ -117,6 +136,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onPaste={handlePaste}
+          tabIndex={0}
           className={`group border rounded-lg p-5 flex flex-col items-center justify-center cursor-pointer transition-all duration-200 ${isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-950/40" : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 hover:bg-white dark:hover:bg-gray-800 hover:border-blue-500"}`}
         >
           <div className="bg-white dark:bg-gray-800 p-2 rounded-full border border-gray-200 dark:border-gray-700 group-hover:border-blue-200 dark:group-hover:border-blue-700 group-hover:bg-blue-50 dark:group-hover:bg-blue-950 mb-2 transition-colors">
@@ -125,7 +146,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p className="text-sm text-gray-600 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-300">
             파일 업로드
           </p>
-          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">드래그 가능 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">드래그 가능 · Ctrl+V 스크린샷 붙여넣기 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
         </div>
         <input 
           type="file" 

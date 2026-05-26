@@ -105,6 +105,7 @@ const App: React.FC = () => {
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
   const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
   const setGeneratingMode = (modeKey: string, progress: number | null) => {
     setGeneratingModes(prev => {
@@ -176,13 +177,15 @@ const App: React.FC = () => {
     initAudioUnlock();
     const init = async () => {
       try {
-        const [hn, sl, dm, lastUsable] = await Promise.all([
+        const [hn, sl, dm, lastUsable, version] = await Promise.all([
           window.electronAPI.hasApiKey(),
           window.electronAPI.getConfig('schoolLevel'),
           window.electronAPI.getConfig('darkMode'),
           window.electronAPI.getConfig('apiKeyLastUsable'),
+          window.electronAPI.getVersion(),
         ]);
         setHasApiKey(hn as boolean);
+        setAppVersion(version as string);
         if (hn) setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(!!(dm as boolean));
@@ -274,7 +277,7 @@ const App: React.FC = () => {
 
   const defaultStudentMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
-    { mode: AppMode.GENERATOR, icon: User2, label: '행동특성 및 종합의견' },
+    { mode: AppMode.GENERATOR, icon: User2, label: '행발생성' },
     { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
     { mode: AppMode.SPORTS_CLUB_GENERATOR, icon: Dumbbell, label: '학교스포츠클럽' },
     { mode: AppMode.CREATIVE_ACTIVITY_GENERATOR, icon: Palette, label: '창체 특기사항' },
@@ -291,12 +294,19 @@ const App: React.FC = () => {
     { mode: AppMode.LUCKY_DRAW, label: '럭키드로우' },
   ];
 
+  const defaultAdminMenuItems: SidebarMenuItem[] = [
+    { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
+    { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문 요약 / 업무 추출' },
+    { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '공문서 작성기' },
+  ];
+
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
   const [lessonMenuItems, setLessonMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('lesson', defaultLessonMenuItems));
-  const [draggedMenu, setDraggedMenu] = useState<{ section: 'student' | 'lesson'; mode: AppMode } | null>(null);
+  const [adminMenuItems, setAdminMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('admin', defaultAdminMenuItems));
+  const [draggedMenu, setDraggedMenu] = useState<{ section: 'student' | 'lesson' | 'admin'; mode: AppMode } | null>(null);
 
   const reorderMenuItem = (
-    section: 'student' | 'lesson',
+    section: 'student' | 'lesson' | 'admin',
     fromMode: AppMode,
     toMode: AppMode,
   ) => {
@@ -311,10 +321,11 @@ const App: React.FC = () => {
       return next;
     };
     if (section === 'student') setStudentMenuItems(update);
-    else setLessonMenuItems(update);
+    else if (section === 'lesson') setLessonMenuItems(update);
+    else setAdminMenuItems(update);
   };
 
-  const handleMenuDrop = (section: 'student' | 'lesson', targetMode: AppMode) => {
+  const handleMenuDrop = (section: 'student' | 'lesson' | 'admin', targetMode: AppMode) => {
     if (!draggedMenu || draggedMenu.section !== section) return;
     reorderMenuItem(section, draggedMenu.mode, targetMode);
     setDraggedMenu(null);
@@ -487,9 +498,10 @@ const App: React.FC = () => {
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
               onClick={() => setMode(AppMode.HOME)}
-              className="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
+              className="flex items-baseline gap-1.5 text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
             >
-              EduNote
+              <span>EduNote</span>
+              {appVersion && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">v{appVersion}</span>}
             </button>
             <button
               onClick={toggleDarkMode}
@@ -541,51 +553,58 @@ const App: React.FC = () => {
               </button>
               {adminSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  <button onClick={() => goTo(AppMode.EDUCATION_QA)} className={adminNavClass(AppMode.EDUCATION_QA)}>
-                    <GraduationCap className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">교무행정AI 챗봇</span>
-                    {generatingModes.has(AppMode.EDUCATION_QA) && mode !== AppMode.EDUCATION_QA && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                        {generatingModes.get(AppMode.EDUCATION_QA)}%
-                      </span>
-                    )}
-                  </button>
-                  <button onClick={() => goTo(AppMode.OFFICIAL_DOC_ANALYZER)} className={adminNavClass(AppMode.OFFICIAL_DOC_ANALYZER)}>
-                    <ClipboardList className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">공문 요약 / 업무 추출</span>
-                    {generatingModes.has(AppMode.OFFICIAL_DOC_ANALYZER) && mode !== AppMode.OFFICIAL_DOC_ANALYZER && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                        {generatingModes.get(AppMode.OFFICIAL_DOC_ANALYZER)}%
-                      </span>
-                    )}
-                  </button>
-                  <div>
-                    <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
-                      <FileText className="w-4 h-4 shrink-0" />
-                      <span className="flex-1 text-left truncate">공문서 작성기</span>
-                      {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                          {generatingModes.get(AppMode.SCHOOL_DOC)}%
-                        </span>
-                      )}
-                      {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
-                    </button>
-                    {schoolDocSubOpen && (
-                      <div className="mt-0.5 space-y-0.5 border-l-2 border-emerald-200 dark:border-emerald-700 ml-3">
-                        {ALL_DOC_TYPES.map(dt => (
-                          <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
-                            <File className="w-3 h-3 shrink-0" />
-                            <span className="flex-1 truncate">{DOC_TYPE_LABELS[dt]}</span>
-                            {generatingModes.has(`SCHOOL_DOC_${dt}`) && (
-                              <span className="text-[9px] px-1 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                                {generatingModes.get(`SCHOOL_DOC_${dt}`)}%
+                  {adminMenuItems.map(({ mode: m, icon: Icon, label }) => (
+                    <div
+                      key={m}
+                      draggable
+                      onDragStart={() => setDraggedMenu({ section: 'admin', mode: m })}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleMenuDrop('admin', m)}
+                      onDragEnd={() => setDraggedMenu(null)}
+                      className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'admin' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                    >
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-emerald-400 cursor-grab mt-2.5" />
+                      {m === AppMode.SCHOOL_DOC ? (
+                        <div className="min-w-0 flex-1">
+                          <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
+                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                            <span className="flex-1 text-left truncate">{label}</span>
+                            {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
+                                {generatingModes.get(AppMode.SCHOOL_DOC)}%
                               </span>
                             )}
+                            {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
                           </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                          {schoolDocSubOpen && (
+                            <div className="mt-0.5 space-y-0.5 border-l-2 border-emerald-200 dark:border-emerald-700 ml-3">
+                              {ALL_DOC_TYPES.map(dt => (
+                                <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
+                                  <File className="w-3 h-3 shrink-0" />
+                                  <span className="flex-1 truncate">{DOC_TYPE_LABELS[dt]}</span>
+                                  {generatingModes.has(`SCHOOL_DOC_${dt}`) && (
+                                    <span className="text-[9px] px-1 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
+                                      {generatingModes.get(`SCHOOL_DOC_${dt}`)}%
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button onClick={() => goTo(m)} title={label} className={`min-w-0 flex-1 ${adminNavClass(m)}`}>
+                          {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                          {generatingModes.has(m) && mode !== m && (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
+                              {generatingModes.get(m)}%
+                            </span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
