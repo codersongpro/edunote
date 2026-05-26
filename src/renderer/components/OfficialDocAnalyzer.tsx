@@ -26,8 +26,22 @@ const OfficialDocAnalyzer: React.FC = () => {
   };
 
   const getCalendarTitle = () => {
-    const firstTask = result.match(/[-*]\s+(.+)/)?.[1]?.trim();
-    return (title || firstTask || 'EduNote 공문 업무 일정').replace(/\s+/g, ' ').slice(0, 80);
+    const cleanup = (value?: string | null) =>
+      (value || '')
+        .replace(/^[-*#\s:]+/, '')
+        .replace(/\*\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const topicSection = result.match(/##\s*업무 주제\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/);
+    const topic = cleanup(topicSection?.[1]?.split('\n').find(line => cleanup(line)));
+    if (topic) return topic.slice(0, 80);
+
+    const firstTask = cleanup(result.match(/##\s*해야 할 일\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[1]?.split('\n').find(line => /^[-*]\s+/.test(line)));
+    if (firstTask) return firstTask.slice(0, 80);
+
+    const firstSummary = cleanup(result.match(/##\s*핵심 요약\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[1]?.split('\n').find(line => cleanup(line)));
+    return (title || firstSummary || 'EduNote 공문 업무 일정').replace(/\s+/g, ' ').trim().slice(0, 80);
   };
 
   const handleAnalyze = async () => {

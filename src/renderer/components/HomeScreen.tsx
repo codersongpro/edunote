@@ -24,7 +24,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
     {
       name: '소통픽',
       tag: '학급 소통',
-      desc: '학교 현장에서 바로 쓸 수 있는 소통 자료와 안내 도구를 모아 둔 앱입니다.',
+      desc: '충북소통메신저에서 여러명의 사용자를 선택할 수 있게 도와줄 수 있는 앱입니다.',
       tone: 'from-sky-500 to-cyan-500',
       url: 'https://sotong-omega.vercel.app/',
       status: '다운로드 가능',
@@ -38,7 +38,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       status: '바로가기',
     },
     {
-      name: '앱 모음',
+      name: 'Songpro Ai vibe',
       tag: '전체 보기',
       desc: '개발자가 만든 앱과 도구들을 한 곳에서 확인할 수 있습니다.',
       tone: 'from-slate-600 to-blue-600',
