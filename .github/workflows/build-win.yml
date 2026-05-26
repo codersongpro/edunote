@@ -1,9 +1,17 @@
 name: Build Windows EXE
 
+run-name: Release ${{ github.ref_name }}
+
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      release_note:
+        description: Manual release note
+        required: false
+        default: manual
 
 permissions:
   contents: write
@@ -18,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,14 +50,15 @@ jobs:
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Create or update release
-        uses: softprops/action-gh-release@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: codersongpro/edunote
-          tag_name: v${{ steps.pkg.outputs.version }}
-          name: EduNote v${{ steps.pkg.outputs.version }}
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: false
-          files: dist/*.exe
-          make_latest: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: v${{ steps.pkg.outputs.version }}
+        run: |
+          $releaseName = "EduNote $env:TAG_NAME"
+          gh release view $env:TAG_NAME --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --clobber
+            gh release edit $env:TAG_NAME --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file RELEASE_NOTES.md --latest
+          } else {
+            gh release create $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file RELEASE_NOTES.md --latest
+          }
