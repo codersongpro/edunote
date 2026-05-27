@@ -2,6 +2,7 @@ import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
@@ -27,6 +28,12 @@ function safeDataFile(name: string): string {
   const dir = store.get('appDataDir') || path.join(app.getPath('userData'), 'data');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return path.join(dir, `${safeName}.json`);
+}
+
+function getDataDir(): string {
+  const dir = store.get('appDataDir') || path.join(app.getPath('userData'), 'data');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
 }
 
 export function registerIpcHandlers(): void {
@@ -209,6 +216,77 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('data:get-file-path', (_e, name: string) => safeDataFile(name));
+
+  ipcMain.handle('data:export-backup', async () => {
+    const saveDir = store.get('saveDir');
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const result = await dialog.showSaveDialog({
+      defaultPath: path.join(saveDir || app.getPath('documents'), `edunote_backup_${stamp}.json`),
+      filters: [{ name: 'EduNote 백업 파일', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safeSettings } = store.store;
+    const dataDir = getDataDir();
+    const dataFiles: Record<string, unknown> = {};
+    for (const fileName of fs.readdirSync(dataDir)) {
+      if (!/^[a-zA-Z0-9_-]+\.json$/.test(fileName)) continue;
+      const fullPath = path.join(dataDir, fileName);
+      try {
+        dataFiles[fileName.replace(/\.json$/, '')] = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+      } catch {
+        // 손상된 JSON 파일은 백업에 포함하지 않습니다.
+      }
+    }
+
+    const payload = {
+      app: 'EduNote',
+      schemaVersion: 1,
+      exportedAt: now.toISOString(),
+      settings: safeSettings,
+      dataFiles,
+    };
+    fs.writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
+    return result.filePath;
+  });
+
+  ipcMain.handle('file:open-html-external', async (_e, htmlContent: string, suggestedName?: string) => {
+    const baseName = (suggestedName || `edunote_game_${Date.now()}.html`).replace(/[\\/:*?"<>|]/g, '_');
+    const fileName = baseName.toLowerCase().endsWith('.html') ? baseName : `${baseName}.html`;
+    const dir = path.join(os.tmpdir(), 'edunote-html-preview');
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    const filePath = path.join(dir, fileName);
+    fs.writeFileSync(filePath, htmlContent, 'utf-8');
+    await shell.openExternal(pathToFileURL(filePath).toString());
+    return filePath;
+  });
+
+  ipcMain.handle('data:import-backup', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'EduNote 백업 파일', extensions: ['json'] }],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+
+    const backup = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
+    if (backup?.app !== 'EduNote' || !backup.settings || !backup.dataFiles) {
+      throw new Error('EduNote 백업 파일 형식이 아닙니다.');
+    }
+
+    for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
+      if (ALLOWED_CONFIG_KEYS.includes(key)) {
+        store.set(key as any, value as any);
+      }
+    }
+
+    for (const [name, data] of Object.entries(backup.dataFiles as Record<string, unknown>)) {
+      const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!safeName) continue;
+      fs.writeFileSync(safeDataFile(safeName), JSON.stringify(data, null, 2), 'utf-8');
+    }
+    return result.filePaths[0];
+  });
 
   // ── Dialog ────────────────────────────────────────────────────────
   ipcMain.handle('dialog:select-folder', async () => {

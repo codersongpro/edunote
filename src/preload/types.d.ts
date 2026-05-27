@@ -13,6 +13,7 @@ export interface ElectronAPI {
   saveCsv(content: string, suggestedName?: string): Promise<string | null>;
   saveHwpx(templateName: string, content: string, meta: Record<string, string>): Promise<string | null>;
   savePdf(htmlContent: string, suggestedName: string): Promise<string | null>;
+  openHtmlExternal(htmlContent: string, suggestedName?: string): Promise<string | null>;
 
   openFolder(folderPath: string): Promise<boolean>;
   openExternal(url: string): Promise<boolean>;
@@ -26,6 +27,8 @@ export interface ElectronAPI {
   readJsonData(name: string): Promise<unknown>;
   writeJsonData(name: string, data: unknown): Promise<string>;
   getJsonDataPath(name: string): Promise<string>;
+  exportBackup(): Promise<string | null>;
+  importBackup(): Promise<string | null>;
 
   selectFolder(): Promise<string | null>;
   fetchUrlMeta(url: string): Promise<{ title: string; description: string; image: string; domain: string }>;

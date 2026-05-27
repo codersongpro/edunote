@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -24,6 +24,7 @@ const SettingsScreen: React.FC = () => {
   const [testWarn, setTestWarn] = useState('');
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
+  const [backupStatus, setBackupStatus] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -177,6 +178,27 @@ const SettingsScreen: React.FC = () => {
 
   const handleOpenAiStudio = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
+  };
+
+  const handleExportBackup = async () => {
+    try {
+      const savedPath = await window.electronAPI.exportBackup();
+      if (savedPath) setBackupStatus('전체 자료 백업을 저장했습니다.');
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : '백업 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleImportBackup = async () => {
+    if (!window.confirm('백업 파일을 불러오면 현재 설정과 앱 자료가 백업 내용으로 덮어써집니다. 계속할까요?')) return;
+    try {
+      const loadedPath = await window.electronAPI.importBackup();
+      if (loadedPath) {
+        setBackupStatus('백업 자료를 불러왔습니다. 앱을 다시 실행하면 모든 화면에 반영됩니다.');
+      }
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : '백업 불러오기 중 오류가 발생했습니다.');
+    }
   };
 
   const inputClass = 'w-full bg-white dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
@@ -552,6 +574,34 @@ const SettingsScreen: React.FC = () => {
               폴더 선택
             </button>
           </div>
+        </div>
+
+        {/* Backup */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Folder className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">전체 자료 백업</h3>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            기본 정보, 학생 명단, 나만의 자료실, 학생 메모 등 앱 자료를 하나의 JSON 파일로 저장하고 다른 컴퓨터에서 불러올 수 있습니다. API 키는 보안상 포함하지 않습니다.
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleExportBackup}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold bg-gray-800 text-white hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              <Download className="w-4 h-4" />
+              전체 자료 백업
+            </button>
+            <button
+              onClick={handleImportBackup}
+              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <Upload className="w-4 h-4" />
+              백업 불러오기
+            </button>
+          </div>
+          {backupStatus && <p className="text-xs text-blue-600 dark:text-blue-400">{backupStatus}</p>}
         </div>
 
         {/* Save Folder */}

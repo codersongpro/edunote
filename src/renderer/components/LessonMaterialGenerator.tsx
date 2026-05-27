@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
-  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, Gamepad2,
+  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, Gamepad2, ExternalLink,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -488,6 +488,13 @@ li{margin-bottom:5pt;line-height:1.6;}
     await window.electronAPI.saveFile(content, `${topic}(${d}).html`, 'html');
   };
 
+  const handleOpenGameExternal = async () => {
+    if (!gameHtml) return;
+    const now = new Date();
+    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+    await window.electronAPI.openHtmlExternal(gameHtml, `${topic || '교육용_게임'}(${d}).html`);
+  };
+
   const currentTypeHasResult =
     (contentType === 'SLIDE' && slides !== null) ||
     (contentType === 'WORKSHEET' && worksheetHtml !== null) ||
@@ -880,6 +887,9 @@ li{margin-bottom:5pt;line-height:1.6;}
                   교육용 게임
                 </span>
                 <div className="flex gap-2">
+                  <button onClick={handleOpenGameExternal} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" />브라우저에서 열기
+                  </button>
                   <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />HTML 저장
                   </button>

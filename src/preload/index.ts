@@ -29,6 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveHwpx: (templateName: string, content: string, meta: Record<string, string>) =>
     ipcRenderer.invoke('file:save-hwpx', templateName, content, meta),
 
+  openHtmlExternal: (htmlContent: string, suggestedName?: string) =>
+    ipcRenderer.invoke('file:open-html-external', htmlContent, suggestedName),
+
   // Shell
   openFolder: (folderPath: string) => ipcRenderer.invoke('shell:open-folder', folderPath),
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
@@ -43,6 +46,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readJsonData: (name: string) => ipcRenderer.invoke('data:read-json', name),
   writeJsonData: (name: string, data: unknown) => ipcRenderer.invoke('data:write-json', name, data),
   getJsonDataPath: (name: string) => ipcRenderer.invoke('data:get-file-path', name),
+  exportBackup: () => ipcRenderer.invoke('data:export-backup'),
+  importBackup: () => ipcRenderer.invoke('data:import-backup'),
 
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),

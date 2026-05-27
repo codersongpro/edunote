@@ -35,6 +35,20 @@ const fileToPart = (fileData: FileData) => ({
   },
 });
 
+const NATURAL_WRITING_INSTRUCTION = `
+[자연스러운 작성 원칙]
+- AI가 작성했다는 안내, 변명, 메타 설명을 절대 쓰지 마세요.
+- "다음은", "요청하신", "AI", "초안", "예시입니다" 같은 생성형 문구를 출력하지 마세요.
+- 학교 현장에서 사람이 직접 작성한 보고서, 기록, 수업자료처럼 자연스럽고 구체적으로 작성하세요.
+- 과장된 홍보 문구나 기계적으로 반복되는 문장 구조를 피하세요.`;
+
+const REPORT_STYLE_ENDING_INSTRUCTION = `
+[보고서체 종결 규칙]
+- 계획서, 보고서, 회의록, 홍보자료, 공고문 본문은 설명문 말투가 아니라 학교 업무 보고서체로 작성하세요.
+- 문장 종결은 문맥에 따라 "~임.", "~함.", "~됨.", "~예정.", "~필요.", "~대상.", "~운영.", "~추진.", "~완료.", "~검토."처럼 자연스럽게 정리하세요.
+- "~습니다.", "~입니다.", "~합니다.", "~되었습니다.", "~하였습니다." 형태의 높임말 종결은 본문에서 사용하지 마세요.
+- 가정통신문과 문자 메시지는 예외적으로 정중한 높임말을 사용할 수 있습니다.`;
+
 // ─── School Level Guidance ─────────────────────────────────────────
 
 const getDevelopmentalGuidance = (schoolLevel: SchoolLevel) => {
@@ -113,6 +127,8 @@ const QA_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 3. 출처 명시: 답변 끝에 근거가 되는 파일명과 페이지 정보를 반드시 포함하세요.
 4. 전문 용어: 수행평가, 과정중심 평가, 성취도별 분포비율, 고교학점제 등 전문 교육 용어를 적절히 사용하세요.
 
+${NATURAL_WRITING_INSTRUCTION}
+
 [기재요령 핵심 컨텍스트]
 ${GUIDELINE_CONTEXT}
 `;
@@ -132,6 +148,8 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${EVALUATION_FRAMEWORK_2026}
 
+${NATURAL_WRITING_INSTRUCTION}
+
 [기재요령 핵심 컨텍스트]
 ${GUIDELINE_CONTEXT}
 `;
@@ -143,6 +161,8 @@ const OPINION_GENERATOR_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 단순 태도·성격 묘사(감점)가 아닌, 구체적 행동→과정→역할 구조화(가점)로 서술해야 합니다.
 
 ${getDevelopmentalGuidance(schoolLevel)}
+
+${NATURAL_WRITING_INSTRUCTION}
 
 [2026 행동특성 평가 기준]
 - 낮은 평가(피해야 할 표현): "성격이 원만함", "친구들과 잘 어울림", "성실하게 생활함", "밝고 긍정적임"
@@ -180,6 +200,8 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${EVALUATION_FRAMEWORK_2026}
 
+${NATURAL_WRITING_INSTRUCTION}
+
 [입시 우수 기재 사례 분석]
 ${GENERATION_EXAMPLES.SUBJECT[schoolLevel]}
 
@@ -198,6 +220,8 @@ const SPORTS_GENERATOR_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 입학사정관이 높이 평가하는 공동체역량 기반 문장으로 작성하세요.
 
 ${getDevelopmentalGuidance(schoolLevel)}
+
+${NATURAL_WRITING_INSTRUCTION}
 
 [2026 스포츠클럽 평가 기준 — 공동체역량 중심]
 - 낮은 평가: "열심히 참여함", "팀워크가 좋음", "기술이 향상됨"
@@ -227,6 +251,8 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${EVALUATION_FRAMEWORK_2026}
 
+${NATURAL_WRITING_INSTRUCTION}
+
 [기재요령 참고 우수 예시]
 ${GENERATION_EXAMPLES.CREATIVE[schoolLevel]}
 
@@ -240,6 +266,7 @@ ${GENERATION_EXAMPLES.CREATIVE[schoolLevel]}
 const EDUCATION_QA_SYSTEM_PROMPT = `
 당신은 대한민국 학교 현장의 교육 전반에 관해 도움을 주는 전문 AI 도우미입니다.
 교육 정책, 교수법, 학급 경영, 학생 상담, 행정 업무 등 교사들이 실무에서 마주치는 다양한 질문에 친절하고 실용적으로 답변하세요.
+답변은 학교 현장의 보고서와 업무 메모처럼 자연스럽고 간결하게 작성하세요. AI가 생성했다는 표현이나 과장된 홍보 문구는 쓰지 마세요.
 `;
 
 // ─── Length Helper ────────────────────────────────────────────────
@@ -493,6 +520,28 @@ export const generateDocument = async (
 - OOOO (X) -> 1. OOOO (O)
 - - OOO (X) -> 가. OOO (O)`;
 
+  const needsDocumentHeader = [
+    DocType.PLAN,
+    DocType.REPORT,
+    DocType.MEETING_MINUTES,
+    DocType.PROMOTION,
+    DocType.NEWSLETTER,
+    DocType.GONGGO,
+  ].includes(docType);
+
+  const titleHeaderInstruction = needsDocumentHeader
+    ? `
+[제목/기관 표시 규칙]
+1. 문서 맨 위 제목은 반드시 중앙 정렬, 20pt 이상, 굵게 표시하세요.
+2. 제목 바로 다음 줄에 소속기관이 있으면 오른쪽 정렬로 표시하세요. 예: <div style="text-align:right;font-size:12pt;font-weight:bold;margin-bottom:24px;">소속기관명</div>
+3. 제목과 소속기관 줄은 본문 표나 첫 항목보다 앞에 배치하세요.
+4. 실제 보고서·계획서처럼 간결하고 자연스러운 문체를 사용하고, AI가 작성했다는 표현은 절대 쓰지 마세요.`
+    : '';
+
+  const reportStyleInstruction = docType === DocType.NEWSLETTER || docType === DocType.MESSAGE
+    ? ''
+    : REPORT_STYLE_ENDING_INSTRUCTION;
+
   let specificInstruction = '';
 
   switch (docType) {
@@ -540,13 +589,15 @@ ${complexityInstruction}
       specificInstruction = `
 작업: [세부 운영 계획서 작성]
 [필수 구성] 1.추진배경 2.목적 3.운영방침 4.세부추진계획 5.소요예산(표) 6.기대효과
-[작성 규칙] 항목 기호 준수, 소요예산은 표(Table)로 작성, 제목 아래 창의적인 부제 포함.`;
+[작성 규칙] 항목 기호 준수, 소요예산은 표(Table)로 작성, 제목 아래 창의적인 부제 포함.
+[문체] 모든 문장은 보고서체 종결을 사용하세요. 예: 필요성 증대, 운영 예정, 예산 집행 계획, 효과 기대, 추진 필요.
+[금지] 문서 맨 끝에 작성일, 제작년월, 학교장명, 기관장명, 직인, 결재란을 붙이지 마세요. 마지막은 기대효과 본문으로 끝내세요.`;
       break;
 
     case DocType.REPORT:
       specificInstruction = `
 작업: [사업 결과 보고서 작성]
-[문체] 모든 문장은 '~하였음.', '~완료함.', '~달성함.' 등 완료형 명사형 종결 어미 사용(계획서와 명확히 구분).
+[문체] 모든 문장은 '~완료함.', '~달성함.', '~운영함.', '~확인됨.', '~개선 필요.' 등 완료형 보고서체 종결 어미 사용(계획서와 명확히 구분). '~습니다', '~입니다' 금지.
 [필수 구성 — 반드시 이 순서와 항목으로 작성]
 1. 추진 개요: 사업명·기간·대상·예산을 간략히 1~2줄 요약만 (배경/목적 장황하게 반복 금지)
 2. 추진 실적: [계획 vs 결과 비교표] — 항목(일시/대상/횟수 등)별로 계획·결과 2열 표로 작성
@@ -615,7 +666,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 작업: [홍보자료 및 보도자료 작성]
 [기본 구조] 제목, 본문(도입-전개-결론), 관계자 인터뷰 인용구 형식의 언론 보도자료.
 [문체] 객관적 언론 보도용 문체(~했다, ~밝혔다).
-[SNS 추가] 보도자료 아래에 [SNS 홍보용 요약]: 친근한 존댓말, 이모지, 해시태그(#) 3~5개.`;
+[SNS 추가] 보도자료 아래에 [SNS 홍보용 요약]: 친근한 존댓말, 해시태그(#) 3~5개. 과장된 광고 문구는 피하세요.`;
       break;
 
     case DocType.GONGGO:
@@ -672,7 +723,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
@@ -928,7 +979,8 @@ export interface LessonParams {
 
 const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로서 교사의 수업 자료 제작을 돕는 보조자입니다.
 한국 국가교육과정 성취기준에 맞는 양질의 수업 자료를 생성하세요.
-학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.`;
+학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.
+${NATURAL_WRITING_INSTRUCTION}`;
 
 const getLessonGradeGuidance = (grade: string): string => {
   if (grade.includes('초등')) {
@@ -1095,6 +1147,134 @@ h1, h2, h3 { page-break-after: avoid; }
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 }));
 }
 
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const buildFallbackLessonGame = (params: LessonParams): string => {
+  const title = escapeHtml(params.topic || params.unit || '수업 미션');
+  const subject = escapeHtml(params.subject || '교과');
+  const grade = escapeHtml(params.grade || '학생');
+  const items = [
+    params.topic || '오늘의 핵심 개념',
+    params.unit || '단원 핵심',
+    params.subject || '교과 개념',
+    '핵심 용어',
+    '수업 미션',
+    '정리 문제',
+  ].filter(Boolean).slice(0, 6);
+  const missions = JSON.stringify(items.map((item, index) => ({
+    q: `${item}와 관련해 가장 알맞은 설명을 고르세요.`,
+    a: `${item}의 핵심을 확인함`,
+    choices: [
+      `${item}의 핵심을 확인함`,
+      '수업 내용과 관계없는 설명을 고름',
+      '근거 없이 추측함',
+      '문제를 건너뜀',
+    ].sort(() => index % 2 ? 1 : -1),
+  })));
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title} 퀘스트</title>
+<style>
+body{margin:0;font-family:'Malgun Gothic',Arial,sans-serif;background:linear-gradient(135deg,#0ea5e9,#f59e0b);color:#111827;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.app{width:min(920px,94vw);background:#fff;border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.25);overflow:hidden}
+header{padding:28px;background:#111827;color:#fff}
+h1{margin:0;font-size:32px} .meta{margin-top:8px;color:#cbd5e1;font-weight:700}
+.screen{display:none;padding:28px}.screen.active{display:block}
+button{border:0;border-radius:16px;padding:14px 18px;font-weight:900;cursor:pointer}
+#gameStartBtn,.primary{background:#f59e0b;color:#111827;font-size:20px;box-shadow:0 10px 24px rgba(245,158,11,.35)}
+.choice{display:block;width:100%;text-align:left;margin:10px 0;background:#eef2ff;color:#1e1b4b}
+.choice.correct{background:#bbf7d0}.choice.wrong{background:#fecaca}
+.hud{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.badge{background:#f1f5f9;border-radius:999px;padding:8px 12px;font-weight:800}
+.mission{font-size:22px;font-weight:900;margin:14px 0}.character{font-size:56px;line-height:1}.reward{font-size:18px;font-weight:900;color:#2563eb}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="character">🎮</div>
+    <h1>${title} 퀘스트</h1>
+    <div class="meta">${grade} · ${subject} · 퍼즐 미션형 게임</div>
+  </header>
+  <section id="startScreen" class="screen active">
+    <p class="reward">미션을 해결해 별을 모으고 최종 레벨에 도전하세요.</p>
+    <button id="gameStartBtn">게임 시작</button>
+  </section>
+  <section id="playScreen" class="screen">
+    <div class="hud"><span class="badge" id="level">레벨 1</span><span class="badge" id="score">점수 0</span><span class="badge" id="stars">별 0</span></div>
+    <div class="mission" id="question"></div>
+    <div id="choices"></div>
+    <button class="primary" id="nextBtn" style="display:none">다음 미션</button>
+  </section>
+  <section id="resultScreen" class="screen">
+    <h2>미션 완료</h2>
+    <p class="reward" id="finalText"></p>
+    <button class="primary" id="retryBtn">다시 하기</button>
+  </section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  var missions = ${missions};
+  var index = 0, score = 0, stars = 0, audioCtx = null;
+  function $(id){ return document.getElementById(id); }
+  function show(id){ ['startScreen','playScreen','resultScreen'].forEach(function(s){ $(s).classList.toggle('active', s===id); }); }
+  function sound(type){
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = type === 'ok' ? 720 : type === 'done' ? 520 : 180;
+      gain.gain.setValueAtTime(.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + .18);
+      osc.start(); osc.stop(audioCtx.currentTime + .2);
+    } catch(e) {}
+  }
+  function render(){
+    var m = missions[index];
+    $('level').textContent = '레벨 ' + (index + 1);
+    $('score').textContent = '점수 ' + score;
+    $('stars').textContent = '별 ' + stars;
+    $('question').textContent = m.q;
+    $('choices').innerHTML = '';
+    $('nextBtn').style.display = 'none';
+    m.choices.forEach(function(choice){
+      var btn = document.createElement('button');
+      btn.className = 'choice';
+      btn.textContent = choice;
+      btn.addEventListener('click', function(){
+        var ok = choice === m.a;
+        btn.classList.add(ok ? 'correct' : 'wrong');
+        score += ok ? 10 : 0;
+        stars += ok ? 1 : 0;
+        sound(ok ? 'ok' : 'no');
+        document.querySelectorAll('.choice').forEach(function(b){ b.disabled = true; });
+        $('score').textContent = '점수 ' + score;
+        $('stars').textContent = '별 ' + stars;
+        $('nextBtn').style.display = '';
+      });
+      $('choices').appendChild(btn);
+    });
+  }
+  $('gameStartBtn').addEventListener('click', function(){ sound('ok'); index = 0; score = 0; stars = 0; show('playScreen'); render(); });
+  $('nextBtn').addEventListener('click', function(){ index++; if(index >= missions.length){ sound('done'); $('finalText').textContent = '최종 점수 ' + score + '점, 별 ' + stars + '개를 획득했습니다.'; show('resultScreen'); } else render(); });
+  $('retryBtn').addEventListener('click', function(){ index = 0; score = 0; stars = 0; show('startScreen'); });
+});
+</script>
+</body>
+</html>`;
+};
+
 export async function generateLessonGame(params: LessonParams): Promise<string> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 주제를 바탕으로 학생들이 직접 플레이할 수 있는 교육용 미니 게임을 HTML 형식으로 만들어주세요.
@@ -1131,7 +1311,14 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 한국어 UI, 밝은 색상, 학생 친화적인 디자인으로 작성하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.7 }));
+  try {
+    const html = stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.65 })).trim();
+    if (!/<(?:!DOCTYPE|html|body|script)\b/i.test(html)) throw new Error('게임 HTML 형식이 아닙니다.');
+    return html;
+  } catch (error) {
+    console.warn('Lesson game generation fallback:', error);
+    return buildFallbackLessonGame(params);
+  }
 }
 
 export const parseAnnualPlanFromImages = async (images: string[]): Promise<string> => {
