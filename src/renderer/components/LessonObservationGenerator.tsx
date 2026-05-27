@@ -33,9 +33,7 @@ const EXAMPLE_RESULT = `【 수업관찰기록 】
 
 5. 개선 제언
   - 최소공배수 계산 연습을 위한 추가 활동지 제공이 필요함.
-  - 마무리 정리 시간을 5분 확보하면 학습 내용 정착에 도움이 될 것임.
-
-※ 이 문서는 AI가 생성한 예시입니다. 실제 관찰 내용으로 교체하여 사용하세요.`;
+  - 마무리 정리 시간을 5분 확보하면 학습 내용 정착에 도움이 될 것임.`;
 
 const LessonObservationGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_OBSERVATION);

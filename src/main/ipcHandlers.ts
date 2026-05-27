@@ -258,7 +258,8 @@ export function registerIpcHandlers(): void {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     const filePath = path.join(dir, fileName);
     fs.writeFileSync(filePath, htmlContent, 'utf-8');
-    await shell.openExternal(pathToFileURL(filePath).toString());
+    const openPathError = await shell.openPath(filePath);
+    if (openPathError) await shell.openExternal(pathToFileURL(filePath).toString());
     return filePath;
   });
 

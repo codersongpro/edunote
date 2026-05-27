@@ -36,7 +36,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   }, [messages]);
 
   const greetingText = (level: typeof schoolLevel) =>
-    `안녕하세요! 저는 학교생활기록부 기재 전문 AI 도우미입니다.\n\n2026학년도 기재요령을 기반으로 **${level}** 선생님께 실질적인 도움을 드리겠습니다. 기재 예시 요청, 특정 항목 작성법, 기재 금지 사항 확인 등 무엇이든 편하게 물어보세요!`;
+    `안녕하세요. 학교생활기록부 기재요령을 바탕으로 ${level} 선생님께 필요한 내용을 정리해 드리겠습니다. 기재 예시 요청, 특정 항목 작성법, 기재 금지 사항 확인 등 무엇이든 편하게 물어보세요.`;
 
   useEffect(() => {
     setMessages(prev => {

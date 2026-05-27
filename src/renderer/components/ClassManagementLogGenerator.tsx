@@ -26,9 +26,7 @@ const EXAMPLE_RESULT = `【 학급경영일지 】
 4. 다음 주 계획
   - 체험학습 최종 안내 및 준비물 확인 예정임.
   - 3월 학업성취도 점검을 위한 간이 평가 실시 예정임.
-  - 학급 환경 게시판 정비 예정임.
-
-※ 이 문서는 AI가 생성한 예시입니다. 실제 학급 활동 내용으로 교체하여 사용하세요.`;
+  - 학급 환경 게시판 정비 예정임.`;
 
 const ClassManagementLogGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CLASS_LOG);

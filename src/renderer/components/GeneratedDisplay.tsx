@@ -197,8 +197,8 @@ h2,h3{page-break-after:avoid;}
     md = md.replace(/<h1>(.*?)<\/h1>/gim, '# $1\n');
     md = md.replace(/<h2>(.*?)<\/h2>/gim, '## $1\n');
     md = md.replace(/<h3>(.*?)<\/h3>/gim, '### $1\n');
-    md = md.replace(/<strong>(.*?)<\/strong>/gim, '**$1**');
-    md = md.replace(/<b>(.*?)<\/b>/gim, '**$1**');
+    md = md.replace(/<strong>(.*?)<\/strong>/gim, '$1');
+    md = md.replace(/<b>(.*?)<\/b>/gim, '$1');
     md = md.replace(/<br\s*\/?>/gim, '\n');
     md = md.replace(/<\/div>/gim, '\n');
     md = md.replace(/<div>/gim, '');

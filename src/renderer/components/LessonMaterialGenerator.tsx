@@ -254,6 +254,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
   const [gameHtml, setGameHtml] = useState<string | null>(null);
+  const [isOpeningGame, setIsOpeningGame] = useState(false);
   const [planContent, setPlanContent] = useState<string>('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
   const [generatingImageSlides, setGeneratingImageSlides] = useState<Set<number>>(new Set());
@@ -492,7 +493,16 @@ li{margin-bottom:5pt;line-height:1.6;}
     if (!gameHtml) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    await window.electronAPI.openHtmlExternal(gameHtml, `${topic || '교육용_게임'}(${d}).html`);
+    try {
+      setIsOpeningGame(true);
+      const normalizedGameHtml = ensureStartButton(extractHtml(gameHtml), '게임 시작');
+      const openedPath = await window.electronAPI.openHtmlExternal(normalizedGameHtml, `${topic || '교육용_게임'}(${d}).html`);
+      if (!openedPath) alert('브라우저에서 게임을 열지 못했습니다.');
+    } catch {
+      alert('브라우저에서 게임을 여는 중 오류가 발생했습니다.');
+    } finally {
+      setIsOpeningGame(false);
+    }
   };
 
   const currentTypeHasResult =
@@ -887,13 +897,20 @@ li{margin-bottom:5pt;line-height:1.6;}
                   교육용 게임
                 </span>
                 <div className="flex gap-2">
-                  <button onClick={handleOpenGameExternal} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors">
-                    <ExternalLink className="w-3.5 h-3.5" />브라우저에서 열기
-                  </button>
                   <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />HTML 저장
                   </button>
                 </div>
+              </div>
+              <div className="shrink-0 flex justify-center bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-5">
+                <button
+                  onClick={handleOpenGameExternal}
+                  disabled={isOpeningGame}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-wait rounded-lg shadow-sm transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {isOpeningGame ? '브라우저를 여는 중...' : '브라우저에서 열기'}
+                </button>
               </div>
               <div className="flex-1 overflow-hidden">
                 <HtmlPreviewFrame html={gameHtml} title="게임 미리보기" />

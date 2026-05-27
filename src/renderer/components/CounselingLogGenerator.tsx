@@ -31,9 +31,7 @@ const EXAMPLE_RESULT = `【 상담일지 】
 
 5. 후속 지원 계획
   - 2주 후 재면담을 통해 개선 여부를 확인하기로 함.
-  - 지속될 경우 학교 상담 교사와 연계하기로 함.
-
-※ 이 문서는 AI가 생성한 예시입니다. 실제 상담 내용으로 교체하여 사용하세요.`;
+  - 지속될 경우 학교 상담 교사와 연계하기로 함.`;
 
 const CounselingLogGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.COUNSELING_LOG);
