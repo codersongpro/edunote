@@ -154,11 +154,20 @@ const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 
 })();
 </script>`;
 
-const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작'): string => {
+const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작', options?: { forceVisibleStart?: boolean }): string => {
   html = normalizeHtmlDocument(html);
   if (!/<body[\s>]/i.test(html) || !/<\/body>/i.test(html)) return html;
 
   const safeId = label === '퀴즈 시작' ? 'edunote-quiz-start' : 'edunote-game-start';
+  if (html.includes('data-edunote-start-guard')) return html;
+
+  if (options?.forceVisibleStart) {
+    const visibleCover = `<div id="${safeId}-cover" style="position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#eef7ff,#fff7ed);font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;"><div style="width:min(520px,92vw);padding:28px 24px;border-radius:22px;background:#ffffff;box-shadow:0 22px 60px rgba(15,23,42,.22);text-align:center;border:1px solid rgba(15,23,42,.08);"><div style="font-size:18px;font-weight:900;color:#111827;margin-bottom:10px;">교육용 게임 준비 완료</div><div style="font-size:13px;color:#4b5563;line-height:1.5;margin-bottom:18px;">아래 버튼을 누르면 게임이 시작됩니다.</div><button id="${safeId}" style="font-size:22px;font-weight:900;padding:16px 34px;border:0;border-radius:16px;background:#10b981;color:#ffffff;box-shadow:0 12px 28px rgba(16,185,129,.35);cursor:pointer;">${label}</button></div></div>`;
+    return html
+      .replace(/<body([^>]*)>/i, `<body$1>${visibleCover}`)
+      .replace(/<\/body>/i, `${buildStartGuardScript(safeId, label)}</body>`);
+  }
+
   const needsFallbackStart = !html.includes(label);
   const htmlWithStart = needsFallbackStart
     ? html
@@ -166,7 +175,6 @@ const ensureStartButton = (html: string, label: '퀴즈 시작' | '게임 시작
         .replace(/<\/body>/i, '</div></body>')
     : html;
 
-  if (htmlWithStart.includes('data-edunote-start-guard')) return htmlWithStart;
   return htmlWithStart.replace(/<\/body>/i, `${buildStartGuardScript(safeId, label)}</body>`);
 };
 
@@ -416,7 +424,7 @@ const LessonMaterialGenerator: React.FC = () => {
         setQuizHtml(ensureStartButton(extractHtml(html), '퀴즈 시작'));
       } else if (contentType === 'GAME') {
         const html = await generateLessonGame(params);
-        setGameHtml(ensureStartButton(extractHtml(html), '게임 시작'));
+        setGameHtml(ensureStartButton(extractHtml(html), '게임 시작', { forceVisibleStart: true }));
       } else {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
@@ -495,7 +503,7 @@ li{margin-bottom:5pt;line-height:1.6;}
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     try {
       setIsOpeningGame(true);
-      const normalizedGameHtml = ensureStartButton(extractHtml(gameHtml), '게임 시작');
+      const normalizedGameHtml = ensureStartButton(extractHtml(gameHtml), '게임 시작', { forceVisibleStart: true });
       const openedPath = await window.electronAPI.openHtmlExternal(normalizedGameHtml, `${topic || '교육용_게임'}(${d}).html`);
       if (!openedPath) alert('브라우저에서 게임을 열지 못했습니다.');
     } catch {

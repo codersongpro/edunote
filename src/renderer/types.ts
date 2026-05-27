@@ -350,6 +350,10 @@ export interface PlanInputs {
 }
 
 export interface ReportInputs {
+  topic: string;
+  target: string;
+  budget: string;
+  extraInfo: string;
   summary: string;
 }
 

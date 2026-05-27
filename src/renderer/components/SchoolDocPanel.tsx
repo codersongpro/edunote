@@ -108,6 +108,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Report form
   const [reportData, setReportData] = useState<ReportInputs>({
+    topic: '',
+    target: '',
+    budget: '',
+    extraInfo: '',
     summary: '',
   });
 
@@ -225,7 +229,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       case DocType.PLAN:
         return `[주제/사업명]: ${planData.topic}\n[대상]: ${planData.target}\n[예산]: ${planData.budget}\n[추가 사항]: ${planData.extraInfo}`;
       case DocType.REPORT:
-        return `[결과 요약 및 요청사항]: ${reportData.summary}`;
+        return `[주제/사업명]: ${reportData.topic}\n[대상]: ${reportData.target}\n[예산]: ${reportData.budget}\n[운영 결과 및 주요 내용]: ${reportData.summary}\n[추가 사항]: ${reportData.extraInfo}`;
       case DocType.NEWSLETTER:
         return `[제목]: ${newsletterData.title}\n[대상]: ${newsletterData.target}\n[내용]: ${newsletterData.context}`;
       case DocType.MESSAGE: {
@@ -282,7 +286,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     let title = '';
     if (tab === DocType.GONGMUN) title = gongmunData.title;
     else if (tab === DocType.PLAN) title = planData.topic;
-    else if (tab === DocType.REPORT) title = reportData.summary.substring(0, 30);
+    else if (tab === DocType.REPORT) title = reportData.topic || reportData.summary.substring(0, 30);
     else if (tab === DocType.NEWSLETTER) title = newsletterData.title;
     else if (tab === DocType.MESSAGE) title = messageData.context.substring(0, 20);
     else if (tab === DocType.PUMUI) title = pumuiData.title;
@@ -522,8 +526,24 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             {activeTab === DocType.REPORT && (
               <div className="space-y-4">
                 <div>
-                  <label className={labelClass}>결과 요약 및 요청사항</label>
-                  <textarea className={`${inputClass} min-h-[160px] resize-none`} placeholder="보고서로 작성할 내용을 요약하여 입력하세요. 행사명, 일시, 장소, 참여 인원, 주요 내용, 성과 등을 포함해 주세요." value={reportData.summary} onChange={e => setReportData({ ...reportData, summary: e.target.value })} />
+                  <label className={labelClass}>주제 / 사업명</label>
+                  <input type="text" className={inputClass} placeholder="예: 2026학년도 독서교육 활성화 운영 결과 보고" value={reportData.topic} onChange={e => setReportData({ ...reportData, topic: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>대상</label>
+                  <input type="text" className={inputClass} placeholder="예: 전교생, 3학년, 교직원, 참여 학생 120명" value={reportData.target} onChange={e => setReportData({ ...reportData, target: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>예산 / 집행액 (원)</label>
+                  <input type="text" className={inputClass} placeholder="예: 계획액 1,500,000원 / 집행액 1,480,000원" value={reportData.budget} onChange={e => setReportData({ ...reportData, budget: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>운영 결과 및 주요 내용</label>
+                  <textarea className={`${inputClass} min-h-[140px] resize-none`} placeholder="행사명, 일시, 장소, 참여 인원, 운영 내용, 주요 성과, 만족도, 개선 사항 등을 입력하세요." value={reportData.summary} onChange={e => setReportData({ ...reportData, summary: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>추가 사항 (선택)</label>
+                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="보고서에 포함되어야 할 특이사항, 사진 설명, 차기 계획, 정산 참고사항 등을 자유롭게 입력하세요." value={reportData.extraInfo} onChange={e => setReportData({ ...reportData, extraInfo: e.target.value })} />
                 </div>
               </div>
             )}
