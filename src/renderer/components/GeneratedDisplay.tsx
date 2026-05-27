@@ -271,28 +271,6 @@ h2,h3{page-break-after:avoid;}
             </button>
           )}
 
-          {content && (
-            <button
-              disabled
-              title="HWPX 저장 기능은 현재 구현중입니다."
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
-            >
-              <FileType className="w-4 h-4" />
-              <span>HWPX 양식 저장 (구현중)</span>
-            </button>
-          )}
-
-          {content && (
-            <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
-              title="HWPX 저장 기능은 현재 구현중입니다."
-            >
-              <FileType className="w-4 h-4" />
-              <span>HWPX 기본 저장 (구현중)</span>
-            </button>
-          )}
-
           <button
             onClick={handleDownloadWord}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
@@ -322,6 +300,28 @@ h2,h3{page-break-after:avoid;}
             <Copy className="w-4 h-4" />
             {copied ? '복사됨' : '복사하기'}
           </button>
+
+          {content && (
+            <button
+              disabled
+              title="HWPX 저장 기능은 현재 구현중입니다."
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+            >
+              <FileType className="w-4 h-4" />
+              <span>HWPX 양식 저장 (구현중)</span>
+            </button>
+          )}
+
+          {content && (
+            <button
+              disabled
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+              title="HWPX 저장 기능은 현재 구현중입니다."
+            >
+              <FileType className="w-4 h-4" />
+              <span>HWPX 기본 저장 (구현중)</span>
+            </button>
+          )}
         </div>
       </div>
       

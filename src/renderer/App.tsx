@@ -199,6 +199,15 @@ const App: React.FC = () => {
     init();
   }, []);
 
+  useEffect(() => {
+    const handleTemporaryApiError = () => {
+      setApiKeyAvailability('wait');
+      window.electronAPI.setConfig({ apiKeyLastUsable: false });
+    };
+    window.addEventListener('edunote-api-temporary-error', handleTemporaryApiError);
+    return () => window.removeEventListener('edunote-api-temporary-error', handleTemporaryApiError);
+  }, []);
+
   const handleAcceptDisclaimer = () => {
     setShowDisclaimerModal(false);
   };
@@ -721,9 +730,11 @@ const App: React.FC = () => {
             ) : apiKeyAvailability === 'wait' ? (
               <button
                 onClick={() => goTo(AppMode.SETTINGS)}
-                className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
+                title="API 키는 저장되어 있지만 현재 요청 제한, 토큰 소모, 잦은 요청, 모델 일시 제한 등으로 결과물을 생성하지 못한 상태입니다. 다른 키를 넣거나 잠시 기다린 뒤 다시 시도해 주세요."
+                className="w-full mb-1.5 px-2 py-1.5 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-500 rounded-md text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-left flex items-center gap-1.5 animate-pulse ring-2 ring-amber-300/70 dark:ring-amber-500/40 shadow-sm"
               >
-                API 사용을 위해 잠시 기다리세요!
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>API 일시 제한 · 키 변경/잠시 후 재시도</span>
               </button>
             ) : hasApiKey ? (
               <button

@@ -752,14 +752,6 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </span>
                 <div className="flex gap-2">
                   <button
-                    disabled
-                    title="이미지 생성 기능은 현재 구현 중입니다"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
-                  >
-                    <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
-                    <span className="ml-1 text-[10px] bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">구현중</span>
-                  </button>
-                  <button
                     onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors"
                   >
@@ -773,6 +765,14 @@ li{margin-bottom:5pt;line-height:1.6;}
                   </button>
                   <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />TXT 저장
+                  </button>
+                  <button
+                    disabled
+                    title="이미지 생성 기능은 현재 구현 중입니다"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
+                    <span className="ml-1 text-[10px] bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">구현중</span>
                   </button>
                 </div>
               </div>

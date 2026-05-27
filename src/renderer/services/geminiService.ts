@@ -19,14 +19,43 @@ import { stripGeneratedCodeFences } from '../lib/generatedContent';
 
 // ─── IPC Helper ───────────────────────────────────────────────────
 
-const aiGenerate = (prompt: string, systemInstruction?: string, options?: { temperature?: number }) =>
-  window.electronAPI.aiGenerate(prompt, systemInstruction, options);
+const isTemporaryApiError = (error: unknown): boolean => {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  return [
+    'quota',
+    '429',
+    'resource_exhausted',
+    'rate limit',
+    'too many requests',
+    '잠시 기다리',
+    '토큰 소모',
+    '잦은 요청',
+    '사용 가능한 모델이 없습니다',
+  ].some(pattern => message.includes(pattern));
+};
+
+const notifyTemporaryApiError = (error: unknown) => {
+  if (typeof window === 'undefined' || !isTemporaryApiError(error)) return;
+  window.dispatchEvent(new CustomEvent('edunote-api-temporary-error'));
+};
+
+const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+  try {
+    return await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
+  } catch (error) {
+    notifyTemporaryApiError(error);
+    throw error;
+  }
+};
 
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
   options?: { temperature?: number },
-) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options);
+) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).catch((error) => {
+  notifyTemporaryApiError(error);
+  throw error;
+});
 
 const fileToPart = (fileData: FileData) => ({
   inlineData: {
@@ -562,10 +591,11 @@ export const generateDocument = async (
   const titleHeaderInstruction = needsDocumentHeader
     ? `
 [제목/기관 표시 규칙]
-1. 문서 맨 위 제목은 반드시 중앙 정렬, 20pt 이상, 굵게 표시하세요.
+1. 문서 맨 위 제목은 반드시 다른 본문보다 확실히 크게, 중앙 정렬, 22pt 이상, 굵게 표시하세요. 예: <h1 style="text-align:center;font-size:22pt;font-weight:bold;margin:0 0 12px;">문서 제목</h1>
 2. 제목 바로 다음 줄에 소속기관이 있으면 오른쪽 정렬로 표시하세요. 예: <div style="text-align:right;font-size:12pt;font-weight:bold;margin-bottom:24px;">소속기관명</div>
 3. 제목과 소속기관 줄은 본문 표나 첫 항목보다 앞에 배치하세요.
-4. 실제 보고서·계획서처럼 간결하고 자연스러운 문체를 사용하고, AI가 작성했다는 표현은 절대 쓰지 마세요.`
+4. 실제 보고서·계획서처럼 간결하고 자연스러운 문체를 사용하고, AI가 작성했다는 표현은 절대 쓰지 마세요.
+5. 표는 border="1"을 사용하고, 모든 th와 td에 border:1px solid black; padding:6px 8px;를 넣어 선으로 명확히 구분하세요.`
     : '';
 
   const reportStyleInstruction = docType === DocType.NEWSLETTER || docType === DocType.MESSAGE
@@ -623,6 +653,7 @@ ${complexityInstruction}
 작업: [세부 운영 계획서 작성]
 [필수 구성] 1.추진배경 2.목적 3.운영방침 4.세부추진계획 5.소요예산(표) 6.기대효과
 [작성 규칙] 항목 기호 준수, 소요예산은 표(Table)로 작성, 제목 아래 창의적인 부제 포함.
+[서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하세요. 표가 필요한 부분은 반드시 선이 보이는 table로 작성하세요.
 [개조식 구성 필수]
 - 모든 대항목은 문단형 설명 금지. 반드시 아래처럼 하위 항목을 가. 나. 다. 형식으로 작성하세요.
 - 1. 추진배경: '필요성', '현황', '추진 근거', '문제점' 같은 소제목을 붙이지 말고, 바로 가. 나. 다. 본문을 작성하세요.
@@ -632,6 +663,8 @@ ${complexityInstruction}
 - 5. 소요예산: 예산 개요와 산출 내역 표 중심으로 작성하고, 집행 유의사항은 넣지 마세요.
 - 6. 기대효과: '학생 측면', '교사 측면', '확산 측면' 같은 소제목을 붙이지 말고, 바로 가. 나. 다. 본문을 작성하세요.
 - 각 가. 나. 다. 항목은 한 문장으로 작성하고, 너무 길면 두 문장으로 나누세요.
+- 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
+- 세부추진계획, 일정, 예산, 역할 분담처럼 표가 자연스러운 부분은 반드시 선이 있는 표로 정리하세요.
 [문체] 모든 문장은 학교 계획서에 맞는 간결한 보고서체로 작성하세요. "~함.", "~임."을 억지로 붙이지 말고, 문맥에 맞게 단어 또는 짧은 구로 끝내세요.
 [예시]
 - 가. 학생들의 문해력 및 비판적 사고력 함양을 위한 체계적인 독서교육 강화 필요성 증대
@@ -644,6 +677,7 @@ ${complexityInstruction}
       specificInstruction = `
 작업: [사업 결과 보고서 작성]
 [문체] 모든 문장은 학교 결과 보고서에 맞는 간결한 보고서체로 작성하세요. "~완료함.", "~달성함."을 기계적으로 반복하지 말고, 운영 결과에 맞게 '운영 완료', '성과 확인', '개선 필요', '협력 체계 구축'처럼 자연스럽게 끝내세요. '~습니다', '~입니다' 금지.
+[서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하세요. 표가 필요한 부분은 반드시 선이 보이는 table로 작성하세요.
 [필수 구성 — 반드시 이 순서와 항목으로 작성]
 1. 추진 개요: 가. 사업명, 나. 기간, 다. 대상, 라. 예산, 마. 추진 목적을 개조식으로 작성 (배경/목적 장황하게 반복 금지)
 2. 추진 실적: [계획 vs 결과 비교표] — 항목(일시/대상/횟수 등)별로 계획·결과 2열 표로 작성
@@ -652,6 +686,8 @@ ${complexityInstruction}
 5. 예산 정산: [목|세목|산출내역|계획액|집행액|잔액|비고] 7열 표, 합계 행 포함, 집행률 명시
 6. 운영 성과 및 제언: 가. 운영 성과, 나. 개선 사항, 다. 차기 계획을 개조식으로 작성. 구체적 수치가 있으면 포함
 [개조식 작성 규칙] 표 앞뒤 설명도 긴 문단 금지. 각 항목은 반드시 가. 나. 다. 또는 표로 분리하세요. 각 항목은 한 문장 중심으로 작성하고, 장황하면 둘로 나누세요.
+- 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
+- 추진 실적, 세부 운영 결과, 만족도 조사, 예산 정산 등 비교·정산·일정 정보는 반드시 선이 있는 표로 구분하세요.
 [소제목 금지] 추진 개요와 운영 성과 및 제언의 하위 항목에는 '필요성', '현황', '문제점', '학생 측면', '교사 측면' 같은 분석용 소제목을 붙이지 마세요.
 [금지] 계획서와 동일한 '기대효과' 섹션 반복 금지. '추진배경' 독립 항목 금지(추진개요에 통합). 미래형 문장 금지.`;
       break;
