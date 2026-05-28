@@ -5,7 +5,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 
 const SettingsScreen: React.FC = () => {
-  const { showToast, setApiKeyAvailability, showActivationModal } = useGlobalState();
+  const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
   const [paidApiKey, setPaidApiKey] = useState('');
   const [apiTier, setApiTier] = useState<'free' | 'paid'>('free');
@@ -69,10 +69,12 @@ const SettingsScreen: React.FC = () => {
         if (result.warning) {
           setTestStatus('warn');
           setTestWarn(result.warning);
-          setApiKeyAvailability(result.wait ? 'wait' : 'usable');
+          if (!result.wait) { setApiKeyAvailability('usable'); resetGenerationState(); }
+          else setApiKeyAvailability('wait');
         } else {
           setTestStatus('ok');
           setApiKeyAvailability('usable');
+          resetGenerationState();
         }
       } else {
         setTestStatus('fail');
@@ -105,10 +107,12 @@ const SettingsScreen: React.FC = () => {
         if (result.warning) {
           setTestStatus('warn');
           setTestWarn(result.warning);
-          setApiKeyAvailability(result.wait ? 'wait' : 'usable');
+          if (!result.wait) { setApiKeyAvailability('usable'); resetGenerationState(); }
+          else setApiKeyAvailability('wait');
         } else {
           setTestStatus('ok');
           setApiKeyAvailability('usable');
+          resetGenerationState();
         }
       } catch (e) {
         setTestStatus('fail');
@@ -129,6 +133,7 @@ const SettingsScreen: React.FC = () => {
 
     // testApiKey가 이미 실제 생성 가능 여부를 확인했으므로 즉시 사용 가능 처리
     setApiKeyAvailability('usable');
+    resetGenerationState();
     playSuccessSound();
     showActivationModal();
   };

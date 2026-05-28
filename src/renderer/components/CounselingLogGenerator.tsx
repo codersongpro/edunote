@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateCounselingLog } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -51,6 +51,12 @@ const CounselingLogGenerator: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
 
   const handleGenerate = async () => {
     if (!counselingContent.trim()) {

@@ -13,6 +13,12 @@ const EducationAssistantQA: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };

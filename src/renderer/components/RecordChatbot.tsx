@@ -20,6 +20,12 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
   const setMessages = (newMessages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
     setState(prev => {
       const nextMsgs = typeof newMessages === 'function' ? newMessages(prev.recordChatbot.messages) : newMessages;

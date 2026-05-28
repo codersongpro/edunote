@@ -49,6 +49,12 @@ const LessonObservationGenerator: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
+  useEffect(() => {
     Promise.all([
       window.electronAPI.getConfig('teacherName'),
       window.electronAPI.getConfig('gradeClass'),

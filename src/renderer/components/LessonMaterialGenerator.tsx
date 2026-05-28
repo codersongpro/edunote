@@ -117,6 +117,12 @@ const LessonMaterialGenerator: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handler = () => setIsGenerating(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
   const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<QuizType>>(new Set(['MULTIPLE_CHOICE']));
 
   const toggleQuizType = (type: QuizType) => {

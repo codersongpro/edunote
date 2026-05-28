@@ -263,6 +263,8 @@ export interface GlobalStateContextType {
   showActivationModal: () => void;
   // 토스트 알림
   showToast: (toast: Omit<ToastMessage, 'id'>) => void;
+  // 새 API 키 확인 시 모든 생성 잠금 강제 해제
+  resetGenerationState: () => void;
 }
 
 // ─── School Doc Types ─────────────────────────────────────────────

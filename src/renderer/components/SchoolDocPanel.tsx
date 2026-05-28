@@ -196,6 +196,12 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     });
   }, []);
 
+  useEffect(() => {
+    const handler = () => setIsGenerating(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
   // Loading message cycling
   useEffect(() => {
     if (isGenerating) {

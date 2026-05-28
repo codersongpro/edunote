@@ -75,6 +75,7 @@ export const GlobalStateContext = createContext<GlobalStateContextType>({
   setApiKeyAvailability: () => {},
   showActivationModal: () => {},
   showToast: () => {},
+  resetGenerationState: () => {},
 });
 
 export const useGlobalState = () => useContext(GlobalStateContext);

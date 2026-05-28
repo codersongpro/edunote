@@ -42,6 +42,12 @@ const ClassManagementLogGenerator: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
+
+  useEffect(() => {
     window.electronAPI.getConfig('gradeClass').then((gc: string) => {
       if (gc) setGrade(gc);
     });

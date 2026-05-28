@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CalendarPlus, ClipboardList, Copy, FileText, Loader2, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AppMode, FileData } from '../types';
@@ -15,6 +15,12 @@ const OfficialDocAnalyzer: React.FC = () => {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const handler = () => setIsLoading(false);
+    window.addEventListener('edunote-generation-reset', handler);
+    return () => window.removeEventListener('edunote-generation-reset', handler);
+  }, []);
 
   const canAnalyze = title.trim() || pastedText.trim() || files.length > 0;
 

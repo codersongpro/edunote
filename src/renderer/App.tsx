@@ -140,6 +140,15 @@ const App: React.FC = () => {
     setGlobalProgress(0);
   };
   const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
+  const resetGenerationState = () => {
+    cancelFlagsRef.current.clear();
+    abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+    setIsGlobalGenerating(false);
+    setGlobalProgress(0);
+    setGeneratingModes(new Map());
+    window.dispatchEvent(new CustomEvent('edunote-generation-reset'));
+  };
   const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
   const getCancelSignal = () => abortControllerRef.current.signal;
 
@@ -387,7 +396,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast }}>
+    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
 
