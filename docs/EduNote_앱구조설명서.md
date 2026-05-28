@@ -1,16 +1,56 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
 작성 기준: 2026년 5월 28일
-대상 버전: EduNote v1.7.9
+대상 버전: EduNote v1.8.4
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
+
+---
 
 ## 1. 앱 개요
 
-EduNote는 교사의 학생기록 작성, 교무행정 문서 작성, 수업자료 제작, 공문 업무추출, 자료 관리 업무를 하나의 Windows 데스크톱 앱에서 처리하기 위해 만든 Electron 기반 애플리케이션이다.
+EduNote는 교사의 학생기록 작성, 교무행정 문서 작성, 수업자료 제작, 공문 업무추출, 자료 관리 업무를 하나의 Windows 데스크톱 앱에서 처리하기 위해 만든 Electron (웹 기술로 만든 Windows 데스크톱 앱 프레임워크) 기반 애플리케이션이다.
 
-앱은 React 화면을 Electron 데스크톱 환경에서 실행하며, Gemini API를 통해 학생기록, 공문서, 수업자료, 업무 메모 등을 생성한다. 생성 결과는 HTML, PDF, TXT, CSV, HWPX 실험 형식 등으로 저장하거나 앱 내부에서 편집할 수 있다.
+앱은 React (화면을 구성하는 자바스크립트 라이브러리) 화면을 Electron 데스크톱 환경에서 실행하며, Gemini API (구글이 제공하는 AI 서비스)를 통해 학생기록, 공문서, 수업자료, 업무 메모 등을 생성한다. 생성 결과는 HTML, PDF, TXT, CSV, HWPX 실험 형식 등으로 저장하거나 앱 내부에서 편집할 수 있다.
 
-## 2. 전체 기술 스택
+---
+
+## 2. 앱 화면 구조
+
+사이드바에 표시되는 메뉴 전체를 트리 형태로 나타낸다. 사용자는 이 메뉴를 클릭해 각 기능 화면으로 이동한다.
+
+```
+EduNote
+├─ 홈
+├─ 사용 방법
+├─ 도움말 / 정보
+├─ 설정
+│
+├─ [학생기록 AI]
+│  ├─ 학생기록AI 챗봇          ← 생활기록부 기재요령 질의응답
+│  ├─ 행발생성                 ← 행동특성 및 종합의견
+│  ├─ 교과 세특 생성
+│  ├─ 학교스포츠클럽
+│  ├─ 창체 특기사항
+│  ├─ 상담일지
+│  ├─ 학급경영일지
+│  └─ 학생 메모 보드
+│
+├─ [수업 AI]
+│  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
+│  ├─ 수업관찰기록
+│  ├─ QR 메이커
+│  ├─ 나만의 자료실
+│  └─ 오늘의 주인공
+│
+└─ [교무 AI]
+   ├─ 교무행정AI 챗봇
+   ├─ 공문 요약 / 업무 추출
+   └─ 공문서 작성기             ← 9종 문서 생성
+```
+
+---
+
+## 3. 전체 기술 스택
 
 | 영역 | 사용 기술 | 역할 |
 | --- | --- | --- |
@@ -25,9 +65,11 @@ EduNote는 교사의 학생기록 작성, 교무행정 문서 작성, 수업자�
 | 마크다운 렌더링 | react-markdown | 챗봇 응답 마크다운 렌더링 |
 | 아이콘 | lucide-react | 메뉴 및 버튼 아이콘 |
 | QR 생성 | qrcode | QR 메이커 기능 |
-| 배포 | electron-builder, GitHub Releases | Windows portable EXE 패키징 및 배포 |
+| 배포 | electron-builder, GitHub Actions, GitHub Releases | Windows portable EXE 자동 빌드 및 배포 |
 
-## 3. 디렉터리 트리
+---
+
+## 4. 디렉터리 트리
 
 ```text
 edunote
@@ -102,16 +144,18 @@ edunote
    └─ edunote_버전_portable.exe
 ```
 
-## 4. 주요 파일 역할
+---
+
+## 5. 주요 파일 역할
 
 | 파일 | 역할 |
 | --- | --- |
-| `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process 진입점 |
-| `src/main/ipcHandlers.ts` | renderer에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC 처리 |
+| `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
+| `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
 | `src/main/GeminiService.ts` | Gemini API 실제 호출, 모델 선택, 무료·유료 API 등급 처리, 이미지 생성 |
 | `src/main/HwpxGenerator.ts` | HWPX 파일 생성 실험 기능 |
 | `src/main/store.ts` | electron-store 인스턴스 관리 |
-| `src/preload/index.ts` | renderer가 사용할 수 있는 `window.electronAPI` 노출 |
+| `src/preload/index.ts` | preload (화면과 앱 본체를 안전하게 연결하는 중간 다리)가 renderer에 노출하는 `window.electronAPI` 정의 |
 | `src/preload/types.d.ts` | `window.electronAPI` 타입 정의 |
 | `src/renderer/App.tsx` | 전체 화면 라우팅, 사이드바 메뉴, 메뉴 드래그 재정렬, 전역 상태, 다크모드, 생성 중단, 토스트 처리 |
 | `src/renderer/types.ts` | AppMode, DocType, 학생 데이터, 생성 요청, 파일 데이터 등 핵심 타입 정의 |
@@ -122,9 +166,13 @@ edunote
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |
 | `src/renderer/hooks/useGenerationTracker.ts` | 메뉴별 생성 진행 상태를 전역 진행 상태와 연결 |
 
-## 5. 앱 모드 구조
+---
+
+## 6. 앱 모드 구조
 
 `AppMode`는 앱의 화면 단위를 정의한다. `App.tsx`가 현재 mode 상태를 보고 어떤 컴포넌트를 보여줄지 결정한다.
+
+쉽게 말해, 사용자가 메뉴를 클릭하면 `mode` 값이 바뀌고, 그 값에 맞는 화면이 나타나는 방식이다.
 
 | 섹션 | AppMode | 화면 컴포넌트 | 기능 |
 | --- | --- | --- | --- |
@@ -141,7 +189,7 @@ edunote
 | 학생기록 AI | `COUNSELING_LOG` | `CounselingLogGenerator` | 상담일지 생성 |
 | 학생기록 AI | `CLASS_LOG` | `ClassManagementLogGenerator` | 학급경영일지 생성 |
 | 학생기록 AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
-| 수업 AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서, 게임 생성 |
+| 수업 AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
 | 수업 AI | `LESSON_OBSERVATION` | `LessonObservationGenerator` | 수업관찰기록 생성 |
 | 수업 AI | `QR_MAKER` | `QRMaker` | URL QR 코드 생성 |
 | 수업 AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
@@ -150,7 +198,9 @@ edunote
 | 교무 AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
 | 교무 AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
 
-## 6. 교무행정 문서 타입
+---
+
+## 7. 교무행정 문서 타입
 
 `DocType`은 `SchoolDocPanel`에서 사용하는 문서 유형이다. 실제 생성 프롬프트는 `src/renderer/services/geminiService.ts`의 `generateDocument` 내부에서 분기된다.
 
@@ -166,7 +216,9 @@ edunote
 | `MESSAGE` | 문자&소통메시지 | SMS/LMS 길이 제한 반영 |
 | `GONGGO` | 공고문 | 공고번호, 제목, 공고일, 내용, 접수기간, 문의처 |
 
-## 7. Gemini 모델 구성
+---
+
+## 8. Gemini 모델 구성
 
 `src/main/GeminiService.ts`에서 API 등급에 따라 모델을 선택한다.
 
@@ -180,9 +232,11 @@ edunote
 - 403 (권한 거부): 1시간 차단 후 상위 모델 재시도
 - 타임아웃: 최대 90초 대기
 
-## 8. 주요 기능별 설명
+---
 
-### 8.1 학생기록 AI
+## 9. 주요 기능별 설명
+
+### 9.1 학생기록 AI
 
 | 기능 | 입력 | 처리 | 출력 |
 | --- | --- | --- | --- |
@@ -194,7 +248,7 @@ edunote
 | 학급경영일지 | 학급 운영 내용 | 학급경영 기록 양식 생성 | 학급경영일지 |
 | 생활기록부 상담 | 질문, 학교급 | 기재요령 컨텍스트 기반 응답 | 기재 방법 안내 |
 
-### 8.2 교무행정 AI
+### 9.2 교무행정 AI
 
 | 기능 | 입력 | 처리 | 출력 |
 | --- | --- | --- | --- |
@@ -205,18 +259,21 @@ edunote
 | 회의록 | 일시, 장소, 안건, 발언 내용 | 표 기반 회의록 구조 적용 | 회의록 HTML |
 | 업무추출 | 공문 텍스트 또는 파일 | 마감, 일시, 장소, 링크, 제출 업무 추출 | 짧은 업무 메모, 캘린더 링크 |
 
-### 8.3 수업자료 AI
+### 9.3 수업자료 AI
+
+수업자료 생성 메뉴에서 만들 수 있는 자료 유형이다.
 
 | 기능 | 입력 | 처리 | 출력 |
 | --- | --- | --- | --- |
 | 수업 슬라이드 | 학년, 교과, 단원, 주제, 성취기준 | 슬라이드 JSON 생성, 교사 메모, 이미지 프롬프트 생성 | 슬라이드 화면, PDF/TXT 저장 |
 | 워크시트·평가지 | 학년, 교과, 주제, 문항 수 | A4 인쇄용 HTML 생성 | HTML, PDF |
-| 퀴즈 앱 | 주제, 문항 수 | 단일 HTML 퀴즈 앱 생성 | 앱 미리보기, HTML/PDF |
+| 퀴즈 앱 | 주제, 문항 수, 유형(객관식·주관식·OX) | AI가 JSON 데이터만 생성하고, 검증된 고정 HTML 템플릿에 주입. 미리보기는 `새 창에서 열기` 버튼으로 제공 | 퀴즈 HTML, PDF |
 | 수업 계획서 | 수업 정보 | 수업 개요, 목표, 과정안, 평가계획을 표로 구성 | HTML 문서 |
-| 교육용 게임 | 주제, 학년, 교과 | 퍼즐·아케이드·퀘스트 등 단일 HTML 게임 생성 | 안전 시작 화면, 브라우저 열기, HTML |
 | 수업관찰기록 | 수업 정보, 관찰 내용 | 관찰 기록 양식 생성 | HTML 문서 |
 
-### 8.4 수업 운영 도구
+퀴즈 앱은 객관식·주관식·OX 세 가지 유형을 체크박스로 선택할 수 있다. AI는 문제 데이터(JSON)만 생성하고, 화면 구성은 미리 검증된 고정 HTML 템플릿이 담당한다. 이 방식은 AI 응답의 품질 편차와 상관없이 퀴즈가 항상 안정적으로 작동하도록 보장한다.
+
+### 9.4 수업 운영 도구
 
 | 기능 | 역할 |
 | --- | --- |
@@ -225,7 +282,7 @@ edunote
 | 오늘의 주인공 | 발표, 칭찬 주인공 등 긍정 주제로 학생 추첨 |
 | 학생 메모 보드 | 제목, 학생 여러 명, 내용을 기록하고 학생·키워드로 필터링 |
 
-### 8.5 설정·운영 기능
+### 9.5 설정·운영 기능
 
 | 기능 | 역할 |
 | --- | --- |
@@ -237,52 +294,58 @@ edunote
 | 전체 자료 백업 | 설정과 자료 데이터를 JSON으로 내보내기 |
 | 백업 불러오기 | 다른 PC에서 기존 자료 복원 |
 
-## 9. 핵심 동작 메커니즘
+---
 
-### 9.1 화면 전환 메커니즘
+## 10. 핵심 동작 메커니즘
+
+### 10.1 화면 전환 메커니즘
+
+사용자 입장에서는 단순히 메뉴를 클릭하는 동작이지만, 앱 내부에서는 다음 순서로 처리된다.
 
 1. 사용자가 사이드바 메뉴를 클릭한다.
 2. `App.tsx`의 `mode` 상태가 변경된다.
-3. `mode` 값에 따라 해당 컴포넌트가 렌더링된다.
+3. `mode` 값에 따라 해당 컴포넌트가 화면에 표시된다.
 4. 한 번 열린 화면은 `mountedModes`에 기록되어, 생성 중 화면을 이동해도 상태가 유지된다.
 5. 생성 중 다른 메뉴로 이동하면 동시 생성 안내가 표시될 수 있다.
 
-### 9.2 메뉴 드래그 재정렬 메커니즘
+### 10.2 메뉴 드래그 재정렬 메커니즘
+
+사용자가 사이드바 메뉴 항목의 순서를 직접 바꿀 수 있다.
 
 1. 사용자가 사이드바 메뉴 항목을 드래그한다.
 2. `reorderMenuItem` 함수가 섹션별 메뉴 배열을 업데이트한다.
-3. 변경된 순서는 `localStorage`에 `edunote_menu_order_${section}_v1` 키로 저장된다.
+3. 변경된 순서는 `localStorage` (앱을 닫아도 유지되는 브라우저 내부 저장소)에 `edunote_menu_order_${section}_v1` 키로 저장된다.
 4. 앱을 재시작해도 저장된 순서가 유지된다.
 
-### 9.3 AI 생성 메커니즘
+### 10.3 AI 생성 메커니즘
+
+AI 생성은 보안상의 이유로 renderer (화면)에서 Gemini API를 직접 호출하지 않는다. 대신 preload가 제공하는 안전한 통로를 통해 main process가 대신 호출한다.
 
 ```text
 사용자 입력
   ↓
-renderer 컴포넌트
+renderer 컴포넌트 (화면에서 입력값 수집)
   ↓
-src/renderer/services/geminiService.ts
+src/renderer/services/geminiService.ts (프롬프트 구성)
   ↓
-프롬프트 및 시스템 지침 구성
+window.electronAPI.aiGenerate 또는 aiGenerateMultipart (안전한 호출 통로)
   ↓
-window.electronAPI.aiGenerate 또는 aiGenerateMultipart
+preload/index.ts (중간 다리 역할)
   ↓
-preload/index.ts
+ipcHandlers.ts (요청 수신 및 전달)
   ↓
-ipcHandlers.ts
+main/GeminiService.ts (실제 Gemini API 호출)
   ↓
-main/GeminiService.ts
-  ↓
-Gemini API
+Gemini API (구글 AI 서버)
   ↓
 응답 텍스트 반환
   ↓
 후처리 및 화면 표시
 ```
 
-AI 생성은 renderer에서 직접 Gemini API를 호출하지 않는다. renderer는 preload가 노출한 안전한 API만 사용하고, 실제 API 키 접근과 Gemini 호출은 main process에서 처리한다.
+### 10.4 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 메커니즘
 
-### 9.4 IPC 메커니즘
+IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로 소통하는 방식이다. 직접 연결 대신 미리 정해진 통로만 사용함으로써 보안을 유지한다.
 
 | 단계 | 설명 |
 | --- | --- |
@@ -292,13 +355,24 @@ AI 생성은 renderer에서 직접 Gemini API를 호출하지 않는다. rendere
 | 처리 | 파일 저장, 설정 읽기, AI 호출, PDF 저장, 외부 열기 수행 |
 | 반환 | Promise 결과를 renderer로 반환 |
 
-이 구조는 `nodeIntegration: false`, `contextIsolation: true` 환경에서 renderer의 직접 Node 접근을 막고, 필요한 기능만 제한적으로 제공하기 위한 구조이다.
+이 구조는 `nodeIntegration: false`, `contextIsolation: true` (화면이 직접 컴퓨터 파일에 접근하지 못하도록 격리) 환경에서 renderer의 직접 Node 접근을 막고, 필요한 기능만 제한적으로 제공하기 위한 구조이다.
 
-### 9.5 로컬 데이터 저장 메커니즘
+### 10.5 네트워크 요청 메커니즘
+
+앱 내부에서 인터넷 데이터를 가져올 때는 Node.js 기본 모듈 대신 `electron.net.fetch`를 사용한다. 이 방식은 Electron이 직접 관리하는 네트워크 스택을 경유하므로, 프록시 설정과 인증서 처리가 더 안정적으로 동작한다.
+
+`electron.net.fetch`를 사용하는 기능:
+- 업데이트 알림 (새 버전 확인)
+- 나만의 자료실 썸네일 가져오기
+- URL 메타정보(제목, 설명 등) 가져오기
+
+### 10.6 로컬 데이터 저장 메커니즘
+
+모든 데이터는 사용자 컴퓨터에만 저장된다. 외부 서버에는 전송하지 않는다.
 
 | 데이터 | 저장 방식 | 관련 IPC |
 | --- | --- | --- |
-| API 키 | electron-store | `config:set-api-key`, `config:has-api-key` |
+| API 키 | electron-store (앱 전용 설정 저장소) | `config:set-api-key`, `config:has-api-key` |
 | 학교 정보 | electron-store | `config:get`, `config:set` |
 | 학생 명단 | electron-store 및 JSON | `config:get`, `data:write-json` |
 | 자료실 | JSON 파일 | `data:read-json`, `data:write-json` |
@@ -308,53 +382,38 @@ AI 생성은 renderer에서 직접 Gemini API를 호출하지 않는다. rendere
 
 API 키는 백업 파일에 포함하지 않는 방향으로 설계되어 있다.
 
-### 9.6 문서 생성 메커니즘
+### 10.7 문서 생성 메커니즘
 
 1. 사용자가 문서 유형과 요청 내용을 입력한다.
-2. `SchoolDocPanel`이 입력값을 문서 유형별 context로 정리한다.
+2. `SchoolDocPanel`이 입력값을 문서 유형별 context (맥락 정보)로 정리한다.
 3. `generateDocument`가 `DocType`에 따라 지침을 선택한다.
 4. 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체, 가정통신문은 안내문체를 적용한다.
 5. Gemini 응답을 HTML 형태로 받아 `GeneratedDisplay`에 표시한다.
 6. 사용자는 결과를 편집, 복사, PDF 저장, Word 저장, HWPX 저장 실험 기능으로 내보낼 수 있다.
 
-### 9.7 교육용 게임 실행 메커니즘
+### 10.8 PDF 저장 메커니즘
 
-```text
-수업자료 입력
-  ↓
-generateLessonGame
-  ↓
-단일 HTML 게임 생성
-  ↓
-extractHtml
-  ↓
-ensureStartButton
-  ↓
-임시 HTML 파일 저장
-  ↓
-에듀노트 안전 시작 화면 (안전 래퍼 HTML)
-  ↓
-  ├─ 게임 시작 버튼 → 원본 게임 HTML iframe 실행
-  └─ 브라우저에서 열기 버튼 → openHtmlExternal IPC → 기본 브라우저에서 실행
-```
-
-게임 HTML은 외부 CDN과 외부 이미지 없이 인라인 CSS·JavaScript만 사용한다. 안전 시작 화면은 게임이 깨지거나 시작 버튼이 없는 경우에도 실행할 수 있도록 보완한다.
-
-### 9.8 PDF 저장 메커니즘
+사용자가 보이지 않는 별도 창을 통해 PDF를 생성하는 방식이다.
 
 1. renderer가 저장할 HTML 문자열을 main process로 보낸다.
-2. main process가 보이지 않는 `BrowserWindow`를 생성한다.
+2. main process가 보이지 않는 `BrowserWindow` (별도 창)를 생성한다.
 3. HTML을 로드한 뒤 Electron `printToPDF`를 실행한다.
 4. 사용자가 지정한 경로 또는 기본 저장 위치에 PDF를 저장한다.
 
-### 9.9 공문 업무추출과 캘린더 연동 메커니즘
+### 10.9 공문 업무추출과 캘린더 연동 메커니즘
+
+공문에서 업무와 일정을 자동으로 뽑아 구글 캘린더 등록까지 이어주는 기능이다.
 
 1. 사용자가 공문 텍스트나 파일을 입력한다.
 2. Gemini가 업무명, 마감, 일시, 장소, 링크, 제출 사항을 짧은 업무 메모로 정리한다.
 3. 일정 정보가 있으면 Google Calendar URL 파라미터를 구성한다.
 4. `openExternal`을 통해 브라우저의 Google Calendar 일정 작성 화면을 연다.
 
-## 10. 프롬프트 설계 원칙
+---
+
+## 11. 프롬프트 설계 원칙
+
+AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 
 | 영역 | 원칙 |
 | --- | --- |
@@ -365,9 +424,11 @@ ensureStartButton
 | 계획서 | 추진배경, 목적, 기대효과를 `가. 나. 다.` 개조식으로 작성. 제목 크게/진하게/가운데 정렬 |
 | 보고서 | 완료된 결과 중심, 추진실적과 예산정산은 표 활용 |
 | 수업자료 | 학년 수준, 성취기준, 실제 수업 활용성 반영 |
-| 게임 | 학생 흥미 요소, 사운드 효과, 시작 버튼, 결과 화면 포함. 외부 CDN 사용 금지 |
+| 퀴즈 앱 | AI는 JSON 데이터만 생성하고, HTML 구조는 고정 템플릿이 담당 |
 
-## 11. 보안 및 개인정보 설계
+---
+
+## 12. 보안 및 개인정보 설계
 
 | 항목 | 설계 방향 |
 | --- | --- |
@@ -375,20 +436,18 @@ ensureStartButton
 | 백업 | API 키는 백업 제외 |
 | 학생 명단 | 필요한 기능에서만 명시적으로 불러오기 |
 | 공문서 | 우리 반 학생 명단 자동 반영 금지 |
-| 파일 업로드 | 로컬에서 base64 변환 후 필요한 경우에만 Gemini로 전송 |
+| 파일 업로드 | 로컬에서 base64 (파일을 텍스트 형태로 변환하는 방식) 변환 후 필요한 경우에만 Gemini로 전송 |
 | 외부 링크 | `openExternal`로 브라우저 열기 |
 | renderer 보안 | `contextIsolation: true`, `nodeIntegration: false` |
 
-## 12. 빌드와 릴리즈 흐름
+---
+
+## 13. 빌드와 릴리즈 흐름
+
+소스 코드를 수정한 뒤 사용자가 내려받을 수 있는 EXE 파일로 만들어지는 과정이다. 로컬에서 직접 빌드하지 않고 `main` 브랜치에 push하면 GitHub Actions (코드 저장소가 자동으로 빌드·배포 작업을 실행하는 기능)가 자동으로 처리한다.
 
 ```text
 소스 수정
-  ↓
-npm run build
-  ↓
-npm run build:win
-  ↓
-dist/edunote_버전_portable.exe 생성
   ↓
 package.json, package-lock.json 버전 확인
   ↓
@@ -396,18 +455,20 @@ RELEASE_NOTES.md 작성
   ↓
 Git commit
   ↓
-Git tag
+Git tag 생성
   ↓
-GitHub push
+main 브랜치 push
   ↓
-GitHub Release 생성 (https://github.com/codersongpro/edunote/releases)
+GitHub Actions 자동 실행
   ↓
-portable EXE 업로드
+  ├─ Windows EXE 자동 빌드 (electron-builder)
+  └─ GitHub Release 자동 생성 및 portable EXE 업로드
+     (https://github.com/codersongpro/edunote/releases)
 ```
 
-현재 운영 방식은 로컬에서 실제 EXE를 패키징한 뒤 GitHub Releases에 직접 업로드하는 방식이다.
+---
 
-## 13. 다른 AI가 작업할 때의 주의사항
+## 14. 다른 AI가 작업할 때의 주의사항
 
 - `src/renderer/services/geminiService.ts`는 프롬프트와 생성 품질에 큰 영향을 주므로 문체 지침을 바꿀 때 문서 유형별 충돌을 확인해야 한다.
 - 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체라는 분리가 중요하다.
@@ -415,11 +476,14 @@ portable EXE 업로드
 - `preload/index.ts`에 새 API를 추가하면 반드시 `preload/types.d.ts`도 함께 수정해야 한다.
 - main process 기능을 추가할 때는 `ipcHandlers.ts`에 IPC를 등록하고 renderer에서는 `window.electronAPI`만 사용한다.
 - 파일 저장, 외부 브라우저 열기, PDF 저장은 Electron main process에서 처리한다.
-- 수업자료 게임과 퀴즈는 외부 CDN 없이 단일 HTML로 동작해야 한다.
-- 릴리즈 전에는 `npm run build` 또는 `npm run build:win`으로 로컬 검증을 해야 한다.
+- 퀴즈 앱은 외부 CDN 없이 단일 HTML로 동작해야 하며, AI는 JSON 데이터만 생성하고 HTML 구조는 고정 템플릿을 사용해야 한다.
+- 인터넷 데이터를 가져올 때는 Node.js `https` 모듈이 아닌 `electron.net.fetch`를 사용해야 한다.
+- 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하지 않는다.
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다.
 
-## 14. 향후 확장 검토 사항
+---
+
+## 15. 향후 확장 검토 사항
 
 | 기능 | 검토 내용 |
 | --- | --- |
@@ -427,4 +491,3 @@ portable EXE 업로드
 | 수업 참여방 | 교사 PC 로컬 서버와 QR 입장 구조 가능. 교사망·학생망 분리 환경에서는 외부 서버 방식 검토 필요 |
 | 파일 제출방 | 학생이 QR로 접속해 파일을 제출하고 교사 PC에 저장하는 구조 가능. 인증, 용량 제한, 확장자 제한 필요 |
 | HWPX 정식 저장 | 문서 구조 보존 안정성이 확보되면 구현중 상태에서 정식 기능으로 전환 가능 |
-| 게임 템플릿 강화 | 생성형 HTML 품질 편차를 줄이기 위해 템플릿 기반 보정 가능 |
