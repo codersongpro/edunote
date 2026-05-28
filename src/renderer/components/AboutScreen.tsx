@@ -103,7 +103,7 @@ const AboutScreen: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-700 dark:text-gray-200">개발자</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">Songpro(Dustin)</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Dustin</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-300">Teacher · Data Analytics · App Developer</span>
@@ -153,7 +153,7 @@ const AboutScreen: React.FC = () => {
 
         {/* License */}
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 pb-4 space-y-1">
-          <p>Copyright © 2026 Songpro(Dustin). All rights reserved.</p>
+          <p>Copyright © 2026 Dustin. All rights reserved.</p>
         </div>
 
       </div>

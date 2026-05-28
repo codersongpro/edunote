@@ -245,7 +245,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Songpro(Dustin)</p>
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Dustin</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Teacher · Data Analytics · App Developer</p>
           <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">협업 및 피드백 환영합니다</p>
         </div>
