@@ -303,21 +303,12 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
-      const httpMod = parsed.protocol === 'https:' ? await import('https') : await import('http');
-      const html = await new Promise<string>((resolve, reject) => {
-        const req = httpMod.default.get(rawUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-          if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-            resolve('');
-            return;
-          }
-          let body = '';
-          res.setEncoding('utf8');
-          res.on('data', (chunk: string) => { body += chunk; if (body.length > 50000) req.destroy(); });
-          res.on('end', () => resolve(body));
-        });
-        req.on('error', reject);
-        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+      const res = await net.fetch(rawUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(8000),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = (await res.text()).substring(0, 50000);
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
@@ -342,22 +333,15 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(imageUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
-      const httpMod = parsed.protocol === 'https:' ? await import('https') : await import('http');
-      const { buf, ct } = await new Promise<{ buf: Buffer; ct: string }>((resolve, reject) => {
-        const req = (httpMod.default as typeof import('https')).get(
-          imageUrl,
-          { headers: { 'User-Agent': 'Mozilla/5.0' } },
-          (res) => {
-            const chunks: Buffer[] = [];
-            const contentType = (res.headers['content-type'] as string) || 'image/jpeg';
-            res.on('data', (c: Buffer) => { chunks.push(Buffer.from(c)); });
-            res.on('end', () => resolve({ buf: Buffer.concat(chunks), ct: contentType }));
-          },
-        );
-        req.on('error', reject);
-        req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
+      const res = await net.fetch(imageUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(10000),
       });
+      if (!res.ok) return null;
+      const ct = res.headers.get('content-type') || 'image/jpeg';
       const mime = ct.split(';')[0].trim();
+      const arrayBuffer = await res.arrayBuffer();
+      const buf = Buffer.from(arrayBuffer);
       return `data:${mime};base64,${buf.toString('base64')}`;
     } catch {
       return null;
@@ -370,17 +354,12 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol) || !videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
-      const https = await import('https');
-      const html = await new Promise<string>((resolve, reject) => {
-        const req = https.default.get(rawUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-          let body = '';
-          res.setEncoding('utf8');
-          res.on('data', (chunk: string) => { body += chunk; if (body.length > 120000) req.destroy(); });
-          res.on('end', () => resolve(body));
-        });
-        req.on('error', reject);
-        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
+      const res = await net.fetch(rawUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        signal: AbortSignal.timeout(8000),
       });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const html = (await res.text()).substring(0, 120000);
       const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const descMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
