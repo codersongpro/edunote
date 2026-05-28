@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, app, BrowserWindow } from 'electron';
+import { ipcMain, dialog, shell, app, BrowserWindow, net } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -436,28 +436,28 @@ export function registerIpcHandlers(): void {
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
 
+  function semverGt(a: string, b: string): boolean {
+    const pa = a.split('.').map(Number);
+    const pb = b.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      const d = (pa[i] || 0) - (pb[i] || 0);
+      if (d !== 0) return d > 0;
+    }
+    return false;
+  }
+
   ipcMain.handle('app:check-update', async () => {
     try {
-      const https = await import('https');
-      const data = await new Promise<string>((resolve, reject) => {
-        const req = https.default.get(
-          'https://api.github.com/repos/codersongpro/edunote/releases/latest',
-          { headers: { 'User-Agent': 'edunote-app' } },
-          (res) => {
-            let body = '';
-            res.on('data', (chunk) => { body += chunk; });
-            res.on('end', () => resolve(body));
-          }
-        );
-        req.on('error', reject);
-        req.setTimeout(8000, () => { req.destroy(); reject(new Error('timeout')); });
-      });
-      const json = JSON.parse(data);
-      const latestTag: string = json.tag_name || '';
-      const latestVersion = latestTag.replace(/^v/, '');
+      const res = await net.fetch(
+        'https://api.github.com/repos/codersongpro/edunote/releases/latest',
+        { headers: { 'User-Agent': 'edunote-app' }, signal: AbortSignal.timeout(8000) }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json() as { tag_name?: string; html_url?: string };
+      const latestVersion = (json.tag_name || '').replace(/^v/, '');
       const currentVersion = app.getVersion();
-      const hasUpdate = latestVersion && latestVersion !== currentVersion;
-      return { currentVersion, latestVersion, hasUpdate, releaseUrl: json.html_url || '' };
+      const hasUpdate: boolean = !!latestVersion && semverGt(latestVersion, currentVersion);
+      return { currentVersion, latestVersion: latestVersion || null, hasUpdate, releaseUrl: json.html_url || '' };
     } catch {
       return { currentVersion: app.getVersion(), latestVersion: null, hasUpdate: false, releaseUrl: '' };
     }
