@@ -93,10 +93,6 @@ function buildAppMenu() {
             });
           },
         },
-        {
-          label: '협업·피드백 환영합니다',
-          click: () => shell.openExternal('mailto:dungst.me@gmail.com?subject=EduNote 피드백'),
-        },
       ],
     },
   ];

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield, ClipboardList } from 'lucide-react';
+import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -27,8 +28,8 @@ const AboutScreen: React.FC = () => {
 
         {/* App identity */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-teal-500 shadow-lg mb-4">
-            <span className="text-4xl">📚</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            <img src={iconPng} alt="EduNote" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-1">EduNote</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">EduNote — 교직원을 위한 AI 도우미</p>
