@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
-  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code,
+  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, ExternalLink,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -74,7 +74,7 @@ const buildStartGuardScript = (safeId: string, label: '퀴즈 시작' | '게임 
   function showElement(el) {
     if (!el) return;
     el.hidden = false;
-    el.style.display = '';
+    el.style.display = 'block';
     el.style.visibility = 'visible';
     el.classList.remove('hidden', 'is-hidden', 'd-none');
     if (/\b(screen|page|view)\b/i.test(String(el.className || ''))) el.classList.add('active');
@@ -904,7 +904,16 @@ li{margin-bottom:5pt;line-height:1.6;}
                     spellCheck={false}
                   />
                 ) : (
-                  <HtmlPreviewFrame html={quizHtml} title="퀴즈 미리보기" />
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-900">
+                    <p className="text-sm text-gray-400 dark:text-gray-500">퀴즈 앱은 새 창에서 실행하세요</p>
+                    <button
+                      onClick={() => window.electronAPI.openHtmlExternal(quizHtml)}
+                      className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow-md transition-colors"
+                    >
+                      <ExternalLink className="w-5 h-5" />
+                      새 창에서 열기
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
