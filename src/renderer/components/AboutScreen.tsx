@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, Mail, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield, ClipboardList } from 'lucide-react';
+import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield, ClipboardList } from 'lucide-react';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -103,19 +103,10 @@ const AboutScreen: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-700 dark:text-gray-200">개발자</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">송동석</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Songpro(Dustin)</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-300">Teacher · Data Analytics · App Developer</span>
-            </div>
-            <div className="flex items-center gap-2 mt-3">
-              <Mail className="w-4 h-4 text-gray-400" />
-              <button
-                onClick={() => openLink('mailto:dungst.me@gmail.com')}
-                className="text-sm text-blue-500 hover:text-blue-700 dark:hover:text-blue-300"
-              >
-                dungst.me@gmail.com
-              </button>
             </div>
           </div>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
@@ -162,7 +153,7 @@ const AboutScreen: React.FC = () => {
 
         {/* License */}
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 pb-4 space-y-1">
-          <p>Copyright © 2026 송동석. All rights reserved.</p>
+          <p>Copyright © 2026 Songpro(Dustin). All rights reserved.</p>
         </div>
 
       </div>

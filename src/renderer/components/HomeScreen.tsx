@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, Mail, AlertTriangle, Info, ExternalLink, X, MonitorDown } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, ExternalLink, X, MonitorDown } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -245,15 +245,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         </button>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by 송동석</p>
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Songpro(Dustin)</p>
           <p className="text-xs text-gray-500 dark:text-gray-400">Teacher · Data Analytics · App Developer</p>
-          <a
-            onClick={() => window.electronAPI.openExternal('mailto:dungst.me@gmail.com')}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer mt-1"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            dungst.me@gmail.com
-          </a>
           <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">협업 및 피드백 환영합니다</p>
         </div>
       </div>

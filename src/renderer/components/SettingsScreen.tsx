@@ -627,7 +627,7 @@ const SettingsScreen: React.FC = () => {
 
         {/* Version */}
         <div className="text-center text-xs text-gray-400 pb-4">
-          EduNote — Developed by 송동석
+          EduNote — Developed by Songpro(Dustin)
         </div>
       </div>
     </div>
