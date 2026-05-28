@@ -70,6 +70,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
       <div className="max-w-xl mx-auto w-full px-6 py-10 space-y-6">
+
+        {/* 업데이트 알림 */}
         {updateInfo?.hasUpdate && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -87,6 +89,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         )}
 
+        {/* 앱 아이덴티티 */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden shadow-lg mb-2">
             <img src={iconPng} alt="EduNote" className="w-full h-full object-cover" />
@@ -100,34 +103,37 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-            교무 행정, 수업준비, 학생기록을 AI가 도와드립니다.
+          <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed">
+            교무 행정 · 수업 준비 · 학생 기록을 AI가 도와드립니다.
           </p>
         </div>
 
+        {/* API 키 미설정 경고 */}
         {hasKey === false && (
           <div className="animate-pulse bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Gemini API 키를 입력해 주세요</p>
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
-                  API 키가 없으면 AI 기능을 사용할 수 없습니다. 설정에서 무료 Gemini API 키를 입력하세요.
+                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
+                  설정에서 무료 Gemini API 키를 입력해야 AI 기능을 사용할 수 있습니다.
                 </p>
               </div>
             </div>
           </div>
         )}
 
+        {/* 주의 안내 */}
         <div className="bg-fuchsia-50 dark:bg-fuchsia-950/30 border-2 border-fuchsia-300 dark:border-fuchsia-700 rounded-xl p-4 shadow-sm shadow-fuchsia-100/60 dark:shadow-none">
           <div className="flex gap-3 items-start">
-            <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0 mt-0.5" />
-            <p className="text-xs text-fuchsia-900 dark:text-fuchsia-100 leading-relaxed">
+            <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0 mt-1" />
+            <p className="text-sm text-fuchsia-900 dark:text-fuchsia-100 leading-relaxed">
               AI가 초안 문구를 제안합니다. 생성된 내용은 <strong className="font-black text-rose-600 dark:text-rose-300">반드시 검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
         </div>
 
+        {/* 메뉴 바로가기 */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('guide')}
@@ -137,8 +143,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">사용 방법</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">API 키 발급, 기능 사용법, 자주 묻는 질문</p>
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">사용 방법</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">API 키 발급, 기능 소개, 자주 묻는 질문</p>
             </div>
             <ChevronRight className="w-4 h-4 text-purple-400 self-end group-hover:translate-x-1 transition-transform" />
           </button>
@@ -155,18 +161,43 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               <Settings className={`w-5 h-5 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}`} />
             </div>
             <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">
                 설정
-                {hasKey === false && <span className="ml-1 text-amber-500 text-xs">키 미설정</span>}
+                {hasKey === false && <span className="ml-1 text-amber-500 text-sm">키 미설정</span>}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                {hasKey === false ? 'API 키 입력이 필요합니다' : 'Gemini API 키, 교사 정보, 학생 명단'}
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                {hasKey === false ? 'API 키 입력이 필요합니다' : 'Gemini API 키 · 교사 정보 · 학생 명단'}
               </p>
             </div>
             <ChevronRight className={`w-4 h-4 self-end group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
           </button>
         </div>
 
+        {/* 앱 만족도 설문 */}
+        <button
+          onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
+          className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <ClipboardList className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-base font-bold text-white">앱 만족도 설문 참여하기</p>
+              <p className="text-sm text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다 (1분 소요)</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
+        </button>
+
+        {/* 제작자 */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Dustin</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Teacher · Data Analytics · App Developer</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">협업 및 피드백 환영합니다</p>
+        </div>
+
+        {/* 개발자의 다른 앱 보기 — 맨 아래 */}
         <button
           onClick={() => setShowOtherApps(true)}
           className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
@@ -176,20 +207,21 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               <ExternalLink className="w-5 h-5 text-sky-600 dark:text-sky-300" />
             </div>
             <div>
-              <p className="text-sm font-bold text-gray-800 dark:text-gray-100">개발자의 다른 앱 보기</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">교육현장에 필요한 도구와 일상 생활에서 편리한 도구들을 다운로드 할 수 있습니다</p>
+              <p className="text-base font-bold text-gray-800 dark:text-gray-100">개발자의 다른 앱 보기</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">교육 · 행정 · 일상에 필요한 도구 모음</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-sky-400 shrink-0" />
         </button>
 
+        {/* 다른 앱 모달 */}
         {showOtherApps && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
             <div className="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
                 <div>
                   <p className="text-base font-black text-gray-900 dark:text-white">개발자의 다른 앱</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">미리보고 필요한 앱을 확인하세요.</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">필요한 앱을 확인하세요.</p>
                 </div>
                 <button
                   onClick={() => setShowOtherApps(false)}
@@ -228,27 +260,6 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           </div>
         )}
 
-        <button
-          onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
-          className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-              <ClipboardList className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white">앱 만족도 설문 참여하기</p>
-              <p className="text-xs text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다 (1분 소요)</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
-        </button>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Dustin</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Teacher · Data Analytics · App Developer</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">협업 및 피드백 환영합니다</p>
-        </div>
       </div>
     </div>
   );
