@@ -1189,26 +1189,240 @@ p { margin: 2pt 0; line-height: 1.5; }
 
 export type QuizType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'OX';
 
-const QUIZ_TYPE_LABELS: Record<QuizType, string> = {
-  MULTIPLE_CHOICE: '4지선다 객관식',
-  SHORT_ANSWER: '단답형 주관식',
-  OX: 'OX 퀴즈 (참/거짓)',
-};
+export interface QuizQuestion {
+  type: 'multiple-choice' | 'short-answer' | 'ox';
+  question: string;
+  options?: string[];
+  answer: string;
+}
 
-const buildQuizTypeInstruction = (types: QuizType[]): string => {
-  const labels = types.map(t => QUIZ_TYPE_LABELS[t]);
-  if (types.length === 1) {
-    if (types[0] === 'MULTIPLE_CHOICE') return '모든 문항을 4지선다 객관식으로 작성하세요.';
-    if (types[0] === 'SHORT_ANSWER') return '모든 문항을 단답형 주관식으로 작성하세요. 답 입력창(<input type="text">)을 제공하고 정답 확인 버튼으로 채점하세요.';
-    if (types[0] === 'OX') return '모든 문항을 OX 퀴즈(참/거짓)로 작성하세요. O 버튼과 X 버튼을 제공하세요.';
+export interface QuizData {
+  title: string;
+  questions: QuizQuestion[];
+}
+
+function parseQuizJson(raw: string): QuizData {
+  let s = raw.trim().replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/m, '');
+  const m = s.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('퀴즈 데이터를 생성하지 못했습니다. 다시 시도해주세요.');
+  const data = JSON.parse(m[0]) as QuizData;
+  if (!data.title || !Array.isArray(data.questions) || data.questions.length === 0) {
+    throw new Error('퀴즈 데이터 형식이 올바르지 않습니다. 다시 시도해주세요.');
   }
-  return `문항 유형을 ${labels.join(', ')}을(를) 적절히 혼합하여 작성하세요. 각 유형의 특성에 맞는 UI(객관식: 보기 버튼, 주관식: 텍스트 입력, OX: O/X 버튼)를 구현하세요.`;
-};
+  return data;
+}
+
+function buildQuizHtml(data: QuizData): string {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const qJson = JSON.stringify(data.questions).replace(/<\/script>/gi, '<\\/script>');
+  const title = esc(data.title);
+  const count = data.questions.length;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${title}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:linear-gradient(135deg,#eff6ff 0%,#fef9ee 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.13);width:min(580px,100%);padding:36px 28px}
+.title{font-size:1.75em;font-weight:800;color:#1e293b;text-align:center;margin-bottom:8px;line-height:1.3}
+.sub{color:#64748b;text-align:center;margin-bottom:28px;font-size:.95em}
+.prog-wrap{background:#e2e8f0;border-radius:99px;height:8px;margin-bottom:18px;overflow:hidden}
+.prog-bar{background:linear-gradient(90deg,#f59e0b,#fb923c);border-radius:99px;height:100%;transition:width .35s ease}
+.q-num{color:#94a3b8;font-size:.9em;margin-bottom:10px}
+.question{font-size:1.1em;font-weight:700;color:#1e293b;margin-bottom:20px;line-height:1.55}
+.options{display:flex;flex-direction:column;gap:9px}
+.opt-btn{background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:12px 16px;text-align:left;font-size:1em;cursor:pointer;transition:all .15s;font-family:inherit;color:#334155}
+.opt-btn:hover:not([disabled]){border-color:#f59e0b;background:#fffbeb}
+.opt-btn.correct{border-color:#22c55e!important;background:#f0fdf4!important;color:#166534!important;font-weight:700}
+.opt-btn.wrong{border-color:#ef4444!important;background:#fef2f2!important;color:#991b1b!important}
+.opt-btn[disabled]{cursor:default}
+.ox-wrap{display:flex;gap:20px;justify-content:center}
+.ox-btn{width:96px;height:96px;border-radius:50%;border:3px solid #e2e8f0;font-size:2.6em;font-weight:900;cursor:pointer;transition:all .15s;background:#f8fafc;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.o-btn{color:#3b82f6}.x-btn{color:#ef4444}
+.ox-btn:hover:not([disabled]){transform:scale(1.07)}
+.ox-btn.correct{background:#f0fdf4!important;border-color:#22c55e!important}
+.ox-btn.wrong{background:#fef2f2!important;border-color:#ef4444!important}
+.ox-btn[disabled]{cursor:default;transform:none}
+.sa-wrap{display:flex;gap:8px}
+.sa-input{flex:1;border:2px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:1em;font-family:inherit;outline:none;transition:border-color .15s}
+.sa-input:focus{border-color:#f59e0b}
+.sa-input[disabled]{background:#f8fafc;color:#94a3b8}
+.sa-submit{background:#f59e0b;color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:1em;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;white-space:nowrap}
+.sa-submit:hover:not([disabled]){background:#d97706}
+.sa-submit[disabled]{background:#d1d5db;cursor:default}
+.feedback{min-height:26px;font-weight:700;font-size:1em;margin-top:14px}
+.feedback.correct{color:#16a34a}.feedback.wrong{color:#dc2626}.feedback.open{color:#3b82f6}
+.next-btn,.start-btn,.restart-btn{display:block;width:100%;padding:14px;border-radius:12px;border:none;font-size:1.1em;font-weight:800;cursor:pointer;transition:background .15s;font-family:inherit;margin-top:16px}
+.start-btn,.next-btn{background:#f59e0b;color:#fff}
+.start-btn:hover,.next-btn:hover{background:#d97706}
+.restart-btn{background:#64748b;color:#fff}
+.restart-btn:hover{background:#475569}
+.score{font-size:2.6em;font-weight:900;color:#f59e0b;text-align:center;margin:16px 0}
+.result-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-bottom:4px;max-height:48vh;overflow-y:auto}
+.r-item{background:#f8fafc;border-radius:12px;padding:14px 16px;font-size:.93em;border-left:4px solid #e2e8f0}
+.r-item.ok{border-left-color:#22c55e}.r-item.ng{border-left-color:#ef4444}.r-item.open{border-left-color:#94a3b8}
+.r-q{font-weight:700;color:#1e293b;margin-bottom:4px}
+.r-my{color:#64748b;margin-bottom:2px}
+.r-ans{color:#16a34a;font-weight:700}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card>div{animation:fadeUp .3s ease-out}
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="startScreen">
+    <h1 class="title">${title}</h1>
+    <p class="sub">총 ${count}개의 문제가 준비되어 있습니다</p>
+    <button id="quizStartBtn" class="start-btn">퀴즈 시작</button>
+  </div>
+  <div id="questionScreen" style="display:none">
+    <div class="prog-wrap"><div id="progBar" class="prog-bar" style="width:0%"></div></div>
+    <p id="qNum" class="q-num"></p>
+    <p id="qText" class="question"></p>
+    <div id="optWrap" class="options" style="display:none"></div>
+    <div id="saWrap" class="sa-wrap" style="display:none">
+      <input id="saInput" class="sa-input" type="text" placeholder="정답을 입력하세요">
+      <button id="saBtn" class="sa-submit">확인</button>
+    </div>
+    <div id="oxWrap" class="ox-wrap" style="display:none">
+      <button class="ox-btn o-btn" data-val="O">O</button>
+      <button class="ox-btn x-btn" data-val="X">X</button>
+    </div>
+    <p id="fb" class="feedback"></p>
+    <button id="nextBtn" class="next-btn" style="display:none">다음 문제</button>
+  </div>
+  <div id="resultScreen" style="display:none">
+    <h2 class="title">퀴즈 완료!</h2>
+    <p id="scoreEl" class="score"></p>
+    <ul id="resultList" class="result-list"></ul>
+    <button id="restartBtn" class="restart-btn">다시 풀기</button>
+  </div>
+</div>
+<script>
+var Q=${qJson};
+var idx=0,score=0,answered=false,log=[];
+function g(id){return document.getElementById(id);}
+function show(el){el.style.display='block';}
+function hide(el){el.style.display='none';}
+g('quizStartBtn').addEventListener('click',function(){
+  hide(g('startScreen'));show(g('questionScreen'));
+  idx=0;score=0;answered=false;log=[];loadQ();
+});
+function loadQ(){
+  answered=false;
+  var q=Q[idx];
+  g('qNum').textContent='문제 '+(idx+1)+' / '+Q.length;
+  g('qText').textContent=q.question;
+  g('fb').textContent='';g('fb').className='feedback';
+  hide(g('nextBtn'));g('optWrap').innerHTML='';
+  hide(g('optWrap'));hide(g('saWrap'));hide(g('oxWrap'));
+  g('progBar').style.width=Math.round((idx+1)/Q.length*100)+'%';
+  if(q.type==='multiple-choice'){
+    show(g('optWrap'));
+    (q.options||[]).forEach(function(opt){
+      var b=document.createElement('button');
+      b.className='opt-btn';b.textContent=opt;
+      b.onclick=function(){checkMC(opt,b);};
+      g('optWrap').appendChild(b);
+    });
+  } else if(q.type==='short-answer'){
+    show(g('saWrap'));
+    g('saInput').value='';
+    g('saInput').disabled=false;g('saBtn').disabled=false;
+    g('saInput').onkeydown=function(e){if(e.key==='Enter')checkSA();};
+    g('saBtn').onclick=checkSA;
+    setTimeout(function(){g('saInput').focus();},80);
+  } else if(q.type==='ox'){
+    show(g('oxWrap'));
+    g('oxWrap').querySelectorAll('.ox-btn').forEach(function(b){
+      b.disabled=false;
+      b.className=b.getAttribute('data-val')==='O'?'ox-btn o-btn':'ox-btn x-btn';
+      b.onclick=function(){checkOX(b.getAttribute('data-val'),b);};
+    });
+  }
+}
+function checkMC(sel,btn){
+  if(answered)return;answered=true;
+  var q=Q[idx];var ok=sel===q.answer;if(ok)score++;
+  log.push({q:q.question,user:sel,ans:q.answer,ok:ok});
+  g('optWrap').querySelectorAll('.opt-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.answer)b.classList.add('correct');
+    else if(b===btn&&!ok)b.classList.add('wrong');
+  });
+  setFB(ok,q.answer);showNext();
+}
+function checkSA(){
+  if(answered)return;
+  var val=g('saInput').value.trim();if(!val)return;
+  answered=true;g('saInput').disabled=true;g('saBtn').disabled=true;
+  var q=Q[idx];
+  if(q.answer===''){
+    log.push({q:q.question,user:val,ans:'',ok:null});
+    g('fb').textContent='잘 작성했어요!';g('fb').className='feedback open';
+  } else {
+    var ok=val.toLowerCase()===q.answer.toLowerCase();if(ok)score++;
+    log.push({q:q.question,user:val,ans:q.answer,ok:ok});
+    setFB(ok,q.answer);
+  }
+  showNext();
+}
+function checkOX(sel,btn){
+  if(answered)return;answered=true;
+  var q=Q[idx];var ok=sel===q.answer;if(ok)score++;
+  log.push({q:q.question,user:sel,ans:q.answer,ok:ok});
+  g('oxWrap').querySelectorAll('.ox-btn').forEach(function(b){
+    b.disabled=true;
+    var v=b.getAttribute('data-val');
+    if(v===q.answer)b.classList.add('correct');
+    else if(b===btn&&!ok)b.classList.add('wrong');
+  });
+  setFB(ok,q.answer);showNext();
+}
+function setFB(ok,ans){
+  g('fb').textContent=ok?'정답입니다!':'틀렸어요. 정답: '+ans;
+  g('fb').className='feedback '+(ok?'correct':'wrong');
+}
+function showNext(){setTimeout(function(){show(g('nextBtn'));},350);}
+g('nextBtn').addEventListener('click',function(){
+  idx++;if(idx<Q.length)loadQ();else showResult();
+});
+function showResult(){
+  hide(g('questionScreen'));show(g('resultScreen'));
+  var sc=log.filter(function(a){return a.ok!==null;}).length;
+  g('scoreEl').textContent=score+' / '+sc;
+  var ul=g('resultList');ul.innerHTML='';
+  log.forEach(function(a,i){
+    var li=document.createElement('li');
+    var cls=a.ok===null?'open':a.ok?'ok':'ng';
+    li.className='r-item '+cls;
+    li.innerHTML='<div class="r-q">Q'+(i+1)+'. '+eH(a.q)+'</div>'
+      +'<div class="r-my">내 답: '+eH(a.user||'(미입력)')+'</div>'
+      +(a.ok!==null?'<div class="r-ans">정답: '+eH(a.ans)+'</div>':'<div class="r-ans">자유 응답</div>');
+    ul.appendChild(li);
+  });
+}
+function eH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+g('restartBtn').addEventListener('click',function(){hide(g('resultScreen'));show(g('startScreen'));});
+</script>
+</body>
+</html>`;
+}
 
 export async function generateLessonQuiz(params: LessonParams, questionCount: number, quizTypes: QuizType[]): Promise<string> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
-  const typeInstruction = buildQuizTypeInstruction(quizTypes.length > 0 ? quizTypes : ['MULTIPLE_CHOICE']);
-  const prompt = `다음 수업 정보를 바탕으로 인터랙티브 퀴즈를 HTML 형식으로 생성해주세요.
+  const types = quizTypes.length > 0 ? quizTypes : ['MULTIPLE_CHOICE' as QuizType];
+  const typeLines = types.map(t => {
+    if (t === 'MULTIPLE_CHOICE') return '  - "multiple-choice": options 배열(4개) 필수, answer는 options 중 하나';
+    if (t === 'SHORT_ANSWER') return '  - "short-answer": options 없음, answer는 짧은 단어/구 (자유 응답이면 answer를 빈 문자열 ""로)';
+    return '  - "ox": options 없음, answer는 반드시 "O" 또는 "X"';
+  }).join('\n');
+
+  const prompt = `다음 수업 정보를 바탕으로 퀴즈 데이터를 JSON으로 생성해주세요.
 
 [수업 정보]
 - 학년: ${params.grade}
@@ -1216,27 +1430,27 @@ export async function generateLessonQuiz(params: LessonParams, questionCount: nu
 - 단원: ${params.unit}
 - 주제/수업명: ${params.topic}
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
-${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
+${gradeGuidance ? `\n${gradeGuidance}` : ''}
 [요구사항]
 - 문항 수: ${questionCount}개
-- 문항 유형: ${typeInstruction}
-- 반드시 3단계 화면으로 구성:
-  1단계 (시작 화면): 퀴즈 제목, 문항 수 안내, 크고 눈에 띄는 "퀴즈 시작" 버튼 — 버튼 클릭 전까지 문제 미표시
-  2단계 (풀이 화면): 문항을 하나씩 표시, 정답/오답 색상 피드백, "다음 문제" 버튼
-  3단계 (결과 화면): 최종 점수(예: 8/10), 전체 문항의 내 답·정답 목록, "다시 풀기" 버튼
-- 시작 화면에는 반드시 실제로 동작하는 <button id="quizStartBtn">퀴즈 시작</button> 요소를 넣고, document.getElementById('quizStartBtn').addEventListener('click', ...) 코드로 풀이 화면을 열어야 합니다.
-- 주관식(단답형) 문항은 반드시 "확인" 버튼을 클릭해야 채점되도록 구현하세요. 입력 이벤트만으로 자동 채점하지 마세요.
-- 화면 전환(시작→풀이→결과)은 반드시 JavaScript에서 display 속성을 inline style로 명시적으로 설정하세요. 예: element.style.display = 'block', element.style.display = 'none'. CSS 클래스 토글만으로 화면을 전환하지 마세요.
-- 모바일 친화적이고 시각적으로 매력적인 디자인
-- 학생이 흥미를 가질 수 있도록 애니메이션 효과 추가
-- 화면에 보이는 문구에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 마세요.
+- 사용할 문항 유형:
+${typeLines}
+- 문항은 수업 내용과 관련 있고 학년 수준에 맞게 출제
+- 객관식 오답 보기는 그럴듯하게 작성
 
-반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
-인라인 CSS와 JavaScript로 인터랙티브 기능을 구현하세요.
-한국어 폰트와 밝은 색상을 사용하여 학생들이 흥미를 가질 수 있는 디자인으로 작성하세요.
-마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
+반드시 아래 JSON 형식으로만 응답하세요. 설명이나 마크다운 없이 JSON만:
+{
+  "title": "퀴즈 제목",
+  "questions": [
+    { "type": "multiple-choice", "question": "문제", "options": ["보기1","보기2","보기3","보기4"], "answer": "정답보기" },
+    { "type": "short-answer", "question": "문제", "answer": "정답" },
+    { "type": "ox", "question": "문제 (참이면 O, 거짓이면 X)", "answer": "O" }
+  ]
+}`;
 
-  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+  const data = parseQuizJson(raw);
+  return buildQuizHtml(data);
 }
 
 export async function generateLessonPlan(params: LessonParams): Promise<string> {
