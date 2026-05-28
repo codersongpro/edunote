@@ -2,28 +2,33 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
-  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, Gamepad2, ExternalLink,
+  Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
-  generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan, generateLessonGame,
-  LessonSlide, LessonParams,
+  generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan,
+  LessonSlide, LessonParams, QuizType,
 } from '../services/geminiService';
 import { LESSON_LOADING_MESSAGES } from '../constants';
 import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
 
-type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN' | 'GAME';
+type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
 
 const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
   { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
   { value: 'WORKSHEET', icon: ClipboardList, label: '워크시트', desc: '워크시트 및 평가지 (HTML/인쇄용)' },
-  { value: 'QUIZ', icon: Zap, label: '퀴즈 앱', desc: '인터랙티브 퀴즈 (선택형/O×)' },
+  { value: 'QUIZ', icon: Zap, label: '퀴즈 앱', desc: '객관식·주관식·OX 퀴즈 (인터랙티브)' },
   { value: 'PLAN', icon: FileText, label: '수업 계획서', desc: '교수·학습 과정안 (A4 인쇄용)' },
-  { value: 'GAME', icon: Gamepad2, label: '게임 제작', desc: '수업 주제 교육용 미니 게임' },
+];
+
+const QUIZ_TYPE_OPTIONS: { value: QuizType; label: string; desc: string }[] = [
+  { value: 'MULTIPLE_CHOICE', label: '객관식', desc: '4지선다' },
+  { value: 'SHORT_ANSWER', label: '주관식', desc: '단답형' },
+  { value: 'OX', label: 'OX 퀴즈', desc: '참/거짓' },
 ];
 
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
@@ -258,11 +263,23 @@ const LessonMaterialGenerator: React.FC = () => {
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  const [selectedQuizTypes, setSelectedQuizTypes] = useState<Set<QuizType>>(new Set(['MULTIPLE_CHOICE']));
+
+  const toggleQuizType = (type: QuizType) => {
+    setSelectedQuizTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        if (next.size > 1) next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
+
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
   const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
-  const [gameHtml, setGameHtml] = useState<string | null>(null);
-  const [isOpeningGame, setIsOpeningGame] = useState(false);
   const [planContent, setPlanContent] = useState<string>('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
   const [generatingImageSlides, setGeneratingImageSlides] = useState<Set<number>>(new Set());
@@ -396,8 +413,6 @@ const LessonMaterialGenerator: React.FC = () => {
       setWorksheetHtml(null);
     } else if (contentType === 'QUIZ') {
       setQuizHtml(null);
-    } else if (contentType === 'GAME') {
-      setGameHtml(null);
     } else {
       setPlanContent('');
     }
@@ -420,11 +435,8 @@ const LessonMaterialGenerator: React.FC = () => {
         const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore);
         setWorksheetHtml(extractHtml(html));
       } else if (contentType === 'QUIZ') {
-        const html = await generateLessonQuiz(params, questionCount);
+        const html = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));
         setQuizHtml(ensureStartButton(extractHtml(html), '퀴즈 시작'));
-      } else if (contentType === 'GAME') {
-        const html = await generateLessonGame(params);
-        setGameHtml(ensureStartButton(extractHtml(html), '게임 시작', { forceVisibleStart: true }));
       } else {
         const html = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
@@ -480,7 +492,7 @@ li{margin-bottom:5pt;line-height:1.6;}
   };
 
   const handleSaveHtmlPdf = async () => {
-    const content = contentType === 'QUIZ' ? quizHtml : contentType === 'GAME' ? gameHtml : worksheetHtml;
+    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
     if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -490,34 +502,17 @@ li{margin-bottom:5pt;line-height:1.6;}
   };
 
   const handleSaveHtml = async () => {
-    const content = contentType === 'QUIZ' ? quizHtml : contentType === 'GAME' ? gameHtml : worksheetHtml;
+    const content = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
     if (!content) return;
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     await window.electronAPI.saveFile(content, `${topic}(${d}).html`, 'html');
   };
 
-  const handleOpenGameExternal = async () => {
-    if (!gameHtml) return;
-    const now = new Date();
-    const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    try {
-      setIsOpeningGame(true);
-      const normalizedGameHtml = ensureStartButton(extractHtml(gameHtml), '게임 시작', { forceVisibleStart: true });
-      const openedPath = await window.electronAPI.openHtmlExternal(normalizedGameHtml, `${topic || '교육용_게임'}(${d}).html`);
-      if (!openedPath) alert('브라우저에서 게임을 열지 못했습니다.');
-    } catch {
-      alert('브라우저에서 게임을 여는 중 오류가 발생했습니다.');
-    } finally {
-      setIsOpeningGame(false);
-    }
-  };
-
   const currentTypeHasResult =
     (contentType === 'SLIDE' && slides !== null) ||
     (contentType === 'WORKSHEET' && worksheetHtml !== null) ||
     (contentType === 'QUIZ' && quizHtml !== null) ||
-    (contentType === 'GAME' && gameHtml !== null) ||
     (contentType === 'PLAN' && planContent !== '');
 
   return (
@@ -684,9 +679,28 @@ li{margin-bottom:5pt;line-height:1.6;}
             )}
 
             {contentType === 'QUIZ' && (
-              <div>
-                <label className={labelClass}>문항 수</label>
-                <input type="number" className={inputClass} min={3} max={20} value={questionCount} onChange={e => setQuestionCount(parseInt(e.target.value) || 5)} />
+              <div className="space-y-3">
+                <div>
+                  <label className={labelClass}>퀴즈 유형</label>
+                  <div className="space-y-1.5 mt-1">
+                    {QUIZ_TYPE_OPTIONS.map(qt => (
+                      <label key={qt.value} className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={selectedQuizTypes.has(qt.value)}
+                          onChange={() => toggleQuizType(qt.value)}
+                          className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
+                        />
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{qt.label}</span>
+                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{qt.desc}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>문항 수</label>
+                  <input type="number" className={inputClass} min={3} max={20} value={questionCount} onChange={e => setQuestionCount(parseInt(e.target.value) || 5)} />
+                </div>
               </div>
             )}
 
@@ -892,36 +906,6 @@ li{margin-bottom:5pt;line-height:1.6;}
                 ) : (
                   <HtmlPreviewFrame html={quizHtml} title="퀴즈 미리보기" />
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Game result */}
-          {contentType === 'GAME' && gameHtml && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
-              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                  <Gamepad2 className="w-4 h-4 text-amber-500" />
-                  교육용 게임
-                </span>
-                <div className="flex gap-2">
-                  <button onClick={handleSaveHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded transition-colors">
-                    <Download className="w-3.5 h-3.5" />HTML 저장
-                  </button>
-                </div>
-              </div>
-              <div className="shrink-0 flex justify-center bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-5">
-                <button
-                  onClick={handleOpenGameExternal}
-                  disabled={isOpeningGame}
-                  className="inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-wait rounded-lg shadow-sm transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  {isOpeningGame ? '브라우저를 여는 중...' : '브라우저에서 열기'}
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <HtmlPreviewFrame html={gameHtml} title="게임 미리보기" />
               </div>
             </div>
           )}

@@ -573,10 +573,14 @@ export const generateDocument = async (
   const commonContext = `[기본 설정] 학년도: ${schoolYear}학년도`;
 
   const numberingReinforcement = `
-[항목 기호 준수사항]
-본문의 대항목(1., 2. ...) 하위 내용은 무조건 '가., 나.' -> '1), 2)' -> '가), 나)' 순서의 단계별 기호와 들여쓰기를 사용해야 합니다.
-- OOOO (X) -> 1. OOOO (O)
-- - OOO (X) -> 가. OOO (O)
+[항목 기호 4단계 위계 — 반드시 준수]
+  1단계(대항목): 1.  2.  3.  ...
+  2단계(중항목): 가.  나.  다.  ...
+  3단계(소항목): 1)  2)  3)  ...
+  4단계(세항목): 가)  나)  다)  ...
+- 대항목(1., 2. ...) 바로 아래는 반드시 가. 나. 다. 로 시작하세요.
+- 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하세요.
+- 1)/2)/3) 아래에 더 세부 항목이 필요할 때는 가) 나) 다) 을 사용하세요.
 - 긴 문단으로 이어 쓰지 말고, 각 대항목 아래는 가. 나. 다. 개조식으로 분리하세요.`;
 
   const needsDocumentHeader = [
@@ -654,8 +658,14 @@ ${complexityInstruction}
 [필수 구성] 1.추진배경 2.목적 3.운영방침 4.세부추진계획 5.소요예산(표) 6.기대효과
 [작성 규칙] 항목 기호 준수, 소요예산은 표(Table)로 작성, 제목 아래 창의적인 부제 포함.
 [서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하세요. 표가 필요한 부분은 반드시 선이 보이는 table로 작성하세요.
+[항목 기호 4단계 위계 — 반드시 준수]
+  1단계(대항목): 1.  2.  3.  ...
+  2단계(중항목): 가.  나.  다.  ...
+  3단계(소항목): 1)  2)  3)  ...
+  4단계(세항목): 가)  나)  다)  ...
 [개조식 구성 필수]
-- 모든 대항목은 문단형 설명 금지. 반드시 아래처럼 하위 항목을 가. 나. 다. 형식으로 작성하세요.
+- 모든 대항목(1. 2. 3. ...)은 문단형 설명 금지. 바로 가. 나. 다. 형식의 중항목으로 작성하세요.
+- 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하고, 1)/2)/3) 아래는 가) 나) 다) 을 사용하세요.
 - 1. 추진배경: '필요성', '현황', '추진 근거', '문제점' 같은 소제목을 붙이지 말고, 바로 가. 나. 다. 본문을 작성하세요.
 - 2. 목적: 별도 소제목 없이 가. 나. 다. 본문으로 작성하세요.
 - 3. 운영방침: 별도 소제목 없이 가. 나. 다. 본문으로 작성하세요.
@@ -669,7 +679,8 @@ ${complexityInstruction}
 [예시]
 - 가. 학생들의 문해력 및 비판적 사고력 함양을 위한 체계적인 독서교육 강화 필요성 증대
 - 나. 최근 디지털 환경의 발달로 학생들의 독서량 감소 및 깊이 있는 독서 경험 부족 현상 관찰
-- 다. 국가 교육과정에서 강조하는 창의융합적 인재 양성을 위해 독서 기반 사고력 신장 필요
+  1) 스마트폰 보급률 증가에 따른 독서 시간 감소
+  2) 짧은 영상 콘텐츠 위주 미디어 소비 패턴 확산
 [금지] 문서 맨 끝에 작성일, 제작년월, 학교장명, 기관장명, 직인, 결재란을 붙이지 마세요. 마지막은 기대효과 본문으로 끝내세요.`;
       break;
 
@@ -678,6 +689,11 @@ ${complexityInstruction}
 작업: [사업 결과 보고서 작성]
 [문체] 모든 문장은 학교 결과 보고서에 맞는 간결한 보고서체로 작성하세요. "~완료함.", "~달성함."을 기계적으로 반복하지 말고, 운영 결과에 맞게 '운영 완료', '성과 확인', '개선 필요', '협력 체계 구축'처럼 자연스럽게 끝내세요. '~습니다', '~입니다' 금지.
 [서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하세요. 표가 필요한 부분은 반드시 선이 보이는 table로 작성하세요.
+[항목 기호 4단계 위계 — 반드시 준수]
+  1단계(대항목): 1.  2.  3.  ...
+  2단계(중항목): 가.  나.  다.  ...
+  3단계(소항목): 1)  2)  3)  ...
+  4단계(세항목): 가)  나)  다)  ...
 [필수 구성 — 반드시 이 순서와 항목으로 작성]
 1. 추진 개요: 가. 사업명, 나. 기간, 다. 대상, 라. 예산, 마. 추진 목적을 개조식으로 작성 (배경/목적 장황하게 반복 금지)
 2. 추진 실적: [계획 vs 결과 비교표] — 항목(일시/대상/횟수 등)별로 계획·결과 2열 표로 작성
@@ -686,6 +702,7 @@ ${complexityInstruction}
 5. 예산 정산: [목|세목|산출내역|계획액|집행액|잔액|비고] 7열 표, 합계 행 포함, 집행률 명시
 6. 운영 성과 및 제언: 가. 운영 성과, 나. 개선 사항, 다. 차기 계획을 개조식으로 작성. 구체적 수치가 있으면 포함
 [개조식 작성 규칙] 표 앞뒤 설명도 긴 문단 금지. 각 항목은 반드시 가. 나. 다. 또는 표로 분리하세요. 각 항목은 한 문장 중심으로 작성하고, 장황하면 둘로 나누세요.
+- 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하고, 1)/2)/3) 아래는 가) 나) 다) 을 사용하세요.
 - 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
 - 추진 실적, 세부 운영 결과, 만족도 조사, 예산 정산 등 비교·정산·일정 정보는 반드시 선이 있는 표로 구분하세요.
 [소제목 금지] 추진 개요와 운영 성과 및 제언의 하위 항목에는 '필요성', '현황', '문제점', '학생 측면', '교사 측면' 같은 분석용 소제목을 붙이지 마세요.
@@ -1170,8 +1187,27 @@ p { margin: 2pt 0; line-height: 1.5; }
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
 }
 
-export async function generateLessonQuiz(params: LessonParams, questionCount: number): Promise<string> {
+export type QuizType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'OX';
+
+const QUIZ_TYPE_LABELS: Record<QuizType, string> = {
+  MULTIPLE_CHOICE: '4지선다 객관식',
+  SHORT_ANSWER: '단답형 주관식',
+  OX: 'OX 퀴즈 (참/거짓)',
+};
+
+const buildQuizTypeInstruction = (types: QuizType[]): string => {
+  const labels = types.map(t => QUIZ_TYPE_LABELS[t]);
+  if (types.length === 1) {
+    if (types[0] === 'MULTIPLE_CHOICE') return '모든 문항을 4지선다 객관식으로 작성하세요.';
+    if (types[0] === 'SHORT_ANSWER') return '모든 문항을 단답형 주관식으로 작성하세요. 답 입력창(<input type="text">)을 제공하고 정답 확인 버튼으로 채점하세요.';
+    if (types[0] === 'OX') return '모든 문항을 OX 퀴즈(참/거짓)로 작성하세요. O 버튼과 X 버튼을 제공하세요.';
+  }
+  return `문항 유형을 ${labels.join(', ')}을(를) 적절히 혼합하여 작성하세요. 각 유형의 특성에 맞는 UI(객관식: 보기 버튼, 주관식: 텍스트 입력, OX: O/X 버튼)를 구현하세요.`;
+};
+
+export async function generateLessonQuiz(params: LessonParams, questionCount: number, quizTypes: QuizType[]): Promise<string> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
+  const typeInstruction = buildQuizTypeInstruction(quizTypes.length > 0 ? quizTypes : ['MULTIPLE_CHOICE']);
   const prompt = `다음 수업 정보를 바탕으로 인터랙티브 퀴즈를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
@@ -1182,10 +1218,11 @@ export async function generateLessonQuiz(params: LessonParams, questionCount: nu
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
-- 문항 수: ${questionCount}개 (4지선다형 또는 O/X 혼합)
+- 문항 수: ${questionCount}개
+- 문항 유형: ${typeInstruction}
 - 반드시 3단계 화면으로 구성:
   1단계 (시작 화면): 퀴즈 제목, 문항 수 안내, 크고 눈에 띄는 "퀴즈 시작" 버튼 — 버튼 클릭 전까지 문제 미표시
-  2단계 (풀이 화면): 문항을 하나씩 표시, 답 선택 즉시 정답/오답 색상 피드백, "다음 문제" 버튼
+  2단계 (풀이 화면): 문항을 하나씩 표시, 답 선택/입력 즉시 정답/오답 색상 피드백, "다음 문제" 버튼
   3단계 (결과 화면): 최종 점수(예: 8/10), 전체 문항의 내 답·정답 목록, "다시 풀기" 버튼
 - 시작 화면에는 반드시 실제로 동작하는 <button id="quizStartBtn">퀴즈 시작</button> 요소를 넣고, document.getElementById('quizStartBtn').addEventListener('click', ...) 코드로 풀이 화면을 열어야 합니다.
 - 모바일 친화적이고 시각적으로 매력적인 디자인
