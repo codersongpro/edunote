@@ -1170,8 +1170,27 @@ p { margin: 2pt 0; line-height: 1.5; }
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
 }
 
-export async function generateLessonQuiz(params: LessonParams, questionCount: number): Promise<string> {
+export type QuizType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'OX';
+
+const QUIZ_TYPE_LABELS: Record<QuizType, string> = {
+  MULTIPLE_CHOICE: '4지선다 객관식',
+  SHORT_ANSWER: '단답형 주관식',
+  OX: 'OX 퀴즈 (참/거짓)',
+};
+
+const buildQuizTypeInstruction = (types: QuizType[]): string => {
+  const labels = types.map(t => QUIZ_TYPE_LABELS[t]);
+  if (types.length === 1) {
+    if (types[0] === 'MULTIPLE_CHOICE') return '모든 문항을 4지선다 객관식으로 작성하세요.';
+    if (types[0] === 'SHORT_ANSWER') return '모든 문항을 단답형 주관식으로 작성하세요. 답 입력창(<input type="text">)을 제공하고 정답 확인 버튼으로 채점하세요.';
+    if (types[0] === 'OX') return '모든 문항을 OX 퀴즈(참/거짓)로 작성하세요. O 버튼과 X 버튼을 제공하세요.';
+  }
+  return `문항 유형을 ${labels.join(', ')}을(를) 적절히 혼합하여 작성하세요. 각 유형의 특성에 맞는 UI(객관식: 보기 버튼, 주관식: 텍스트 입력, OX: O/X 버튼)를 구현하세요.`;
+};
+
+export async function generateLessonQuiz(params: LessonParams, questionCount: number, quizTypes: QuizType[]): Promise<string> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
+  const typeInstruction = buildQuizTypeInstruction(quizTypes.length > 0 ? quizTypes : ['MULTIPLE_CHOICE']);
   const prompt = `다음 수업 정보를 바탕으로 인터랙티브 퀴즈를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
@@ -1182,10 +1201,11 @@ export async function generateLessonQuiz(params: LessonParams, questionCount: nu
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
-- 문항 수: ${questionCount}개 (4지선다형 또는 O/X 혼합)
+- 문항 수: ${questionCount}개
+- 문항 유형: ${typeInstruction}
 - 반드시 3단계 화면으로 구성:
   1단계 (시작 화면): 퀴즈 제목, 문항 수 안내, 크고 눈에 띄는 "퀴즈 시작" 버튼 — 버튼 클릭 전까지 문제 미표시
-  2단계 (풀이 화면): 문항을 하나씩 표시, 답 선택 즉시 정답/오답 색상 피드백, "다음 문제" 버튼
+  2단계 (풀이 화면): 문항을 하나씩 표시, 답 선택/입력 즉시 정답/오답 색상 피드백, "다음 문제" 버튼
   3단계 (결과 화면): 최종 점수(예: 8/10), 전체 문항의 내 답·정답 목록, "다시 풀기" 버튼
 - 시작 화면에는 반드시 실제로 동작하는 <button id="quizStartBtn">퀴즈 시작</button> 요소를 넣고, document.getElementById('quizStartBtn').addEventListener('click', ...) 코드로 풀이 화면을 열어야 합니다.
 - 모바일 친화적이고 시각적으로 매력적인 디자인
