@@ -331,14 +331,12 @@ const SettingsScreen: React.FC = () => {
                 className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'free' ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
               >
                 <span className="block font-bold">무료 Gmail 기본</span>
-                <span className="block text-xs opacity-80">빠르고 저렴한 Flash-Lite 고정</span>
               </button>
               <button
                 onClick={() => { setApiTier('paid'); window.electronAPI.setConfig({ apiTier: 'paid' }); setTestStatus('idle'); }}
                 className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'paid' ? 'border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
               >
                 <span className="block font-bold">유료 API</span>
-                <span className="block text-xs opacity-80">최상위 Gemini Pro 사용</span>
               </button>
             </div>
             {apiTier === 'paid' && (
