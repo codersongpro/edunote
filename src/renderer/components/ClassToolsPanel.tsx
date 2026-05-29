@@ -39,7 +39,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           }`}
         >
           <span className="text-sm">🎲</span>
-          오늘의 주인공
+          럭키드로우
         </button>
       </div>
       <div className="flex-1 overflow-hidden">

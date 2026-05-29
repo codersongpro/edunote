@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LessonObservationGenerator from './LessonObservationGenerator';
 import CounselingLogGenerator from './CounselingLogGenerator';
 import ClassManagementLogGenerator from './ClassManagementLogGenerator';
@@ -12,8 +12,16 @@ const tabs = [
   { key: 'class' as Tab, label: '학급경영일지', icon: CalendarDays },
 ];
 
-const TeacherRecordPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('observation');
+interface Props {
+  initialTab?: Tab;
+}
+
+const TeacherRecordPanel: React.FC<Props> = ({ initialTab }) => {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'observation');
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   return (
     <div className="flex flex-col h-full">

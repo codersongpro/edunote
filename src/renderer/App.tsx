@@ -25,7 +25,7 @@ import { initAudioUnlock } from './lib/soundEffect';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
-  FileText, Eye, StickyNote, GraduationCap,
+  FileText, Eye, StickyNote, GraduationCap, MessageCircle, CalendarDays,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList,
@@ -100,6 +100,7 @@ const App: React.FC = () => {
   const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
   const [studentRecordGroupOpen, setStudentRecordGroupOpen] = useState(false);
   const [teacherRecordSubOpen, setTeacherRecordSubOpen] = useState(false);
+  const [teacherRecordInitialTab, setTeacherRecordInitialTab] = useState<'observation' | 'counseling' | 'class'>('observation');
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
@@ -289,6 +290,12 @@ const App: React.FC = () => {
     }
   };
 
+  const handleTeacherRecordNav = (tab: 'observation' | 'counseling' | 'class') => {
+    setTeacherRecordInitialTab(tab);
+    setTeacherRecordSubOpen(true);
+    goTo(AppMode.TEACHER_RECORD);
+  };
+
   const handleHomeNavigate = (target: 'settings' | 'student' | 'admin' | 'guide') => {
     if (target === 'settings') goTo(AppMode.SETTINGS);
     else if (target === 'guide') goTo(AppMode.USAGE_GUIDE);
@@ -306,6 +313,13 @@ const App: React.FC = () => {
   const studentSubNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
+        ? 'bg-indigo-500 text-white font-semibold'
+        : 'text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+    }`;
+
+  const teacherRecordSubNavClass = (tab: 'observation' | 'counseling' | 'class') =>
+    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
+      mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === tab
         ? 'bg-indigo-500 text-white font-semibold'
         : 'text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
@@ -410,7 +424,7 @@ const App: React.FC = () => {
       case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
       case AppMode.OFFICIAL_DOC_ANALYZER: return <OfficialDocAnalyzer />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
-      case AppMode.TEACHER_RECORD: return <TeacherRecordPanel />;
+      case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.STUDENT_RECORD_GROUP: return null;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
@@ -720,7 +734,7 @@ const App: React.FC = () => {
                               </button>
                               <button onClick={() => handleClassToolsNav('lucky')} className={classToolsSubNavClass('lucky')}>
                                 <span className="w-3 h-3 shrink-0 flex items-center justify-center text-xs">🎲</span>
-                                <span className="flex-1 truncate">오늘의 주인공</span>
+                                <span className="flex-1 truncate">럭키드로우</span>
                               </button>
                             </div>
                           )}
@@ -820,6 +834,18 @@ const App: React.FC = () => {
                           </button>
                           {teacherRecordSubOpen && (
                             <div className="mt-0.5 space-y-0.5 border-l-2 border-indigo-200 dark:border-indigo-700 ml-3">
+                              <button onClick={() => handleTeacherRecordNav('observation')} className={teacherRecordSubNavClass('observation')}>
+                                <Eye className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">수업관찰기록</span>
+                              </button>
+                              <button onClick={() => handleTeacherRecordNav('counseling')} className={teacherRecordSubNavClass('counseling')}>
+                                <MessageCircle className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">상담일지</span>
+                              </button>
+                              <button onClick={() => handleTeacherRecordNav('class')} className={teacherRecordSubNavClass('class')}>
+                                <CalendarDays className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">학급경영일지</span>
+                              </button>
                               <button onClick={() => goTo(AppMode.STUDENT_MEMO)} className={studentSubNavClass(AppMode.STUDENT_MEMO)}>
                                 <StickyNote className="w-3 h-3 shrink-0" />
                                 <span className="flex-1 truncate">학생 메모 보드</span>
