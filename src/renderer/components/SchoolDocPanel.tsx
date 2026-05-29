@@ -229,8 +229,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const buildPromptContext = (): string => {
     switch (activeTab) {
       case DocType.GONGMUN: {
-        const typeLabel = gongmunData.type === GongmunType.INTERNAL ? '내부결재' : '대외공문';
-        return `[공문 유형]: ${typeLabel}\n[수신자]: ${gongmunData.recipient || '(미입력)'}\n[제목]: ${gongmunData.title || '(미입력)'}\n[본문 요청사항]: ${gongmunData.bodyContext || '(미입력)'}`;
+        return `[공문 유형]: 내부결재\n[제목]: ${gongmunData.title || '(미입력)'}\n[본문 요청사항]: ${gongmunData.bodyContext || '(미입력)'}`;
       }
       case DocType.PLAN:
         return `[주제/사업명]: ${planData.topic}\n[대상]: ${planData.target}\n[예산]: ${planData.budget}\n[추가 사항]: ${planData.extraInfo}`;
@@ -447,54 +446,32 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             {activeTab === DocType.GONGMUN && (
               <div className="space-y-4">
                 <div className={sectionClass}>
-                  <label className={labelClass}>공문 유형</label>
-                  <div className="flex gap-2">
-                    {[
-                      { val: GongmunType.INTERNAL, label: '내부결재' },
-                      { val: GongmunType.EXTERNAL, label: '대외공문' },
-                    ].map(opt => (
-                      <button
-                        key={opt.val}
-                        onClick={() => setGongmunData({ ...gongmunData, type: opt.val })}
-                        className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
-                          gongmunData.type === opt.val
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className={sectionClass}>
                   <label className={labelClass}>공문 복잡도</label>
                   <div className="flex gap-2">
                     {[
-                      { val: GongmunComplexity.SIMPLE, label: '간단' },
-                      { val: GongmunComplexity.MEDIUM, label: '중간' },
-                      { val: GongmunComplexity.DETAILED, label: '상세' },
+                      { val: GongmunComplexity.SIMPLE, label: '간단', tooltip: '관련·시행문·붙임으로 구성.\n"붙임과 같이 실시합니다." 형식의 짧고 간결한 공문.' },
+                      { val: GongmunComplexity.MEDIUM, label: '중간', tooltip: '관련·본문·개요(가/나/다 3~4항목)·붙임으로 구성.\n일정·장소·대상 등 기본 정보가 담긴 일반 공문.' },
+                      { val: GongmunComplexity.DETAILED, label: '상세', tooltip: '관련·본문·개요·행정사항(표 포함)·붙임으로 구성.\n세부 일정·역할 분담·예산 등 내용이 많은 공문.' },
                     ].map(opt => (
-                      <button
-                        key={opt.val}
-                        onClick={() => setGongmunData({ ...gongmunData, complexity: opt.val })}
-                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
-                          gongmunData.complexity === opt.val
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
+                      <div key={opt.val} className="flex-1 relative group">
+                        <button
+                          onClick={() => setGongmunData({ ...gongmunData, complexity: opt.val })}
+                          className={`w-full py-1.5 text-xs rounded-md border transition-all ${
+                            gongmunData.complexity === opt.val
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 px-2.5 py-2 text-[11px] leading-relaxed text-white bg-gray-800 dark:bg-gray-700 rounded-lg shadow-lg hidden group-hover:block z-20 pointer-events-none whitespace-pre-line">
+                          {opt.tooltip}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-700" />
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
-                {gongmunData.type === GongmunType.EXTERNAL && (
-                  <div>
-                    <label className={labelClass}>수신자</label>
-                    <input type="text" className={inputClass} placeholder="예: ○○교육지원청 교육장" value={gongmunData.recipient} onChange={e => setGongmunData({ ...gongmunData, recipient: e.target.value })} />
-                  </div>
-                )}
                 <div>
                   <label className={labelClass}>제목 (건명)</label>
                   <input type="text" className={inputClass} placeholder="예: 2026학년도 AI활용 수업 연수계획" value={gongmunData.title} onChange={e => setGongmunData({ ...gongmunData, title: e.target.value })} />

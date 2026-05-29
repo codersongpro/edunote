@@ -586,7 +586,6 @@ export const generateDocument = async (
   const needsDocumentHeader = [
     DocType.PLAN,
     DocType.REPORT,
-    DocType.MEETING_MINUTES,
     DocType.PROMOTION,
     DocType.NEWSLETTER,
     DocType.GONGGO,
