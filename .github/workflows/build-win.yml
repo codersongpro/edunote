@@ -55,10 +55,13 @@ jobs:
           TAG_NAME: v${{ steps.pkg.outputs.version }}
         run: |
           $releaseName = "EduNote $env:TAG_NAME"
+          $fullNotes = Get-Content RELEASE_NOTES.md -Raw
+          $currentNotes = ($fullNotes -split '\r?\n---')[0].Trim()
+          $currentNotes | Out-File -FilePath current_release.md -Encoding utf8
           gh release view $env:TAG_NAME --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --clobber
-            gh release edit $env:TAG_NAME --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file RELEASE_NOTES.md --latest
+            gh release edit $env:TAG_NAME --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file current_release.md --latest
           } else {
-            gh release create $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file RELEASE_NOTES.md --latest
+            gh release create $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file current_release.md --latest
           }
