@@ -59,6 +59,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   screenshotUrl: (url: string) => ipcRenderer.invoke('resource:screenshot', url),
   fetchSlideImage: (keyword: string) => ipcRenderer.invoke('resource:slide-image', keyword),
 
+  // Window
+  openDemoWindow: () => ipcRenderer.invoke('window:open-demo'),
+
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),
   checkUpdate: () => ipcRenderer.invoke('app:check-update'),

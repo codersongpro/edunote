@@ -412,6 +412,32 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  // ── Demo Window ───────────────────────────────────────────────────
+  ipcMain.handle('window:open-demo', () => {
+    const existing = BrowserWindow.getAllWindows().find(w => w.title === 'EduNote Demo');
+    if (existing) { existing.focus(); return; }
+
+    const win = new BrowserWindow({
+      width: 560,
+      height: 760,
+      minWidth: 480,
+      minHeight: 500,
+      title: 'EduNote Demo',
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: false,
+      },
+    });
+    win.setMenuBarVisibility(false);
+    if (process.env['ELECTRON_RENDERER_URL']) {
+      win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#demo');
+    } else {
+      win.loadFile(path.join(__dirname, '../renderer/index.html'), { hash: 'demo' });
+    }
+  });
+
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
 
