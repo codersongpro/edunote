@@ -37,6 +37,8 @@ export enum AppMode {
   // 통합 패널
   TEACHER_RECORD = 'TEACHER_RECORD',
   CLASS_TOOLS = 'CLASS_TOOLS',
+  // 그룹 노드 (패널 없음 — 사이드바 트리 부모용)
+  STUDENT_RECORD_GROUP = 'STUDENT_RECORD_GROUP',
   // 유틸리티
   DEMO_SAMPLES = 'DEMO_SAMPLES',
 }
