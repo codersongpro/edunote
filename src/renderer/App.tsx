@@ -11,6 +11,7 @@ import CreativeActivityGenerator from './components/CreativeActivityGenerator';
 import SchoolDocPanel from './components/SchoolDocPanel';
 import TeacherRecordPanel from './components/TeacherRecordPanel';
 import ClassToolsPanel from './components/ClassToolsPanel';
+import DemoSamplesScreen from './components/DemoSamplesScreen';
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import OfficialDocAnalyzer from './components/OfficialDocAnalyzer';
@@ -371,6 +372,7 @@ const App: React.FC = () => {
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
+      case AppMode.DEMO_SAMPLES: return <DemoSamplesScreen />;
       default: return null;
     }
   };
@@ -543,6 +545,18 @@ const App: React.FC = () => {
             >
               <Settings className="w-4 h-4 shrink-0" />
               <span>설정</span>
+            </button>
+
+            <button
+              onClick={() => setMode(AppMode.DEMO_SAMPLES)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                mode === AppMode.DEMO_SAMPLES
+                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <ClipboardList className="w-4 h-4 shrink-0" />
+              <span>Demo</span>
             </button>
 
             <button

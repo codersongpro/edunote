@@ -37,6 +37,8 @@ export enum AppMode {
   // 통합 패널
   TEACHER_RECORD = 'TEACHER_RECORD',
   CLASS_TOOLS = 'CLASS_TOOLS',
+  // 유틸리티
+  DEMO_SAMPLES = 'DEMO_SAMPLES',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────
