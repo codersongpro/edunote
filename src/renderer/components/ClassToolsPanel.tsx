@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRMaker from './QRMaker';
 import LuckyDraw from './LuckyDraw';
 import { QrCode } from 'lucide-react';
 
 type Tab = 'qr' | 'lucky';
 
-const ClassToolsPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('qr');
+interface Props {
+  initialTab?: Tab;
+}
+
+const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'qr');
+
+  useEffect(() => {
+    if (initialTab) setActiveTab(initialTab);
+  }, [initialTab]);
 
   return (
     <div className="flex flex-col h-full">
