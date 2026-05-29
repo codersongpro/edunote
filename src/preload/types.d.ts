@@ -36,6 +36,7 @@ export interface ElectronAPI {
   fetchImage(url: string): Promise<string | null>;
   screenshotUrl(url: string): Promise<string | null>;
   fetchSlideImage(keyword: string): Promise<string | null>;
+  openDemoWindow(): Promise<void>;
   getVersion(): Promise<string>;
   checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 }

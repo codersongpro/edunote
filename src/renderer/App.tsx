@@ -82,6 +82,8 @@ const restoreMenuOrder = (section: string, items: SidebarMenuItem[]) => {
   }
 };
 
+const isDemoWindow = window.location.hash === '#demo';
+
 const App: React.FC = () => {
   const [state, setState] = useState<GlobalState>(initialGlobalState);
   const [isGlobalGenerating, setIsGlobalGenerating] = useState(false);
@@ -436,6 +438,16 @@ const App: React.FC = () => {
       default: return null;
     }
   };
+
+  if (isDemoWindow) {
+    return (
+      <div className={darkMode ? 'dark' : ''} style={{ height: '100vh' }}>
+        <div className="h-screen bg-white dark:bg-gray-900 overflow-hidden">
+          <DemoSamplesScreen />
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -927,12 +939,8 @@ const App: React.FC = () => {
               <span>도움말 / 정보</span>
             </button>
             <button
-              onClick={() => goTo(AppMode.DEMO_SAMPLES)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                mode === AppMode.DEMO_SAMPLES
-                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
+              onClick={() => window.electronAPI.openDemoWindow()}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <ClipboardList className="w-4 h-4 shrink-0" />
               <span>Demo</span>

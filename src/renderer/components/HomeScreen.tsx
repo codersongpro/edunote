@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, ExternalLink, X, MonitorDown } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -18,48 +18,6 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [version, setVersion] = useState('1.0.0');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
-  const [showOtherApps, setShowOtherApps] = useState(false);
-
-  const otherApps = [
-    {
-      name: '소통픽',
-      tag: '학급 소통',
-      desc: '충북소통메신저에서 여러명의 사용자를 선택할 수 있게 도와줄 수 있는 앱입니다.',
-      tone: 'from-sky-500 to-cyan-500',
-      url: 'https://sotong-omega.vercel.app/',
-      status: '다운로드 가능',
-    },
-    {
-      name: '운명앱',
-      tag: '일상 도구',
-      desc: '가볍게 즐길 수 있는 운세·선택 도우미 앱입니다.',
-      tone: 'from-violet-500 to-fuchsia-500',
-      url: 'https://destiny-fawn.vercel.app/',
-      status: '바로가기',
-    },
-    {
-      name: 'Songpro Ai vibe',
-      tag: '전체 보기',
-      desc: '개발자가 만든 앱과 도구들을 한 곳에서 확인할 수 있습니다.',
-      tone: 'from-slate-600 to-blue-600',
-      url: 'https://design-your-ai-vibe.onrender.com/',
-      status: '바로가기',
-    },
-    {
-      name: '업무 자료 도구',
-      tag: '행정 업무',
-      desc: '개발 중..',
-      tone: 'from-emerald-500 to-teal-500',
-      status: '개발 중..',
-    },
-    {
-      name: '수업 활동 도구',
-      tag: '수업 지원',
-      desc: '개발 중..',
-      tone: 'from-amber-500 to-orange-500',
-      status: '개발 중..',
-    },
-  ];
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
@@ -136,32 +94,18 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* 메뉴 바로가기 */}
         <div className="grid grid-cols-2 gap-3">
           <button
-            onClick={() => onNavigate('guide')}
-            className="group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left"
-          >
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">사용 방법</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed truncate">API 키 발급, 기능 소개, 자주 묻는 질문</p>
-            </div>
-            <ChevronRight className="w-4 h-4 text-purple-400 self-end group-hover:translate-x-1 transition-transform" />
-          </button>
-
-          <button
             onClick={() => onNavigate('settings')}
-            className={`group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md ${
+            className={`group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md overflow-hidden ${
               hasKey === false
                 ? 'border-amber-400 dark:border-amber-500 animate-pulse hover:border-amber-500'
                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
               <Settings className={`w-5 h-5 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}`} />
             </div>
-            <div>
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">
+            <div className="min-w-0 w-full">
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-base truncate">
                 설정
                 {hasKey === false && <span className="ml-1 text-amber-500 text-sm">키 미설정</span>}
               </p>
@@ -169,7 +113,21 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                 {hasKey === false ? 'API 키 입력이 필요합니다' : 'Gemini API 키 · 교사 정보 · 학생 명단'}
               </p>
             </div>
-            <ChevronRight className={`w-4 h-4 self-end group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
+            <ChevronRight className={`w-4 h-4 self-end shrink-0 group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
+          </button>
+
+          <button
+            onClick={() => onNavigate('guide')}
+            className="group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left overflow-hidden"
+          >
+            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="min-w-0 w-full">
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">사용 방법</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed truncate">API 키 발급, 기능 소개, 자주 묻는 질문</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-purple-400 self-end shrink-0 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 
@@ -178,87 +136,17 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
           className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
               <ClipboardList className="w-5 h-5 text-white" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-base font-bold text-white">앱 만족도 설문 참여하기</p>
               <p className="text-sm text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다 (1분 소요)</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
         </button>
-
-        {/* 제작자 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center space-y-1">
-          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">Developed by Dustin</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Teacher · Data Analytics · App Developer</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 pt-1">협업 및 피드백 환영합니다</p>
-        </div>
-
-        {/* 개발자의 다른 앱 보기 — 맨 아래 */}
-        <button
-          onClick={() => setShowOtherApps(true)}
-          className="w-full flex items-center justify-between gap-4 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center shrink-0">
-              <ExternalLink className="w-5 h-5 text-sky-600 dark:text-sky-300" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-gray-800 dark:text-gray-100">개발자의 다른 앱 보기</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">교육 · 행정 · 일상에 필요한 도구 모음</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-sky-400 shrink-0" />
-        </button>
-
-        {/* 다른 앱 모달 */}
-        {showOtherApps && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-            <div className="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
-                <div>
-                  <p className="text-base font-black text-gray-900 dark:text-white">개발자의 다른 앱</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">필요한 앱을 확인하세요.</p>
-                </div>
-                <button
-                  onClick={() => setShowOtherApps(false)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700"
-                  aria-label="닫기"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {otherApps.map(app => (
-                  <button
-                    key={app.name}
-                    onClick={() => app.url && window.electronAPI.openExternal(app.url)}
-                    disabled={!app.url}
-                    className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-hidden text-left disabled:cursor-default"
-                  >
-                    <div className={`h-20 bg-gradient-to-br ${app.tone} p-3 flex items-end`}>
-                      <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center">
-                        <MonitorDown className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                        {app.tag}
-                      </span>
-                      <p className="text-sm font-black text-gray-900 dark:text-gray-100 mt-2">{app.name}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed min-h-[48px]">{app.desc}</p>
-                      <p className="text-[11px] font-bold text-sky-600 dark:text-sky-300 mt-2">{app.status}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>
