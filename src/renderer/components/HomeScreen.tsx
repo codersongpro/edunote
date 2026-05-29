@@ -144,7 +144,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
             </div>
             <div>
               <p className="font-bold text-gray-800 dark:text-gray-100 text-base">사용 방법</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">API 키 발급, 기능 소개, 자주 묻는 질문</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed truncate">API 키 발급, 기능 소개, 자주 묻는 질문</p>
             </div>
             <ChevronRight className="w-4 h-4 text-purple-400 self-end group-hover:translate-x-1 transition-transform" />
           </button>
@@ -165,7 +165,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                 설정
                 {hasKey === false && <span className="ml-1 text-amber-500 text-sm">키 미설정</span>}
               </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed truncate">
                 {hasKey === false ? 'API 키 입력이 필요합니다' : 'Gemini API 키 · 교사 정보 · 학생 명단'}
               </p>
             </div>

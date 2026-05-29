@@ -34,6 +34,9 @@ export enum AppMode {
   QR_MAKER = 'QR_MAKER',
   MY_RESOURCES = 'MY_RESOURCES',
   LUCKY_DRAW = 'LUCKY_DRAW',
+  // 통합 패널
+  TEACHER_RECORD = 'TEACHER_RECORD',
+  CLASS_TOOLS = 'CLASS_TOOLS',
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────

@@ -400,7 +400,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left: input panel */}
-        <div className="w-[360px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
+        <div className="w-[420px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-100 flex items-center gap-2">
@@ -464,9 +464,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         >
                           {opt.label}
                         </button>
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 px-2.5 py-2 text-[11px] leading-relaxed text-white bg-gray-800 dark:bg-gray-700 rounded-lg shadow-lg hidden group-hover:block z-20 pointer-events-none whitespace-pre-line">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 px-2.5 py-2 text-[11px] leading-relaxed text-white bg-gray-800 dark:bg-gray-700 rounded-lg shadow-lg hidden group-hover:block z-20 pointer-events-none whitespace-pre-line">
                           {opt.tooltip}
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800 dark:border-t-gray-700" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800 dark:border-b-gray-700" />
                         </div>
                       </div>
                     ))}

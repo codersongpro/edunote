@@ -9,16 +9,13 @@ import SubjectGenerator from './components/SubjectGenerator';
 import SportsClubGenerator from './components/SportsClubGenerator';
 import CreativeActivityGenerator from './components/CreativeActivityGenerator';
 import SchoolDocPanel from './components/SchoolDocPanel';
-import LessonObservationGenerator from './components/LessonObservationGenerator';
-import CounselingLogGenerator from './components/CounselingLogGenerator';
-import ClassManagementLogGenerator from './components/ClassManagementLogGenerator';
+import TeacherRecordPanel from './components/TeacherRecordPanel';
+import ClassToolsPanel from './components/ClassToolsPanel';
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import OfficialDocAnalyzer from './components/OfficialDocAnalyzer';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
-import QRMaker from './components/QRMaker';
 import MyResourceLibrary from './components/MyResourceLibrary';
-import LuckyDraw from './components/LuckyDraw';
 import SettingsScreen from './components/SettingsScreen';
 import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
@@ -27,7 +24,7 @@ import { initAudioUnlock } from './lib/soundEffect';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
-  FileText, Eye, MessageCircle, CalendarDays, StickyNote, GraduationCap,
+  FileText, Eye, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList,
@@ -40,10 +37,10 @@ const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
 
 const STUDENT_RECORD_MODES: AppMode[] = [
   ...SCHOOL_LEVEL_REQUIRED_MODES,
-  AppMode.COUNSELING_LOG, AppMode.CLASS_LOG, AppMode.STUDENT_MEMO,
+  AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.LESSON_OBSERVATION, AppMode.QR_MAKER, AppMode.MY_RESOURCES, AppMode.LUCKY_DRAW];
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -53,7 +50,7 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.MEETING_MINUTES]: '회의록',
   [DocType.PROMOTION]: '홍보자료',
   [DocType.NEWSLETTER]: '가정통신문',
-  [DocType.MESSAGE]: '문자&소통메세지',
+  [DocType.MESSAGE]: '소통 메세지',
   [DocType.GONGGO]: '공고문',
 };
 
@@ -297,17 +294,14 @@ const App: React.FC = () => {
     { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
     { mode: AppMode.SPORTS_CLUB_GENERATOR, icon: Dumbbell, label: '학교스포츠클럽' },
     { mode: AppMode.CREATIVE_ACTIVITY_GENERATOR, icon: Palette, label: '창체 특기사항' },
-    { mode: AppMode.COUNSELING_LOG, icon: MessageCircle, label: '상담일지' },
-    { mode: AppMode.CLASS_LOG, icon: CalendarDays, label: '학급경영일지' },
+    { mode: AppMode.TEACHER_RECORD, icon: Eye, label: '교사 기록' },
     { mode: AppMode.STUDENT_MEMO, icon: StickyNote, label: '학생 메모 보드' },
   ];
 
   const defaultLessonMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.LESSON_MATERIAL, icon: Presentation, label: '수업자료 생성' },
-    { mode: AppMode.LESSON_OBSERVATION, icon: Eye, label: '수업관찰기록' },
-    { mode: AppMode.QR_MAKER, icon: QrCode, label: 'QR 메이커' },
+    { mode: AppMode.CLASS_TOOLS, icon: QrCode, label: '수업 도구' },
     { mode: AppMode.MY_RESOURCES, icon: BookMarked, label: '나만의 자료실' },
-    { mode: AppMode.LUCKY_DRAW, label: '오늘의 주인공' },
   ];
 
   const defaultAdminMenuItems: SidebarMenuItem[] = [
@@ -370,14 +364,11 @@ const App: React.FC = () => {
       case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
       case AppMode.OFFICIAL_DOC_ANALYZER: return <OfficialDocAnalyzer />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
-      case AppMode.LESSON_OBSERVATION: return <LessonObservationGenerator />;
-      case AppMode.COUNSELING_LOG: return <CounselingLogGenerator />;
-      case AppMode.CLASS_LOG: return <ClassManagementLogGenerator />;
+      case AppMode.TEACHER_RECORD: return <TeacherRecordPanel />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
-      case AppMode.QR_MAKER: return <QRMaker />;
+      case AppMode.CLASS_TOOLS: return <ClassToolsPanel />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
-      case AppMode.LUCKY_DRAW: return <LuckyDraw />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       default: return null;
@@ -540,6 +531,18 @@ const App: React.FC = () => {
             >
               <Home className="w-4 h-4 shrink-0" />
               <span>홈</span>
+            </button>
+
+            <button
+              onClick={() => setMode(AppMode.SETTINGS)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                mode === AppMode.SETTINGS
+                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <Settings className="w-4 h-4 shrink-0" />
+              <span>설정</span>
             </button>
 
             <button
