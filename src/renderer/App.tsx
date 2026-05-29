@@ -38,7 +38,7 @@ const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
 
 const STUDENT_RECORD_MODES: AppMode[] = [
   ...SCHOOL_LEVEL_REQUIRED_MODES,
-  AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO,
+  AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO, AppMode.STUDENT_RECORD_GROUP,
 ];
 
 const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
@@ -96,6 +96,10 @@ const App: React.FC = () => {
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
   const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
+  const [classToolsSubOpen, setClassToolsSubOpen] = useState(false);
+  const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
+  const [studentRecordGroupOpen, setStudentRecordGroupOpen] = useState(false);
+  const [teacherRecordSubOpen, setTeacherRecordSubOpen] = useState(false);
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
@@ -261,6 +265,30 @@ const App: React.FC = () => {
     }
   };
 
+  const handleClassToolsNav = (tab: 'qr' | 'lucky') => {
+    setClassToolsInitialTab(tab);
+    setClassToolsSubOpen(true);
+    goTo(AppMode.CLASS_TOOLS);
+  };
+
+  const handleClassToolsParent = () => {
+    if (!classToolsSubOpen) {
+      setClassToolsSubOpen(true);
+      goTo(AppMode.CLASS_TOOLS);
+    } else {
+      setClassToolsSubOpen(false);
+    }
+  };
+
+  const handleTeacherRecordParent = () => {
+    if (!teacherRecordSubOpen) {
+      setTeacherRecordSubOpen(true);
+      goTo(AppMode.TEACHER_RECORD);
+    } else {
+      setTeacherRecordSubOpen(false);
+    }
+  };
+
   const handleHomeNavigate = (target: 'settings' | 'student' | 'admin' | 'guide') => {
     if (target === 'settings') goTo(AppMode.SETTINGS);
     else if (target === 'guide') goTo(AppMode.USAGE_GUIDE);
@@ -273,6 +301,13 @@ const App: React.FC = () => {
       mode === m
         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
         : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+    }`;
+
+  const studentSubNavClass = (m: AppMode) =>
+    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
+      mode === m
+        ? 'bg-indigo-500 text-white font-semibold'
+        : 'text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
@@ -289,14 +324,24 @@ const App: React.FC = () => {
         : 'text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
+  const lessonNavClass = (m: AppMode, isParent = false) =>
+    `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
+      (isParent && mode === AppMode.CLASS_TOOLS) || (!isParent && mode === m)
+        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+    }`;
+
+  const classToolsSubNavClass = (tab: 'qr' | 'lucky') =>
+    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
+      mode === AppMode.CLASS_TOOLS && classToolsInitialTab === tab
+        ? 'bg-amber-500 text-white font-semibold'
+        : 'text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+    }`;
+
   const defaultStudentMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
-    { mode: AppMode.GENERATOR, icon: User2, label: '행발생성' },
-    { mode: AppMode.SUBJECT_GENERATOR, icon: BookOpen, label: '교과 세특 생성' },
-    { mode: AppMode.SPORTS_CLUB_GENERATOR, icon: Dumbbell, label: '학교스포츠클럽' },
-    { mode: AppMode.CREATIVE_ACTIVITY_GENERATOR, icon: Palette, label: '창체 특기사항' },
-    { mode: AppMode.TEACHER_RECORD, icon: Eye, label: '교사 기록' },
-    { mode: AppMode.STUDENT_MEMO, icon: StickyNote, label: '학생 메모 보드' },
+    { mode: AppMode.STUDENT_RECORD_GROUP, icon: GraduationCap, label: '생기부도우미' },
+    { mode: AppMode.TEACHER_RECORD, icon: Eye, label: '우리반기록' },
   ];
 
   const defaultLessonMenuItems: SidebarMenuItem[] = [
@@ -307,7 +352,7 @@ const App: React.FC = () => {
 
   const defaultAdminMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
-    { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문 요약 / 업무 추출' },
+    { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '공문서 작성기' },
   ];
 
@@ -367,8 +412,9 @@ const App: React.FC = () => {
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
+      case AppMode.STUDENT_RECORD_GROUP: return null;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
-      case AppMode.CLASS_TOOLS: return <ClassToolsPanel />;
+      case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
@@ -536,7 +582,7 @@ const App: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setMode(AppMode.SETTINGS)}
+              onClick={() => goTo(AppMode.SETTINGS)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
                 mode === AppMode.SETTINGS
                   ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
@@ -545,18 +591,6 @@ const App: React.FC = () => {
             >
               <Settings className="w-4 h-4 shrink-0" />
               <span>설정</span>
-            </button>
-
-            <button
-              onClick={() => setMode(AppMode.DEMO_SAMPLES)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                mode === AppMode.DEMO_SAMPLES
-                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <ClipboardList className="w-4 h-4 shrink-0" />
-              <span>Demo</span>
             </button>
 
             <button
@@ -668,26 +702,44 @@ const App: React.FC = () => {
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={() => handleMenuDrop('lesson', m)}
                       onDragEnd={() => setDraggedMenu(null)}
-                      className={`flex items-center gap-1 rounded-md ${draggedMenu?.section === 'lesson' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                      className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'lesson' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
-                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-amber-400 cursor-grab" />
-                      <button
-                        onClick={() => goTo(m)}
-                        title={label}
-                        className={`min-w-0 flex-1 flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                          mode === m
-                            ? 'bg-amber-500 text-white font-semibold shadow-sm'
-                            : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-                        }`}
-                      >
-                        {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
-                        <span className="flex-1 text-left truncate">{label}</span>
-                        {generatingModes.has(m) && mode !== m && (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
-                            {generatingModes.get(m)}%
-                          </span>
-                        )}
-                      </button>
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-amber-400 cursor-grab mt-2.5" />
+                      {m === AppMode.CLASS_TOOLS ? (
+                        <div className="min-w-0 flex-1">
+                          <button onClick={handleClassToolsParent} className={lessonNavClass(AppMode.CLASS_TOOLS, true)}>
+                            {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
+                            <span className="flex-1 text-left truncate">{label}</span>
+                            {classToolsSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
+                          </button>
+                          {classToolsSubOpen && (
+                            <div className="mt-0.5 space-y-0.5 border-l-2 border-amber-200 dark:border-amber-700 ml-3">
+                              <button onClick={() => handleClassToolsNav('qr')} className={classToolsSubNavClass('qr')}>
+                                <QrCode className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">QR 메이커</span>
+                              </button>
+                              <button onClick={() => handleClassToolsNav('lucky')} className={classToolsSubNavClass('lucky')}>
+                                <span className="w-3 h-3 shrink-0 flex items-center justify-center text-xs">🎲</span>
+                                <span className="flex-1 truncate">오늘의 주인공</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => goTo(m)}
+                          title={label}
+                          className={`min-w-0 flex-1 ${lessonNavClass(m)}`}
+                        >
+                          {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                          {generatingModes.has(m) && mode !== m && (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-200 rounded font-bold shrink-0 tabular-nums">
+                              {generatingModes.get(m)}%
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -725,18 +777,67 @@ const App: React.FC = () => {
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={() => handleMenuDrop('student', m)}
                       onDragEnd={() => setDraggedMenu(null)}
-                      className={`flex items-center gap-1 rounded-md ${draggedMenu?.section === 'student' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                      className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'student' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
-                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-indigo-400 cursor-grab" />
-                      <button onClick={() => handleModeChange(m)} title={label} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
-                        {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                        <span className="flex-1 text-left truncate">{label}</span>
-                        {generatingModes.has(m) && mode !== m && (
-                          <span className="text-[9px] px-1.5 py-0.5 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded font-bold shrink-0 tabular-nums">
-                            {generatingModes.get(m)}%
-                          </span>
-                        )}
-                      </button>
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-indigo-400 cursor-grab mt-2.5" />
+                      {m === AppMode.STUDENT_RECORD_GROUP ? (
+                        <div className="min-w-0 flex-1">
+                          <button
+                            onClick={() => setStudentRecordGroupOpen(prev => !prev)}
+                            className={studentNavClass(AppMode.STUDENT_RECORD_GROUP)}
+                          >
+                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                            <span className="flex-1 text-left truncate">{label}</span>
+                            {studentRecordGroupOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
+                          </button>
+                          {studentRecordGroupOpen && (
+                            <div className="mt-0.5 space-y-0.5 border-l-2 border-indigo-200 dark:border-indigo-700 ml-3">
+                              <button onClick={() => handleModeChange(AppMode.GENERATOR)} className={studentSubNavClass(AppMode.GENERATOR)}>
+                                <User2 className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">행발생성</span>
+                              </button>
+                              <button onClick={() => handleModeChange(AppMode.SUBJECT_GENERATOR)} className={studentSubNavClass(AppMode.SUBJECT_GENERATOR)}>
+                                <BookOpen className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">교과 세특 생성</span>
+                              </button>
+                              <button onClick={() => handleModeChange(AppMode.SPORTS_CLUB_GENERATOR)} className={studentSubNavClass(AppMode.SPORTS_CLUB_GENERATOR)}>
+                                <Dumbbell className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">학교스포츠클럽</span>
+                              </button>
+                              <button onClick={() => handleModeChange(AppMode.CREATIVE_ACTIVITY_GENERATOR)} className={studentSubNavClass(AppMode.CREATIVE_ACTIVITY_GENERATOR)}>
+                                <Palette className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">창체 특기사항</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : m === AppMode.TEACHER_RECORD ? (
+                        <div className="min-w-0 flex-1">
+                          <button onClick={handleTeacherRecordParent} className={studentNavClass(AppMode.TEACHER_RECORD)}>
+                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                            <span className="flex-1 text-left truncate">{label}</span>
+                            {teacherRecordSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
+                          </button>
+                          {teacherRecordSubOpen && (
+                            <div className="mt-0.5 space-y-0.5 border-l-2 border-indigo-200 dark:border-indigo-700 ml-3">
+                              <button onClick={() => goTo(AppMode.STUDENT_MEMO)} className={studentSubNavClass(AppMode.STUDENT_MEMO)}>
+                                <StickyNote className="w-3 h-3 shrink-0" />
+                                <span className="flex-1 truncate">학생 메모 보드</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <button onClick={() => handleModeChange(m)} title={label} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
+                          {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                          {generatingModes.has(m) && mode !== m && (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 rounded font-bold shrink-0 tabular-nums">
+                              {generatingModes.get(m)}%
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -800,15 +901,15 @@ const App: React.FC = () => {
               <span>도움말 / 정보</span>
             </button>
             <button
-              onClick={() => goTo(AppMode.SETTINGS)}
+              onClick={() => goTo(AppMode.DEMO_SAMPLES)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
-                mode === AppMode.SETTINGS
-                  ? 'bg-gray-700 dark:bg-gray-600 text-white font-semibold'
+                mode === AppMode.DEMO_SAMPLES
+                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
-              <Settings className="w-4 h-4 shrink-0" />
-              <span>설정</span>
+              <ClipboardList className="w-4 h-4 shrink-0" />
+              <span>Demo</span>
             </button>
           </div>
         </aside>
