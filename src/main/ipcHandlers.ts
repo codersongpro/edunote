@@ -424,7 +424,7 @@ export function registerIpcHandlers(): void {
       minHeight: 500,
       title: 'EduNote Demo',
       webPreferences: {
-        preload: join(__dirname, '../preload/index.js'),
+        preload: path.join(__dirname, '../preload/index.js'),
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: false,
