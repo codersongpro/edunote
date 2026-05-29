@@ -131,6 +131,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     receivedMessage: '',
     relationship: MessageRelationship.PARENT,
   });
+  const [msgSubTab, setMsgSubTab] = useState<'sms' | 'social'>('sms');
 
   // Pumui form
   const [pumuiData, setPumuiData] = useState<PumuiInputs>({
@@ -238,6 +239,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       case DocType.NEWSLETTER:
         return `[제목]: ${newsletterData.title}\n[대상]: ${newsletterData.target}\n[내용]: ${newsletterData.context}`;
       case DocType.MESSAGE: {
+        if (msgSubTab === 'social') {
+          let msgCtx = `[유형]: 소통 메세지\n[나와의 관계]: ${messageData.relationship}\n[작성 내용]: ${messageData.context}`;
+          if (messageData.isReply && messageData.receivedMessage.trim()) {
+            msgCtx += `\n[답장 생성]: 예\n[받은 메시지]: ${messageData.receivedMessage}`;
+          }
+          return msgCtx;
+        }
         const typeLabel = messageData.type === MessageType.SMS ? '단문(SMS)' : '장문(LMS)';
         let msgCtx = `[수신 대상]: ${messageData.target}\n[문자 유형]: ${typeLabel}\n[내용]: ${messageData.context}`;
         if (messageData.isReply && messageData.receivedMessage.trim()) {
@@ -377,7 +385,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     { type: DocType.MEETING_MINUTES, icon: Users, label: '협의록 작성' },
     { type: DocType.PROMOTION, icon: Megaphone, label: '보도자료 작성' },
     { type: DocType.NEWSLETTER, icon: Mail, label: '가정통신문 작성' },
-    { type: DocType.MESSAGE, icon: Smartphone, label: '문자&소통메세지' },
+    { type: DocType.MESSAGE, icon: Smartphone, label: '메세지' },
     { type: DocType.GONGGO, icon: MegaphoneIcon, label: '공고문 작성' },
   ];
 
@@ -701,73 +709,137 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               </div>
             )}
 
-            {/* 문자메세지 */}
+            {/* 메세지 */}
             {activeTab === DocType.MESSAGE && (
               <div className="space-y-4">
-                <div>
-                  <label className={labelClass}>수신 대상</label>
-                  <div className="flex gap-2">
-                    {[MessageTarget.PARENT, MessageTarget.TEACHER, MessageTarget.STUDENT].map(t => (
-                      <button
-                        key={t}
-                        onClick={() => setMessageData({ ...messageData, target: t })}
-                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
-                          messageData.target === t
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className={labelClass}>문자 유형</label>
-                  <div className="flex gap-2">
-                    {[
-                      { val: MessageType.SMS, label: '단문 (SMS)' },
-                      { val: MessageType.LMS, label: '장문 (LMS)' },
-                    ].map(opt => (
-                      <button
-                        key={opt.val}
-                        onClick={() => setMessageData({ ...messageData, type: opt.val })}
-                        className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
-                          messageData.type === opt.val
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+                {/* 서브탭 */}
+                <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  {([
+                    { key: 'sms' as const, label: '문자' },
+                    { key: 'social' as const, label: '소통메세지' },
+                  ]).map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => { setMsgSubTab(tab.key); setMessageData(d => ({ ...d, isReply: false, context: '', receivedMessage: '' })); }}
+                      className={`flex-1 py-2 text-sm font-semibold transition-colors ${
+                        msgSubTab === tab.key
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
 
-                {/* Reply toggle */}
-                <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={messageData.isReply}
-                      onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
-                  </label>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
-                </div>
+                {/* 문자 (SMS/LMS) */}
+                {msgSubTab === 'sms' && (
+                  <>
+                    <div>
+                      <label className={labelClass}>수신 대상</label>
+                      <div className="flex gap-2">
+                        {[MessageTarget.PARENT, MessageTarget.TEACHER, MessageTarget.STUDENT].map(t => (
+                          <button
+                            key={t}
+                            onClick={() => setMessageData({ ...messageData, target: t })}
+                            className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
+                              messageData.target === t
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelClass}>문자 유형</label>
+                      <div className="flex gap-2">
+                        {[
+                          { val: MessageType.SMS, label: '단문 (SMS)' },
+                          { val: MessageType.LMS, label: '장문 (LMS)' },
+                        ].map(opt => (
+                          <button
+                            key={opt.val}
+                            onClick={() => setMessageData({ ...messageData, type: opt.val })}
+                            className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
+                              messageData.type === opt.val
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={messageData.isReply}
+                          onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
+                      </label>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
+                    </div>
+                    {messageData.isReply && (
+                      <div className="space-y-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-3">
+                        <div>
+                          <label className={labelClass}>나와의 관계</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {Object.values(MessageRelationship).map(r => (
+                              <button
+                                key={r}
+                                onClick={() => setMessageData({ ...messageData, relationship: r })}
+                                className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                                  messageData.relationship === r
+                                    ? 'bg-blue-600 text-white border-blue-600'
+                                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                }`}
+                              >
+                                {r}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className={labelClass}>받은 메시지</label>
+                          <textarea
+                            className={`${inputClass} min-h-[80px] resize-none`}
+                            placeholder="답장할 메시지를 붙여넣기 하세요."
+                            value={messageData.receivedMessage}
+                            onChange={e => setMessageData({ ...messageData, receivedMessage: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div>
+                      <label className={labelClass}>{messageData.isReply ? '답장 내용 / 추가 요청사항' : '전달 내용'}</label>
+                      <textarea
+                        className={`${inputClass} min-h-[100px] resize-none`}
+                        placeholder={messageData.isReply ? '답장에 포함할 내용이나 요청사항을 입력하세요. (비워도 됩니다)' : '문자에 담을 내용을 입력하세요.'}
+                        value={messageData.context}
+                        onChange={e => setMessageData({ ...messageData, context: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
 
-                {messageData.isReply && (
-                  <div className="space-y-3 bg-blue-50 border border-blue-100 rounded-lg p-3">
+                {/* 소통메세지 */}
+                {msgSubTab === 'social' && (
+                  <>
                     <div>
                       <label className={labelClass}>나와의 관계</label>
                       <div className="flex flex-wrap gap-1.5">
-                        {Object.values(MessageRelationship).map(r => (
+                        {[MessageRelationship.SUPERIOR, MessageRelationship.COLLEAGUE, MessageRelationship.PARENT, MessageRelationship.STUDENT, MessageRelationship.FRIEND].map(r => (
                           <button
                             key={r}
                             onClick={() => setMessageData({ ...messageData, relationship: r })}
-                            className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                            className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                               messageData.relationship === r
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
@@ -778,22 +850,40 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         ))}
                       </div>
                     </div>
+                    <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={messageData.isReply}
+                          onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
+                      </label>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
+                    </div>
+                    {messageData.isReply && (
+                      <div className="space-y-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-3">
+                        <label className={labelClass}>받은 메시지</label>
+                        <textarea
+                          className={`${inputClass} min-h-[80px] resize-none`}
+                          placeholder="답장할 메시지를 붙여넣기 하세요."
+                          value={messageData.receivedMessage}
+                          onChange={e => setMessageData({ ...messageData, receivedMessage: e.target.value })}
+                        />
+                      </div>
+                    )}
                     <div>
-                      <label className={labelClass}>받은 메시지</label>
+                      <label className={labelClass}>{messageData.isReply ? '답장 내용 / 추가 요청사항' : '작성 내용 / 요청사항'}</label>
                       <textarea
-                        className={`${inputClass} min-h-[80px] resize-none`}
-                        placeholder="답장할 메시지를 붙여넣기 하세요."
-                        value={messageData.receivedMessage}
-                        onChange={e => setMessageData({ ...messageData, receivedMessage: e.target.value })}
+                        className={`${inputClass} min-h-[100px] resize-none`}
+                        placeholder={messageData.isReply ? '답장에 포함할 내용이나 요청사항을 입력하세요.' : '메세지의 목적이나 내용을 입력하세요.'}
+                        value={messageData.context}
+                        onChange={e => setMessageData({ ...messageData, context: e.target.value })}
                       />
                     </div>
-                  </div>
+                  </>
                 )}
-
-                <div>
-                  <label className={labelClass}>{messageData.isReply ? '답장 내용 / 추가 요청사항' : '전달 내용'}</label>
-                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder={messageData.isReply ? '답장에 포함할 내용이나 요청사항을 입력하세요. (비워도 됩니다)' : '문자에 담을 내용을 입력하세요.'} value={messageData.context} onChange={e => setMessageData({ ...messageData, context: e.target.value })} />
-                </div>
               </div>
             )}
 
@@ -898,7 +988,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                    activeTab === DocType.MEETING_MINUTES ? '협의록 생성' :
                    activeTab === DocType.PROMOTION ? '보도자료 생성' :
                    activeTab === DocType.NEWSLETTER ? '가정통신문 생성' :
-                   activeTab === DocType.MESSAGE ? '소통메세지 생성' :
+                   activeTab === DocType.MESSAGE ? '메세지 생성' :
                    activeTab === DocType.GONGGO ? '공고문 생성' :
                    '문서 생성'}
                 </>

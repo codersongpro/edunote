@@ -51,7 +51,7 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.MEETING_MINUTES]: '회의록',
   [DocType.PROMOTION]: '홍보자료',
   [DocType.NEWSLETTER]: '가정통신문',
-  [DocType.MESSAGE]: '소통 메세지',
+  [DocType.MESSAGE]: '메세지',
   [DocType.GONGGO]: '공고문',
 };
 
