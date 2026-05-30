@@ -301,6 +301,9 @@ const LessonMaterialGenerator: React.FC = () => {
           worksheetImageBase64 = await window.electronAPI.fetchSlideImage(
             `flat vector illustration, Korean educational style, bright colors, no text, clean design — ${imgDesc}`
           );
+          if (!worksheetImageBase64) {
+            setError('이미지 생성에 실패했습니다. 워크시트는 이미지 없이 생성합니다.');
+          }
         }
         const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore, !!worksheetImageBase64);
         let finalHtml = extractHtml(html);

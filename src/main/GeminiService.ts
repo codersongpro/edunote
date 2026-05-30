@@ -378,6 +378,7 @@ const IMAGE_MODELS_TO_TRY = [
 export async function generateSlideImage(apiKey: string, imagePrompt: string): Promise<string | null> {
   const ai = new GoogleGenAI({ apiKey });
 
+  // 1. Gemini 계열 이미지 생성 모델 시도
   for (const model of IMAGE_MODELS_TO_TRY) {
     try {
       const response = await withTimeout(
@@ -386,11 +387,9 @@ export async function generateSlideImage(apiKey: string, imagePrompt: string): P
           contents: imagePrompt,
           config: { responseModalities: ['IMAGE', 'TEXT'] },
         }),
-        15000,
+        20000,
       );
-      const imageData = response.data;
-      if (imageData) return `data:image/png;base64,${imageData}`;
-      const parts = (response as any).candidates?.[0]?.content?.parts ?? [];
+      const parts = response.candidates?.[0]?.content?.parts ?? [];
       for (const part of parts) {
         if (part.inlineData?.data) {
           return `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
@@ -401,6 +400,22 @@ export async function generateSlideImage(apiKey: string, imagePrompt: string): P
       console.error(`[slideImage] ${model} failed:`, msg);
       if (isQuotaError(error)) await new Promise(r => setTimeout(r, 2000));
     }
+  }
+
+  // 2. Imagen 4 (generateImages API) 폴백
+  try {
+    const response = await withTimeout(
+      ai.models.generateImages({
+        model: 'imagen-4.0-generate-001',
+        prompt: imagePrompt,
+        config: { numberOfImages: 1 },
+      }),
+      30000,
+    );
+    const imageBytes = response?.generatedImages?.[0]?.image?.imageBytes;
+    if (imageBytes) return `data:image/png;base64,${imageBytes}`;
+  } catch (error: unknown) {
+    console.error('[slideImage] imagen-4 failed:', (error as any)?.message ?? '');
   }
 
   return null;
