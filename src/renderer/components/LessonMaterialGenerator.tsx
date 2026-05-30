@@ -112,6 +112,8 @@ const LessonMaterialGenerator: React.FC = () => {
   const [questionCount, setQuestionCount] = useState(5);
   const [worksheetType, setWorksheetType] = useState<'activity' | 'assessment'>('activity');
   const [includeScore, setIncludeScore] = useState(false);
+  const [worksheetImageEnabled, setWorksheetImageEnabled] = useState(false);
+  const [worksheetImagePrompt, setWorksheetImagePrompt] = useState('');
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -292,8 +294,23 @@ const LessonMaterialGenerator: React.FC = () => {
         const result = await generateLessonSlides(params, pageCount);
         setSlides(result);
       } else if (contentType === 'WORKSHEET') {
-        const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore);
-        setWorksheetHtml(extractHtml(html));
+        let worksheetImageBase64: string | null = null;
+        if (worksheetImageEnabled) {
+          const imgDesc = worksheetImagePrompt.trim() ||
+            `${params.subject} ${params.topic} 수업 관련 교육용 일러스트`;
+          worksheetImageBase64 = await window.electronAPI.fetchSlideImage(
+            `flat vector illustration, Korean educational style, bright colors, no text, clean design — ${imgDesc}`
+          );
+        }
+        const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore, !!worksheetImageBase64);
+        let finalHtml = extractHtml(html);
+        if (worksheetImageBase64) {
+          finalHtml = finalHtml.replace(
+            '[WORKSHEET_IMAGE]',
+            `<img src="${worksheetImageBase64}" alt="수업 이미지" style="max-width:100%;max-height:140pt;object-fit:contain;">`
+          );
+        }
+        setWorksheetHtml(finalHtml);
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));
         setQuizHtml(html);
@@ -535,6 +552,22 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
                   점수란 포함
                 </label>
+                <div className="pt-1 space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-300">
+                    <input type="checkbox" checked={worksheetImageEnabled} onChange={e => setWorksheetImageEnabled(e.target.checked)} className="rounded" />
+                    <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                    이미지 삽입 (AI 생성)
+                  </label>
+                  {worksheetImageEnabled && (
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="예: 소화 기관 해부도 (비워두면 주제 기반 자동 생성)"
+                      value={worksheetImagePrompt}
+                      onChange={e => setWorksheetImagePrompt(e.target.value)}
+                    />
+                  )}
+                </div>
               </div>
             )}
 

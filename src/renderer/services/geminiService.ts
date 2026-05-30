@@ -1151,6 +1151,7 @@ export async function generateLessonWorksheet(
   worksheetType: 'activity' | 'assessment',
   questionCount: number,
   includeScore: boolean,
+  insertImagePlaceholder = false,
 ): Promise<string> {
   const typeLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
   const baseFontSize = params.grade.includes('초등') ? '12pt' : params.grade.includes('중학') ? '11pt' : '10pt';
@@ -1173,6 +1174,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 - ${questionCount <= 2 ? 'A4 용지를 꽉 채울 수 있도록 각 활동에 충분한 여백과 설명 공간을 배치하세요. 기본 폰트 크기보다 1~2pt 크게 설정하고 줄 간격도 넉넉하게 잡으세요' : questionCount <= 4 ? 'A4 용지를 균형 있게 채울 수 있도록 적당한 여백과 설명을 배치하세요' : '반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요'}
 - ${questionCount <= 2 ? '각 활동에 충분한 답변 공간(줄 5~8개)을 확보하여 A4를 꽉 채우세요' : questionCount <= 4 ? '각 활동에 적당한 답변 공간(줄 2~4개)을 배치하세요' : '각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요'}
 - 머리글 구조: 문서 제목(h1)은 반드시 단독 행에 가운데 정렬로 배치하세요. 학년/반/이름 기입란은 그 아래 별도 행에 오른쪽 정렬로 배치하고, 각 항목은 `<span>학년: <span class="fill">&nbsp;</span></span>` 형태로 작성 공간이 밑줄로 표시되게 하세요. 예시: `<div class="student-info"><span>학년: <span class="fill">&nbsp;</span></span><span>반: <span class="fill">&nbsp;</span></span><span>이름: <span class="fill">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span></div>`
+${insertImagePlaceholder ? '- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 `<div class="worksheet-image">[WORKSHEET_IMAGE]</div>` 줄을 정확히 이 형태로 삽입하세요.' : ''}
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 - 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 자연스러운 학교 자료 문체로 작성하세요.
 
@@ -1187,6 +1189,8 @@ h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-
 .student-info .fill { display: inline-block; min-width: 50pt; border-bottom: 1pt solid #333; }
 .activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
+.worksheet-image { text-align: center; margin: 6pt 0 10pt; page-break-inside: avoid; }
+.worksheet-image img { max-width: 100%; max-height: 140pt; object-fit: contain; }
 table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
 p { margin: 2pt 0; line-height: 1.5; }
