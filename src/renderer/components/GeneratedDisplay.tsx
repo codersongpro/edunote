@@ -40,6 +40,26 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       if (!cell.style.border) cell.style.border = '1pt solid #333';
       if (!cell.style.padding) cell.style.padding = '5pt 8pt';
     });
+
+    // 워크시트 제목(h1) 가운데 정렬
+    el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
+      if (!h1.style.textAlign) h1.style.textAlign = 'center';
+    });
+
+    // 학년/반/이름 기입란 오른쪽 정렬
+    el.querySelectorAll<HTMLElement>('.student-info').forEach(div => {
+      div.style.display = 'flex';
+      div.style.gap = '16pt';
+      div.style.justifyContent = 'flex-end';
+      if (!div.style.borderBottom) div.style.borderBottom = '1pt solid #000';
+      if (!div.style.paddingBottom) div.style.paddingBottom = '3pt';
+      if (!div.style.marginBottom) div.style.marginBottom = '6pt';
+    });
+    el.querySelectorAll<HTMLElement>('.student-info .fill, .fill').forEach(span => {
+      span.style.display = 'inline-block';
+      if (!span.style.minWidth) span.style.minWidth = '50pt';
+      if (!span.style.borderBottom) span.style.borderBottom = '1pt solid #333';
+    });
   }, [content]);
 
   const getCurrentContent = (): string => {
