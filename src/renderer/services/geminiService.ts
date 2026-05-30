@@ -1154,7 +1154,7 @@ export async function generateLessonWorksheet(
 ): Promise<string> {
   const typeLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
   const baseFontSize = params.grade.includes('초등') ? '12pt' : params.grade.includes('중학') ? '11pt' : '10pt';
-  const h1Size = params.grade.includes('초등') ? '15pt' : params.grade.includes('중학') ? '14pt' : '13pt';
+  const h1Size = params.grade.includes('초등') ? '18pt' : params.grade.includes('중학') ? '17pt' : '16pt';
   const h2Size = params.grade.includes('초등') ? '13pt' : params.grade.includes('중학') ? '12pt' : '11pt';
   const tableSize = params.grade.includes('초등') ? '11.5pt' : params.grade.includes('중학') ? '10.5pt' : '9.5pt';
   const gradeGuidance = getLessonGradeGuidance(params.grade);
@@ -1172,7 +1172,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
 - ${questionCount <= 2 ? 'A4 용지를 꽉 채울 수 있도록 각 활동에 충분한 여백과 설명 공간을 배치하세요. 기본 폰트 크기보다 1~2pt 크게 설정하고 줄 간격도 넉넉하게 잡으세요' : questionCount <= 4 ? 'A4 용지를 균형 있게 채울 수 있도록 적당한 여백과 설명을 배치하세요' : '반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요'}
 - ${questionCount <= 2 ? '각 활동에 충분한 답변 공간(줄 5~8개)을 확보하여 A4를 꽉 채우세요' : questionCount <= 4 ? '각 활동에 적당한 답변 공간(줄 2~4개)을 배치하세요' : '각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요'}
-- 머리글 구조: 문서 제목(h1)은 반드시 단독 행으로 배치하고, 학년/반/이름 기입란은 그 아래 별도 행에 배치하세요. 제목과 기입란을 절대 같은 flex 행에 넣지 마세요.
+- 머리글 구조: 문서 제목(h1)은 반드시 단독 행에 가운데 정렬로 배치하세요. 학년/반/이름 기입란은 그 아래 별도 행에 오른쪽 정렬로 배치하고, 각 항목은 `<span>학년: <span class="fill">&nbsp;</span></span>` 형태로 작성 공간이 밑줄로 표시되게 하세요. 예시: `<div class="student-info"><span>학년: <span class="fill">&nbsp;</span></span><span>반: <span class="fill">&nbsp;</span></span><span>이름: <span class="fill">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></span></div>`
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 - 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 자연스러운 학교 자료 문체로 작성하세요.
 
@@ -1180,10 +1180,11 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 <style> 태그에 다음 CSS를 반드시 포함하세요:
 @page { size: A4; margin: 10mm 12mm; }
 body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: ${baseFontSize}; color: #000; margin: 0; padding: 0; word-break: keep-all; overflow-wrap: break-word; }
-h1 { font-size: ${h1Size}; margin: 0 0 3pt; word-break: keep-all; }
+h1 { font-size: ${h1Size}; text-align: center; margin: 0 0 4pt; word-break: keep-all; }
 h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-break: keep-all; }
-.student-info { display: flex; gap: 12pt; margin-bottom: 6pt; font-size: ${baseFontSize}; border-bottom: 1pt solid #000; padding-bottom: 2pt; }
+.student-info { display: flex; gap: 16pt; justify-content: flex-end; margin-bottom: 6pt; font-size: ${baseFontSize}; border-bottom: 1pt solid #000; padding-bottom: 3pt; }
 .student-info span { white-space: nowrap; }
+.student-info .fill { display: inline-block; min-width: 50pt; border-bottom: 1pt solid #333; }
 .activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
 table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; }
