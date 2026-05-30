@@ -30,6 +30,16 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     document.execCommand('selectAll', false);
     document.execCommand('insertHTML', false, cleanContent);
     window.getSelection()?.collapse(el, 0);
+
+    // contentEditable에 삽입 시 <style> 태그가 무시되므로 테이블에 인라인 스타일 직접 적용
+    el.querySelectorAll<HTMLTableElement>('table').forEach(table => {
+      if (!table.style.borderCollapse) table.style.borderCollapse = 'collapse';
+      if (!table.style.width) table.style.width = '100%';
+    });
+    el.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
+      if (!cell.style.border) cell.style.border = '1pt solid #333';
+      if (!cell.style.padding) cell.style.padding = '5pt 8pt';
+    });
   }, [content]);
 
   const getCurrentContent = (): string => {

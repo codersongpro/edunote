@@ -1189,6 +1189,7 @@ h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-
 table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
 p { margin: 2pt 0; line-height: 1.5; }
+또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
@@ -1491,6 +1492,7 @@ table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
 th, td { border: 1pt solid #333; padding: 5pt 8pt; }
 section, .section, tr, h2, h3 { page-break-inside: avoid; }
 h1, h2, h3 { page-break-after: avoid; }
+또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:1pt solid #333;padding:5pt 8pt;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 }));
