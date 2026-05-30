@@ -25,10 +25,29 @@ const OfficialDocAnalyzer: React.FC = () => {
   const canAnalyze = title.trim() || pastedText.trim() || files.length > 0;
 
   const getCalendarDate = () => {
+    const dateFromText = (text: string) => {
+      const m = text.match(/(20\d{2})[-.년\s]+(\d{1,2})[-.월\s]+(\d{1,2})/);
+      return m ? `${m[1]}${m[2].padStart(2, '0')}${m[3].padStart(2, '0')}` : null;
+    };
+
+    // 1순위: ## 마감 섹션
+    const deadlineSection = result.match(/##\s*마감\s*\n+([\s\S]*?)(?=\n##|\s*$)/);
+    if (deadlineSection?.[1]) {
+      const d = dateFromText(deadlineSection[1]);
+      if (d) return d;
+    }
+
+    // 2순위: "까지" / "마감" / "기한" 키워드가 포함된 줄
     const source = `${result}\n${pastedText}\n${title}`;
-    const match = source.match(/(20\d{2})[-.년\s]+(\d{1,2})[-.월\s]+(\d{1,2})/);
-    if (!match) return null;
-    return `${match[1]}${match[2].padStart(2, '0')}${match[3].padStart(2, '0')}`;
+    for (const line of source.split('\n')) {
+      if (/까지|마감|기한/.test(line)) {
+        const d = dateFromText(line);
+        if (d) return d;
+      }
+    }
+
+    // 3순위: 전체에서 첫 번째 날짜 (fallback)
+    return dateFromText(source);
   };
 
   const getCalendarEndDate = (startDate: string) => {
