@@ -14,7 +14,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   label, 
   files, 
   onFilesChange, 
-  accept = ".pdf,.jpg,.jpeg,.png,.txt,.hwp,.hwpx",
+  accept = ".pdf,.jpg,.jpeg,.png,.txt,.md,.hwp,.hwpx",
   multiple = false 
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +48,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }
         } else {
           base64 = await convertToBase64(file);
+          // Gemini API는 text/markdown을 지원하지 않으므로 text/plain으로 정규화
+          if (file.name.toLowerCase().endsWith('.md') || mimeType === 'text/markdown') {
+            mimeType = 'text/plain';
+          }
         }
 
         newFiles.push({
