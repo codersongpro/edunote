@@ -171,7 +171,7 @@ const OfficialDocAnalyzer: React.FC = () => {
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="예: 2026학년도 학교자율시간 운영 자료 제출"
+              placeholder={`예: ${new Date().getMonth() < 2 ? new Date().getFullYear() - 1 : new Date().getFullYear()}학년도 학교자율시간 운영 자료 제출`}
             />
           </div>
 

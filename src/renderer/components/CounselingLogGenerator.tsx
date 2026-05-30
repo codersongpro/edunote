@@ -9,7 +9,7 @@ const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심�
 
 const EXAMPLE_RESULT = `【 상담일지 】
 
-■ 일 시: 2026. 3. 20.(금) 14:00~14:30
+■ 일 시: ${new Date().getFullYear()}. 3. 20.(금) 14:00~14:30
 ■ 유 형: 생활상담
 ■ 참여자: 담임교사, 학생(김○수)
 
@@ -128,7 +128,7 @@ const CounselingLogGenerator: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>상담 일시</label>
-              <input type="text" className={inputClass} placeholder="예: 2026. 3. 20. 14:00" value={date} onChange={e => setDate(e.target.value)} />
+              <input type="text" className={inputClass} placeholder={`예: ${new Date().getFullYear()}. 3. 20. 14:00`} value={date} onChange={e => setDate(e.target.value)} />
             </div>
             <div>
               <label className={labelClass}>학생 이름 <span className="text-xs text-orange-500 font-normal">(개인정보 주의)</span></label>

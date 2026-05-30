@@ -7,7 +7,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 
 const EXAMPLE_RESULT = `【 수업관찰기록 】
 
-■ 일 시: 2026. 3. 15.(일) 2교시
+■ 일 시: ${new Date().getFullYear()}. 3. 15.(일) 2교시
 ■ 교 과: 수학
 ■ 단 원: 3-1. 분수의 덧셈
 ■ 학 급: 5학년 2반
@@ -131,7 +131,7 @@ const LessonObservationGenerator: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>일시</label>
-              <input type="text" className={inputClass} placeholder="예: 2026. 3. 15.(일) 2교시" value={date} onChange={e => setDate(e.target.value)} />
+              <input type="text" className={inputClass} placeholder={`예: ${new Date().getFullYear()}. 3. 15.(일) 2교시`} value={date} onChange={e => setDate(e.target.value)} />
             </div>
             <div>
               <label className={labelClass}>수업 교사</label>

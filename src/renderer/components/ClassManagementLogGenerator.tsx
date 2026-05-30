@@ -7,7 +7,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 const EXAMPLE_RESULT = `【 학급경영일지 】
 
 ■ 주 차: 3월 2주
-■ 기 간: 2026. 3. 10.(화) ~ 3. 14.(토)
+■ 기 간: ${new Date().getFullYear()}. 3. 10.(화) ~ 3. 14.(토)
 ■ 학 급: 5학년 2반
 
 1. 주요 학급 활동
@@ -136,7 +136,7 @@ const ClassManagementLogGenerator: React.FC = () => {
                 type="text"
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                placeholder="예: 2026. 3. 10.(화) ~ 3. 14.(토)"
+                placeholder={`예: ${new Date().getFullYear()}. 3. 10.(화) ~ 3. 14.(토)`}
                 className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>

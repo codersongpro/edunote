@@ -147,7 +147,7 @@ const AboutScreen: React.FC = () => {
 
         {/* License */}
         <div className="text-center text-xs text-gray-400 dark:text-gray-500 pb-4 space-y-1">
-          <p>Copyright © 2026 Dustin. All rights reserved.</p>
+          <p>Copyright © {new Date().getFullYear()} Dustin. All rights reserved.</p>
         </div>
 
       </div>

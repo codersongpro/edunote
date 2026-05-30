@@ -61,7 +61,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [schoolYear, setSchoolYear] = useState('2026');
+  const currentSchoolYear = (() => { const now = new Date(); return String(now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear()); })();
+  const [schoolYear, setSchoolYear] = useState(currentSchoolYear);
   const [pageCount, setPageCount] = useState(2);
 
   // Per-tab file/template state

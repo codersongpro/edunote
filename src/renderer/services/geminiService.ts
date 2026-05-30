@@ -17,7 +17,16 @@ import {
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 
-// ─── IPC Helper ───────────────────────────────────────────────────
+// ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
+const getDateContext = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  // 한국 학년도: 3월 시작 → 1~2월은 전년도 학년도
+  const schoolYear = month < 3 ? year - 1 : year;
+  return `[현재 날짜: ${year}년 ${month}월 ${day}일 / 현재 학년도: ${schoolYear}학년도]`;
+};
 
 const isTemporaryApiError = (error: unknown): boolean => {
   const message = String((error as any)?.message || error || '').toLowerCase();
@@ -379,6 +388,7 @@ export const generateOpinion = async (request: GenerationRequest): Promise<strin
         : '';
 
     const prompt = `
+${getDateContext()}
 다음 학생의 '행동특성 및 종합의견'을 작성해줘.
 
 [학생 정보 - 이름: ${request.studentName}] (이름은 참고만 하고 본문에는 절대 쓰지 말 것)
@@ -420,6 +430,7 @@ export const generateSubjectReport = async (request: SubjectGenerationRequest): 
         : '';
 
     const prompt = `
+${getDateContext()}
 다음 정보를 바탕으로 학교생활기록부 '교과학습발달상황 세부능력 및 특기사항'을 작성해줘.
 
 [학생 정보 - 이름: ${request.studentName}] (이름은 참고만 하고 본문에는 절대 쓰지 말 것)
@@ -457,6 +468,7 @@ export const generateSportsClubReport = async (request: SportsGenerationRequest)
         : '';
 
     const prompt = `
+${getDateContext()}
 다음 정보를 바탕으로 학교생활기록부 '학교스포츠클럽 특기사항'을 작성해줘.
 
 [학생 정보 - 이름: ${request.studentName}] (이름은 참고만 하고 본문에는 절대 쓰지 말 것)
@@ -508,6 +520,7 @@ export const generateCreativeActivityReport = async (
         : '';
 
     const prompt = `
+${getDateContext()}
 다음 정보를 바탕으로 학교생활기록부 '창의적 체험활동 특기사항'을 작성해줘.
 
 [학생 정보 - 이름: ${request.studentName}] (이름은 참고만 하고 본문에는 절대 쓰지 말 것)
@@ -854,6 +867,7 @@ export const generateLessonObservation = async (inputs: {
   teacherName: string;
 }): Promise<string> => {
   const prompt = `
+${getDateContext()}
 교사가 직접 작성한 관찰 내용을 바탕으로 수업관찰기록 문서를 작성해주세요.
 
 [수업 정보]
@@ -887,6 +901,7 @@ export const generateCounselingLog = async (inputs: {
   followUpPlan: string;
 }): Promise<string> => {
   const prompt = `
+${getDateContext()}
 교사가 직접 기록한 상담 내용을 바탕으로 상담일지 문서를 작성해주세요.
 
 [상담 정보]
@@ -919,6 +934,7 @@ export const generateClassManagementLog = async (inputs: {
   teacherNotes: string;
 }): Promise<string> => {
   const prompt = `
+${getDateContext()}
 교사가 직접 기록한 학급 운영 내용을 바탕으로 학급경영일지 문서 작성을 보조해주세요.
 교사의 기록이 최우선이며, AI는 문서 형식 정리와 표현 보완만 담당합니다.
 
@@ -948,6 +964,7 @@ export const analyzeOfficialDocument = async (inputs: {
   files: FileData[];
 }): Promise<string> => {
   const prompt = `
+${getDateContext()}
 학교 또는 교육청 공문을 분석하여 교사가 바로 확인할 수 있는 짧은 업무 메모로 정리해주세요.
 
 [사용자가 입력한 제목/메모]
@@ -1116,7 +1133,8 @@ const getLessonGradeGuidance = (grade: string): string => {
 
 export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<LessonSlide[]> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
-  const prompt = `다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
+  const prompt = `${getDateContext()}
+다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
 
 [수업 정보]
 - 학년: ${params.grade}
@@ -1159,7 +1177,8 @@ export async function generateLessonWorksheet(
   const h2Size = params.grade.includes('초등') ? '13pt' : params.grade.includes('중학') ? '12pt' : '11pt';
   const tableSize = params.grade.includes('초등') ? '11.5pt' : params.grade.includes('중학') ? '10.5pt' : '9.5pt';
   const gradeGuidance = getLessonGradeGuidance(params.grade);
-  const prompt = `다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
+  const prompt = `${getDateContext()}
+다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
 - 학년: ${params.grade}
@@ -1468,7 +1487,8 @@ ${typeLines}
 
 export async function generateLessonPlan(params: LessonParams): Promise<string> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
-  const prompt = `다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
+  const prompt = `${getDateContext()}
+다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
 
 [수업 정보]
 - 학년: ${params.grade}
