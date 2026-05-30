@@ -25,7 +25,7 @@ const getDateContext = (): string => {
   const day = now.getDate();
   // 한국 학년도: 3월 시작 → 1~2월은 전년도 학년도
   const schoolYear = month < 3 ? year - 1 : year;
-  return `[현재 날짜: ${year}년 ${month}월 ${day}일 / 현재 학년도: ${schoolYear}학년도]`;
+  return `[내부 기준 정보 — 오늘: ${year}년 ${month}월 ${day}일 / 학년도: ${schoolYear}학년도. 이 정보는 날짜·연도 기준으로만 활용하고, 사용자가 명시적으로 요청하지 않는 한 출력 문서에 그대로 노출하지 마세요.]`;
 };
 
 const isTemporaryApiError = (error: unknown): boolean => {
