@@ -64,7 +64,7 @@ const AboutScreen: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-100">교무행정AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">공문서(9종) · 수업관찰기록 · 상담일지 · 학급경영일지 · 학생 메모 보드 · 교육AI챗봇</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">공문서(9종) · 공문요약·업무추출 · 교무행정AI 챗봇</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -73,7 +73,7 @@ const AboutScreen: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-100">수업자료AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">슬라이드 · 학습지 · 퀴즈 · 수업계획서 자동 생성</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">슬라이드 · 학습지 · 퀴즈 · 수업계획서 자동 생성 · QR 메이커 · 럭키드로우 · 나만의 자료실</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -82,7 +82,7 @@ const AboutScreen: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-100">학생기록AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">행동특성 · 교과세특 · 스포츠클럽 · 창체 문구 생성 · AI 챗봇</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">생기부도우미(행발·세특·스포츠클럽·창체) · 우리반기록(수업관찰·상담일지·학급경영일지·학생 메모) · AI 챗봇</p>
               </div>
             </div>
           </div>
@@ -118,13 +118,6 @@ const AboutScreen: React.FC = () => {
             <ClipboardList className="w-4 h-4" />
             앱 만족도 설문 참여하기
             <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-          </button>
-          <button
-            onClick={() => openLink('https://sotong-omega.vercel.app/')}
-            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/30 dark:hover:bg-sky-900/50 border border-sky-200 dark:border-sky-700 rounded-xl text-sm font-semibold text-sky-700 dark:text-sky-300 transition-colors"
-          >
-            <ExternalLink className="w-4 h-4" />
-            개발자의 다른 앱 다운로드
           </button>
         </div>
 

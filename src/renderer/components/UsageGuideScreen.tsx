@@ -88,7 +88,7 @@ const UsageGuideScreen: React.FC = () => {
               <p className="text-xs leading-relaxed">교육 행정, 학교 업무, 수업 운영, 교육 정책 관련 질문을 자유롭게 할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">공문 요약 / 업무 추출</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">공문요약·업무추출</p>
               <p className="text-xs leading-relaxed">공문 내용이나 파일, 스크린샷을 넣으면 핵심 요약, 해야 할 일, 마감/제출 정보, 발신/담당 정보를 정리합니다. 결과 화면에서 Google Calendar 일정 작성 화면을 바로 열거나 .ics 파일로 저장할 수 있습니다.</p>
             </div>
             <div>
@@ -106,20 +106,16 @@ const UsageGuideScreen: React.FC = () => {
               <p className="text-xs leading-relaxed">학년, 교과, 성취기준, 단원, 주제를 입력해 슬라이드, 워크시트, 퀴즈 앱, 수업 계획서, 교육용 게임 HTML을 생성합니다. 퀴즈와 게임은 시작 버튼이 포함된 단일 HTML 파일로 저장할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">수업관찰기록</p>
-              <p className="text-xs leading-relaxed">수업 관찰 내용과 교사 메모를 입력해 수업 관찰 기록 문서를 생성합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">QR 메이커</p>
-              <p className="text-xs leading-relaxed">수업 링크, 안내 자료, 활동 페이지 주소를 QR 코드로 만들어 저장하거나 복사할 수 있습니다.</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">수업 도구</p>
+              <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
+              <ul className="text-xs mt-1 space-y-1 ml-3">
+                <li>• <strong>QR 메이커</strong> — 수업 링크, 안내 자료, 활동 페이지 주소를 QR 코드로 만들어 저장하거나 복사합니다.</li>
+                <li>• <strong>럭키드로우</strong> — 설정에 저장한 학생 명단을 활용해 오늘의 주인공, 발표자, 칭찬 릴레이 대상을 선정합니다.</li>
+              </ul>
             </div>
             <div>
               <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">나만의 자료실</p>
               <p className="text-xs leading-relaxed">링크와 YouTube 자료를 보관합니다. YouTube 링크는 가능한 경우 제목과 썸네일을 자동으로 불러옵니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">오늘의 주인공</p>
-              <p className="text-xs leading-relaxed">설정에 저장한 학생 명단을 활용해 오늘의 주인공, 발표자, 칭찬 릴레이 대상을 선정할 수 있습니다.</p>
             </div>
           </div>
         </Section>
@@ -132,34 +128,27 @@ const UsageGuideScreen: React.FC = () => {
               <p className="text-xs leading-relaxed">학생 기록 작성 기준, 기재 가능/불가 표현, 문장 개선 방향을 질문할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">행발생성</p>
-              <p className="text-xs leading-relaxed">학생 관찰 내용과 특성을 바탕으로 행동특성 및 종합의견 초안을 생성합니다. 결과는 반드시 교사가 검토·수정해야 합니다.</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">생기부도우미</p>
+              <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
+              <ul className="text-xs mt-1 space-y-1 ml-3">
+                <li>• <strong>행발생성</strong> — 학생 관찰 내용과 특성을 바탕으로 행동특성 및 종합의견 초안을 생성합니다.</li>
+                <li>• <strong>교과 세특 생성</strong> — 교과 활동, 수행평가, 성취 수준을 바탕으로 교과 세부능력 및 특기사항 문구를 생성합니다.</li>
+                <li>• <strong>학교스포츠클럽</strong> — 스포츠클럽 활동 내용과 참여 태도를 바탕으로 기재 문구를 생성합니다.</li>
+                <li>• <strong>창체 특기사항</strong> — 자율·동아리·봉사·진로 등 창의적 체험활동 특기사항 문구를 생성합니다.</li>
+              </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">교과 세특 생성</p>
-              <p className="text-xs leading-relaxed">교과 활동, 수행평가, 성취 수준을 바탕으로 교과 세부능력 및 특기사항 문구를 생성합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">학교스포츠클럽</p>
-              <p className="text-xs leading-relaxed">스포츠클럽 활동 내용과 참여 태도를 바탕으로 학교스포츠클럽 기재 문구를 생성합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">창체 특기사항</p>
-              <p className="text-xs leading-relaxed">자율·동아리·봉사·진로 등 창의적 체험활동 특기사항 문구를 생성합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">상담일지</p>
-              <p className="text-xs leading-relaxed">상담 주제와 내용을 바탕으로 상담 기록을 정리합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">학급경영일지</p>
-              <p className="text-xs leading-relaxed">학급 운영 내용, 특이사항, 교사 메모를 학급경영일지 형태로 정리합니다.</p>
-            </div>
-            <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">학생 메모 보드</p>
-              <p className="text-xs leading-relaxed">학생별 메모를 저장하고 관리합니다. 학생 메모는 앱 재시작 후에도 유지됩니다.</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">우리반기록</p>
+              <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
+              <ul className="text-xs mt-1 space-y-1 ml-3">
+                <li>• <strong>수업관찰기록</strong> — 수업 관찰 내용과 교사 메모를 입력해 수업 관찰 기록 문서를 생성합니다.</li>
+                <li>• <strong>상담일지</strong> — 상담 주제와 내용을 바탕으로 상담 기록을 정리합니다.</li>
+                <li>• <strong>학급경영일지</strong> — 학급 운영 내용, 특이사항, 교사 메모를 학급경영일지 형태로 정리합니다.</li>
+                <li>• <strong>학생 메모 보드</strong> — 학생별 메모를 저장하고 관리합니다. 앱 재시작 후에도 유지됩니다.</li>
+              </ul>
             </div>
           </div>
+          <p className="text-xs text-rose-600 dark:text-rose-400 mt-2">생성된 내용은 반드시 교사가 검토·수정해야 합니다.</p>
         </Section>
 
         <Section title="파일 업로드와 스크린샷 붙여넣기" icon={<Upload className="w-4 h-4 text-sky-500" />}>
@@ -169,7 +158,7 @@ const UsageGuideScreen: React.FC = () => {
 
         <Section title="Google Calendar 일정 추가" icon={<CalendarPlus className="w-4 h-4 text-emerald-500" />}>
           <ol className="space-y-2.5 text-xs">
-            <Step n={1}>공문 요약 / 업무 추출에서 공문을 분석합니다.</Step>
+            <Step n={1}>공문요약·업무추출에서 공문을 분석합니다.</Step>
             <Step n={2}>분석 결과에서 마감일이나 제출 일정이 맞는지 확인합니다.</Step>
             <Step n={3}><strong>구글캘린더 추가</strong> 버튼을 누릅니다.</Step>
             <Step n={4}>브라우저에 Google Calendar 일정 작성 화면이 열리면 제목, 날짜, 내용을 확인하고 <strong>저장</strong>을 누릅니다.</Step>
@@ -184,7 +173,7 @@ const UsageGuideScreen: React.FC = () => {
             <li>• <strong>이름:</strong> 교사명 자동 입력에 사용됩니다.</li>
             <li>• <strong>소속기관:</strong> 공문서와 일부 생성 결과에 반영됩니다.</li>
             <li>• <strong>학교급과 담당 학년/반:</strong> 학생기록과 수업 관련 결과의 기준으로 사용됩니다.</li>
-            <li>• <strong>학생 명단:</strong> 수업자료, 오늘의 주인공, 학생 메모 등에서 불러올 수 있습니다.</li>
+            <li>• <strong>학생 명단:</strong> 수업자료, 럭키드로우, 학생 메모 등에서 불러올 수 있습니다.</li>
             <li>• <strong>저장 폴더:</strong> 결과물과 앱 데이터를 원하는 폴더에 저장할 수 있습니다.</li>
           </ul>
         </Section>
@@ -202,6 +191,10 @@ const UsageGuideScreen: React.FC = () => {
             <div>
               <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. 여러 메뉴에서 동시에 생성할 수 있나요?</p>
               <p className="text-xs leading-relaxed">가능합니다. 다만 무료 API는 요청 제한이 있으므로 3~4개 이하의 동시 생성이 현실적인 안전선입니다.</p>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. Demo 버튼은 무엇인가요?</p>
+              <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열리고, 각 기능에서 바로 사용할 수 있는 샘플 입력값을 복사 버튼으로 빠르게 가져올 수 있습니다.</p>
             </div>
           </div>
         </Section>

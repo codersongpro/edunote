@@ -1,7 +1,7 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
-작성 기준: 2026년 5월 28일
-대상 버전: EduNote v1.8.4
+작성 기준: 2026년 5월 30일
+대상 버전: EduNote v1.9.2
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
 
 ---
@@ -25,27 +25,32 @@ EduNote
 ├─ 도움말 / 정보
 ├─ 설정
 │
-├─ [학생기록 AI]
-│  ├─ 학생기록AI 챗봇          ← 생활기록부 기재요령 질의응답
-│  ├─ 행발생성                 ← 행동특성 및 종합의견
-│  ├─ 교과 세특 생성
-│  ├─ 학교스포츠클럽
-│  ├─ 창체 특기사항
-│  ├─ 상담일지
-│  ├─ 학급경영일지
-│  └─ 학생 메모 보드
+├─ [교무행정AI]
+│  ├─ 교무행정AI 챗봇
+│  ├─ 공문요약·업무추출
+│  └─ 공문서 작성기             ← 9종 문서 생성 (탭 전환)
 │
-├─ [수업 AI]
+├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
-│  ├─ 수업관찰기록
-│  ├─ QR 메이커
-│  ├─ 나만의 자료실
-│  └─ 오늘의 주인공
+│  ├─ 수업 도구                ← 트리 서브메뉴
+│  │  ├─ QR 메이커
+│  │  └─ 럭키드로우
+│  └─ 나만의 자료실
 │
-└─ [교무 AI]
-   ├─ 교무행정AI 챗봇
-   ├─ 공문 요약 / 업무 추출
-   └─ 공문서 작성기             ← 9종 문서 생성
+└─ [학생기록AI]
+   ├─ 학생기록AI 챗봇           ← 생활기록부 기재요령 질의응답
+   ├─ 생기부도우미              ← 트리 서브메뉴
+   │  ├─ 행발생성              ← 행동특성 및 종합의견
+   │  ├─ 교과 세특 생성
+   │  ├─ 학교스포츠클럽
+   │  └─ 창체 특기사항
+   └─ 우리반기록               ← 트리 서브메뉴
+      ├─ 수업관찰기록
+      ├─ 상담일지
+      ├─ 학급경영일지
+      └─ 학생 메모 보드
+
+사이드바 하단: Demo (별도 창으로 열림)
 ```
 
 ---
@@ -180,23 +185,21 @@ edunote
 | 기본 | `USAGE_GUIDE` | `UsageGuideScreen` | 사용법 안내 |
 | 기본 | `SETTINGS` | `SettingsScreen` | API 키, 학교급, 소속기관, 저장 위치, 백업 설정 |
 | 기본 | `ABOUT` | `AboutScreen` | 앱 정보, 버전, 업데이트 확인 |
-| 학생기록 AI | `RECORD_CHATBOT` | `RecordChatbot` | 생활기록부 기재 상담 챗봇 |
-| 학생기록 AI | `GUIDELINE_QA` | `GuidelineQA` | 기재요령 질의응답 |
-| 학생기록 AI | `GENERATOR` | `OpinionGenerator` | 행동특성 및 종합의견 생성 |
-| 학생기록 AI | `SUBJECT_GENERATOR` | `SubjectGenerator` | 교과세특 생성 |
-| 학생기록 AI | `SPORTS_CLUB_GENERATOR` | `SportsClubGenerator` | 학교스포츠클럽 특기사항 생성 |
-| 학생기록 AI | `CREATIVE_ACTIVITY_GENERATOR` | `CreativeActivityGenerator` | 창의적 체험활동 특기사항 생성 |
-| 학생기록 AI | `COUNSELING_LOG` | `CounselingLogGenerator` | 상담일지 생성 |
-| 학생기록 AI | `CLASS_LOG` | `ClassManagementLogGenerator` | 학급경영일지 생성 |
-| 학생기록 AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
-| 수업 AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
-| 수업 AI | `LESSON_OBSERVATION` | `LessonObservationGenerator` | 수업관찰기록 생성 |
-| 수업 AI | `QR_MAKER` | `QRMaker` | URL QR 코드 생성 |
-| 수업 AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
-| 수업 AI | `LUCKY_DRAW` | `LuckyDraw` | 긍정 주제 추첨 (오늘의 주인공 등) |
-| 교무 AI | `EDUCATION_QA` | `EducationAssistantQA` | 교육 일반 질의응답 |
-| 교무 AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
-| 교무 AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
+| 기본 | `DEMO_SAMPLES` | `DemoSamplesScreen` | 샘플 입력값 모음 (Demo 버튼 → 별도 창으로 열림) |
+| 교무행정AI | `EDUCATION_QA` | `EducationAssistantQA` | 교육 일반 질의응답 |
+| 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
+| 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
+| 수업자료AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
+| 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우) |
+| 수업자료AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
+| 학생기록AI | `RECORD_CHATBOT` | `RecordChatbot` | 생활기록부 기재 상담 챗봇 |
+| 학생기록AI | `STUDENT_RECORD_GROUP` | (트리 토글) | 생기부도우미 서브메뉴 펼침/접기 |
+| 학생기록AI | `GENERATOR` | `OpinionGenerator` | 행동특성 및 종합의견 생성 |
+| 학생기록AI | `SUBJECT_GENERATOR` | `SubjectGenerator` | 교과세특 생성 |
+| 학생기록AI | `SPORTS_CLUB_GENERATOR` | `SportsClubGenerator` | 학교스포츠클럽 특기사항 생성 |
+| 학생기록AI | `CREATIVE_ACTIVITY_GENERATOR` | `CreativeActivityGenerator` | 창의적 체험활동 특기사항 생성 |
+| 학생기록AI | `TEACHER_RECORD` | `TeacherRecordPanel` | 우리반기록 탭 컨테이너 (수업관찰·상담·학급경영) |
+| 학생기록AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
 
 ---
 
@@ -275,11 +278,13 @@ edunote
 
 ### 9.4 수업 운영 도구
 
+수업 도구(CLASS_TOOLS)는 탭 컨테이너로, QR 메이커와 럭키드로우를 탭 방식으로 전환한다. 사이드바에서는 수업 도구 항목 클릭 시 서브메뉴가 트리로 펼쳐진다.
+
 | 기능 | 역할 |
 | --- | --- |
 | QR 메이커 | 수업 링크나 자료 링크를 QR 코드로 변환 |
+| 럭키드로우 | 발표, 칭찬 주인공 등 긍정 주제로 학생 추첨 |
 | 나만의 자료실 | URL, 유튜브, 파일 자료를 주제별로 저장·검색 |
-| 오늘의 주인공 | 발표, 칭찬 주인공 등 긍정 주제로 학생 추첨 |
 | 학생 메모 보드 | 제목, 학생 여러 명, 내용을 기록하고 학생·키워드로 필터링 |
 
 ### 9.5 설정·운영 기능
@@ -480,6 +485,7 @@ GitHub Actions 자동 실행
 - 인터넷 데이터를 가져올 때는 Node.js `https` 모듈이 아닌 `electron.net.fetch`를 사용해야 한다.
 - 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하지 않는다.
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다.
+- Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다.
 
 ---
 
