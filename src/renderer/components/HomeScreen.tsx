@@ -86,7 +86,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           <div className="flex gap-3 items-start">
             <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0 mt-1" />
             <p className="text-sm text-fuchsia-900 dark:text-fuchsia-100 leading-relaxed">
-              AI가 초안 문구를 제안합니다. 생성된 내용은 <strong className="font-black text-rose-600 dark:text-rose-300">반드시 검토·수정</strong>하여 활용해 주세요.
+              생성된 내용은 <strong className="font-black text-rose-600 dark:text-rose-300">반드시 검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
         </div>
