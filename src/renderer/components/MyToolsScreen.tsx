@@ -313,7 +313,7 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}
             >
-              {t === 'market' && <Store className="w-4 h-4" />}
+              {t === 'market' && <Share2 className="w-4 h-4" />}
               {label}
               {t === 'my' && <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">{tools.length}</span>}
             </button>
