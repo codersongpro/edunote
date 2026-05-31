@@ -6,7 +6,7 @@ import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  RefreshCw, Share2, AlertCircle, User,
+  RefreshCw, Share2, AlertCircle, User, X, School,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -37,6 +37,8 @@ const COL = {
   description: '설명',
   category: '카테고리',
   author: '작성자',
+  authorSchool: '소속',
+  message: '한 마디',
   fileUrl: 'JSON 파일',
 };
 
@@ -69,6 +71,8 @@ interface MarketEntry {
   description: string;
   category: CustomTool['category'];
   author: string;
+  authorSchool: string;
+  message: string;
   fileUrl: string;
   createdAt: string;
 }
@@ -105,12 +109,14 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
     return -1;
   };
 
-  const nameIdx   = findIdx(COL.name,   '이름', 'name', '도구');
-  const descIdx   = findIdx(COL.description, '설명', 'desc', '내용');
-  const catIdx    = findIdx(COL.category,    '카테고리', 'category', '분류');
-  const authorIdx = findIdx(COL.author,      '작성자', 'author');
-  const fileIdx   = findIdx(COL.fileUrl,     '파일', 'file', 'json', 'url');
-  const tsIdx     = findIdx(COL.timestamp,   '타임스탬프', 'timestamp');
+  const nameIdx    = findIdx(COL.name,        '이름', 'name', '도구');
+  const descIdx    = findIdx(COL.description, '설명', 'desc', '내용');
+  const catIdx     = findIdx(COL.category,    '카테고리', 'category', '분류');
+  const authorIdx  = findIdx(COL.author,      '작성자', 'author');
+  const schoolIdx  = findIdx(COL.authorSchool,'소속', 'school', '학교');
+  const msgIdx     = findIdx(COL.message,     '한 마디', '메시지', 'message', '소개');
+  const fileIdx    = findIdx(COL.fileUrl,     '파일', 'file', 'json', 'url');
+  const tsIdx      = findIdx(COL.timestamp,   '타임스탬프', 'timestamp');
 
   const get = (cols: string[], idx: number): string =>
     idx >= 0 ? (cols[idx] ?? '').replace(/^"|"$/g, '').trim() : '';
@@ -124,6 +130,8 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
       description: get(cols, descIdx),
       category: (CATEGORY_MAP[cat] ?? 'other') as CustomTool['category'],
       author: get(cols, authorIdx),
+      authorSchool: get(cols, schoolIdx),
+      message: get(cols, msgIdx),
       fileUrl: rawUrl ? toDriveDownloadUrl(rawUrl) : '',
       createdAt: get(cols, tsIdx),
     };
@@ -147,6 +155,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
   const [marketDebug, setMarketDebug] = useState<{ headers: string[]; totalRows: number } | null>(null);
   const [importingUrl, setImportingUrl] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
+  const [sharingTool, setSharingTool] = useState<CustomTool | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -370,6 +379,10 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
         </div>
       </div>
 
+      {sharingTool && (
+        <ShareModal tool={sharingTool} onClose={() => setSharingTool(null)} />
+      )}
+
       {/* 탭 컨텐츠 */}
       <div className="flex-1 overflow-y-auto p-6">
         {tab === 'my' && (
@@ -408,6 +421,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                     onEdit={() => { setSelectedTool(tool); setView('edit'); }}
                     onExport={() => handleExport(tool)}
                     onDelete={() => handleDelete(tool.id)}
+                    onShare={() => setSharingTool(tool)}
                   />
                 ))}
               </div>
@@ -528,7 +542,8 @@ const ToolCard: React.FC<{
   onEdit: () => void;
   onExport: () => void;
   onDelete: () => void;
-}> = ({ tool, onRun, onEdit, onExport, onDelete }) => (
+  onShare: () => void;
+}> = ({ tool, onRun, onEdit, onExport, onDelete, onShare }) => (
   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
@@ -561,7 +576,10 @@ const ToolCard: React.FC<{
         <Pencil className="w-3.5 h-3.5" />
         수정
       </button>
-      <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="내보내기">
+      <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
+        <Share2 className="w-4 h-4" />
+      </button>
+      <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="JSON 내보내기">
         <Download className="w-4 h-4" />
       </button>
       <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="삭제">
@@ -583,11 +601,18 @@ const MarketToolCard: React.FC<{
         {entry.description && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.description}</p>
         )}
-        {entry.author && (
-          <div className="flex items-center gap-1 mt-1">
+        {(entry.author || entry.authorSchool) && (
+          <div className="flex items-center gap-1 mt-1.5 flex-wrap">
             <User className="w-3 h-3 text-pink-400 dark:text-pink-500 shrink-0" />
-            <p className="text-xs text-pink-600 dark:text-pink-400 font-medium truncate">{entry.author}</p>
+            <p className="text-xs text-pink-600 dark:text-pink-400 font-medium">
+              {entry.author}{entry.author && entry.authorSchool ? ' · ' : ''}{entry.authorSchool}
+            </p>
           </div>
+        )}
+        {entry.message && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 leading-relaxed line-clamp-2">
+            "{entry.message}"
+          </p>
         )}
       </div>
       <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[entry.category]}`}>
@@ -607,5 +632,139 @@ const MarketToolCard: React.FC<{
     </button>
   </div>
 );
+
+const ShareModal: React.FC<{
+  tool: CustomTool;
+  onClose: () => void;
+}> = ({ tool, onClose }) => {
+  const [authorName, setAuthorName] = useState(() => localStorage.getItem('share-author-name') || '');
+  const [authorSchool, setAuthorSchool] = useState(() => localStorage.getItem('share-author-school') || '');
+  const [message, setMessage] = useState('');
+  const [jsonSaved, setJsonSaved] = useState(false);
+
+  const handleSaveJson = async () => {
+    const json = JSON.stringify(tool, null, 2);
+    await window.electronAPI.saveTxt(json, `${tool.name}.json`);
+    localStorage.setItem('share-author-name', authorName);
+    localStorage.setItem('share-author-school', authorSchool);
+    setJsonSaved(true);
+  };
+
+  const handleOpenForm = () => {
+    window.electronAPI.openExternal(MARKET_FORM_URL);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col gap-5 p-6">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Share2 className="w-4 h-4 text-pink-500" />
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">도구 공유하기</h2>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* 도구 미리보기 */}
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</p>
+            {tool.description && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+            )}
+          </div>
+          <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
+            {CATEGORY_LABELS[tool.category]}
+          </span>
+        </div>
+
+        {/* 작성자 정보 */}
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                이름 <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={authorName}
+                onChange={e => setAuthorName(e.target.value)}
+                placeholder="예: 김선생"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">소속 학교</label>
+              <input
+                value={authorSchool}
+                onChange={e => setAuthorSchool(e.target.value)}
+                placeholder="예: OO초등학교"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">선생님들께 한 마디</label>
+            <textarea
+              value={message}
+              onChange={e => setMessage(e.target.value)}
+              placeholder="도구를 만든 계기나 활용 팁을 알려주세요!"
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* 공유 단계 */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">공유 방법 (2단계)</p>
+
+          {/* 1단계: JSON 저장 */}
+          <button
+            onClick={handleSaveJson}
+            className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+              jsonSaved
+                ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700'
+                : 'bg-pink-500 hover:bg-pink-600 text-white'
+            }`}
+          >
+            {jsonSaved ? (
+              <><span className="text-emerald-500">✓</span> JSON 파일 저장됨</>
+            ) : (
+              <><Download className="w-4 h-4" /> ① JSON 파일 저장하기</>
+            )}
+          </button>
+
+          {jsonSaved && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+              저장된 JSON 파일을 <strong>구글 드라이브</strong>에 업로드하고,<br />
+              파일을 <strong>링크가 있는 모든 사용자</strong>에게 공유한 뒤<br />
+              공유 링크를 복사해 폼에 붙여넣어 주세요.
+            </div>
+          )}
+
+          {/* 2단계: 폼 열기 */}
+          <button
+            onClick={handleOpenForm}
+            disabled={!jsonSaved || !authorName.trim()}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-pink-200 dark:border-pink-700 text-pink-600 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Share2 className="w-4 h-4" />
+            ② 공유 폼에 등록하기
+          </button>
+
+          {!jsonSaved && (
+            <p className="text-xs text-gray-400 dark:text-gray-600 text-center">① 먼저 JSON 파일을 저장해주세요</p>
+          )}
+          {jsonSaved && !authorName.trim() && (
+            <p className="text-xs text-red-400 text-center">이름을 입력해주세요</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default MyToolsScreen;

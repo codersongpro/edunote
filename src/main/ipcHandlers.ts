@@ -2,6 +2,8 @@ import { ipcMain, dialog, shell, app, BrowserWindow, net } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as https from 'https';
+import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
@@ -513,20 +515,41 @@ export function registerIpcHandlers(): void {
   });
 
   // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
+  // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
+  // 한글 파일명이 Electron net.fetch의 ByteString 제약에 걸리는 문제를 방지
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
-    // 비-ASCII 문자가 포함된 URL을 안전하게 인코딩 (한글 등 포함 시 ByteString 오류 방지)
     let safeUrl: string;
     try {
       safeUrl = new URL(url).href;
     } catch {
       throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
     }
-    const res = await net.fetch(safeUrl, {
-      headers: { 'User-Agent': 'edunote-app' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+
+    const fetchWithRedirects = (targetUrl: string, redirectsLeft = 6): Promise<string> =>
+      new Promise((resolve, reject) => {
+        if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
+        const lib: typeof https | typeof http = targetUrl.startsWith('https') ? https : http;
+        const req = lib.get(targetUrl, { headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' } }, (res) => {
+          const { statusCode, headers: resHeaders } = res;
+          if (statusCode && [301, 302, 303, 307, 308].includes(statusCode) && resHeaders.location) {
+            const next = resHeaders.location.startsWith('http')
+              ? resHeaders.location
+              : new URL(resHeaders.location, targetUrl).href;
+            res.resume();
+            resolve(fetchWithRedirects(next, redirectsLeft - 1));
+            return;
+          }
+          if (statusCode && statusCode >= 400) { reject(new Error(`HTTP ${statusCode}`)); return; }
+          const chunks: Buffer[] = [];
+          res.on('data', (c: Buffer) => chunks.push(c));
+          res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+          res.on('error', reject);
+        });
+        req.setTimeout(15000, () => req.destroy(new Error('연결 시간이 초과되었습니다 (15초)')));
+        req.on('error', reject);
+      });
+
+    return await fetchWithRedirects(safeUrl);
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
