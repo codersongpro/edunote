@@ -226,6 +226,15 @@ const App: React.FC = () => {
     return () => window.removeEventListener('edunote-api-temporary-error', handleTemporaryApiError);
   }, []);
 
+  useEffect(() => {
+    const handler = () => {
+      setMode(AppMode.SETTINGS);
+      setMountedModes(prev => new Set([...prev, AppMode.SETTINGS]));
+    };
+    window.addEventListener('edunote-goto-settings', handler);
+    return () => window.removeEventListener('edunote-goto-settings', handler);
+  }, []);
+
   const handleAcceptDisclaimer = () => {
     setShowDisclaimerModal(false);
   };

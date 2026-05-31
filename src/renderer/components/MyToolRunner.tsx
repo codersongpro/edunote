@@ -3,7 +3,8 @@ import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { runCustomTool } from '../services/geminiService';
-import { ChevronLeft, Zap } from 'lucide-react';
+import { ChevronLeft, Zap, AlertTriangle } from 'lucide-react';
+import { useGlobalState } from '../GlobalStateContext';
 
 interface MyToolRunnerProps {
   tool: CustomTool;
@@ -11,6 +12,7 @@ interface MyToolRunnerProps {
 }
 
 const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack }) => {
+  const { apiKeyAvailability } = useGlobalState();
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fileValues, setFileValues] = useState<Record<string, FileData[]>>({});
   const [result, setResult] = useState('');
@@ -76,6 +78,28 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack }) => {
             </div>
           </div>
         </div>
+
+        {apiKeyAvailability !== 'usable' && (
+          <div className="mx-4 mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키가 활성화되지 않았습니다'}
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
+                {apiKeyAvailability === 'wait'
+                  ? '잠시 후 다시 시도하거나 설정에서 API 키를 변경해 주세요.'
+                  : 'Gemini API 키를 설정해야 생성 기능을 사용할 수 있습니다.'}
+              </p>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('edunote-goto-settings'))}
+                className="mt-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
+              >
+                설정 바로가기 →
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 p-4 space-y-4">
           {tool.inputs.map(input => (
