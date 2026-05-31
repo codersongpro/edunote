@@ -426,7 +426,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                 {MARKET_FORM_URL && (
                   <button
                     onClick={() => window.electronAPI.openExternal(MARKET_FORM_URL)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors"
                   >
                     <Share2 className="w-3.5 h-3.5" />
                     내 도구 공유하기
@@ -445,9 +445,9 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
 
             {/* 준비 중 안내 */}
             {marketError === 'SHEET_ID_EMPTY' && (
-              <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800 rounded-xl p-6 text-center space-y-3">
-                <Share2 className="w-10 h-10 text-violet-300 dark:text-violet-600 mx-auto" />
-                <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">공유 마켓 준비 중</p>
+              <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-800 rounded-xl p-6 text-center space-y-3">
+                <Share2 className="w-10 h-10 text-pink-300 dark:text-pink-600 mx-auto" />
+                <p className="text-sm font-semibold text-pink-700 dark:text-pink-300">공유 마켓 준비 중</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                   곧 오픈됩니다.<br />
                   지금은 아래 방법으로 도구를 주고받을 수 있어요.
@@ -460,7 +460,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                 </div>
                 <button
                   onClick={handleImport}
-                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-colors mx-auto"
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-pink-500 hover:bg-pink-600 text-white rounded-xl transition-colors mx-auto"
                 >
                   <Upload className="w-4 h-4" />
                   JSON 파일에서 가져오기
@@ -479,7 +479,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
             {/* 로딩 */}
             {!marketError && marketLoading && (
               <div className="text-center py-16">
-                <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">목록을 불러오는 중...</p>
               </div>
             )}
@@ -585,8 +585,8 @@ const MarketToolCard: React.FC<{
         )}
         {entry.author && (
           <div className="flex items-center gap-1 mt-1">
-            <User className="w-3 h-3 text-violet-400 dark:text-violet-500 shrink-0" />
-            <p className="text-xs text-violet-600 dark:text-violet-400 font-medium truncate">{entry.author}</p>
+            <User className="w-3 h-3 text-pink-400 dark:text-pink-500 shrink-0" />
+            <p className="text-xs text-pink-600 dark:text-pink-400 font-medium truncate">{entry.author}</p>
           </div>
         )}
       </div>
@@ -598,7 +598,7 @@ const MarketToolCard: React.FC<{
     <button
       onClick={onImport}
       disabled={importing}
-      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50"
+      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors disabled:opacity-50"
     >
       {importing
         ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />가져오는 중...</>

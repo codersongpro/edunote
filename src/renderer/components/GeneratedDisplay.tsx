@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown } from 'lucide-react';
-import { stripGeneratedCodeFences } from '../lib/generatedContent';
+import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -25,7 +25,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   useEffect(() => {
     const el = contentRef.current;
     if (!el || !content) return;
-    const cleanContent = stripGeneratedCodeFences(content);
+    const cleanContent = markdownOrHtmlToHtml(content);
     el.focus();
     document.execCommand('selectAll', false);
     document.execCommand('insertHTML', false, cleanContent);
@@ -63,7 +63,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   }, [content]);
 
   const getCurrentContent = (): string => {
-    return stripGeneratedCodeFences(contentRef.current?.innerHTML || content);
+    return markdownOrHtmlToHtml(contentRef.current?.innerHTML || content);
   };
 
   const handleCopy = async () => {

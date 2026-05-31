@@ -426,7 +426,7 @@ const App: React.FC = () => {
       : LESSON_AI_MODES.includes(mode)
       ? 'from-amber-400 via-amber-500 to-orange-500'
       : MY_TOOLS_MODES.includes(mode)
-      ? 'from-violet-400 via-violet-500 to-purple-500'
+      ? 'from-pink-400 via-pink-500 to-rose-500'
       : 'from-transparent to-transparent';
 
   const renderMode = (m: AppMode): React.ReactNode => {
@@ -902,18 +902,18 @@ const App: React.FC = () => {
             <div className="h-1.5" />
 
             {/* ── 나만의AI ── */}
-            <div className="rounded-xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20">
+            <div className="rounded-xl overflow-hidden border border-pink-100 dark:border-pink-900/50 bg-pink-50/40 dark:bg-pink-950/20">
               <button
                 onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-violet-50/80 dark:hover:bg-violet-900/20 transition-colors"
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-pink-50/80 dark:hover:bg-pink-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-violet-500 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-pink-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">나만의AI</span>
+                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">나만의AI</span>
                 </div>
-                {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-violet-400" /> : <ChevronRight className="w-3 h-3 text-violet-400" />}
+                {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
               </button>
               {myToolsSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
@@ -921,8 +921,8 @@ const App: React.FC = () => {
                     onClick={() => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); }}
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'my'
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-pink-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
                     }`}
                   >
                     <Wrench className="w-4 h-4 shrink-0" />
@@ -932,8 +932,8 @@ const App: React.FC = () => {
                     onClick={() => { setMyToolsActiveTab('market'); goTo(AppMode.MY_AI_TOOLS); }}
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'market'
-                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                        ? 'bg-pink-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
                     }`}
                   >
                     <Download className="w-4 h-4 shrink-0" />
