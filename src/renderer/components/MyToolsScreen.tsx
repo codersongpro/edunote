@@ -361,7 +361,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
 
         {/* 탭 */}
         <div className="flex gap-4 border-b border-gray-100 dark:border-gray-800 -mb-px">
-          {([['my', '내 도구'], ['market', '공유받은 도구']] as [Tab, string][]).map(([t, label]) => (
+          {([['my', '내 도구'], ['market', '마켓플레이스']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
               onClick={() => { setTab(t); onTabChange?.(t); }}

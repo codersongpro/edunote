@@ -12,6 +12,7 @@ import {
   Presentation,
   Settings,
   Upload,
+  Wrench,
 } from 'lucide-react';
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }> = ({
@@ -149,6 +150,36 @@ const UsageGuideScreen: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-rose-600 dark:text-rose-400 mt-2">생성된 내용은 반드시 교사가 검토·수정해야 합니다.</p>
+        </Section>
+
+        <Section title="나만의 AI 도구" icon={<Wrench className="w-4 h-4 text-violet-500" />}>
+          <p className="text-xs text-gray-500 dark:text-gray-400">자주 쓰는 AI 작업 패턴을 도구로 만들어 저장하고, 동료 선생님과 공유할 수 있습니다.</p>
+          <div className="space-y-3">
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">도구 만들기</p>
+              <ul className="text-xs space-y-1.5 ml-3">
+                <li>• <strong>대화로 만들기</strong> — AI와 4단계 대화를 통해 도구를 자동으로 생성합니다. 어떤 작업을 자동화할지, 어떤 입력이 필요한지, 결과 형식은 어떻게 할지 답하면 도구 초안이 만들어집니다.</li>
+                <li>• <strong>직접 만들기</strong> — 3단계 위저드로 도구를 직접 설정합니다. ① 기본 정보(이름·설명·카테고리) → ② 입력 필드 구성(텍스트·여러 줄·파일 첨부) → ③ 프롬프트 작성. 프롬프트 단계에서 <strong>AI가 대신 써줘</strong> 버튼으로 초안을 자동 생성할 수 있습니다.</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">도구 실행</p>
+              <p className="text-xs leading-relaxed">도구 카드의 <strong>실행</strong> 버튼을 누르면 입력 폼이 나타납니다. 입력값을 채우고 <strong>생성</strong>을 누르면 AI가 결과를 만들어 줍니다. 파일 첨부 필드는 PDF·이미지·HWPX를 지원하며, 최대 20개까지 한 번에 올릴 수 있습니다. 생성 중에는 <strong>취소</strong> 버튼으로 멈출 수 있습니다.</p>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">도구 관리</p>
+              <ul className="text-xs space-y-1 ml-3">
+                <li>• <strong>수정</strong> — 도구 이름·필드·프롬프트를 언제든 수정할 수 있습니다.</li>
+                <li>• <strong>내보내기(<span className="font-mono">↓</span>)</strong> — 도구를 JSON 파일로 저장합니다. 카카오톡·이메일로 공유하면 상대방이 내 도구에 추가할 수 있습니다.</li>
+                <li>• <strong>파일에서 가져오기</strong> — 받은 JSON 파일을 열어 내 도구 목록에 추가합니다.</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">마켓플레이스 탭</p>
+              <p className="text-xs leading-relaxed">동료 선생님이 공유한 도구 목록을 볼 수 있습니다. <strong>내 도구에 추가</strong> 버튼으로 원하는 도구를 바로 가져올 수 있으며, 이미 추가된 도구는 초록색으로 표시됩니다.</p>
+              <p className="text-xs leading-relaxed mt-1">내 도구를 목록에 올리려면 도구 카드의 <strong>공유(<span className="font-mono">↗</span>)</strong> 버튼을 눌러 이름·소속·한 마디를 입력하고 2단계 안내에 따라 등록하세요.</p>
+            </div>
+          </div>
         </Section>
 
         <Section title="파일 업로드와 스크린샷 붙여넣기" icon={<Upload className="w-4 h-4 text-sky-500" />}>

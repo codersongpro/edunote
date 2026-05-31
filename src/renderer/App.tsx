@@ -937,7 +937,7 @@ const App: React.FC = () => {
                     }`}
                   >
                     <Download className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">공유받은 도구</span>
+                    <span className="flex-1 text-left truncate">마켓플레이스</span>
                   </button>
                 </div>
               )}
