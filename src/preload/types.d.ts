@@ -41,6 +41,8 @@ export interface ElectronAPI {
   checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 
   openJsonFile(): Promise<string | null>;
+  fetchMarket(sheetId: string): Promise<string>;
+  fetchUrlJson(url: string): Promise<string>;
 }
 
 declare global {

@@ -6,13 +6,15 @@ import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  ShoppingBag, RefreshCw, Store,
+  RefreshCw, Share2, AlertCircle,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
 type View = 'list' | 'run' | 'edit' | 'create-wizard' | 'create-chat';
 
+// 구글 시트 ID와 폼 URL — 운영 시작 전까지 빈 문자열 유지
 const MARKET_SHEET_ID = '';
+const MARKET_FORM_URL = '';
 
 const CATEGORY_LABELS: Record<string, string> = {
   admin: '학급 행정',
@@ -28,28 +30,73 @@ const CATEGORY_COLORS: Record<string, string> = {
   other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
-const parseMarketCsv = (csv: string): CustomTool[] => {
+// 구글 폼 응답 시트 컬럼명 (폼 질문 제목과 일치해야 함)
+const COL = {
+  timestamp: '타임스탬프',
+  name: '도구 이름',
+  description: '설명',
+  category: '카테고리',
+  author: '작성자',
+  fileUrl: 'JSON 파일',
+};
+
+const CATEGORY_MAP: Record<string, CustomTool['category']> = {
+  '학급 행정': 'admin',
+  '수업 자료': 'lesson',
+  '학생 관리': 'student',
+  '기타': 'other',
+};
+
+// 구글 드라이브 공유 URL → 직접 다운로드 URL 변환
+const toDriveDownloadUrl = (url: string): string => {
+  const match = url.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/);
+  if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  return url;
+};
+
+interface MarketEntry {
+  name: string;
+  description: string;
+  category: CustomTool['category'];
+  author: string;
+  fileUrl: string;
+  createdAt: string;
+}
+
+const parseCsvLine = (line: string): string[] => {
+  const result: string[] = [];
+  let cur = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQuote = !inQuote; }
+    else if (ch === ',' && !inQuote) { result.push(cur.trim()); cur = ''; }
+    else { cur += ch; }
+  }
+  result.push(cur.trim());
+  return result;
+};
+
+const parseMarketCsv = (csv: string): MarketEntry[] => {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) return [];
-  const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const header = parseCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
+  const get = (cols: string[], key: string) =>
+    (cols[header.indexOf(key)] ?? '').replace(/^"|"$/g, '').trim();
+
   return lines.slice(1).map(line => {
-    const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,)|(?<=,)$|^(?=,))/g) ?? [];
-    const get = (key: string) => (cols[header.indexOf(key)] ?? '').replace(/^"|"$/g, '').trim();
-    let inputs: CustomTool['inputs'] = [];
-    try { inputs = JSON.parse(get('inputs_json') || '[]'); } catch { inputs = []; }
-    const now = new Date().toISOString();
+    const cols = parseCsvLine(line);
+    const rawUrl = get(cols, COL.fileUrl);
+    const cat = get(cols, COL.category);
     return {
-      id: get('id') || crypto.randomUUID(),
-      name: get('name'),
-      description: get('description'),
-      category: (get('category') as CustomTool['category']) || 'other',
-      author: get('author'),
-      inputs,
-      promptTemplate: get('promptTemplate'),
-      createdAt: get('createdAt') || now,
-      updatedAt: now,
+      name: get(cols, COL.name),
+      description: get(cols, COL.description),
+      category: CATEGORY_MAP[cat] ?? 'other',
+      author: get(cols, COL.author),
+      fileUrl: rawUrl ? toDriveDownloadUrl(rawUrl) : '',
+      createdAt: get(cols, COL.timestamp),
     };
-  }).filter(t => t.name);
+  }).filter(e => e.name && e.fileUrl);
 };
 
 const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) => {
@@ -57,9 +104,10 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
   const [view, setView] = useState<View>('list');
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
-  const [marketTools, setMarketTools] = useState<CustomTool[]>([]);
+  const [marketEntries, setMarketEntries] = useState<MarketEntry[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
+  const [importingUrl, setImportingUrl] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
 
   useEffect(() => {
@@ -127,36 +175,47 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
     }
   };
 
-  const handleImportFromMarket = (tool: CustomTool) => {
-    const now = new Date().toISOString();
-    const imported: CustomTool = { ...tool, id: crypto.randomUUID(), updatedAt: now };
-    if (tools.some(t => t.name === tool.name)) {
-      if (!confirm(`"${tool.name}" 이름의 도구가 이미 있습니다. 추가할까요?`)) return;
+  const handleImportFromMarket = async (entry: MarketEntry) => {
+    if (importingUrl === entry.fileUrl) return;
+    setImportingUrl(entry.fileUrl);
+    try {
+      const raw = await window.electronAPI.fetchUrlJson(entry.fileUrl);
+      const data = JSON.parse(raw);
+      const items: CustomTool[] = Array.isArray(data) ? data : [data];
+      const now = new Date().toISOString();
+      const imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now }));
+      if (tools.some(t => t.name === imported[0]?.name)) {
+        if (!confirm(`"${imported[0]?.name}" 이름의 도구가 이미 있습니다. 추가할까요?`)) return;
+      }
+      saveTools([...tools, ...imported]);
+      setTab('my');
+      alert(`"${imported[0]?.name ?? entry.name}" 도구를 내 도구에 추가했습니다.`);
+    } catch {
+      alert('도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.');
+    } finally {
+      setImportingUrl(null);
     }
-    saveTools([...tools, imported]);
-    setTab('my');
-    alert(`"${tool.name}" 도구를 내 도구에 추가했습니다.`);
   };
 
   const loadMarket = async () => {
     if (!MARKET_SHEET_ID) {
-      setMarketError('마켓이 아직 준비 중입니다. 곧 오픈 예정!');
+      setMarketError('SHEET_ID_EMPTY');
       return;
     }
     setMarketLoading(true);
     setMarketError('');
     try {
       const csv = await window.electronAPI.fetchMarket(MARKET_SHEET_ID);
-      setMarketTools(parseMarketCsv(csv));
+      setMarketEntries(parseMarketCsv(csv));
     } catch (e: any) {
-      setMarketError('마켓 데이터를 불러오지 못했습니다: ' + (e?.message ?? ''));
+      setMarketError('목록을 불러오지 못했습니다: ' + (e?.message ?? ''));
     } finally {
       setMarketLoading(false);
     }
   };
 
   useEffect(() => {
-    if (tab === 'market' && marketTools.length === 0 && !marketLoading && !marketError) {
+    if (tab === 'market' && marketEntries.length === 0 && !marketLoading && !marketError) {
       loadMarket();
     }
   }, [tab]);
@@ -308,17 +367,22 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
         )}
 
         {tab === 'market' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">동료 선생님이 공유한 도구를 가져오거나 커뮤니티 도구를 내려받을 수 있습니다.</p>
+          <div className="space-y-5">
+            {/* 안내 + 버튼 */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                동료 선생님이 공유한 도구를 가져올 수 있습니다.
+              </p>
               <div className="flex gap-2">
-                <button
-                  onClick={handleImport}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  파일에서 가져오기
-                </button>
+                {MARKET_FORM_URL && (
+                  <button
+                    onClick={() => window.electronAPI.openExternal(MARKET_FORM_URL)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    내 도구 공유하기
+                  </button>
+                )}
                 <button
                   onClick={loadMarket}
                   disabled={marketLoading}
@@ -330,29 +394,65 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
               </div>
             </div>
 
-            {marketError && (
-              <div className="text-center py-16">
-                <ShoppingBag className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">{marketError}</p>
+            {/* 준비 중 안내 */}
+            {marketError === 'SHEET_ID_EMPTY' && (
+              <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-800 rounded-xl p-6 text-center space-y-3">
+                <Share2 className="w-10 h-10 text-violet-300 dark:text-violet-600 mx-auto" />
+                <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">공유 마켓 준비 중</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  곧 오픈됩니다.<br />
+                  지금은 아래 방법으로 도구를 주고받을 수 있어요.
+                </p>
+                <div className="text-left bg-white dark:bg-gray-800 rounded-lg p-4 text-xs text-gray-600 dark:text-gray-300 space-y-2 mt-2">
+                  <p className="font-semibold text-gray-700 dark:text-gray-200">📤 도구 보내기</p>
+                  <p>도구 만들기 탭 → 도구 카드의 <Download className="w-3 h-3 inline" /> 버튼 → JSON 파일 저장 → 카카오톡·이메일로 전송</p>
+                  <p className="font-semibold text-gray-700 dark:text-gray-200 pt-1">📥 도구 받기</p>
+                  <p>아래 버튼으로 받은 JSON 파일을 열면 내 도구에 바로 추가됩니다.</p>
+                </div>
+                <button
+                  onClick={handleImport}
+                  className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-violet-500 hover:bg-violet-600 text-white rounded-xl transition-colors mx-auto"
+                >
+                  <Upload className="w-4 h-4" />
+                  JSON 파일에서 가져오기
+                </button>
               </div>
             )}
 
+            {/* 일반 오류 */}
+            {marketError && marketError !== 'SHEET_ID_EMPTY' && (
+              <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {marketError}
+              </div>
+            )}
+
+            {/* 로딩 */}
             {!marketError && marketLoading && (
               <div className="text-center py-16">
-                <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">마켓 데이터를 불러오는 중...</p>
+                <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">목록을 불러오는 중...</p>
               </div>
             )}
 
-            {!marketError && !marketLoading && marketTools.length > 0 && (
+            {/* 목록 */}
+            {!marketError && !marketLoading && marketEntries.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {marketTools.map(tool => (
+                {marketEntries.map((entry, i) => (
                   <MarketToolCard
-                    key={tool.id}
-                    tool={tool}
-                    onImport={() => handleImportFromMarket(tool)}
+                    key={`${entry.fileUrl}-${i}`}
+                    entry={entry}
+                    importing={importingUrl === entry.fileUrl}
+                    onImport={() => handleImportFromMarket(entry)}
                   />
                 ))}
+              </div>
+            )}
+
+            {/* 빈 목록 */}
+            {!marketError && !marketLoading && marketEntries.length === 0 && MARKET_SHEET_ID && (
+              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
+                <p className="text-sm">아직 공유된 도구가 없습니다.</p>
               </div>
             )}
           </div>
@@ -408,31 +508,35 @@ const ToolCard: React.FC<{
 );
 
 const MarketToolCard: React.FC<{
-  tool: CustomTool;
+  entry: MarketEntry;
+  importing: boolean;
   onImport: () => void;
-}> = ({ tool, onImport }) => (
+}> = ({ entry, importing, onImport }) => (
   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</h3>
-        {tool.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{entry.name}</h3>
+        {entry.description && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.description}</p>
         )}
-        {tool.author && (
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">by {tool.author}</p>
+        {entry.author && (
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">by {entry.author}</p>
         )}
       </div>
-      <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
-        {CATEGORY_LABELS[tool.category]}
+      <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[entry.category]}`}>
+        {CATEGORY_LABELS[entry.category]}
       </span>
     </div>
 
     <button
       onClick={onImport}
-      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+      disabled={importing}
+      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-50"
     >
-      <Download className="w-3.5 h-3.5" />
-      내 도구에 추가
+      {importing
+        ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />가져오는 중...</>
+        : <><Download className="w-3.5 h-3.5" />내 도구에 추가</>
+      }
     </button>
   </div>
 );
