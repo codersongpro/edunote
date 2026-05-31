@@ -267,7 +267,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
   };
 
   useEffect(() => {
-    if (tab === 'market' && marketEntries.length === 0 && !marketLoading && !marketError) {
+    if (tab === 'market' && marketEntries.length === 0 && !marketLoading) {
       loadMarket();
     }
   }, [tab]);

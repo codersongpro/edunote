@@ -3,12 +3,10 @@ name: Build Windows EXE
 run-name: Release ${{ github.ref_name }}
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
-    inputs:
-      release_note:
-        description: Manual release note
-        required: false
-        default: manual
 
 permissions:
   contents: write
