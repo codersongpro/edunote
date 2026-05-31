@@ -41,6 +41,29 @@ export enum AppMode {
   STUDENT_RECORD_GROUP = 'STUDENT_RECORD_GROUP',
   // 유틸리티
   DEMO_SAMPLES = 'DEMO_SAMPLES',
+  // 나만의 AI 도구
+  MY_AI_TOOLS = 'MY_AI_TOOLS',
+}
+
+// ─── Custom Tool ───────────────────────────────────────────────────
+export interface CustomToolInput {
+  id: string;
+  label: string;
+  placeholder?: string;
+  type: 'text' | 'textarea' | 'file-upload';
+  required?: boolean;
+}
+
+export interface CustomTool {
+  id: string;
+  name: string;
+  description: string;
+  category: 'admin' | 'lesson' | 'student' | 'other';
+  inputs: CustomToolInput[];
+  promptTemplate: string;
+  author?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────

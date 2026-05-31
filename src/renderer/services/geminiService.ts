@@ -13,6 +13,8 @@ import {
   GonggoInputs,
   ParsedTaskData,
   NeisAnalyzedData,
+  CustomTool,
+  CustomToolInput,
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
@@ -1694,3 +1696,86 @@ export const parseAnnualPlanFromDocuments = async (
   parts.push({ text: prompt });
   return await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
 };
+
+// ─── 나만의 AI 도구 ────────────────────────────────────────────────
+
+export const runCustomTool = async (
+  tool: CustomTool,
+  fieldValues: Record<string, string>,
+  fileValues: Record<string, FileData[]>,
+  onProgress?: (current: number, total: number) => void,
+): Promise<string> => {
+  let basePrompt = `${getDateContext()}\n${tool.promptTemplate}`;
+  for (const [key, value] of Object.entries(fieldValues)) {
+    basePrompt = basePrompt.replaceAll(`{{${key}}}`, value);
+  }
+
+  const allFiles = Object.values(fileValues).flat();
+
+  if (allFiles.length > 1) {
+    const results: string[] = [];
+    for (let i = 0; i < allFiles.length; i++) {
+      onProgress?.(i + 1, allFiles.length);
+      const parts = [
+        { inlineData: { data: allFiles[i].base64.split(',')[1], mimeType: allFiles[i].mimeType } },
+        { text: basePrompt },
+      ];
+      const result = await aiGenerateMultipart(parts, '', { temperature: 0.8 });
+      results.push(result);
+    }
+    return results.join('\n\n---\n\n');
+  }
+
+  if (allFiles.length === 1) {
+    const parts = [
+      { inlineData: { data: allFiles[0].base64.split(',')[1], mimeType: allFiles[0].mimeType } },
+      { text: basePrompt },
+    ];
+    return await aiGenerateMultipart(parts, '', { temperature: 0.8 });
+  }
+
+  return await aiGenerate(basePrompt, '', { temperature: 0.8 });
+};
+
+export const generateToolPrompt = async (
+  description: string,
+  inputs: CustomToolInput[],
+): Promise<string> => {
+  const fieldList = inputs
+    .map(i => `- {{${i.id}}} : ${i.label} (${i.type === 'file-upload' ? '파일 첨부' : i.type === 'textarea' ? '여러 줄 텍스트' : '한 줄 텍스트'})`)
+    .join('\n');
+  const prompt = `교사가 사용할 AI 도구의 프롬프트 템플릿을 작성해줘.
+도구 설명: ${description}
+사용 가능한 변수:
+${fieldList}
+변수는 반드시 {{변수명}} 형태로 삽입하고, 결과물은 프롬프트 텍스트만 출력해.`;
+  return await aiGenerate(prompt, '', { temperature: 0.7 });
+};
+
+export const generateToolFromChat = async (
+  chatHistory: { role: 'ai' | 'user'; text: string }[],
+): Promise<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null> => {
+  const conversation = chatHistory.map(m => `${m.role === 'ai' ? 'AI' : '교사'}: ${m.text}`).join('\n');
+  const prompt = `다음 대화를 바탕으로 EduNote AI 도구를 JSON으로 만들어줘.
+대화:
+${conversation}
+
+아래 형식으로만 출력해 (JSON만, 설명 없이):
+{
+  "name": "...",
+  "description": "...",
+  "category": "admin",
+  "inputs": [{ "id": "field_0", "label": "...", "type": "text", "placeholder": "..." }],
+  "promptTemplate": "..."
+}
+category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-upload 중 하나.`;
+  try {
+    const raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+};
+

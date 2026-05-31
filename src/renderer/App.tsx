@@ -28,8 +28,9 @@ import {
   FileText, Eye, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical, ClipboardList,
+  GripVertical, ClipboardList, Wrench,
 } from 'lucide-react';
+import MyToolsScreen from './components/MyToolsScreen';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -41,7 +42,7 @@ const STUDENT_RECORD_MODES: AppMode[] = [
   AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO, AppMode.STUDENT_RECORD_GROUP,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES, AppMode.MY_AI_TOOLS];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -350,6 +351,7 @@ const App: React.FC = () => {
     { mode: AppMode.LESSON_MATERIAL, icon: Presentation, label: '수업자료 생성' },
     { mode: AppMode.CLASS_TOOLS, icon: QrCode, label: '수업 도구' },
     { mode: AppMode.MY_RESOURCES, icon: BookMarked, label: '나만의 자료실' },
+    { mode: AppMode.MY_AI_TOOLS, icon: Wrench, label: '나만의 AI 도구' },
   ];
 
   const defaultAdminMenuItems: SidebarMenuItem[] = [
@@ -418,6 +420,7 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
+      case AppMode.MY_AI_TOOLS: return <MyToolsScreen />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       case AppMode.DEMO_SAMPLES: return <DemoSamplesScreen />;
