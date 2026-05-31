@@ -3,15 +3,16 @@ import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { runCustomTool } from '../services/geminiService';
-import { ChevronLeft, Zap, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, Zap, AlertTriangle, Pencil } from 'lucide-react';
 import { useGlobalState } from '../GlobalStateContext';
 
 interface MyToolRunnerProps {
   tool: CustomTool;
   onBack: () => void;
+  onEdit?: () => void;
 }
 
-const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack }) => {
+const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => {
   const { apiKeyAvailability } = useGlobalState();
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fileValues, setFileValues] = useState<Record<string, FileData[]>>({});
@@ -59,13 +60,24 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack }) => {
       {/* 좌측 폼 패널 */}
       <div className="w-[360px] shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 mb-3 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            내 도구 목록으로
-          </button>
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              내 도구 목록으로
+            </button>
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                수정
+              </button>
+            )}
+          </div>
           <div className="flex items-start gap-2">
             <div>
               <h2 className="text-base font-bold text-gray-900 dark:text-white">{tool.name}</h2>

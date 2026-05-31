@@ -233,7 +233,13 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
 
   // ── 뷰 라우팅 ──
   if (view === 'run' && selectedTool) {
-    return <MyToolRunner tool={selectedTool} onBack={() => { setView('list'); setSelectedTool(null); }} />;
+    return (
+      <MyToolRunner
+        tool={selectedTool}
+        onBack={() => { setView('list'); setSelectedTool(null); }}
+        onEdit={() => setView('edit')}
+      />
+    );
   }
 
   if (view === 'edit' && selectedTool) {
@@ -500,8 +506,12 @@ const ToolCard: React.FC<{
         <Play className="w-3.5 h-3.5" />
         실행
       </button>
-      <button onClick={onEdit} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="수정">
-        <Pencil className="w-4 h-4" />
+      <button
+        onClick={onEdit}
+        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      >
+        <Pencil className="w-3.5 h-3.5" />
+        수정
       </button>
       <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="내보내기">
         <Download className="w-4 h-4" />
