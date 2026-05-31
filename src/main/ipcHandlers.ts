@@ -514,7 +514,14 @@ export function registerIpcHandlers(): void {
 
   // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
-    const res = await net.fetch(url, {
+    // 비-ASCII 문자가 포함된 URL을 안전하게 인코딩 (한글 등 포함 시 ByteString 오류 방지)
+    let safeUrl: string;
+    try {
+      safeUrl = new URL(url).href;
+    } catch {
+      throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
+    }
+    const res = await net.fetch(safeUrl, {
       headers: { 'User-Agent': 'edunote-app' },
       signal: AbortSignal.timeout(15000),
     });

@@ -6,7 +6,7 @@ import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  RefreshCw, Share2, AlertCircle,
+  RefreshCw, Share2, AlertCircle, User,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -52,6 +52,16 @@ const toDriveDownloadUrl = (url: string): string => {
   const match = url.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/);
   if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
   return url;
+};
+
+// URL이 실제로 HTTP(S) URL인지 검사 (한글 등 비-URL 값 걸러냄)
+const isValidHttpUrl = (url: string): boolean => {
+  try {
+    const u = new URL(url);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
 };
 
 interface MarketEntry {
@@ -117,7 +127,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
       fileUrl: rawUrl ? toDriveDownloadUrl(rawUrl) : '',
       createdAt: get(cols, tsIdx),
     };
-  }).filter(e => e.name && e.fileUrl);
+  }).filter(e => e.name && e.fileUrl && isValidHttpUrl(e.fileUrl));
 
   return { entries, rawHeaders, totalRows };
 };
@@ -574,7 +584,10 @@ const MarketToolCard: React.FC<{
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.description}</p>
         )}
         {entry.author && (
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">by {entry.author}</p>
+          <div className="flex items-center gap-1 mt-1">
+            <User className="w-3 h-3 text-violet-400 dark:text-violet-500 shrink-0" />
+            <p className="text-xs text-violet-600 dark:text-violet-400 font-medium truncate">{entry.author}</p>
+          </div>
         )}
       </div>
       <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[entry.category]}`}>
