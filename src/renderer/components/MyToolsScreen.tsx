@@ -6,7 +6,7 @@ import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  RefreshCw, Share2, AlertCircle, User, X, School,
+  RefreshCw, Share2, AlertCircle, User, X, School, Check,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -506,6 +506,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                     key={`${entry.fileUrl}-${i}`}
                     entry={entry}
                     importing={importingUrl === entry.fileUrl}
+                    isAdded={tools.some(t => t.name === entry.name)}
                     onImport={() => handleImportFromMarket(entry)}
                   />
                 ))}
@@ -592,8 +593,9 @@ const ToolCard: React.FC<{
 const MarketToolCard: React.FC<{
   entry: MarketEntry;
   importing: boolean;
+  isAdded: boolean;
   onImport: () => void;
-}> = ({ entry, importing, onImport }) => (
+}> = ({ entry, importing, isAdded, onImport }) => (
   <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3">
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
@@ -622,12 +624,20 @@ const MarketToolCard: React.FC<{
 
     <button
       onClick={onImport}
-      disabled={importing}
-      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors disabled:opacity-50"
+      disabled={importing || isAdded}
+      className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-colors ${
+        isAdded
+          ? 'text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 cursor-default'
+          : importing
+            ? 'text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 opacity-50'
+            : 'text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-pink-900/20'
+      }`}
     >
       {importing
         ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />가져오는 중...</>
-        : <><Download className="w-3.5 h-3.5" />내 도구에 추가</>
+        : isAdded
+          ? <><Check className="w-3.5 h-3.5" />내 도구에 추가됨</>
+          : <><Download className="w-3.5 h-3.5" />내 도구에 추가</>
       }
     </button>
   </div>
