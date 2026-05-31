@@ -468,6 +468,37 @@ export function registerIpcHandlers(): void {
     }
   });
 
+  // ── JSON File Open (나만의 AI 도구 가져오기) ──────────────────────────
+  ipcMain.handle('file:open-json', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      filters: [{ name: 'JSON 파일', extensions: ['json'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || !filePaths[0]) return null;
+    return fs.readFileSync(validatePath(filePaths[0]), 'utf-8');
+  });
+
+  // ── 공유 마켓: 구글 시트 CSV 읽기 ────────────────────────────────────
+  ipcMain.handle('data:fetch-market', async (_e, sheetId: string) => {
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/export?format=csv`;
+    const res = await net.fetch(csvUrl, {
+      headers: { 'User-Agent': 'edunote-app' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  });
+
+  // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
+  ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
+    const res = await net.fetch(url, {
+      headers: { 'User-Agent': 'edunote-app' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  });
+
   // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);

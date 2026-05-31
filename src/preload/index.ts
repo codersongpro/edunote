@@ -69,4 +69,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // PDF Save
   savePdf: (htmlContent: string, suggestedName: string) =>
     ipcRenderer.invoke('file:save-pdf', htmlContent, suggestedName),
+
+  // 나만의 AI 도구
+  openJsonFile: (): Promise<string | null> => ipcRenderer.invoke('file:open-json'),
+  fetchMarket: (sheetId: string): Promise<string> => ipcRenderer.invoke('data:fetch-market', sheetId),
+  fetchUrlJson: (url: string): Promise<string> => ipcRenderer.invoke('data:fetch-url-json', url),
 });
