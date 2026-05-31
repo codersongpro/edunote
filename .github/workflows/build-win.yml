@@ -3,6 +3,11 @@ name: Build Windows EXE
 run-name: Release ${{ github.ref_name }}
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
   workflow_dispatch:
 
 permissions:
