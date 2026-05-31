@@ -13,7 +13,7 @@ type Tab = 'my' | 'market';
 type View = 'list' | 'run' | 'edit' | 'create-wizard' | 'create-chat';
 
 // 구글 시트 ID와 폼 URL — 운영 시작 전까지 빈 문자열 유지
-const MARKET_SHEET_ID = '1yHUDpzR_BfPwm7xflRJuQysqknQnNZve0BhAOEazfTo';
+const MARKET_SHEET_ID = '1KZNieOfZLlIKUv8xaP2RPUK3fv_g-yIO9h5CijcGTvk';
 const MARKET_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdDir228Y5jTgT-0E7gDXyylyaZ4p0z3J-4uRBw7Rk_emD7Yg/viewform';
 
 const CATEGORY_LABELS: Record<string, string> = {

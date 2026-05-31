@@ -480,13 +480,30 @@ export function registerIpcHandlers(): void {
 
   // ── 공유 마켓: 구글 시트 CSV 읽기 ────────────────────────────────────
   ipcMain.handle('data:fetch-market', async (_e, sheetId: string) => {
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/export?format=csv`;
-    const res = await net.fetch(csvUrl, {
-      headers: { 'User-Agent': 'edunote-app' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+    const id = encodeURIComponent(sheetId);
+    // 1차: 웹에 게시된 시트용 URL
+    // 2차: 공유(링크) 시트용 export URL
+    const urls = [
+      `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv`,
+      `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`,
+    ];
+    let lastError = '';
+    for (const csvUrl of urls) {
+      try {
+        const res = await net.fetch(csvUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) { lastError = `HTTP ${res.status}`; continue; }
+        const text = await res.text();
+        // HTML 응답(로그인 페이지 등) 걸러내기
+        if (text.trimStart().startsWith('<')) { lastError = '시트가 공개되어 있지 않습니다'; continue; }
+        return text;
+      } catch (e: any) {
+        lastError = e?.message ?? String(e);
+      }
+    }
+    throw new Error(lastError || '시트를 불러오지 못했습니다');
   });
 
   // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
