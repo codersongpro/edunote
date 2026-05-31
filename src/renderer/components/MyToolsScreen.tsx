@@ -651,7 +651,21 @@ const ShareModal: React.FC<{
   };
 
   const handleOpenForm = () => {
-    window.electronAPI.openExternal(MARKET_FORM_URL);
+    const catFormValues: Record<CustomTool['category'], string> = {
+      admin: '교무행정',
+      lesson: '수업자료',
+      student: '학생관리',
+      other: '기타',
+    };
+    const params = new URLSearchParams();
+    params.set('usp', 'pp_url');
+    params.set('entry.2111207561', tool.name);
+    params.set('entry.1858341623', tool.description);
+    params.set('entry.173551723', catFormValues[tool.category] ?? '기타');
+    const affiliation = [authorName.trim(), authorSchool.trim()].filter(Boolean).join(' ');
+    if (affiliation) params.set('entry.1531111128', affiliation);
+    if (message.trim()) params.set('entry.127926671', message.trim());
+    window.electronAPI.openExternal(`${MARKET_FORM_URL}?${params.toString()}`);
   };
 
   return (
