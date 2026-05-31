@@ -10,9 +10,9 @@ interface MyToolEditorProps {
 }
 
 const CATEGORIES = [
-  { value: 'admin', label: '학급 행정' },
+  { value: 'admin', label: '교무 행정' },
   { value: 'lesson', label: '수업 자료' },
-  { value: 'student', label: '학생 관리' },
+  { value: 'student', label: '학생 기록' },
   { value: 'other', label: '기타' },
 ] as const;
 

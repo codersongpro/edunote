@@ -42,9 +42,9 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
   };
 
   const categoryLabel: Record<string, string> = {
-    admin: '학급 행정',
+    admin: '교무 행정',
     lesson: '수업 자료',
-    student: '학생 관리',
+    student: '학생 기록',
     other: '기타',
   };
 

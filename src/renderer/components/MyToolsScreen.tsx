@@ -17,9 +17,9 @@ const MARKET_SHEET_ID = '1KZNieOfZLlIKUv8xaP2RPUK3fv_g-yIO9h5CijcGTvk';
 const MARKET_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdDir228Y5jTgT-0E7gDXyylyaZ4p0z3J-4uRBw7Rk_emD7Yg/viewform';
 
 const CATEGORY_LABELS: Record<string, string> = {
-  admin: '학급 행정',
+  admin: '교무 행정',
   lesson: '수업 자료',
-  student: '학생 관리',
+  student: '학생 기록',
   other: '기타',
 };
 
@@ -41,9 +41,9 @@ const COL = {
 };
 
 const CATEGORY_MAP: Record<string, CustomTool['category']> = {
-  '학급 행정': 'admin',
+  '교무 행정': 'admin',
   '수업 자료': 'lesson',
-  '학생 관리': 'student',
+  '학생 기록': 'student',
   '기타': 'other',
 };
 
