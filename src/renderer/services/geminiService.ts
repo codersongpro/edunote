@@ -1731,7 +1731,21 @@ export const runCustomTool = async (
   fieldValues: Record<string, string>,
   fileValues: Record<string, FileData[]>,
   onProgress?: (current: number, total: number) => void,
+  signal?: AbortSignal,
 ): Promise<string> => {
+  const withTimeout = <T>(p: Promise<T>): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('요청 시간이 초과되었습니다. (90초) 다시 시도해 주세요.')), 90_000),
+    );
+    const abort = signal
+      ? new Promise<never>((_, reject) => {
+          if (signal.aborted) reject(new Error('취소되었습니다.'));
+          signal.addEventListener('abort', () => reject(new Error('취소되었습니다.')), { once: true });
+        })
+      : null;
+    return Promise.race([p, timeout, ...(abort ? [abort] : [])]);
+  };
+
   let basePrompt = `${getDateContext()}\n${tool.promptTemplate}`;
   for (const [key, value] of Object.entries(fieldValues)) {
     basePrompt = basePrompt.replaceAll(`{{${key}}}`, value);
@@ -1742,12 +1756,13 @@ export const runCustomTool = async (
   if (allFiles.length > 1) {
     const results: string[] = [];
     for (let i = 0; i < allFiles.length; i++) {
+      if (signal?.aborted) throw new Error('취소되었습니다.');
       onProgress?.(i + 1, allFiles.length);
       const parts = [
         { inlineData: { data: allFiles[i].base64.split(',')[1], mimeType: allFiles[i].mimeType } },
         { text: basePrompt },
       ];
-      const result = await aiGenerateMultipart(parts, '', { temperature: 0.8 });
+      const result = await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 }));
       results.push(result);
     }
     return results.join('\n\n---\n\n');
@@ -1758,10 +1773,10 @@ export const runCustomTool = async (
       { inlineData: { data: allFiles[0].base64.split(',')[1], mimeType: allFiles[0].mimeType } },
       { text: basePrompt },
     ];
-    return await aiGenerateMultipart(parts, '', { temperature: 0.8 });
+    return await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 }));
   }
 
-  return await aiGenerate(basePrompt, '', { temperature: 0.8 });
+  return await withTimeout(aiGenerate(basePrompt, '', { temperature: 0.8 }));
 };
 
 export const generateToolPrompt = async (

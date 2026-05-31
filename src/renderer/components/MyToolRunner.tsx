@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { runCustomTool } from '../services/geminiService';
-import { ChevronLeft, Zap, AlertTriangle, Pencil } from 'lucide-react';
+import { ChevronLeft, Zap, AlertTriangle, Pencil, X } from 'lucide-react';
 import { useGlobalState } from '../GlobalStateContext';
 
 interface MyToolRunnerProps {
@@ -20,8 +20,11 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState('');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleGenerate = async () => {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setIsLoading(true);
     setError('');
     setProgress(null);
@@ -31,14 +34,22 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
         fieldValues,
         fileValues,
         (current, total) => setProgress({ current, total }),
+        controller.signal,
       );
       setResult(output);
     } catch (e: any) {
-      setError(e?.message || '생성 중 오류가 발생했습니다.');
+      if (e?.message !== '취소되었습니다.') {
+        setError(e?.message || '생성 중 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false);
       setProgress(null);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
   };
 
   const categoryLabel: Record<string, string> = {
@@ -159,14 +170,30 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
               처리 중 {progress.current} / {progress.total}...
             </p>
           )}
-          <button
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 dark:disabled:bg-amber-800 text-white font-bold rounded-lg text-sm transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            {isLoading ? (progress ? `처리 중 ${progress.current}/${progress.total}` : 'AI 생성 중...') : '생성'}
-          </button>
+          {isLoading ? (
+            <div className="flex gap-2">
+              <div className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-amber-300 dark:bg-amber-800 text-white font-bold rounded-lg text-sm">
+                <Zap className="w-4 h-4 animate-pulse" />
+                {progress ? `처리 중 ${progress.current}/${progress.total}` : 'AI 생성 중...'}
+              </div>
+              <button
+                onClick={handleCancel}
+                className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg text-sm transition-colors"
+                title="생성 취소"
+              >
+                <X className="w-4 h-4" />
+                취소
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleGenerate}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-sm transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              생성
+            </button>
+          )}
         </div>
       </div>
 
