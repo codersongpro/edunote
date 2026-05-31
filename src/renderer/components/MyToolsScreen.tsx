@@ -162,7 +162,14 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     (async () => {
       const stored = await window.electronAPI.readJsonData('my-tools') as CustomTool[] | null;
       if (stored && Array.isArray(stored) && stored.length > 0) {
-        setTools(stored);
+        const newSamples = SAMPLE_TOOLS.filter(s => !stored.some(t => t.id === s.id));
+        if (newSamples.length > 0) {
+          const merged = [...newSamples, ...stored];
+          setTools(merged);
+          await window.electronAPI.writeJsonData('my-tools', merged);
+        } else {
+          setTools(stored);
+        }
       } else {
         setTools(SAMPLE_TOOLS);
         await window.electronAPI.writeJsonData('my-tools', SAMPLE_TOOLS);
