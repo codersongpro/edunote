@@ -39,6 +39,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const sportsState = state.sports;
 
   // Local UI State
+  const [isGenerating, setIsGenerating] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const wasGenerating = useRef(false);
   const [traitMode, setTraitMode] = useState<'positive' | 'negative'>('positive');
@@ -197,6 +198,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
     
     setIsGlobalGenerating(true);
+    setIsGenerating(true);
     setGlobalProgress(0);
     startGeneration(0);
     const newStudents = [...sportsState.students];
@@ -239,6 +241,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
+        setIsGenerating(false);
         setGlobalProgress(0);
         endGeneration();
     }
@@ -260,6 +263,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
 
     setIsGlobalGenerating(true);
+    setIsGenerating(true);
     setGlobalProgress(0);
     startGeneration(0);
     const newStudents = [...sportsState.students];
@@ -303,6 +307,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
         setIsGlobalGenerating(false);
+        setIsGenerating(false);
         setGlobalProgress(0);
         endGeneration();
     }
@@ -528,7 +533,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         {sportsState.step === 'CONFIG' && (
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar List */}
-                <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGlobalGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">학생 목록</h3>
@@ -660,7 +665,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         </div>
 
                         {/* Length Settings */}
-                        <div className={`p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-600 ${isGlobalGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className={`p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-600 ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <label className="text-sm font-bold text-slate-600 dark:text-slate-300">생성 길이 설정 (전체 적용)</label>
                                 <div className="flex items-center gap-4">
