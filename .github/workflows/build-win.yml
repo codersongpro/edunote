@@ -3,9 +3,6 @@ name: Build Windows EXE
 run-name: Release ${{ github.ref_name }}
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       release_note:
