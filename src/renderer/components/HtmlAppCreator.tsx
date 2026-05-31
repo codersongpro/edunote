@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { CustomTool } from '../types';
 import { generateHtmlApp } from '../services/geminiService';
-import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft } from 'lucide-react';
+import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft, Plus, GripVertical } from 'lucide-react';
 
 const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
   { value: 'lesson', label: '수업 자료' },
@@ -10,13 +10,63 @@ const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
   { value: 'other', label: '기타' },
 ];
 
-const EXAMPLES = [
-  '팀별 점수판. 팀 이름 4개 설정 가능, +1/-1/+5 버튼으로 점수 조절, 점수 변경 시 효과음(Web Audio API), 전체 초기화 버튼',
-  '랜덤 모둠 편성기. 학생 이름을 한 줄씩 입력하는 텍스트 영역, 모둠 수 선택(2~8모둠), 자동 편성 후 색상 구분 카드로 표시, 다시 섞기 버튼',
-  '수업 타이머. 분/초 직접 설정, 컬러 진행바, 종료 시 효과음(Web Audio API), 전체화면 버튼, 시작/일시정지/재개/초기화',
-  '어휘 플래시카드. 단어|뜻 형태로 붙여넣으면 카드 생성, 클릭하면 뒤집기 애니메이션, 맞힘/틀림 버튼, 정답률 표시',
-  '칭찬 포인트 관리. 학생 이름 목록 입력, 이름 클릭으로 포인트 +1/-1, 포인트 순위 실시간 정렬, 초기화 버튼',
+interface Example {
+  label: string;
+  appType: string;
+  features: string[];
+  extra: string;
+}
+
+const EXAMPLES: Example[] = [
+  {
+    label: '팀별 점수판',
+    appType: '팀별 점수판',
+    features: ['팀 이름 4개 설정 가능', '+1/-1/+5 버튼으로 점수 조절', '점수 변경 시 효과음(Web Audio API)', '전체 초기화 버튼'],
+    extra: '',
+  },
+  {
+    label: '랜덤 모둠 편성기',
+    appType: '랜덤 모둠 편성기',
+    features: ['학생 이름 한 줄씩 붙여넣기', '모둠 수 선택(2~8모둠)', '자동 편성 후 색상 구분 카드로 표시', '다시 섞기 버튼'],
+    extra: '',
+  },
+  {
+    label: '수업 타이머',
+    appType: '수업 타이머',
+    features: ['분/초 직접 설정', '컬러 링 진행바(SVG)', '종료 시 효과음(Web Audio API)', '전체화면 버튼', '시작/일시정지/재개/초기화'],
+    extra: '',
+  },
+  {
+    label: '어휘 플래시카드',
+    appType: '어휘 플래시카드',
+    features: ['단어|뜻 형태로 붙여넣기', '클릭하면 뒤집기 애니메이션', '맞힘/틀림 버튼', '정답률 표시'],
+    extra: '',
+  },
+  {
+    label: '칭찬 포인트 관리',
+    appType: '칭찬 포인트 관리',
+    features: ['학생 이름 목록 붙여넣기', '이름 클릭으로 포인트 +1/-1', '포인트 순위 실시간 정렬', '초기화 버튼'],
+    extra: '',
+  },
 ];
+
+function parseDescription(desc: string): { appType: string; features: string[]; extra: string } {
+  if (!desc) return { appType: '', features: [], extra: '' };
+  const dot = desc.indexOf('.');
+  if (dot === -1) return { appType: desc.trim(), features: [], extra: '' };
+  const appType = desc.slice(0, dot).trim();
+  const rest = desc.slice(dot + 1).trim();
+  const features = rest.split(',').map(f => f.trim()).filter(Boolean);
+  return { appType, features, extra: '' };
+}
+
+function buildDescription(appType: string, features: string[], extra: string): string {
+  const parts = [appType.trim()];
+  const featurePart = features.filter(Boolean).join(', ');
+  if (featurePart) parts.push(featurePart);
+  if (extra.trim()) parts.push(extra.trim());
+  return parts.join('. ');
+}
 
 interface HtmlAppCreatorProps {
   initial?: CustomTool;
@@ -25,7 +75,10 @@ interface HtmlAppCreatorProps {
 }
 
 const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCancel }) => {
-  const [description, setDescription] = useState(initial?.description ?? '');
+  const parsed = parseDescription(initial?.description ?? '');
+  const [appType, setAppType] = useState(parsed.appType);
+  const [features, setFeatures] = useState<string[]>(parsed.features.length > 0 ? parsed.features : ['']);
+  const [extra, setExtra] = useState(parsed.extra);
   const [htmlContent, setHtmlContent] = useState(initial?.htmlContent ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [category, setCategory] = useState<CustomTool['category']>(initial?.category ?? 'lesson');
@@ -33,18 +86,22 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
   const [showCode, setShowCode] = useState(false);
   const [error, setError] = useState('');
   const abortRef = useRef<AbortController | null>(null);
+  const featureInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const description = buildDescription(appType, features, extra);
+  const canGenerate = appType.trim().length > 0 && !isGenerating;
 
   const handleGenerate = async () => {
-    if (!description.trim() || isGenerating) return;
+    if (!canGenerate) return;
     abortRef.current?.abort();
     abortRef.current = new AbortController();
     setIsGenerating(true);
     setError('');
     setShowCode(false);
     try {
-      const html = await generateHtmlApp(description.trim(), abortRef.current.signal);
+      const html = await generateHtmlApp(description, abortRef.current.signal);
       setHtmlContent(html);
-      if (!name) setName(description.trim().slice(0, 24));
+      if (!name) setName(appType.trim().slice(0, 24));
     } catch (e: any) {
       if (!e?.message?.includes('취소')) setError('HTML 앱 생성에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -52,7 +109,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
     }
   };
 
-  const handleCancel = () => {
+  const handleGenerateCancel = () => {
     abortRef.current?.abort();
     setIsGenerating(false);
   };
@@ -61,7 +118,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
     if (!name.trim() || !htmlContent) return;
     onSave({
       name: name.trim(),
-      description: description.trim(),
+      description,
       category,
       toolType: 'html-app',
       inputs: [],
@@ -70,10 +127,46 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+  const applyExample = (ex: Example) => {
+    setAppType(ex.appType);
+    setFeatures(ex.features.length > 0 ? [...ex.features] : ['']);
+    setExtra(ex.extra);
+  };
+
+  const updateFeature = (idx: number, value: string) => {
+    setFeatures(prev => prev.map((f, i) => i === idx ? value : f));
+  };
+
+  const addFeature = (afterIdx?: number) => {
+    setFeatures(prev => {
+      const next = [...prev];
+      const insertAt = afterIdx !== undefined ? afterIdx + 1 : prev.length;
+      next.splice(insertAt, 0, '');
+      return next;
+    });
+    const focusIdx = afterIdx !== undefined ? afterIdx + 1 : features.length;
+    setTimeout(() => featureInputRefs.current[focusIdx]?.focus(), 30);
+  };
+
+  const removeFeature = (idx: number) => {
+    if (features.length === 1) {
+      setFeatures(['']);
+      return;
+    }
+    setFeatures(prev => prev.filter((_, i) => i !== idx));
+    setTimeout(() => {
+      const prevIdx = Math.max(0, idx - 1);
+      featureInputRefs.current[prevIdx]?.focus();
+    }, 30);
+  };
+
+  const handleFeatureKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, idx: number) => {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleGenerate();
+      addFeature(idx);
+    } else if (e.key === 'Backspace' && features[idx] === '' && features.length > 1) {
+      e.preventDefault();
+      removeFeature(idx);
     }
   };
 
@@ -94,52 +187,106 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {/* 작성 가이드 */}
+
+        {/* 예시 칩 */}
         {!htmlContent && (
-          <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl p-4 space-y-2">
-            <p className="text-xs font-bold text-violet-700 dark:text-violet-300">✍️ 잘 만들어지는 설명 방법</p>
-            <ul className="text-xs text-violet-600 dark:text-violet-400 space-y-1 list-none">
-              <li>• <strong>앱 이름</strong>을 먼저 쓰고, 뒤에 <strong>구체적인 기능</strong>을 나열하세요</li>
-              <li>• 버튼·입력창·효과음 등 원하는 UI 요소를 상세히 써주세요</li>
-              <li>• 예시: <span className="italic">팀별 점수판. 팀 이름 4개 설정, +1/-1 버튼, 효과음, 초기화 버튼</span></li>
-            </ul>
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">예시 클릭하면 자동 입력돼요</p>
+            <div className="flex flex-wrap gap-1.5">
+              {EXAMPLES.map((ex, i) => (
+                <button
+                  key={i}
+                  onClick={() => applyExample(ex)}
+                  className="px-2.5 py-1 text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
-        {/* 설명 입력 */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-          <label className="text-sm font-bold text-gray-700 dark:text-gray-200">어떤 앱이 필요하세요?</label>
-          <textarea
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="예: 팀별 점수판. 팀 이름 4개 설정, 버튼으로 점수 올리기/내리기, 효과음 포함"
-            rows={4}
-            className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
-          />
+        {/* 입력 필드 */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
 
-          {/* 예시 칩 */}
-          {!htmlContent && (
+          {/* 앱 이름/종류 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
+              앱 이름 / 종류 <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={appType}
+              onChange={e => setAppType(e.target.value)}
+              placeholder="예: 팀별 점수판, 수업 타이머, 어휘 플래시카드"
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+            />
+          </div>
+
+          {/* 기능 목록 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
+              기능 목록
+              <span className="ml-1.5 text-[11px] font-normal text-gray-400 dark:text-gray-500">Enter로 줄 추가, Backspace로 빈 줄 삭제</span>
+            </label>
             <div className="space-y-1.5">
-              <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">예시 클릭하면 바로 입력돼요</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EXAMPLES.map((ex, i) => (
+              {features.map((f, idx) => (
+                <div key={idx} className="flex items-center gap-1.5">
+                  <span className="text-gray-300 dark:text-gray-600 shrink-0">
+                    <GripVertical className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    ref={el => { featureInputRefs.current[idx] = el; }}
+                    value={f}
+                    onChange={e => updateFeature(idx, e.target.value)}
+                    onKeyDown={e => handleFeatureKeyDown(e, idx)}
+                    placeholder={idx === 0 ? '예: +1/-1 버튼으로 점수 조절' : '예: 효과음(Web Audio API)'}
+                    className="flex-1 px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  />
                   <button
-                    key={i}
-                    onClick={() => setDescription(ex)}
-                    className="px-2.5 py-1 text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+                    onClick={() => removeFeature(idx)}
+                    className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors shrink-0"
+                    tabIndex={-1}
                   >
-                    {ex.split('.')[0]}
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => addFeature()}
+              className="flex items-center gap-1 text-xs text-violet-500 hover:text-violet-600 dark:text-violet-400 dark:hover:text-violet-300 font-semibold transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> 기능 추가
+            </button>
+          </div>
+
+          {/* 추가 요청 */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
+              추가 요청 <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500">(선택)</span>
+            </label>
+            <textarea
+              value={extra}
+              onChange={e => setExtra(e.target.value)}
+              placeholder="예: 전체화면 지원, 모바일 반응형, 파스텔 색상 테마"
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+            />
+          </div>
+
+          {/* AI 전달 문구 미리보기 */}
+          {description.length > 1 && (
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
+              <span className="font-semibold text-gray-400 dark:text-gray-500 mr-1">AI 전달:</span>
+              {description}
             </div>
           )}
 
-          <div className="flex gap-2">
+          {/* 생성 버튼 */}
+          <div className="flex gap-2 pt-1">
             <button
               onClick={handleGenerate}
-              disabled={!description.trim() || isGenerating}
+              disabled={!canGenerate}
               className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white text-sm font-bold rounded-xl transition-colors"
             >
               {isGenerating
@@ -149,7 +296,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             </button>
             {isGenerating && (
               <button
-                onClick={handleCancel}
+                onClick={handleGenerateCancel}
                 className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-gray-500 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> 취소
@@ -190,7 +337,8 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             ) : (
               <iframe
                 key={htmlContent.length}
-                sandbox="allow-scripts allow-forms"
+                sandbox="allow-scripts allow-forms allow-modals"
+                allow="fullscreen"
                 srcDoc={htmlContent}
                 className="flex-1 w-full border-0"
                 title="HTML App Preview"
@@ -233,7 +381,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white text-sm font-bold rounded-xl transition-colors"
             >
               <Save className="w-4 h-4" />
-              AI스킬즈에 저장
+              내 스킬에 저장
             </button>
           </div>
         )}

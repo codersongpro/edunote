@@ -1880,15 +1880,16 @@ export const generateHtmlApp = async (
 
 요청: ${description}
 
-반드시 지켜야 할 조건:
-- 완전한 단일 HTML 파일 (<!DOCTYPE html>부터 </html>까지)
-- 외부 CDN, 외부 폰트, 외부 이미지 URL 절대 사용 금지 (모든 CSS·JS 인라인 포함)
-- 한국어 UI
-- 모바일·PC 모두에서 잘 작동하는 반응형 디자인
-- 깔끔하고 교육적인 디자인 (파란색·초록색 계열 권장)
-- 사운드 효과가 필요하면 반드시 Web Audio API (AudioContext)만 사용할 것. base64 인코딩된 오디오 데이터, 외부 오디오 파일, <audio> 태그의 src 속성에 플레이스홀더 데이터 절대 사용 금지
-- AudioContext는 반드시 사용자가 버튼을 클릭한 시점(이벤트 핸들러 내부)에 생성하거나 resume() 후 사용할 것 (브라우저 자동재생 제한 우회)
-- HTML 코드만 출력 (마크다운 코드블록·설명 없이)`;
+[필수 조건 — 반드시 지킬 것]
+1. 완전한 단일 HTML 파일로 출력. <!DOCTYPE html>부터 </html>까지 하나의 파일에 모두 포함
+2. 외부 CDN·외부 폰트·외부 이미지 URL 절대 사용 금지 (Vue/React/Chart.js 등 모든 외부 라이브러리 포함). 모든 CSS는 <style>, 모든 JS는 <script> 태그에 인라인으로 작성
+3. <script type="module"> 사용 금지 (ES 모듈 import 문 금지). 일반 <script> 태그만 사용
+4. localStorage, sessionStorage, document.cookie 사용 금지. 앱 상태는 JavaScript 변수/객체에만 저장
+5. window.open() 사용 금지
+6. 사운드 효과가 필요하면 Web Audio API (AudioContext)만 사용. base64 오디오·외부 오디오 파일·<audio src="..."> 절대 사용 금지
+7. AudioContext는 반드시 사용자 클릭 이벤트 핸들러 안에서 생성 또는 resume() 후 사용 (자동재생 정책 우회)
+8. 한국어 UI, 반응형 디자인 (모바일·PC 모두 동작)
+9. HTML 코드만 출력 (마크다운 코드블록·설명 없이)`;
 
   const abortPromise = signal
     ? new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error('취소되었습니다.'))))
