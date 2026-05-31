@@ -1,7 +1,7 @@
 {
   "name": "edunote",
   "version": "1.10.1",
-  "description": "EduNote - 교사를 위한 AI 도우미 (학생기록 AI + 교무 AI + 내 스킬)",
+  "description": "EduNote - 교사를 위한 AI 도우미 (학생기록 AI + 교무 AI + 내 스킬·HTML앱)",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
