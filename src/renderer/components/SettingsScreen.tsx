@@ -59,12 +59,14 @@ const SettingsScreen: React.FC = () => {
 
   const handleTestKey = async () => {
     const key = apiTier === 'paid' ? paidApiKey : apiKey;
-    if (!key.trim()) return;
     setTestStatus('testing');
     setTestError('');
     setTestWarn('');
     try {
-      const result = await window.electronAPI.testApiKey(key.trim(), apiTier) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
+      const result = (key.trim()
+        ? await window.electronAPI.testApiKey(key.trim(), apiTier)
+        : await window.electronAPI.testStoredApiKey()
+      ) as { ok: boolean; warning?: string; error?: string; wait?: boolean };
       if (result?.ok) {
         if (result.warning) {
           setTestStatus('warn');
@@ -395,7 +397,7 @@ const SettingsScreen: React.FC = () => {
           <div className="flex gap-2">
             <button
               onClick={handleTestKey}
-              disabled={!(apiTier === 'paid' ? paidApiKey : apiKey).trim() || testStatus === 'testing'}
+              disabled={(!( apiTier === 'paid' ? paidApiKey : apiKey).trim() && !hasKey) || testStatus === 'testing'}
               className="flex-1 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {testStatus === 'testing' ? '테스트 중...' : '키 테스트'}

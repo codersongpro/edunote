@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
 
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
+  testStoredApiKey: () => ipcRenderer.invoke('ai:test-stored-key'),
 
   // File Save
   saveFile: (content: string, suggestedName: string, ext: string) =>

@@ -57,6 +57,12 @@ export function registerIpcHandlers(): void {
     return testApiKey(key, apiTier);
   });
 
+  ipcMain.handle('ai:test-stored-key', async () => {
+    const { apiKey, apiTier } = getActiveApi();
+    if (!apiKey) return { ok: false, error: '저장된 API 키가 없습니다.' };
+    return testApiKey(apiKey, apiTier);
+  });
+
   // ── File Save ─────────────────────────────────────────────────────
   ipcMain.handle('file:save', async (_e, content: string | Buffer, suggestedName: string, ext: string) => {
     const alwaysAsk = store.get('alwaysAskPath');

@@ -6,6 +6,7 @@ export interface ElectronAPI {
     options?: { temperature?: number },
   ): Promise<string>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
+  testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
 
   saveFile(content: string, suggestedName: string, ext: string): Promise<string | null>;
   saveBuffer(buffer: ArrayBuffer, suggestedName: string): Promise<string | null>;
