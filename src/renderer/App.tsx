@@ -42,7 +42,8 @@ const STUDENT_RECORD_MODES: AppMode[] = [
   AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO, AppMode.STUDENT_RECORD_GROUP,
 ];
 
-const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES, AppMode.MY_AI_TOOLS];
+const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
+const MY_TOOLS_MODES: AppMode[] = [AppMode.MY_AI_TOOLS];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -107,6 +108,7 @@ const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
   const [lessonSectionOpen, setLessonSectionOpen] = useState(false);
+  const [myToolsSectionOpen, setMyToolsSectionOpen] = useState(false);
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -351,7 +353,6 @@ const App: React.FC = () => {
     { mode: AppMode.LESSON_MATERIAL, icon: Presentation, label: '수업자료 생성' },
     { mode: AppMode.CLASS_TOOLS, icon: QrCode, label: '수업 도구' },
     { mode: AppMode.MY_RESOURCES, icon: BookMarked, label: '나만의 자료실' },
-    { mode: AppMode.MY_AI_TOOLS, icon: Wrench, label: '나만의 AI 도구' },
   ];
 
   const defaultAdminMenuItems: SidebarMenuItem[] = [
@@ -400,6 +401,8 @@ const App: React.FC = () => {
       ? 'from-emerald-400 via-emerald-500 to-emerald-500'
       : LESSON_AI_MODES.includes(mode)
       ? 'from-amber-400 via-amber-500 to-orange-500'
+      : MY_TOOLS_MODES.includes(mode)
+      ? 'from-violet-400 via-violet-500 to-purple-500'
       : 'from-transparent to-transparent';
 
   const renderMode = (m: AppMode): React.ReactNode => {
@@ -855,6 +858,39 @@ const App: React.FC = () => {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div className="h-1.5" />
+
+            {/* ── 도구 만들기 ── */}
+            <div className="rounded-xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20">
+              <button
+                onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-violet-50/80 dark:hover:bg-violet-900/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-violet-500 flex items-center justify-center shrink-0">
+                    <Wrench className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">도구 만들기</span>
+                </div>
+                {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-violet-400" /> : <ChevronRight className="w-3 h-3 text-violet-400" />}
+              </button>
+              {myToolsSectionOpen && (
+                <div className="px-1.5 pb-1.5 space-y-0.5">
+                  <button
+                    onClick={() => goTo(AppMode.MY_AI_TOOLS)}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.MY_AI_TOOLS
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                    }`}
+                  >
+                    <Wrench className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">나만의 AI 도구</span>
+                  </button>
                 </div>
               )}
             </div>
