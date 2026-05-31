@@ -8,20 +8,36 @@ interface FileUploadProps {
   onFilesChange: (files: FileData[]) => void;
   accept?: string;
   multiple?: boolean;
+  maxFiles?: number;
+  globalPaste?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ 
-  label, 
-  files, 
-  onFilesChange, 
+export const FileUpload: React.FC<FileUploadProps> = ({
+  label,
+  files,
+  onFilesChange,
   accept = ".pdf,.jpg,.jpeg,.png,.txt,.md,.hwp,.hwpx",
-  multiple = false 
+  multiple = false,
+  maxFiles,
+  globalPaste = false,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>();
 
   const handleFileArray = async (fileArray: File[]) => {
     if (fileArray.length > 0) {
+      const currentCount = multiple ? files.length : 0;
+      const remaining = maxFiles ? Math.max(0, maxFiles - currentCount) : fileArray.length;
+      if (remaining === 0) {
+        alert(`최대 ${maxFiles}개까지 업로드할 수 있습니다.`);
+        return;
+      }
+      const limited = fileArray.slice(0, remaining);
+      if (limited.length < fileArray.length) {
+        alert(`최대 ${maxFiles}개까지 업로드할 수 있습니다. ${limited.length}개만 추가됩니다.`);
+      }
+      fileArray = limited;
       const newFiles: FileData[] = [];
       
       for (const file of fileArray) {
@@ -71,6 +87,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
     }
   };
+
+  handleFileArrayRef.current = handleFileArray;
+
+  React.useEffect(() => {
+    if (!globalPaste) return;
+    const onDocPaste = async (e: ClipboardEvent) => {
+      const imgs: File[] = [];
+      Array.from(e.clipboardData?.items ?? []).forEach((item, i) => {
+        if (!item.type.startsWith('image/')) return;
+        const f = item.getAsFile();
+        if (!f) return;
+        const ext = item.type.includes('jpeg') ? 'jpg' : 'png';
+        imgs.push(new File([f], `clipboard-screenshot-${Date.now()}-${i}.${ext}`, { type: item.type }));
+      });
+      if (imgs.length > 0) {
+        e.preventDefault();
+        await handleFileArrayRef.current?.(imgs);
+      }
+    };
+    document.addEventListener('paste', onDocPaste);
+    return () => document.removeEventListener('paste', onDocPaste);
+  }, [globalPaste]);
 
   const handleFiles = async (fileList: FileList) => {
     await handleFileArray(Array.from(fileList));
@@ -150,7 +188,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <p className="text-sm text-gray-600 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-300">
             파일 업로드
           </p>
-          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">드래그 가능 · Ctrl+V 스크린샷 붙여넣기 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}</span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            드래그 가능 · Ctrl+V 스크린샷 붙여넣기 · 지원: {accept.replace(/\./g, '').toUpperCase().replace(/,/g, ' / ')}
+            {multiple && maxFiles && ` · 최대 ${maxFiles}개`}
+          </span>
         </div>
         <input 
           type="file" 
@@ -163,6 +204,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
         {files.length > 0 && (
           <div className="grid grid-cols-1 gap-2">
+            {multiple && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 px-1">
+                {files.length}개 선택됨{maxFiles ? ` / 최대 ${maxFiles}개` : ''}
+              </p>
+            )}
             {files.map((f, idx) => (
               <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-900 p-2.5 rounded-md border border-gray-200 dark:border-gray-700 shadow-sm hover:border-blue-300 transition-colors">
                 <div className="flex items-center gap-2 overflow-hidden">

@@ -1753,27 +1753,33 @@ export const runCustomTool = async (
 
   const allFiles = Object.values(fileValues).flat();
 
-  if (allFiles.length > 1) {
-    const results: string[] = [];
-    for (let i = 0; i < allFiles.length; i++) {
+  if (allFiles.length > 0) {
+    // 파일이 여러 개일 때 배치 크기(10)로 묶어 한 번에 전송 → 표 하나로 합산
+    const BATCH = 10;
+    const batches: FileData[][] = [];
+    for (let i = 0; i < allFiles.length; i += BATCH) {
+      batches.push(allFiles.slice(i, i + BATCH));
+    }
+
+    const batchResults: string[] = [];
+    let processed = 0;
+    for (const batch of batches) {
       if (signal?.aborted) throw new Error('취소되었습니다.');
-      onProgress?.(i + 1, allFiles.length);
+      processed += batch.length;
+      onProgress?.(processed, allFiles.length);
       const parts = [
-        { inlineData: { data: allFiles[i].base64.split(',')[1], mimeType: allFiles[i].mimeType } },
+        ...batch.map(f => ({ inlineData: { data: f.base64.split(',')[1], mimeType: f.mimeType } })),
         { text: basePrompt },
       ];
-      const result = await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 }));
-      results.push(result);
+      batchResults.push(await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 })));
     }
-    return results.join('\n\n---\n\n');
-  }
 
-  if (allFiles.length === 1) {
-    const parts = [
-      { inlineData: { data: allFiles[0].base64.split(',')[1], mimeType: allFiles[0].mimeType } },
-      { text: basePrompt },
-    ];
-    return await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 }));
+    if (batchResults.length === 1) return batchResults[0];
+
+    // 배치가 2개 이상이면 최종 병합 호출
+    if (signal?.aborted) throw new Error('취소되었습니다.');
+    const mergePrompt = `다음 표들을 헤더 한 번, 중복 없이 하나의 표로 합쳐줘:\n\n${batchResults.join('\n\n---\n\n')}`;
+    return await withTimeout(aiGenerate(mergePrompt, '', { temperature: 0.3 }));
   }
 
   return await withTimeout(aiGenerate(basePrompt, '', { temperature: 0.8 }));

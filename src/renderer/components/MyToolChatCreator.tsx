@@ -200,6 +200,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
               files={templateFiles}
               onFilesChange={setTemplateFiles}
               multiple={false}
+              globalPaste={true}
             />
           ) : (
             <div className="flex items-center gap-2 px-3 py-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">

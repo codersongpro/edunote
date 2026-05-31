@@ -139,6 +139,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
                   files={fileValues[input.id] ?? []}
                   onFilesChange={files => setFileValues(prev => ({ ...prev, [input.id]: files }))}
                   multiple={true}
+                  maxFiles={20}
                 />
               ) : input.type === 'textarea' ? (
                 <textarea

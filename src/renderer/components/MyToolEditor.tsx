@@ -275,7 +275,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">원하는 출력 형식의 예시 파일을 첨부하면 AI가 해당 양식 형식에 맞는 프롬프트를 작성해줍니다.</p>
               </div>
               {templateFiles.length === 0 ? (
-                <FileUpload label="양식 파일 첨부" files={templateFiles} onFilesChange={setTemplateFiles} multiple={false} />
+                <FileUpload label="양식 파일 첨부" files={templateFiles} onFilesChange={setTemplateFiles} multiple={false} globalPaste={true} />
               ) : (
                 <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
                   <span className="text-xs font-medium text-green-700 dark:text-green-300 flex-1 truncate">{templateFiles[0].file.name}</span>
