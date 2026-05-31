@@ -1,7 +1,7 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
-작성 기준: 2026년 5월 30일
-대상 버전: EduNote v1.9.2
+작성 기준: 2026년 5월 31일
+대상 버전: EduNote v1.10.0
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
 
 ---
@@ -37,18 +37,22 @@ EduNote
 │  │  └─ 럭키드로우
 │  └─ 나만의 자료실
 │
-└─ [학생기록AI]
-   ├─ 학생기록AI 챗봇           ← 생활기록부 기재요령 질의응답
-   ├─ 생기부도우미              ← 트리 서브메뉴
-   │  ├─ 행발생성              ← 행동특성 및 종합의견
-   │  ├─ 교과 세특 생성
-   │  ├─ 학교스포츠클럽
-   │  └─ 창체 특기사항
-   └─ 우리반기록               ← 트리 서브메뉴
-      ├─ 수업관찰기록
-      ├─ 상담일지
-      ├─ 학급경영일지
-      └─ 학생 메모 보드
+├─ [학생기록AI]
+│  ├─ 학생기록AI 챗봇           ← 생활기록부 기재요령 질의응답
+│  ├─ 생기부도우미              ← 트리 서브메뉴
+│  │  ├─ 행발생성              ← 행동특성 및 종합의견
+│  │  ├─ 교과 세특 생성
+│  │  ├─ 학교스포츠클럽
+│  │  └─ 창체 특기사항
+│  └─ 우리반기록               ← 트리 서브메뉴
+│     ├─ 수업관찰기록
+│     ├─ 상담일지
+│     ├─ 학급경영일지
+│     └─ 학생 메모 보드
+│
+└─ [나만의AI]
+   ├─ 내 도구                  ← 도구 목록·실행·수정·공유 (MY_AI_TOOLS)
+   └─ 공유받은 도구             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
 
 사이드바 하단: Demo (별도 창으로 열림)
 ```
@@ -131,7 +135,13 @@ edunote
 │     │  ├─ LuckyDraw.tsx
 │     │  ├─ GeneratedDisplay.tsx
 │     │  ├─ FileUpload.tsx
+│     │  ├─ MyToolsScreen.tsx
+│     │  ├─ MyToolEditor.tsx
+│     │  ├─ MyToolRunner.tsx
+│     │  ├─ MyToolChatCreator.tsx
 │     │  └─ SchoolLevelSelector.tsx
+│     ├─ data
+│     │  └─ sampleTools.ts
 │     ├─ constants
 │     │  ├─ curriculum2022.ts
 │     │  └─ curriculumStandards.ts
@@ -169,6 +179,11 @@ edunote
 | `src/renderer/GlobalStateContext.tsx` | 생성 중에도 화면 상태를 유지하기 위한 전역 상태 컨텍스트 |
 | `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장 |
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |
+| `src/renderer/components/MyToolsScreen.tsx` | 나만의AI 메인 화면 — 내 도구 목록·카드·공유 모달, 마켓 탭·CSV 파싱 |
+| `src/renderer/components/MyToolEditor.tsx` | 도구 만들기 3단계 위저드 — 기본정보·입력필드·프롬프트 작성, AI 도움받기 |
+| `src/renderer/components/MyToolRunner.tsx` | 도구 실행 화면 — 동적 폼, 파일 업로드, 배치 처리, 취소 버튼 |
+| `src/renderer/components/MyToolChatCreator.tsx` | 대화형 도구 만들기 — AI 4단계 질문으로 도구 초안 자동 생성 |
+| `src/renderer/data/sampleTools.ts` | 기본 제공 샘플 도구 2개 (과제 피드백 생성기, 이수증 연수번호 수집기) |
 | `src/renderer/hooks/useGenerationTracker.ts` | 메뉴별 생성 진행 상태를 전역 진행 상태와 연결 |
 
 ---
@@ -200,6 +215,8 @@ edunote
 | 학생기록AI | `CREATIVE_ACTIVITY_GENERATOR` | `CreativeActivityGenerator` | 창의적 체험활동 특기사항 생성 |
 | 학생기록AI | `TEACHER_RECORD` | `TeacherRecordPanel` | 우리반기록 탭 컨테이너 (수업관찰·상담·학급경영) |
 | 학생기록AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
+| 나만의AI | `MY_AI_TOOLS` | `MyToolsScreen` (내 도구 탭) | 도구 목록, 실행, 수정, 공유 |
+| 나만의AI | `MY_AI_TOOLS_SHARED` | `MyToolsScreen` (공유받은 도구 탭) | 마켓에서 도구 가져오기 |
 
 ---
 
