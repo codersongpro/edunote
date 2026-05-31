@@ -476,7 +476,7 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  // ── JSON File Open (나만의 AI 도구 가져오기) ──────────────────────────
+  // ── JSON File Open (AI스킬즈 가져오기) ──────────────────────────────
   ipcMain.handle('file:open-json', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       filters: [{ name: 'JSON 파일', extensions: ['json'] }],

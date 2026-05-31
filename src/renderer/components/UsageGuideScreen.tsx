@@ -152,7 +152,7 @@ const UsageGuideScreen: React.FC = () => {
           <p className="text-xs text-rose-600 dark:text-rose-400 mt-2">생성된 내용은 반드시 교사가 검토·수정해야 합니다.</p>
         </Section>
 
-        <Section title="AI크래프트" icon={<Wrench className="w-4 h-4 text-violet-500" />}>
+        <Section title="AI스킬즈" icon={<Wrench className="w-4 h-4 text-violet-500" />}>
           <p className="text-xs text-gray-500 dark:text-gray-400">자주 쓰는 AI 작업 패턴을 도구로 만들어 저장하고, 동료 선생님과 공유할 수 있습니다.</p>
           <div className="space-y-3">
             <div>
@@ -175,7 +175,7 @@ const UsageGuideScreen: React.FC = () => {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">마켓플레이스 탭</p>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">스킬마켓 탭</p>
               <p className="text-xs leading-relaxed">동료 선생님이 공유한 도구 목록을 볼 수 있습니다. <strong>내 도구에 추가</strong> 버튼으로 원하는 도구를 바로 가져올 수 있으며, 이미 추가된 도구는 초록색으로 표시됩니다.</p>
               <p className="text-xs leading-relaxed mt-1">내 도구를 목록에 올리려면 도구 카드의 <strong>공유(<span className="font-mono">↗</span>)</strong> 버튼을 눌러 이름·소속·한 마디를 입력하고 2단계 안내에 따라 등록하세요.</p>
             </div>

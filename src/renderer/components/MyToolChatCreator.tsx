@@ -9,7 +9,7 @@ interface Message {
   text: string;
 }
 
-const Q1 = `안녕하세요! 대화를 통해 나만의 AI 도구를 만들어드릴게요.
+const Q1 = `안녕하세요! 대화를 통해 나만의 AI 스킬을 만들어드릴게요.
 
 어떤 작업을 자동화하고 싶으세요?
 

@@ -4,13 +4,14 @@ import { SAMPLE_TOOLS } from '../data/sampleTools';
 import MyToolEditor from './MyToolEditor';
 import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
+import HtmlAppCreator from './HtmlAppCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  RefreshCw, Share2, AlertCircle, User, X, School, Check,
+  RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
-type View = 'list' | 'run' | 'edit' | 'create-wizard' | 'create-chat';
+type View = 'list' | 'run' | 'edit' | 'create-wizard' | 'create-chat' | 'create-html';
 
 // 구글 시트 ID와 폼 URL — 운영 시작 전까지 빈 문자열 유지
 const MARKET_SHEET_ID = '1KZNieOfZLlIKUv8xaP2RPUK3fv_g-yIO9h5CijcGTvk';
@@ -193,7 +194,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('이 도구를 삭제할까요?')) return;
+    if (!confirm('이 스킬을 삭제할까요?')) return;
     saveTools(tools.filter(t => t.id !== id));
   };
 
@@ -218,9 +219,9 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
       saveTools([...tools, ...imported]);
       setTab('my');
       onTabChange?.('my');
-      alert(`${imported.length}개 도구를 내 도구에 추가했습니다.`);
+      alert(`${imported.length}개 스킬을 내 스킬에 추가했습니다.`);
     } catch {
-      alert('유효한 도구 JSON 파일이 아닙니다.');
+      alert('유효한 스킬 JSON 파일이 아닙니다.');
     }
   };
 
@@ -238,7 +239,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
       }
       saveTools([...tools, ...imported]);
       setTab('my');
-      alert(`"${imported[0]?.name ?? entry.name}" 도구를 내 도구에 추가했습니다.`);
+      alert(`"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.`);
     } catch {
       alert('도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.');
     } finally {
@@ -322,6 +323,15 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
     );
   }
 
+  if (view === 'create-html') {
+    return (
+      <HtmlAppCreator
+        onSave={handleCreate}
+        onCancel={() => setView('list')}
+      />
+    );
+  }
+
   // ── 목록 화면 ──
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-950">
@@ -329,7 +339,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">AI크래프트</h1>
+            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">AI스킬즈</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
           </div>
           {tab === 'my' && (
@@ -349,11 +359,18 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                 대화로 만들기
               </button>
               <button
+                onClick={() => setView('create-html')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 dark:text-violet-400 border border-violet-200 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/30 transition-colors"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                HTML 앱 만들기
+              </button>
+              <button
                 onClick={() => setView('create-wizard')}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                새 도구 만들기
+                새 스킬 만들기
               </button>
             </div>
           )}
@@ -361,7 +378,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
 
         {/* 탭 */}
         <div className="flex gap-4 border-b border-gray-100 dark:border-gray-800 -mb-px">
-          {([['my', '내 도구'], ['market', '마켓플레이스']] as [Tab, string][]).map(([t, label]) => (
+          {([['my', '내 스킬'], ['market', '스킬마켓']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
               onClick={() => { setTab(t); onTabChange?.(t); }}
@@ -392,8 +409,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                 <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
                   <Plus className="w-8 h-8 text-amber-500" />
                 </div>
-                <p className="text-base font-bold text-gray-700 dark:text-gray-200 mb-1">아직 만든 도구가 없어요</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">자주 쓰는 AI 작업을 도구로 만들어 보세요!</p>
+                <p className="text-base font-bold text-gray-700 dark:text-gray-200 mb-1">아직 만든 스킬이 없어요</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">자주 쓰는 AI 작업을 스킬로 만들어 보세요!</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setView('create-chat')}
@@ -407,7 +424,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-colors"
                   >
                     <Plus className="w-4 h-4" />
-                    직접 만들기
+                    스킬 만들기
                   </button>
                 </div>
               </div>
@@ -443,7 +460,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors"
                   >
                     <Share2 className="w-3.5 h-3.5" />
-                    내 도구 공유하기
+                    내 스킬 공유하기
                   </button>
                 )}
                 <button
@@ -544,51 +561,70 @@ const ToolCard: React.FC<{
   onExport: () => void;
   onDelete: () => void;
   onShare: () => void;
-}> = ({ tool, onRun, onEdit, onExport, onDelete, onShare }) => (
-  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</h3>
-        {tool.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
-        )}
+}> = ({ tool, onRun, onEdit, onExport, onDelete, onShare }) => {
+  const isHtmlApp = tool.toolType === 'html-app';
+  const handleRun = () => {
+    if (isHtmlApp && tool.htmlContent) {
+      window.electronAPI.openHtmlExternal(tool.htmlContent, tool.name);
+    } else {
+      onRun();
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            {isHtmlApp && <Monitor className="w-3.5 h-3.5 text-violet-500 shrink-0" />}
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</h3>
+          </div>
+          {tool.description && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+          )}
+        </div>
+        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
+          {CATEGORY_LABELS[tool.category]}
+        </span>
       </div>
-      <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
-        {CATEGORY_LABELS[tool.category]}
-      </span>
-    </div>
 
-    <div className="text-xs text-gray-400 dark:text-gray-500">
-      입력 필드 {tool.inputs.length}개
-    </div>
+      <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+        {isHtmlApp
+          ? <><Monitor className="w-3 h-3 text-violet-400" /> HTML 앱</>
+          : `입력 필드 ${tool.inputs.length}개`
+        }
+      </div>
 
-    <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
-      <button
-        onClick={onRun}
-        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors"
-      >
-        <Play className="w-3.5 h-3.5" />
-        실행
-      </button>
-      <button
-        onClick={onEdit}
-        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      >
-        <Pencil className="w-3.5 h-3.5" />
-        수정
-      </button>
-      <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
-        <Share2 className="w-4 h-4" />
-      </button>
-      <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="JSON 내보내기">
-        <Download className="w-4 h-4" />
-      </button>
-      <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="삭제">
-        <Trash2 className="w-4 h-4" />
-      </button>
+      <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+        <button
+          onClick={handleRun}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-white text-xs font-bold rounded-lg transition-colors ${isHtmlApp ? 'bg-violet-500 hover:bg-violet-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+        >
+          {isHtmlApp ? <Monitor className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+          {isHtmlApp ? '열기' : '실행'}
+        </button>
+        {!isHtmlApp && (
+          <button
+            onClick={onEdit}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            수정
+          </button>
+        )}
+        <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
+          <Share2 className="w-4 h-4" />
+        </button>
+        <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="JSON 내보내기">
+          <Download className="w-4 h-4" />
+        </button>
+        <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="삭제">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MarketToolCard: React.FC<{
   entry: MarketEntry;
@@ -636,8 +672,8 @@ const MarketToolCard: React.FC<{
       {importing
         ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />가져오는 중...</>
         : isAdded
-          ? <><Check className="w-3.5 h-3.5" />내 도구에 추가됨</>
-          : <><Download className="w-3.5 h-3.5" />내 도구에 추가</>
+          ? <><Check className="w-3.5 h-3.5" />내 스킬에 추가됨</>
+          : <><Download className="w-3.5 h-3.5" />내 스킬에 추가</>
       }
     </button>
   </div>

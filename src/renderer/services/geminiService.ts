@@ -1724,7 +1724,7 @@ export const parseAnnualPlanFromDocuments = async (
   return await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
 };
 
-// ─── 나만의 AI 도구 ────────────────────────────────────────────────
+// ─── AI스킬즈 ──────────────────────────────────────────────────────
 
 export const runCustomTool = async (
   tool: CustomTool,
@@ -1869,3 +1869,31 @@ category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-up
   }
 };
 
+
+export const generateHtmlApp = async (
+  description: string,
+  signal?: AbortSignal,
+): Promise<string> => {
+  const prompt = `교사가 교실에서 사용할 수 있는 인터랙티브 HTML 앱을 만들어줘.
+
+요청: ${description}
+
+반드시 지켜야 할 조건:
+- 완전한 단일 HTML 파일 (<!DOCTYPE html>부터 </html>까지)
+- 외부 CDN, 외부 폰트, 외부 이미지 URL 절대 사용 금지 (모든 CSS·JS 인라인 포함)
+- 한국어 UI
+- 모바일·PC 모두에서 잘 작동하는 반응형 디자인
+- 깔끔하고 교육적인 디자인 (파란색·초록색 계열 권장)
+- HTML 코드만 출력 (마크다운 코드블록·설명 없이)`;
+
+  const abortPromise = signal
+    ? new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error('취소되었습니다.'))))
+    : null;
+
+  const generatePromise = aiGenerate(prompt, '', { temperature: 0.7 });
+  const raw = abortPromise
+    ? await Promise.race([generatePromise, abortPromise])
+    : await generatePromise;
+
+  return raw.replace(/^```html\n?/i, '').replace(/\n?```\s*$/, '').trim();
+};

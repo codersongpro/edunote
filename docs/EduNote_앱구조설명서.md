@@ -50,9 +50,9 @@ EduNote
 │     ├─ 학급경영일지
 │     └─ 학생 메모 보드
 │
-└─ [AI크래프트]
+└─ [AI스킬즈]
    ├─ 내 도구                  ← 도구 목록·실행·수정·공유 (MY_AI_TOOLS)
-   └─ 마켓플레이스             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
+   └─ 스킬마켓             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
 
 사이드바 하단: Demo (별도 창으로 열림)
 ```
@@ -179,7 +179,7 @@ edunote
 | `src/renderer/GlobalStateContext.tsx` | 생성 중에도 화면 상태를 유지하기 위한 전역 상태 컨텍스트 |
 | `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장 |
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |
-| `src/renderer/components/MyToolsScreen.tsx` | AI크래프트 메인 화면 — 내 도구 목록·카드·공유 모달, 마켓 탭·CSV 파싱 |
+| `src/renderer/components/MyToolsScreen.tsx` | AI스킬즈 메인 화면 — 내 도구 목록·카드·공유 모달, 마켓 탭·CSV 파싱 |
 | `src/renderer/components/MyToolEditor.tsx` | 도구 만들기 3단계 위저드 — 기본정보·입력필드·프롬프트 작성, AI 도움받기 |
 | `src/renderer/components/MyToolRunner.tsx` | 도구 실행 화면 — 동적 폼, 파일 업로드, 배치 처리, 취소 버튼 |
 | `src/renderer/components/MyToolChatCreator.tsx` | 대화형 도구 만들기 — AI 4단계 질문으로 도구 초안 자동 생성 |
@@ -215,8 +215,8 @@ edunote
 | 학생기록AI | `CREATIVE_ACTIVITY_GENERATOR` | `CreativeActivityGenerator` | 창의적 체험활동 특기사항 생성 |
 | 학생기록AI | `TEACHER_RECORD` | `TeacherRecordPanel` | 우리반기록 탭 컨테이너 (수업관찰·상담·학급경영) |
 | 학생기록AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
-| AI크래프트 | `MY_AI_TOOLS` | `MyToolsScreen` (내 도구 탭) | 도구 목록, 실행, 수정, 공유 |
-| AI크래프트 | `MY_AI_TOOLS_SHARED` | `MyToolsScreen` (마켓플레이스 탭) | 마켓에서 도구 가져오기 |
+| AI스킬즈 | `MY_AI_TOOLS` | `MyToolsScreen` (내 도구 탭) | 도구 목록, 실행, 수정, 공유 |
+| AI스킬즈 | `MY_AI_TOOLS_SHARED` | `MyToolsScreen` (스킬마켓 탭) | 마켓에서 도구 가져오기 |
 
 ---
 

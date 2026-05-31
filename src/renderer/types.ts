@@ -60,8 +60,10 @@ export interface CustomTool {
   name: string;
   description: string;
   category: 'admin' | 'lesson' | 'student' | 'other';
+  toolType?: 'prompt' | 'html-app';
   inputs: CustomToolInput[];
   promptTemplate: string;
+  htmlContent?: string;
   author?: string;
   createdAt: string;
   updatedAt: string;
