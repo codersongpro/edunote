@@ -11,6 +11,7 @@ export interface ElectronAPI {
   saveFile(content: string, suggestedName: string, ext: string): Promise<string | null>;
   saveBuffer(buffer: ArrayBuffer, suggestedName: string): Promise<string | null>;
   saveTxt(content: string, suggestedName?: string): Promise<string | null>;
+  exportHtml(content: string, suggestedName?: string): Promise<string | null>;
   saveCsv(content: string, suggestedName?: string): Promise<string | null>;
   saveHwpx(templateName: string, content: string, meta: Record<string, string>): Promise<string | null>;
   savePdf(htmlContent: string, suggestedName: string): Promise<string | null>;

@@ -10,9 +10,10 @@ interface MyToolRunnerProps {
   tool: CustomTool;
   onBack: () => void;
   onEdit?: () => void;
+  schoolLevel?: string;
 }
 
-const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => {
+const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoolLevel }) => {
   const { apiKeyAvailability } = useGlobalState();
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fileValues, setFileValues] = useState<Record<string, FileData[]>>({});
@@ -35,6 +36,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit }) => 
         fileValues,
         (current, total) => setProgress({ current, total }),
         controller.signal,
+        schoolLevel,
       );
       setResult(output);
     } catch (e: any) {

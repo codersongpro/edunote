@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveTxt: (content: string, suggestedName?: string) =>
     ipcRenderer.invoke('file:save-txt', content, suggestedName),
 
+  exportHtml: (content: string, suggestedName?: string) =>
+    ipcRenderer.invoke('file:export-html', content, suggestedName),
+
   saveCsv: (content: string, suggestedName?: string) =>
     ipcRenderer.invoke('file:save-csv', content, suggestedName),
 

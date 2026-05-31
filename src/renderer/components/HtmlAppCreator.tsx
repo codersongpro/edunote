@@ -11,11 +11,11 @@ const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
 ];
 
 const EXAMPLES = [
-  '팀별 점수판. 팀 이름 4개 설정, 버튼으로 점수 올리기/내리기, 효과음 포함',
-  '랜덤 모둠 편성기. 학생 이름 붙여넣기 → 모둠 수 설정 → 자동 편성, 다시 섞기 버튼',
-  '수업 타이머. 분/초 설정, 진행바, 종료 알람, 전체화면 지원',
-  '어휘 플래시카드. 단어/뜻 직접 입력 → 카드 뒤집기 게임, 맞힌 수 표시',
-  '상점(칭찬 포인트) 관리. 학생 목록 입력, 포인트 추가/차감, 순위 표시',
+  '팀별 점수판. 팀 이름 4개 설정 가능, +1/-1/+5 버튼으로 점수 조절, 점수 변경 시 효과음(Web Audio API), 전체 초기화 버튼',
+  '랜덤 모둠 편성기. 학생 이름을 한 줄씩 입력하는 텍스트 영역, 모둠 수 선택(2~8모둠), 자동 편성 후 색상 구분 카드로 표시, 다시 섞기 버튼',
+  '수업 타이머. 분/초 직접 설정, 컬러 진행바, 종료 시 효과음(Web Audio API), 전체화면 버튼, 시작/일시정지/재개/초기화',
+  '어휘 플래시카드. 단어|뜻 형태로 붙여넣으면 카드 생성, 클릭하면 뒤집기 애니메이션, 맞힘/틀림 버튼, 정답률 표시',
+  '칭찬 포인트 관리. 학생 이름 목록 입력, 이름 클릭으로 포인트 +1/-1, 포인트 순위 실시간 정렬, 초기화 버튼',
 ];
 
 interface HtmlAppCreatorProps {
@@ -94,6 +94,18 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {/* 작성 가이드 */}
+        {!htmlContent && (
+          <div className="bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-bold text-violet-700 dark:text-violet-300">✍️ 잘 만들어지는 설명 방법</p>
+            <ul className="text-xs text-violet-600 dark:text-violet-400 space-y-1 list-none">
+              <li>• <strong>앱 이름</strong>을 먼저 쓰고, 뒤에 <strong>구체적인 기능</strong>을 나열하세요</li>
+              <li>• 버튼·입력창·효과음 등 원하는 UI 요소를 상세히 써주세요</li>
+              <li>• 예시: <span className="italic">팀별 점수판. 팀 이름 4개 설정, +1/-1 버튼, 효과음, 초기화 버튼</span></li>
+            </ul>
+          </div>
+        )}
+
         {/* 설명 입력 */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
           <label className="text-sm font-bold text-gray-700 dark:text-gray-200">어떤 앱이 필요하세요?</label>
@@ -102,22 +114,25 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             onChange={e => setDescription(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="예: 팀별 점수판. 팀 이름 4개 설정, 버튼으로 점수 올리기/내리기, 효과음 포함"
-            rows={3}
+            rows={4}
             className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
           />
 
           {/* 예시 칩 */}
           {!htmlContent && (
-            <div className="flex flex-wrap gap-1.5">
-              {EXAMPLES.map((ex, i) => (
-                <button
-                  key={i}
-                  onClick={() => setDescription(ex)}
-                  className="px-2.5 py-1 text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors truncate max-w-[280px]"
-                >
-                  {ex.split('.')[0]}
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">예시 클릭하면 바로 입력돼요</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EXAMPLES.map((ex, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setDescription(ex)}
+                    className="px-2.5 py-1 text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-700 rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+                  >
+                    {ex.split('.')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

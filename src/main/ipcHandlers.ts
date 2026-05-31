@@ -107,6 +107,18 @@ export function registerIpcHandlers(): void {
     return result.filePath;
   });
 
+  ipcMain.handle('file:export-html', async (_e, content: string, suggestedName?: string) => {
+    const saveDir = store.get('saveDir');
+    const name = suggestedName || `app_${Date.now()}.html`;
+    const result = await dialog.showSaveDialog({
+      defaultPath: path.join(saveDir || app.getPath('documents'), name),
+      filters: [{ name: 'HTML 앱', extensions: ['html'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    fs.writeFileSync(result.filePath, content, 'utf-8');
+    return result.filePath;
+  });
+
   ipcMain.handle('file:save-txt', async (_e, content: string, suggestedName?: string) => {
     const saveDir = store.get('saveDir');
     const name = suggestedName || `document_${Date.now()}.txt`;

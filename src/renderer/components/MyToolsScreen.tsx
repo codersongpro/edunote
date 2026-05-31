@@ -141,7 +141,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
   return { entries, rawHeaders, totalRows };
 };
 
-const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void }> = ({ activeTab = 'my', onTabChange }) => {
+const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void; schoolLevel?: string }> = ({ activeTab = 'my', onTabChange, schoolLevel }) => {
   const [tab, setTab] = useState<Tab>(activeTab);
 
   useEffect(() => {
@@ -199,8 +199,12 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
   };
 
   const handleExport = async (tool: CustomTool) => {
-    const json = JSON.stringify(tool, null, 2);
-    await window.electronAPI.saveTxt(json, `${tool.name}.json`);
+    if (tool.toolType === 'html-app' && tool.htmlContent) {
+      await window.electronAPI.exportHtml(tool.htmlContent, `${tool.name}.html`);
+    } else {
+      const json = JSON.stringify(tool, null, 2);
+      await window.electronAPI.saveTxt(json, `${tool.name}.json`);
+    }
   };
 
   const handleImport = async () => {
@@ -285,6 +289,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
         tool={selectedTool}
         onBack={() => { setView('list'); setSelectedTool(null); }}
         onEdit={() => setView('edit')}
+        schoolLevel={schoolLevel}
       />
     );
   }
@@ -583,9 +588,18 @@ const ToolCard: React.FC<{
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
           )}
         </div>
-        <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
-          {CATEGORY_LABELS[tool.category]}
-        </span>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+            isHtmlApp
+              ? 'text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20'
+              : 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
+          }`}>
+            {isHtmlApp ? '앱' : 'AI'}
+          </span>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
+            {CATEGORY_LABELS[tool.category]}
+          </span>
+        </div>
       </div>
 
       <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
@@ -688,9 +702,14 @@ const ShareModal: React.FC<{
   const [message, setMessage] = useState('');
   const [jsonSaved, setJsonSaved] = useState(false);
 
+  const isHtmlApp = tool.toolType === 'html-app';
   const handleSaveJson = async () => {
-    const json = JSON.stringify(tool, null, 2);
-    await window.electronAPI.saveTxt(json, `${tool.name}.json`);
+    if (isHtmlApp && tool.htmlContent) {
+      await window.electronAPI.exportHtml(tool.htmlContent, `${tool.name}.html`);
+    } else {
+      const json = JSON.stringify(tool, null, 2);
+      await window.electronAPI.saveTxt(json, `${tool.name}.json`);
+    }
     localStorage.setItem('share-author-name', authorName);
     localStorage.setItem('share-author-school', authorSchool);
     setJsonSaved(true);
@@ -781,7 +800,7 @@ const ShareModal: React.FC<{
         <div className="space-y-2">
           <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">공유 방법 (2단계)</p>
 
-          {/* 1단계: JSON 저장 */}
+          {/* 1단계: 파일 저장 */}
           <button
             onClick={handleSaveJson}
             className={`w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${
@@ -791,15 +810,15 @@ const ShareModal: React.FC<{
             }`}
           >
             {jsonSaved ? (
-              <><span className="text-emerald-500">✓</span> JSON 파일 저장됨</>
+              <><span className="text-emerald-500">✓</span> {isHtmlApp ? 'HTML' : 'JSON'} 파일 저장됨</>
             ) : (
-              <><Download className="w-4 h-4" /> ① JSON 파일 저장하기</>
+              <><Download className="w-4 h-4" /> ① {isHtmlApp ? 'HTML' : 'JSON'} 파일 저장하기</>
             )}
           </button>
 
           {jsonSaved && (
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              저장된 JSON 파일을 <strong>구글 드라이브</strong>에 업로드하고,<br />
+              저장된 {isHtmlApp ? 'HTML' : 'JSON'} 파일을 <strong>구글 드라이브</strong>에 업로드하고,<br />
               파일을 <strong>링크가 있는 모든 사용자</strong>에게 공유한 뒤<br />
               공유 링크를 복사해 폼에 붙여넣어 주세요.
             </div>

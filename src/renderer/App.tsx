@@ -113,7 +113,7 @@ const App: React.FC = () => {
   const [myToolsActiveTab, setMyToolsActiveTab] = useState<'my' | 'market'>('my');
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [appVersion, setAppVersion] = useState('');
   const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
   const setGeneratingMode = (modeKey: string, progress: number | null) => {
@@ -205,7 +205,7 @@ const App: React.FC = () => {
         setAppVersion(version as string);
         if (hn) setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
-        setDarkMode(!!(dm as boolean));
+        setDarkMode(dm == null ? true : !!(dm as boolean));
         setShowDisclaimerModal(true);
         setMode(AppMode.HOME);
       } catch {
@@ -447,7 +447,7 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
-      case AppMode.MY_AI_TOOLS: return <MyToolsScreen activeTab={myToolsActiveTab} onTabChange={setMyToolsActiveTab} />;
+      case AppMode.MY_AI_TOOLS: return <MyToolsScreen activeTab={myToolsActiveTab} onTabChange={setMyToolsActiveTab} schoolLevel={schoolLevel} />;
       case AppMode.MY_AI_TOOLS_SHARED: return null;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
@@ -911,7 +911,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-pink-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">AI스킬즈</span>
+                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">내 스킬</span>
                 </div>
                 {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
               </button>
@@ -926,7 +926,7 @@ const App: React.FC = () => {
                     }`}
                   >
                     <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">AI스킬즈</span>
+                    <span className="flex-1 text-left truncate">내 스킬</span>
                   </button>
                   <button
                     onClick={() => { setMyToolsActiveTab('market'); goTo(AppMode.MY_AI_TOOLS); }}

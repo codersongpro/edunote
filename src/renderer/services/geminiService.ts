@@ -1732,6 +1732,7 @@ export const runCustomTool = async (
   fileValues: Record<string, FileData[]>,
   onProgress?: (current: number, total: number) => void,
   signal?: AbortSignal,
+  schoolLevel?: string,
 ): Promise<string> => {
   const withTimeout = <T>(p: Promise<T>): Promise<T> => {
     const timeout = new Promise<never>((_, reject) =>
@@ -1746,7 +1747,8 @@ export const runCustomTool = async (
     return Promise.race([p, timeout, ...(abort ? [abort] : [])]);
   };
 
-  let basePrompt = `${getDateContext()}\n${tool.promptTemplate}`;
+  const schoolLevelCtx = schoolLevel ? `[대상 학교급: ${schoolLevel}]\n` : '';
+  let basePrompt = `${getDateContext()}\n${schoolLevelCtx}${tool.promptTemplate}`;
   for (const [key, value] of Object.entries(fieldValues)) {
     basePrompt = basePrompt.replaceAll(`{{${key}}}`, value);
   }
@@ -1884,6 +1886,8 @@ export const generateHtmlApp = async (
 - 한국어 UI
 - 모바일·PC 모두에서 잘 작동하는 반응형 디자인
 - 깔끔하고 교육적인 디자인 (파란색·초록색 계열 권장)
+- 사운드 효과가 필요하면 반드시 Web Audio API (AudioContext)만 사용할 것. base64 인코딩된 오디오 데이터, 외부 오디오 파일, <audio> 태그의 src 속성에 플레이스홀더 데이터 절대 사용 금지
+- AudioContext는 반드시 사용자가 버튼을 클릭한 시점(이벤트 핸들러 내부)에 생성하거나 resume() 후 사용할 것 (브라우저 자동재생 제한 우회)
 - HTML 코드만 출력 (마크다운 코드블록·설명 없이)`;
 
   const abortPromise = signal
