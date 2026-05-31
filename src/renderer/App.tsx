@@ -28,7 +28,7 @@ import {
   FileText, Eye, StickyNote, GraduationCap,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical, ClipboardList, Wrench,
+  GripVertical, ClipboardList, Wrench, Download,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 
@@ -43,7 +43,7 @@ const STUDENT_RECORD_MODES: AppMode[] = [
 ];
 
 const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
-const MY_TOOLS_MODES: AppMode[] = [AppMode.MY_AI_TOOLS];
+const MY_TOOLS_MODES: AppMode[] = [AppMode.MY_AI_TOOLS, AppMode.MY_AI_TOOLS_SHARED];
 
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
@@ -423,7 +423,8 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
-      case AppMode.MY_AI_TOOLS: return <MyToolsScreen />;
+      case AppMode.MY_AI_TOOLS: return <MyToolsScreen initialTab="my" />;
+      case AppMode.MY_AI_TOOLS_SHARED: return <MyToolsScreen initialTab="market" />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       case AppMode.DEMO_SAMPLES: return <DemoSamplesScreen />;
@@ -864,7 +865,7 @@ const App: React.FC = () => {
 
             <div className="h-1.5" />
 
-            {/* ── 도구 만들기 ── */}
+            {/* ── 나만의AI ── */}
             <div className="rounded-xl overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20">
               <button
                 onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
@@ -874,7 +875,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-violet-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">도구 만들기</span>
+                  <span className="text-sm font-bold text-violet-700 dark:text-violet-300 tracking-wide">나만의AI</span>
                 </div>
                 {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-violet-400" /> : <ChevronRight className="w-3 h-3 text-violet-400" />}
               </button>
@@ -889,7 +890,18 @@ const App: React.FC = () => {
                     }`}
                   >
                     <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">나만의 AI 도구</span>
+                    <span className="flex-1 text-left truncate">도구 만들기</span>
+                  </button>
+                  <button
+                    onClick={() => goTo(AppMode.MY_AI_TOOLS_SHARED)}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
+                      mode === AppMode.MY_AI_TOOLS_SHARED
+                        ? 'bg-violet-500 text-white font-semibold shadow-sm'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
+                    }`}
+                  >
+                    <Download className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">공유받은 도구</span>
                   </button>
                 </div>
               )}

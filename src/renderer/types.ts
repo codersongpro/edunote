@@ -41,8 +41,9 @@ export enum AppMode {
   STUDENT_RECORD_GROUP = 'STUDENT_RECORD_GROUP',
   // 유틸리티
   DEMO_SAMPLES = 'DEMO_SAMPLES',
-  // 나만의 AI 도구
+  // 나만의AI
   MY_AI_TOOLS = 'MY_AI_TOOLS',
+  MY_AI_TOOLS_SHARED = 'MY_AI_TOOLS_SHARED',
 }
 
 // ─── Custom Tool ───────────────────────────────────────────────────

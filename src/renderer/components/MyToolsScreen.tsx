@@ -52,8 +52,8 @@ const parseMarketCsv = (csv: string): CustomTool[] => {
   }).filter(t => t.name);
 };
 
-const MyToolsScreen: React.FC = () => {
-  const [tab, setTab] = useState<Tab>('my');
+const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) => {
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [view, setView] = useState<View>('list');
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
@@ -244,7 +244,7 @@ const MyToolsScreen: React.FC = () => {
 
         {/* 탭 */}
         <div className="flex gap-4 border-b border-gray-100 dark:border-gray-800 -mb-px">
-          {([['my', '내 도구'], ['market', '마켓']] as [Tab, string][]).map(([t, label]) => (
+          {([['my', '내 도구'], ['market', '공유받은 도구']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -310,15 +310,24 @@ const MyToolsScreen: React.FC = () => {
         {tab === 'market' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500 dark:text-gray-400">다른 선생님들이 만든 도구를 가져올 수 있습니다.</p>
-              <button
-                onClick={loadMarket}
-                disabled={marketLoading}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${marketLoading ? 'animate-spin' : ''}`} />
-                새로고침
-              </button>
+              <p className="text-sm text-gray-500 dark:text-gray-400">동료 선생님이 공유한 도구를 가져오거나 커뮤니티 도구를 내려받을 수 있습니다.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleImport}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  파일에서 가져오기
+                </button>
+                <button
+                  onClick={loadMarket}
+                  disabled={marketLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${marketLoading ? 'animate-spin' : ''}`} />
+                  새로고침
+                </button>
+              </div>
             </div>
 
             {marketError && (
