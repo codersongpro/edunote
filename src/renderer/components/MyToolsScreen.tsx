@@ -77,26 +77,49 @@ const parseCsvLine = (line: string): string[] => {
   return result;
 };
 
-const parseMarketCsv = (csv: string): MarketEntry[] => {
+const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: string[]; totalRows: number } => {
   const lines = csv.trim().split('\n');
-  if (lines.length < 2) return [];
-  const header = parseCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, ''));
-  const get = (cols: string[], key: string) =>
-    (cols[header.indexOf(key)] ?? '').replace(/^"|"$/g, '').trim();
+  if (lines.length < 2) return { entries: [], rawHeaders: [], totalRows: 0 };
 
-  return lines.slice(1).map(line => {
+  const rawHeaders = parseCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+  const totalRows = lines.length - 1;
+
+  // 정확한 일치 → 없으면 키워드 부분 일치 순서로 컬럼 인덱스 찾기
+  const findIdx = (exact: string, ...keywords: string[]): number => {
+    let idx = rawHeaders.findIndex(h => h === exact);
+    if (idx >= 0) return idx;
+    for (const kw of keywords) {
+      idx = rawHeaders.findIndex(h => h.toLowerCase().includes(kw.toLowerCase()));
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  };
+
+  const nameIdx   = findIdx(COL.name,   '이름', 'name', '도구');
+  const descIdx   = findIdx(COL.description, '설명', 'desc', '내용');
+  const catIdx    = findIdx(COL.category,    '카테고리', 'category', '분류');
+  const authorIdx = findIdx(COL.author,      '작성자', 'author');
+  const fileIdx   = findIdx(COL.fileUrl,     '파일', 'file', 'json', 'url');
+  const tsIdx     = findIdx(COL.timestamp,   '타임스탬프', 'timestamp');
+
+  const get = (cols: string[], idx: number): string =>
+    idx >= 0 ? (cols[idx] ?? '').replace(/^"|"$/g, '').trim() : '';
+
+  const entries = lines.slice(1).map(line => {
     const cols = parseCsvLine(line);
-    const rawUrl = get(cols, COL.fileUrl);
-    const cat = get(cols, COL.category);
+    const rawUrl = get(cols, fileIdx);
+    const cat = get(cols, catIdx);
     return {
-      name: get(cols, COL.name),
-      description: get(cols, COL.description),
-      category: CATEGORY_MAP[cat] ?? 'other',
-      author: get(cols, COL.author),
+      name: get(cols, nameIdx),
+      description: get(cols, descIdx),
+      category: (CATEGORY_MAP[cat] ?? 'other') as CustomTool['category'],
+      author: get(cols, authorIdx),
       fileUrl: rawUrl ? toDriveDownloadUrl(rawUrl) : '',
-      createdAt: get(cols, COL.timestamp),
+      createdAt: get(cols, tsIdx),
     };
   }).filter(e => e.name && e.fileUrl);
+
+  return { entries, rawHeaders, totalRows };
 };
 
 const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void }> = ({ activeTab = 'my', onTabChange }) => {
@@ -111,6 +134,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
   const [marketEntries, setMarketEntries] = useState<MarketEntry[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
+  const [marketDebug, setMarketDebug] = useState<{ headers: string[]; totalRows: number } | null>(null);
   const [importingUrl, setImportingUrl] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
 
@@ -210,9 +234,12 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
     }
     setMarketLoading(true);
     setMarketError('');
+    setMarketDebug(null);
     try {
       const csv = await window.electronAPI.fetchMarket(MARKET_SHEET_ID);
-      setMarketEntries(parseMarketCsv(csv));
+      const { entries, rawHeaders, totalRows } = parseMarketCsv(csv);
+      setMarketEntries(entries);
+      if (totalRows > 0) setMarketDebug({ headers: rawHeaders, totalRows });
     } catch (e: any) {
       setMarketError('목록을 불러오지 못했습니다: ' + (e?.message ?? ''));
     } finally {
@@ -463,8 +490,19 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
 
             {/* 빈 목록 */}
             {!marketError && !marketLoading && marketEntries.length === 0 && MARKET_SHEET_ID && (
-              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
-                <p className="text-sm">아직 공유된 도구가 없습니다.</p>
+              <div className="text-center py-12 text-gray-400 dark:text-gray-600 space-y-2">
+                <p className="text-sm font-semibold">아직 공유된 도구가 없습니다.</p>
+                <p className="text-xs">첫 번째로 도구를 공유해 보세요!</p>
+                {marketDebug && marketDebug.totalRows > 0 && marketEntries.length === 0 && (
+                  <div className="mt-4 mx-auto max-w-sm text-left bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-1">
+                      시트에 {marketDebug.totalRows}개 행이 있지만 파싱에 실패했습니다.
+                    </p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      감지된 열: {marketDebug.headers.join(' / ')}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

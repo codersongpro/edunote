@@ -275,7 +275,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  {isGeneratingPrompt ? '작성 중...' : 'AI가 대신 써줘'}
+                  {isGeneratingPrompt ? '작성 중...' : 'AI 도움받기'}
                 </button>
               </div>
               <textarea
