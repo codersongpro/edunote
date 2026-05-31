@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { CustomTool, CustomToolInput } from '../types';
+import { CustomTool, CustomToolInput, FileData } from '../types';
 import { generateToolPrompt } from '../services/geminiService';
-import { Plus, Trash2, Sparkles, ChevronLeft, ChevronRight, Save } from 'lucide-react';
+import { FileUpload } from './FileUpload';
+import { Plus, Trash2, Sparkles, ChevronLeft, ChevronRight, Save, X } from 'lucide-react';
 
 interface MyToolEditorProps {
   initial?: CustomTool;
@@ -34,6 +35,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
   // Step 3
   const [promptTemplate, setPromptTemplate] = useState(initial?.promptTemplate ?? '');
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  const [templateFiles, setTemplateFiles] = useState<FileData[]>([]);
   const promptRef = useRef<HTMLTextAreaElement>(null);
 
   const addInput = () => {
@@ -67,7 +69,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
     if (!description.trim() && inputs.length === 0) return;
     setIsGeneratingPrompt(true);
     try {
-      const draft = await generateToolPrompt(description, inputs);
+      const draft = await generateToolPrompt(description, inputs, promptTemplate, templateFiles[0] ?? null);
       setPromptTemplate(draft);
     } catch (e: any) {
       alert('프롬프트 생성에 실패했습니다: ' + (e?.message ?? ''));
@@ -266,6 +268,24 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
               </div>
             )}
 
+            {/* 참고 양식 파일 */}
+            <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 space-y-2">
+              <div>
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">참고 양식 파일 <span className="font-normal text-gray-400">(선택)</span></p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">원하는 출력 형식의 예시 파일을 첨부하면 AI가 해당 양식 형식에 맞는 프롬프트를 작성해줍니다.</p>
+              </div>
+              {templateFiles.length === 0 ? (
+                <FileUpload label="양식 파일 첨부" files={templateFiles} onFilesChange={setTemplateFiles} multiple={false} />
+              ) : (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
+                  <span className="text-xs font-medium text-green-700 dark:text-green-300 flex-1 truncate">{templateFiles[0].file.name}</span>
+                  <button onClick={() => setTemplateFiles([])} className="text-green-500 hover:text-red-500 transition-colors shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">AI 프롬프트</label>
@@ -275,7 +295,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  {isGeneratingPrompt ? '작성 중...' : 'AI가 대신 써줘'}
+                  {isGeneratingPrompt ? '작성 중...' : templateFiles.length > 0 ? 'AI 도움받기 (양식 반영)' : 'AI 도움받기'}
                 </button>
               </div>
               <textarea

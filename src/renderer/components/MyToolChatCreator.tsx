@@ -1,28 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CustomTool } from '../types';
+import { CustomTool, FileData } from '../types';
 import { generateToolFromChat } from '../services/geminiService';
-import { Send, Bot, ChevronRight } from 'lucide-react';
+import { FileUpload } from './FileUpload';
+import { Send, Bot, Paperclip, SkipForward } from 'lucide-react';
 
 interface Message {
   role: 'ai' | 'user';
   text: string;
 }
 
-const INTRO_QUESTIONS: Message[] = [
-  { role: 'ai', text: '안녕하세요! 대화를 통해 나만의 AI 도구를 만들어드릴게요.\n\n어떤 작업을 자동화하고 싶으세요? 예를 들어 "학생 일기를 보고 피드백 써주는 도구 만들고 싶어요"처럼 자유롭게 말씀해 주세요.' },
-];
+const Q1 = `안녕하세요! 대화를 통해 나만의 AI 도구를 만들어드릴게요.
+
+어떤 작업을 자동화하고 싶으세요?
+
+예를 들어:
+• "학생 일기를 보고 맞춤 피드백을 써주는 도구"
+• "가정통신문을 자동으로 작성해주는 도구"
+• "이수증 파일에서 연수 정보를 뽑아 표로 정리해주는 도구"
+• "학부모 상담 내용을 요약해주는 도구"
+
+자유롭게 말씀해 주세요!`;
 
 interface MyToolChatCreatorProps {
   onComplete: (draft: Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'>) => void;
   onCancel: () => void;
 }
 
+const TOTAL_TURNS = 4;
+
 const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCancel }) => {
-  const [messages, setMessages] = useState<Message[]>(INTRO_QUESTIONS);
+  const [messages, setMessages] = useState<Message[]>([{ role: 'ai', text: Q1 }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
+  const [templateFiles, setTemplateFiles] = useState<FileData[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -30,18 +42,45 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getNextQuestion = (count: number, userMsg: string): string => {
-    if (count === 1) {
-      return `이해했어요! 그 도구를 실행할 때 어떤 정보를 입력해야 할까요?\n예: "학생 이름, 학년, 일기 파일이 필요해요" 처럼 입력 항목을 알려주세요.`;
+  const getNextQuestion = (count: number): string => {
+    switch (count) {
+      case 1:
+        return `이해했어요!\n\n그 도구를 실행할 때 어떤 정보를 입력해야 할까요?\n\n예를 들어:\n• "학생 이름, 학년, 과제 파일이 필요해요"\n• "행사 이름, 날짜, 대상 학년만 있으면 돼요"\n• "학생 목록 파일을 첨부할 거예요"\n• "아무 입력 없이 그냥 실행만 해도 돼요"`;
+      case 2:
+        return `좋아요!\n\n결과물은 어떤 형식으로 받고 싶으세요?\n\n예를 들어:\n• "칭찬, 개선점, 격려의 말 세 항목으로 정리해줘요"\n• "표 형태로 깔끔하게 정리해줘요"\n• "공문서처럼 격식 있게 써줘요"\n• "친근하고 따뜻한 문체로 써줘요"\n• "항목별로 번호를 붙여서 정리해줘요"`;
+      case 3:
+        return `거의 다 됐어요!\n\n참고할 양식 파일이 있으신가요?\n원하는 출력 형식의 예시 파일(예: 기존에 쓰던 가정통신문, 피드백 양식, 표 양식 등)을 첨부하면 AI가 그 형식을 따라 작성해줍니다.\n\n없으시면 "건너뛰기"를 클릭해 주세요.`;
+      default:
+        return '';
     }
-    if (count === 2) {
-      return `좋아요! AI가 만들어줄 결과물은 어떤 형식이었으면 좋겠나요?\n예: "칭찬, 개선점, 격려의 말 형식으로요" 또는 "표 형태로 정리해줘요" 처럼 알려주세요.`;
+  };
+
+  const handleGenerate = async (msgs: Message[], file: FileData | null) => {
+    setMessages(prev => [...prev, { role: 'ai', text: '감사합니다! 지금 바로 도구를 만들어드릴게요... 잠깐만요.' }]);
+    setIsGenerating(true);
+    try {
+      const draft = await generateToolFromChat(msgs, file);
+      if (draft) {
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'ai',
+            text: `도구가 준비됐어요!\n\n이름: **${draft.name}**\n${draft.description}\n\n아래 "도구 확인하기" 버튼을 눌러 세부 내용을 확인하고 저장하세요.`,
+          },
+        ]);
+        setTimeout(() => onComplete(draft), 300);
+      } else {
+        setMessages(prev => [...prev, { role: 'ai', text: '죄송해요, 도구 생성에 실패했습니다. 다시 시도해 주세요.' }]);
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'ai', text: 'AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' }]);
+    } finally {
+      setIsGenerating(false);
     }
-    return '';
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isGenerating) return;
     const userMsg = input.trim();
     setInput('');
     const newMessages: Message[] = [...messages, { role: 'user', text: userMsg }];
@@ -49,34 +88,35 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
     const nextCount = turnCount + 1;
     setTurnCount(nextCount);
 
-    if (nextCount < 3) {
+    if (nextCount < TOTAL_TURNS - 1) {
       setIsLoading(true);
       setTimeout(() => {
-        const next = getNextQuestion(nextCount, userMsg);
+        const next = getNextQuestion(nextCount);
         if (next) setMessages(prev => [...prev, { role: 'ai', text: next }]);
         setIsLoading(false);
         inputRef.current?.focus();
       }, 400);
-    } else {
-      setMessages(prev => [...prev, { role: 'ai', text: '감사합니다! 지금 바로 도구를 만들어드릴게요... 잠깐만요.' }]);
-      setIsGenerating(true);
-      try {
-        const draft = await generateToolFromChat(newMessages);
-        if (draft) {
-          setMessages(prev => [
-            ...prev,
-            { role: 'ai', text: `도구가 준비됐어요!\n\n이름: **${draft.name}**\n${draft.description}\n\n아래 "도구 확인하기" 버튼을 눌러 세부 내용을 확인하고 저장하세요.` },
-          ]);
-          setTimeout(() => onComplete(draft), 300);
-        } else {
-          setMessages(prev => [...prev, { role: 'ai', text: '죄송해요, 도구 생성에 실패했습니다. 다시 시도해 주세요.' }]);
-        }
-      } catch {
-        setMessages(prev => [...prev, { role: 'ai', text: 'AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' }]);
-      } finally {
-        setIsGenerating(false);
-      }
+    } else if (nextCount === TOTAL_TURNS - 1) {
+      // Turn 3: show file upload question
+      setIsLoading(true);
+      setTimeout(() => {
+        const next = getNextQuestion(nextCount);
+        if (next) setMessages(prev => [...prev, { role: 'ai', text: next }]);
+        setIsLoading(false);
+      }, 400);
     }
+  };
+
+  const handleFileStepDone = async (skipFile: boolean) => {
+    const file = skipFile ? null : (templateFiles[0] ?? null);
+    const nextCount = TOTAL_TURNS;
+    setTurnCount(nextCount);
+    const userMsgText = skipFile
+      ? '참고 양식 없이 진행할게요.'
+      : `양식 파일 첨부: ${templateFiles[0]?.file.name ?? '파일'}`;
+    const finalMessages: Message[] = [...messages, { role: 'user', text: userMsgText }];
+    setMessages(finalMessages);
+    await handleGenerate(finalMessages, file);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -85,6 +125,9 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
       handleSend();
     }
   };
+
+  const isFileUploadTurn = turnCount === TOTAL_TURNS - 1 && !isLoading;
+  const isDone = turnCount >= TOTAL_TURNS;
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
@@ -95,15 +138,14 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
         </button>
         <div className="flex-1">
           <h2 className="text-base font-bold text-gray-900 dark:text-white">대화로 도구 만들기</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">AI가 3가지 질문으로 도구를 자동 생성합니다</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">AI가 4가지 질문으로 도구를 자동 생성합니다</p>
         </div>
-        {/* 진행 표시 */}
         <div className="flex items-center gap-1">
-          {[1, 2, 3].map(n => (
+          {Array.from({ length: TOTAL_TURNS }).map((_, i) => (
             <div
-              key={n}
+              key={i}
               className={`w-2 h-2 rounded-full transition-colors ${
-                turnCount >= n ? 'bg-amber-500' : 'bg-gray-200 dark:bg-gray-600'
+                turnCount > i ? 'bg-amber-500' : turnCount === i ? 'bg-amber-300' : 'bg-gray-200 dark:bg-gray-600'
               }`}
             />
           ))}
@@ -149,8 +191,40 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
         <div ref={bottomRef} />
       </div>
 
-      {/* 입력 */}
-      {turnCount < 3 && (
+      {/* 파일 업로드 턴 (Q4) */}
+      {isFileUploadTurn && !isGenerating && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+          {templateFiles.length === 0 ? (
+            <FileUpload
+              label="양식 파일 첨부 (PDF, 이미지, HWP 등)"
+              files={templateFiles}
+              onFilesChange={setTemplateFiles}
+              multiple={false}
+            />
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl">
+              <Paperclip className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-300 flex-1 truncate">{templateFiles[0].file.name}</span>
+              <button
+                onClick={() => handleFileStepDone(false)}
+                className="px-3 py-1 text-xs font-bold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+              >
+                이 파일로 진행
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => handleFileStepDone(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <SkipForward className="w-4 h-4" />
+            건너뛰기 (참고 양식 없이 진행)
+          </button>
+        </div>
+      )}
+
+      {/* 일반 텍스트 입력 (Q1~Q3) */}
+      {!isFileUploadTurn && !isDone && !isGenerating && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex gap-2 items-end">
             <textarea
@@ -158,14 +232,14 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading || isGenerating}
+              disabled={isLoading}
               placeholder="답변을 입력하세요... (Enter로 전송)"
               rows={2}
               className="flex-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
             />
             <button
               onClick={handleSend}
-              disabled={!input.trim() || isLoading || isGenerating}
+              disabled={!input.trim() || isLoading}
               className="p-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white rounded-xl transition-colors"
             >
               <Send className="w-4 h-4" />
@@ -174,7 +248,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
         </div>
       )}
 
-      {turnCount >= 3 && !isGenerating && (
+      {isDone && !isGenerating && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onCancel}

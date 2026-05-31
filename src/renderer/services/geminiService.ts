@@ -1740,26 +1740,59 @@ export const runCustomTool = async (
 export const generateToolPrompt = async (
   description: string,
   inputs: CustomToolInput[],
+  existingPrompt?: string,
+  templateFile?: FileData | null,
 ): Promise<string> => {
   const fieldList = inputs
     .map(i => `- {{${i.id}}} : ${i.label} (${i.type === 'file-upload' ? '파일 첨부' : i.type === 'textarea' ? '여러 줄 텍스트' : '한 줄 텍스트'})`)
     .join('\n');
-  const prompt = `교사가 사용할 AI 도구의 프롬프트 템플릿을 작성해줘.
+  const templateNote = templateFile
+    ? '\n- 첨부된 양식 파일을 분석하여, 출력 결과가 이 양식의 형식과 구조를 따르도록 프롬프트에 명시해줘'
+    : '';
+
+  const prompt = existingPrompt?.trim()
+    ? `교사가 사용할 AI 도구의 프롬프트 템플릿을 개선해줘.
 도구 설명: ${description}
 사용 가능한 변수:
 ${fieldList}
+
+기존 프롬프트:
+${existingPrompt}
+
+개선 방향:
+- 지시가 더 구체적이고 명확하도록 보완해줘
+- 출력 형식(표, 항목 구분 등)을 명시해줘
+- 교육 현장에 맞는 어조와 표현을 사용해줘
+- 기존 변수({{변수명}})는 그대로 유지하고, 필요하면 추가해줘${templateNote}
+결과물은 개선된 프롬프트 텍스트만 출력해.`
+    : `교사가 사용할 AI 도구의 프롬프트 템플릿을 작성해줘.
+도구 설명: ${description}
+사용 가능한 변수:
+${fieldList}${templateNote}
 변수는 반드시 {{변수명}} 형태로 삽입하고, 결과물은 프롬프트 텍스트만 출력해.`;
+
+  if (templateFile) {
+    const parts = [
+      { inlineData: { data: templateFile.base64.split(',')[1], mimeType: templateFile.mimeType } },
+      { text: prompt },
+    ];
+    return await aiGenerateMultipart(parts, '', { temperature: 0.7 });
+  }
   return await aiGenerate(prompt, '', { temperature: 0.7 });
 };
 
 export const generateToolFromChat = async (
   chatHistory: { role: 'ai' | 'user'; text: string }[],
+  templateFile?: FileData | null,
 ): Promise<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null> => {
   const conversation = chatHistory.map(m => `${m.role === 'ai' ? 'AI' : '교사'}: ${m.text}`).join('\n');
+  const templateNote = templateFile
+    ? '\n첨부된 양식 파일을 분석하여, promptTemplate에 "이 양식의 형식을 따라 출력해줘"라는 지시를 명시해줘.'
+    : '';
   const prompt = `다음 대화를 바탕으로 EduNote AI 도구를 JSON으로 만들어줘.
 대화:
 ${conversation}
-
+${templateNote}
 아래 형식으로만 출력해 (JSON만, 설명 없이):
 {
   "name": "...",
@@ -1770,7 +1803,16 @@ ${conversation}
 }
 category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-upload 중 하나.`;
   try {
-    const raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+    let raw: string;
+    if (templateFile) {
+      const parts = [
+        { inlineData: { data: templateFile.base64.split(',')[1], mimeType: templateFile.mimeType } },
+        { text: prompt },
+      ];
+      raw = await aiGenerateMultipart(parts, '', { temperature: 0.3 });
+    } else {
+      raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+    }
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
     return JSON.parse(match[0]);
