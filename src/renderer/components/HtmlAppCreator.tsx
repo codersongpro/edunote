@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { CustomTool } from '../types';
 import { generateHtmlApp } from '../services/geminiService';
-import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft, Plus, GripVertical } from 'lucide-react';
+import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft, Plus, GripVertical, AlertTriangle } from 'lucide-react';
+import { useGlobalState } from '../GlobalStateContext';
 
 const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
   { value: 'lesson', label: '수업 자료' },
@@ -75,6 +76,7 @@ interface HtmlAppCreatorProps {
 }
 
 const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCancel }) => {
+  const { apiKeyAvailability } = useGlobalState();
   const parsed = parseDescription(initial?.description ?? '');
   const [appType, setAppType] = useState(parsed.appType);
   const [features, setFeatures] = useState<string[]>(parsed.features.length > 0 ? parsed.features : ['']);
@@ -186,6 +188,28 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
         </div>
       </div>
 
+      {apiKeyAvailability !== 'usable' && (
+        <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+              {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키를 설정하거나 확인해 주세요'}
+            </p>
+            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
+              {apiKeyAvailability === 'wait'
+                ? '잠시 후 다시 시도하거나 설정에서 API 키를 변경해 주세요.'
+                : 'Gemini API 키가 없거나 아직 확인되지 않았습니다. 설정에서 API 키를 입력하거나 한 번 생성해 보세요.'}
+            </p>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('edunote-goto-settings'))}
+              className="mt-1.5 text-xs font-bold text-amber-600 dark:text-amber-400 underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200 transition-colors"
+            >
+              설정 바로가기 →
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
 
         {/* 예시 칩 */}
@@ -215,6 +239,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
               앱 이름 / 종류 <span className="text-red-500">*</span>
             </label>
             <input
+              autoFocus
               value={appType}
               onChange={e => setAppType(e.target.value)}
               placeholder="예: 팀별 점수판, 수업 타이머, 어휘 플래시카드"

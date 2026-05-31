@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
@@ -22,6 +22,24 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState('');
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [teacherVars, setTeacherVars] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    (async () => {
+      const [name, inst, level] = await Promise.all([
+        window.electronAPI.getConfig('teacherName'),
+        window.electronAPI.getConfig('institution'),
+        window.electronAPI.getConfig('schoolLevel'),
+      ]);
+      const vars: Record<string, string> = {};
+      if (name) vars['teacher_name'] = name as string;
+      if (inst) vars['institution'] = inst as string;
+      if (level) vars['school_level'] = level as string;
+      setTeacherVars(vars);
+    })();
+  }, []);
+
+  const firstTextInputIdx = tool.inputs.findIndex(i => i.type !== 'file-upload');
 
   const handleGenerate = async () => {
     const controller = new AbortController();
@@ -32,7 +50,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
     try {
       const output = await runCustomTool(
         tool,
-        fieldValues,
+        { ...teacherVars, ...fieldValues },
         fileValues,
         (current, total) => setProgress({ current, total }),
         controller.signal,
@@ -109,12 +127,12 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
             <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
-                {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키가 활성화되지 않았습니다'}
+                {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키를 설정하거나 확인해 주세요'}
               </p>
               <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
                 {apiKeyAvailability === 'wait'
                   ? '잠시 후 다시 시도하거나 설정에서 API 키를 변경해 주세요.'
-                  : 'Gemini API 키를 설정해야 생성 기능을 사용할 수 있습니다.'}
+                  : 'Gemini API 키가 없거나 아직 확인되지 않았습니다. 설정에서 API 키를 입력하거나 한 번 생성해 보세요.'}
               </p>
               <button
                 onClick={() => window.dispatchEvent(new CustomEvent('edunote-goto-settings'))}
@@ -145,6 +163,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
                 />
               ) : input.type === 'textarea' ? (
                 <textarea
+                  autoFocus={tool.inputs.indexOf(input) === firstTextInputIdx}
                   value={fieldValues[input.id] ?? ''}
                   onChange={e => setFieldValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                   placeholder={input.placeholder}
@@ -154,6 +173,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
               ) : (
                 <input
                   type="text"
+                  autoFocus={tool.inputs.indexOf(input) === firstTextInputIdx}
                   value={fieldValues[input.id] ?? ''}
                   onChange={e => setFieldValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                   placeholder={input.placeholder}

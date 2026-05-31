@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
-type View = 'list' | 'run' | 'edit' | 'create-wizard' | 'create-chat' | 'create-html';
+type View = 'list' | 'run' | 'edit' | 'edit-html' | 'create-wizard' | 'create-chat' | 'create-html';
 
 // 구글 시트 ID와 폼 URL — 운영 시작 전까지 빈 문자열 유지
 const MARKET_SHEET_ID = '1KZNieOfZLlIKUv8xaP2RPUK3fv_g-yIO9h5CijcGTvk';
@@ -148,6 +148,19 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     setTab(activeTab);
   }, [activeTab]);
   const [view, setView] = useState<View>('list');
+  const [teacherName, setTeacherName] = useState('');
+  const [institution, setInstitution] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const [name, inst] = await Promise.all([
+        window.electronAPI.getConfig('teacherName'),
+        window.electronAPI.getConfig('institution'),
+      ]);
+      if (name) setTeacherName(name as string);
+      if (inst) setInstitution(inst as string);
+    })();
+  }, []);
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
   const [marketEntries, setMarketEntries] = useState<MarketEntry[]>([]);
@@ -184,7 +197,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
 
   const handleCreate = (draft: Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
-    const tool: CustomTool = { ...draft, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
+    const autoAuthor = [teacherName, institution].filter(Boolean).join(' / ') || undefined;
+    const tool: CustomTool = { ...draft, id: crypto.randomUUID(), createdAt: now, updatedAt: now, author: draft.author || autoAuthor };
     saveTools([...tools, tool]);
     setView('list');
     setChatDraft(null);
@@ -304,6 +318,16 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   if (view === 'edit' && selectedTool) {
     return (
       <MyToolEditor
+        initial={selectedTool}
+        onSave={handleUpdate}
+        onCancel={() => { setView('list'); setSelectedTool(null); }}
+      />
+    );
+  }
+
+  if (view === 'edit-html' && selectedTool) {
+    return (
+      <HtmlAppCreator
         initial={selectedTool}
         onSave={handleUpdate}
         onCancel={() => { setView('list'); setSelectedTool(null); }}
@@ -448,6 +472,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                     tool={tool}
                     onRun={() => { setSelectedTool(tool); setView('run'); }}
                     onEdit={() => { setSelectedTool(tool); setView('edit'); }}
+                    onEditHtml={() => { setSelectedTool(tool); setView('edit-html'); }}
                     onExport={() => handleExport(tool)}
                     onDelete={() => handleDelete(tool.id)}
                     onShare={() => setSharingTool(tool)}
@@ -570,10 +595,11 @@ const ToolCard: React.FC<{
   tool: CustomTool;
   onRun: () => void;
   onEdit: () => void;
+  onEditHtml: () => void;
   onExport: () => void;
   onDelete: () => void;
   onShare: () => void;
-}> = ({ tool, onRun, onEdit, onExport, onDelete, onShare }) => {
+}> = ({ tool, onRun, onEdit, onEditHtml, onExport, onDelete, onShare }) => {
   const isHtmlApp = tool.toolType === 'html-app';
   const handleRun = () => {
     if (isHtmlApp && tool.htmlContent) {
@@ -624,15 +650,13 @@ const ToolCard: React.FC<{
           {isHtmlApp ? <Monitor className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
           {isHtmlApp ? '열기' : '실행'}
         </button>
-        {!isHtmlApp && (
-          <button
-            onClick={onEdit}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            수정
-          </button>
-        )}
+        <button
+          onClick={isHtmlApp ? onEditHtml : onEdit}
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          수정
+        </button>
         <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
           <Share2 className="w-4 h-4" />
         </button>
