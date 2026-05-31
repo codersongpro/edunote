@@ -72,5 +72,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 나만의 AI 도구
   openJsonFile: (): Promise<string | null> => ipcRenderer.invoke('file:open-json'),
-  fetchMarket: (sheetId: string): Promise<string> => ipcRenderer.invoke('data:fetch-market', sheetId),
 });

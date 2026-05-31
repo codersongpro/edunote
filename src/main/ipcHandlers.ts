@@ -478,17 +478,6 @@ export function registerIpcHandlers(): void {
     return fs.readFileSync(validatePath(filePaths[0]), 'utf-8');
   });
 
-  // ── Market CSV Fetch (구글 시트 기반 공유 마켓) ───────────────────────
-  ipcMain.handle('data:fetch-market', async (_e, sheetId: string) => {
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/export?format=csv`;
-    const res = await net.fetch(csvUrl, {
-      headers: { 'User-Agent': 'edunote-app' },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
-  });
-
   // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);
