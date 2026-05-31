@@ -329,7 +329,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void 
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">나만의 AI 도구</h1>
+            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">AI크래프트</h1>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
           </div>
           {tab === 'my' && (

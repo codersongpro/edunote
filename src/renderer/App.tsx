@@ -911,7 +911,7 @@ const App: React.FC = () => {
                   <div className="w-5 h-5 rounded-md bg-pink-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">나만의AI</span>
+                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">AI크래프트</span>
                 </div>
                 {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
               </button>
@@ -926,7 +926,7 @@ const App: React.FC = () => {
                     }`}
                   >
                     <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">도구 만들기</span>
+                    <span className="flex-1 text-left truncate">AI크래프트</span>
                   </button>
                   <button
                     onClick={() => { setMyToolsActiveTab('market'); goTo(AppMode.MY_AI_TOOLS); }}
