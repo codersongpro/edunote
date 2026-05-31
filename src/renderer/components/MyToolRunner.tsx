@@ -80,10 +80,12 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack }) => {
         <div className="flex-1 p-4 space-y-4">
           {tool.inputs.map(input => (
             <div key={input.id}>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
-                {input.label}
-                {input.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
+              {input.type !== 'file-upload' && (
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
+                  {input.label}
+                  {input.required && <span className="text-red-500 ml-1">*</span>}
+                </label>
+              )}
               {input.type === 'file-upload' ? (
                 <FileUpload
                   label={input.label}

@@ -110,6 +110,7 @@ const App: React.FC = () => {
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
   const [lessonSectionOpen, setLessonSectionOpen] = useState(false);
   const [myToolsSectionOpen, setMyToolsSectionOpen] = useState(false);
+  const [myToolsActiveTab, setMyToolsActiveTab] = useState<'my' | 'market'>('my');
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
@@ -437,8 +438,8 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
-      case AppMode.MY_AI_TOOLS: return <MyToolsScreen initialTab="my" />;
-      case AppMode.MY_AI_TOOLS_SHARED: return <MyToolsScreen initialTab="market" />;
+      case AppMode.MY_AI_TOOLS: return <MyToolsScreen activeTab={myToolsActiveTab} onTabChange={setMyToolsActiveTab} />;
+      case AppMode.MY_AI_TOOLS_SHARED: return null;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       case AppMode.DEMO_SAMPLES: return <DemoSamplesScreen />;
@@ -908,9 +909,9 @@ const App: React.FC = () => {
               {myToolsSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
                   <button
-                    onClick={() => goTo(AppMode.MY_AI_TOOLS)}
+                    onClick={() => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); }}
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.MY_AI_TOOLS
+                      mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'my'
                         ? 'bg-violet-500 text-white font-semibold shadow-sm'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}
@@ -919,9 +920,9 @@ const App: React.FC = () => {
                     <span className="flex-1 text-left truncate">도구 만들기</span>
                   </button>
                   <button
-                    onClick={() => goTo(AppMode.MY_AI_TOOLS_SHARED)}
+                    onClick={() => { setMyToolsActiveTab('market'); goTo(AppMode.MY_AI_TOOLS); }}
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.MY_AI_TOOLS_SHARED
+                      mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'market'
                         ? 'bg-violet-500 text-white font-semibold shadow-sm'
                         : 'text-gray-600 dark:text-gray-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 hover:text-violet-700 dark:hover:text-violet-300'
                     }`}

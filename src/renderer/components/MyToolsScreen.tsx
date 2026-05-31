@@ -99,8 +99,12 @@ const parseMarketCsv = (csv: string): MarketEntry[] => {
   }).filter(e => e.name && e.fileUrl);
 };
 
-const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) => {
-  const [tab, setTab] = useState<Tab>(initialTab);
+const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void }> = ({ activeTab = 'my', onTabChange }) => {
+  const [tab, setTab] = useState<Tab>(activeTab);
+
+  useEffect(() => {
+    setTab(activeTab);
+  }, [activeTab]);
   const [view, setView] = useState<View>('list');
   const [tools, setTools] = useState<CustomTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
@@ -169,7 +173,9 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
         updatedAt: now,
       }));
       saveTools([...tools, ...imported]);
-      alert(`${imported.length}개 도구를 가져왔습니다.`);
+      setTab('my');
+      onTabChange?.('my');
+      alert(`${imported.length}개 도구를 내 도구에 추가했습니다.`);
     } catch {
       alert('유효한 도구 JSON 파일이 아닙니다.');
     }
@@ -306,7 +312,7 @@ const MyToolsScreen: React.FC<{ initialTab?: Tab }> = ({ initialTab = 'my' }) =>
           {([['my', '내 도구'], ['market', '공유받은 도구']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
-              onClick={() => setTab(t)}
+              onClick={() => { setTab(t); onTabChange?.(t); }}
               className={`flex items-center gap-1.5 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                 tab === t
                   ? 'border-amber-500 text-amber-600 dark:text-amber-400'
