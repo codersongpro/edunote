@@ -621,7 +621,11 @@ const ToolCard: React.FC<{
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className={`bg-white dark:bg-gray-900 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow border-t-2 border ${
+      isHtmlApp
+        ? 'border-violet-200 dark:border-violet-800/60 border-t-violet-400 dark:border-t-violet-500'
+        : 'border-amber-200 dark:border-amber-800/60 border-t-amber-400 dark:border-t-amber-500'
+    }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -653,7 +657,7 @@ const ToolCard: React.FC<{
         }
       </div>
 
-      <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+      <div className={`flex gap-2 pt-1 border-t ${isHtmlApp ? 'border-violet-100 dark:border-violet-900/40' : 'border-amber-100 dark:border-amber-900/40'}`}>
         <button
           onClick={handleRun}
           className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-white text-xs font-bold rounded-lg transition-colors ${isHtmlApp ? 'bg-violet-500 hover:bg-violet-600' : 'bg-amber-500 hover:bg-amber-600'}`}
@@ -688,7 +692,11 @@ const MarketToolCard: React.FC<{
   isAdded: boolean;
   onImport: () => void;
 }> = ({ entry, importing, isAdded, onImport }) => (
-  <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col gap-3">
+  <div className={`bg-white dark:bg-gray-900 rounded-xl p-4 flex flex-col gap-3 border-t-2 border ${
+    entry.toolType === 'html-app'
+      ? 'border-violet-200 dark:border-violet-800/60 border-t-violet-400 dark:border-t-violet-500'
+      : 'border-amber-200 dark:border-amber-800/60 border-t-amber-400 dark:border-t-amber-500'
+  }`}>
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
         <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{entry.name}</h3>
