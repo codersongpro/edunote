@@ -528,6 +528,7 @@ export function registerIpcHandlers(): void {
 
   // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
   // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
+  // net.request 사용: 시스템 SSL 인증서 + 리다이렉트 URL 한글 인코딩 처리
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
     let safeUrl: string;
     try {
@@ -535,12 +536,47 @@ export function registerIpcHandlers(): void {
     } catch {
       throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
     }
-    const res = await net.fetch(safeUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-      signal: AbortSignal.timeout(20000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+
+    const encodeUrl = (s: string): string =>
+      s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
+
+    const fetchUrl = (targetUrl: string, redirectsLeft: number): Promise<string> =>
+      new Promise((resolve, reject) => {
+        if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
+        let settled = false;
+        const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
+        const req = net.request({ url: encodeUrl(targetUrl), redirect: 'manual' });
+        req.setHeader('User-Agent', 'Mozilla/5.0 edunote-app');
+
+        req.on('redirect', (_code, _method, redirectUrl) => {
+          done(() => resolve(fetchUrl(redirectUrl, redirectsLeft - 1)));
+          req.abort();
+        });
+
+        req.on('response', (res) => {
+          if (res.statusCode && res.statusCode >= 400) {
+            done(() => reject(new Error(`HTTP ${res.statusCode}`)));
+            return;
+          }
+          const chunks: Buffer[] = [];
+          res.on('data', (c: Buffer) => chunks.push(c));
+          res.on('end', () => done(() => resolve(Buffer.concat(chunks).toString('utf-8'))));
+          res.on('error', (e) => done(() => reject(e)));
+        });
+
+        req.on('error', (e) => done(() => reject(e)));
+
+        const timer = setTimeout(() => {
+          done(() => reject(new Error('연결 시간이 초과되었습니다 (20초)')));
+          req.abort();
+        }, 20000);
+        req.on('response', () => clearTimeout(timer));
+
+        req.end();
+      });
+
+    return await fetchUrl(safeUrl, 6);
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
