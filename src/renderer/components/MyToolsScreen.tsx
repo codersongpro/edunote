@@ -58,7 +58,7 @@ const CATEGORY_MAP: Record<string, CustomTool['category']> = {
 // 구글 드라이브 공유 URL → 직접 다운로드 URL 변환
 const toDriveDownloadUrl = (url: string): string => {
   const match = url.match(/(?:id=|\/d\/)([a-zA-Z0-9_-]+)/);
-  if (match) return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+  if (match) return `https://drive.google.com/uc?export=download&confirm=t&id=${match[1]}`;
   return url;
 };
 
@@ -300,8 +300,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       saveTools([...tools, ...imported]);
       setTab('my');
       alert(`"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.`);
-    } catch {
-      alert('도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.');
+    } catch (err: any) {
+      alert(`도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.\n\n오류: ${err?.message ?? '알 수 없는 오류'}`);
     } finally {
       setImportingUrl(null);
     }
