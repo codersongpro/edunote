@@ -37,6 +37,7 @@ const COL = {
   name: '도구 이름',
   description: '설명',
   category: '카테고리',
+  toolType: '유형',
   author: '작성자',
   authorSchool: '소속',
   message: '한 마디',
@@ -45,8 +46,12 @@ const COL = {
 
 const CATEGORY_MAP: Record<string, CustomTool['category']> = {
   '교무 행정': 'admin',
+  '교무행정': 'admin',
   '수업 자료': 'lesson',
+  '수업자료': 'lesson',
   '학생 기록': 'student',
+  '학생기록': 'student',
+  '학생관리': 'student',
   '기타': 'other',
 };
 
@@ -71,6 +76,7 @@ interface MarketEntry {
   name: string;
   description: string;
   category: CustomTool['category'];
+  toolType: 'html-app' | 'ai-skill';
   author: string;
   authorSchool: string;
   message: string;
@@ -113,6 +119,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
   const nameIdx    = findIdx(COL.name,        '이름', 'name', '도구');
   const descIdx    = findIdx(COL.description, '설명', 'desc', '내용');
   const catIdx     = findIdx(COL.category,    '카테고리', 'category', '분류');
+  const typeIdx    = findIdx(COL.toolType,    '유형', 'type', 'tooltype');
   const authorIdx  = findIdx(COL.author,      '작성자', 'author');
   const schoolIdx  = findIdx(COL.authorSchool,'소속', 'school', '학교');
   const msgIdx     = findIdx(COL.message,     '한 마디', '메시지', 'message', '소개');
@@ -126,10 +133,14 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
     const cols = parseCsvLine(line);
     const rawUrl = get(cols, fileIdx);
     const cat = get(cols, catIdx);
+    const rawType = get(cols, typeIdx).toLowerCase();
+    const toolType: MarketEntry['toolType'] =
+      (rawType === 'html-app' || rawType === 'html앱' || rawType === 'html 앱' || rawType === '앱') ? 'html-app' : 'ai-skill';
     return {
       name: get(cols, nameIdx),
       description: get(cols, descIdx),
       category: (CATEGORY_MAP[cat] ?? 'other') as CustomTool['category'],
+      toolType,
       author: get(cols, authorIdx),
       authorSchool: get(cols, schoolIdx),
       message: get(cols, msgIdx),
@@ -698,9 +709,18 @@ const MarketToolCard: React.FC<{
           </p>
         )}
       </div>
-      <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[entry.category]}`}>
-        {CATEGORY_LABELS[entry.category]}
-      </span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+          entry.toolType === 'html-app'
+            ? 'text-violet-600 dark:text-violet-400 border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20'
+            : 'text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
+        }`}>
+          {entry.toolType === 'html-app' ? '앱' : 'AI'}
+        </span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[entry.category]}`}>
+          {CATEGORY_LABELS[entry.category]}
+        </span>
+      </div>
     </div>
 
     <button
@@ -708,7 +728,7 @@ const MarketToolCard: React.FC<{
       disabled={importing || isAdded}
       className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition-colors ${
         isAdded
-          ? 'text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 cursor-default'
+          ? 'bg-emerald-500 dark:bg-emerald-600 text-white cursor-default'
           : importing
             ? 'text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 opacity-50'
             : 'text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 hover:bg-pink-50 dark:hover:bg-pink-900/20'
