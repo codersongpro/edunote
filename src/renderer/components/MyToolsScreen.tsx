@@ -266,10 +266,34 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     setImportingUrl(entry.fileUrl);
     try {
       const raw = await window.electronAPI.fetchUrlJson(entry.fileUrl);
-      const data = JSON.parse(raw);
-      const items: CustomTool[] = Array.isArray(data) ? data : [data];
       const now = new Date().toISOString();
-      const imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now }));
+      let imported: CustomTool[];
+
+      // JSON 파싱 시도 → 실패하고 HTML 앱이면 htmlContent로 감싸서 가져오기
+      try {
+        const data = JSON.parse(raw);
+        const items: CustomTool[] = Array.isArray(data) ? data : [data];
+        imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now }));
+      } catch {
+        if (entry.toolType === 'html-app' && raw.trim().startsWith('<')) {
+          imported = [{
+            id: crypto.randomUUID(),
+            name: entry.name,
+            description: entry.description,
+            category: entry.category,
+            toolType: 'html-app' as const,
+            htmlContent: raw,
+            inputs: [],
+            promptTemplate: '',
+            author: [entry.author, entry.authorSchool].filter(Boolean).join(' / ') || undefined,
+            createdAt: entry.createdAt || now,
+            updatedAt: now,
+          }];
+        } else {
+          throw new Error('유효한 스킬 파일이 아닙니다');
+        }
+      }
+
       if (tools.some(t => t.name === imported[0]?.name)) {
         if (!confirm(`"${imported[0]?.name}" 이름의 도구가 이미 있습니다. 추가할까요?`)) return;
       }
