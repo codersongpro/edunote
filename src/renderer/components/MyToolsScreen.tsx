@@ -7,7 +7,7 @@ import MyToolChatCreator from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
-  RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor,
+  RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -181,6 +181,29 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   const [importingUrl, setImportingUrl] = useState<string | null>(null);
   const [chatDraft, setChatDraft] = useState<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [sharingTool, setSharingTool] = useState<CustomTool | null>(null);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<CustomTool['category'] | 'all'>('all');
+
+  const handleTabSwitch = (t: Tab) => {
+    setTab(t);
+    onTabChange?.(t);
+    setSearch('');
+    setCategoryFilter('all');
+  };
+
+  const filteredTools = tools.filter(t => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || t.name.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q);
+    const matchCat = categoryFilter === 'all' || t.category === categoryFilter;
+    return matchSearch && matchCat;
+  });
+
+  const filteredMarket = marketEntries.filter(e => {
+    const q = search.toLowerCase();
+    const matchSearch = !q || e.name.toLowerCase().includes(q) || (e.description ?? '').toLowerCase().includes(q) || (e.author ?? '').toLowerCase().includes(q);
+    const matchCat = categoryFilter === 'all' || e.category === categoryFilter;
+    return matchSearch && matchCat;
+  });
 
   useEffect(() => {
     (async () => {
@@ -452,7 +475,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
           {([['my', '내 스킬'], ['market', '스킬마켓']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
-              onClick={() => { setTab(t); onTabChange?.(t); }}
+              onClick={() => handleTabSwitch(t)}
               className={`flex items-center gap-1.5 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                 tab === t
                   ? 'border-amber-500 text-amber-600 dark:text-amber-400'
@@ -465,6 +488,47 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
             </button>
           ))}
         </div>
+      </div>
+
+      {/* 검색 + 카테고리 필터 */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-2.5 flex items-center gap-3 flex-wrap">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="스킬 이름, 설명 검색..."
+            className="pl-8 pr-7 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          {(['all', 'admin', 'lesson', 'student', 'other'] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${
+                categoryFilter === cat
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              {cat === 'all' ? '전체' : CATEGORY_LABELS[cat]}
+            </button>
+          ))}
+        </div>
+        {(search || categoryFilter !== 'all') && (
+          <button
+            onClick={() => { setSearch(''); setCategoryFilter('all'); }}
+            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline ml-auto"
+          >
+            필터 초기화
+          </button>
+        )}
       </div>
 
       {sharingTool && (
@@ -499,9 +563,15 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                   </button>
                 </div>
               </div>
+            ) : filteredTools.length === 0 ? (
+              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm font-semibold">검색 결과가 없습니다</p>
+                <button onClick={() => { setSearch(''); setCategoryFilter('all'); }} className="text-xs text-amber-500 underline mt-1">필터 초기화</button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {tools.map(tool => (
+                {filteredTools.map(tool => (
                   <ToolCard
                     key={tool.id}
                     tool={tool}
@@ -588,9 +658,17 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
             )}
 
             {/* 목록 */}
-            {!marketError && !marketLoading && marketEntries.length > 0 && (
+            {!marketError && !marketLoading && marketEntries.length > 0 && filteredMarket.length === 0 && (
+              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
+                <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm font-semibold">검색 결과가 없습니다</p>
+                <button onClick={() => { setSearch(''); setCategoryFilter('all'); }} className="text-xs text-amber-500 underline mt-1">필터 초기화</button>
+              </div>
+            )}
+
+            {!marketError && !marketLoading && filteredMarket.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {marketEntries.map((entry, i) => (
+                {filteredMarket.map((entry, i) => (
                   <MarketToolCard
                     key={`${entry.fileUrl}-${i}`}
                     entry={entry}
