@@ -528,7 +528,6 @@ export function registerIpcHandlers(): void {
 
   // ── 공유 마켓: 구글 드라이브 JSON 파일 다운로드 ──────────────────────
   // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
-  // 한글 파일명이 Electron net.fetch의 ByteString 제약에 걸리는 문제를 방지
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
     let safeUrl: string;
     try {
@@ -536,42 +535,12 @@ export function registerIpcHandlers(): void {
     } catch {
       throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
     }
-
-    const fetchWithRedirects = (targetUrl: string, redirectsLeft = 6, cookies: string[] = []): Promise<string> =>
-      new Promise((resolve, reject) => {
-        if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
-        const lib: typeof https | typeof http = targetUrl.startsWith('https') ? https : http;
-        const reqHeaders: Record<string, string> = { 'User-Agent': 'Mozilla/5.0 edunote-app' };
-        if (cookies.length > 0) reqHeaders['Cookie'] = cookies.join('; ');
-        const req = lib.get(targetUrl, { headers: reqHeaders }, (res) => {
-          const { statusCode, headers: resHeaders } = res;
-
-          // 리다이렉트 응답의 쿠키를 다음 요청으로 전달
-          const nextCookies = [...cookies];
-          const setCookie = resHeaders['set-cookie'];
-          if (setCookie) {
-            setCookie.forEach(c => nextCookies.push(c.split(';')[0]));
-          }
-
-          if (statusCode && [301, 302, 303, 307, 308].includes(statusCode) && resHeaders.location) {
-            const next = resHeaders.location.startsWith('http')
-              ? resHeaders.location
-              : new URL(resHeaders.location, targetUrl).href;
-            res.resume();
-            resolve(fetchWithRedirects(next, redirectsLeft - 1, nextCookies));
-            return;
-          }
-          if (statusCode && statusCode >= 400) { reject(new Error(`HTTP ${statusCode}`)); return; }
-          const chunks: Buffer[] = [];
-          res.on('data', (c: Buffer) => chunks.push(c));
-          res.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-          res.on('error', reject);
-        });
-        req.setTimeout(20000, () => req.destroy(new Error('연결 시간이 초과되었습니다 (20초)')));
-        req.on('error', reject);
-      });
-
-    return await fetchWithRedirects(safeUrl);
+    const res = await net.fetch(safeUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
