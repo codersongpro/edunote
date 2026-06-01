@@ -119,7 +119,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
   const nameIdx    = findIdx(COL.name,        '이름', 'name', '도구');
   const descIdx    = findIdx(COL.description, '설명', 'desc', '내용');
   const catIdx     = findIdx(COL.category,    '카테고리', 'category', '분류');
-  const typeIdx    = findIdx(COL.toolType,    '유형', 'type', 'tooltype');
+  const typeIdx    = findIdx(COL.toolType,    '유형', '종류', 'type', 'tooltype');
   const authorIdx  = findIdx(COL.author,      '작성자', 'author');
   const schoolIdx  = findIdx(COL.authorSchool,'소속', 'school', '학교');
   const msgIdx     = findIdx(COL.message,     '한 마디', '메시지', 'message', '소개');
@@ -132,7 +132,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
   const entries = lines.slice(1).map(line => {
     const cols = parseCsvLine(line);
     const rawUrl = get(cols, fileIdx);
-    const cat = get(cols, catIdx);
+    const cat = get(cols, catIdx).split(/[,\n]/)[0].trim();
     const rawType = get(cols, typeIdx).toLowerCase();
     const toolType: MarketEntry['toolType'] =
       (rawType === 'html-app' || rawType === 'html앱' || rawType === 'html 앱' || rawType === '앱') ? 'html-app' : 'ai-skill';
