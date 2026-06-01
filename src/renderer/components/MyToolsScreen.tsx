@@ -296,7 +296,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       try {
         const data = JSON.parse(raw);
         const items: CustomTool[] = Array.isArray(data) ? data : [data];
-        imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now }));
+        // 마켓 entry 이름으로 통일 (isAdded 체크와 일치시키기 위해)
+        imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now, name: entry.name || t.name }));
       } catch {
         if (entry.toolType === 'html-app' && raw.trim().startsWith('<')) {
           imported = [{
@@ -318,10 +319,12 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       }
 
       if (tools.some(t => t.name === imported[0]?.name)) {
-        if (!confirm(`"${imported[0]?.name}" 이름의 도구가 이미 있습니다. 추가할까요?`)) return;
+        alert(`"${imported[0]?.name}" 스킬은 이미 내 스킬에 있습니다.`);
+        return;
       }
       saveTools([...tools, ...imported]);
       setTab('my');
+      onTabChange?.('my');
       alert(`"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.`);
     } catch (err: any) {
       alert(`도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.\n\n오류: ${err?.message ?? '알 수 없는 오류'}`);
