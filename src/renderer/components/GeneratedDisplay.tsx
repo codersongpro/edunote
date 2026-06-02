@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, PenLine, AlertTriangle, History, RotateCcw } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -23,6 +23,8 @@ interface SavedGeneratedVersion {
 }
 
 const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
+const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900';
+const optionClassName = 'bg-white text-slate-900';
 
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
@@ -31,7 +33,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [matchedCautionTerms, setMatchedCautionTerms] = React.useState<string[]>([]);
   const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = React.useState('');
-  const [copyFormat, setCopyFormat] = React.useState<'html' | 'excel' | 'md'>('html');
+  const [copyFormat, setCopyFormat] = React.useState<'html' | 'hangul' | 'excel' | 'md'>('html');
   const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'html' | 'md'>('pdf');
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -40,8 +42,43 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     return contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
   };
 
+  const sanitizeFilenamePart = (value: string): string => {
+    return value
+      .replace(/[\\/:*?"<>|]/g, '_')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 80);
+  };
+
+  const getDocumentTitle = (): string => {
+    const currentHtml = contentRef.current?.innerHTML || content;
+    const doc = new DOMParser().parseFromString(markdownOrHtmlToHtml(currentHtml), 'text/html');
+    const plainText = doc.body.innerText || '';
+    const titleLabels = ['\uBB38\uC11C\uC81C\uBAA9', '\uC81C\uBAA9', '\uC8FC\uC694\uB0B4\uC6A9'];
+    const labeledTitle = plainText
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .map(line => {
+        const label = titleLabels.find(item => line.startsWith(`${item}:`) || line.startsWith(`${item}\uFF1A`));
+        return label ? line.slice(label.length + 1).trim() : '';
+      })
+      .find(Boolean);
+    const headingTitle = doc.querySelector('h1, h2')?.textContent?.trim();
+    const candidate = hwpxData?.['\uBB38\uC11C\uC81C\uBAA9'] || hwpxData?.['\uC81C\uBAA9'] || hwpxData?.['\uC8FC\uC694\uB0B4\uC6A9'] || labeledTitle || headingTitle || title || '\uC0DD\uC131\uBB38\uC11C';
+    return sanitizeFilenamePart(candidate) || '\uC0DD\uC131\uBB38\uC11C';
+  };
+
+  const getShortDate = (): string => {
+    const now = new Date();
+    return `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  };
+
+  const getFormattedFilename = (extension: string): string => {
+    return `(${getShortDate()})_${getDocumentTitle()}.${extension}`;
+  };
+
   const getHistoryKey = (): string => {
-    const base = title || hwpxData?.["문서제목"] || 'default';
+    const base = title || hwpxData?.['\uBB38\uC11C\uC81C\uBAA9'] || hwpxData?.['\uC81C\uBAA9'] || hwpxData?.['\uC8FC\uC694\uB0B4\uC6A9'] || 'default';
     return `${RESULT_HISTORY_KEY_PREFIX}${encodeURIComponent(base.slice(0, 80))}`;
   };
 
@@ -51,9 +88,9 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       const parsed = raw ? JSON.parse(raw) : [];
       const versions = Array.isArray(parsed)
         ? parsed.map((version: Partial<SavedGeneratedVersion>) => ({
-          ...version,
-          html: version.html || markdownOrHtmlToHtml(version.text || ''),
-        })) as SavedGeneratedVersion[]
+            ...version,
+            html: version.html || markdownOrHtmlToHtml(version.text || ''),
+          })) as SavedGeneratedVersion[]
         : [];
       setSavedVersions(versions.slice(0, 8));
     } catch {
@@ -124,11 +161,9 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       if (!cell.style.border) cell.style.border = '1pt solid #333';
       if (!cell.style.padding) cell.style.padding = '5pt 8pt';
     });
-
     el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
       if (!h1.style.textAlign) h1.style.textAlign = 'center';
     });
-
     el.querySelectorAll<HTMLElement>('.student-info').forEach(div => {
       div.style.display = 'flex';
       div.style.gap = '16pt';
@@ -156,62 +191,52 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const handleCopy = async () => {
     const currentHtml = getCurrentContent();
     const plainText = getPlainText();
-    
+    await copyHtmlToClipboard(currentHtml, plainText);
+  };
+
+  const copyHtmlToClipboard = async (currentHtml: string, plainText: string) => {
     let success = false;
 
-    // 1. Try modern Clipboard API
     if (navigator.clipboard && window.ClipboardItem) {
       try {
-        const htmlBlob = new Blob([currentHtml], { type: "text/html" });
-        const textBlob = new Blob([plainText], { type: "text/plain" });
-        
-        const data = [new ClipboardItem({ 
-          "text/html": htmlBlob,
-          "text/plain": textBlob 
-        })];
-        await navigator.clipboard.write(data);
+        const htmlBlob = new Blob([currentHtml], { type: 'text/html' });
+        const textBlob = new Blob([plainText], { type: 'text/plain' });
+        await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
         success = true;
       } catch (err) {
-        console.error("Clipboard API failed", err);
+        console.error('Clipboard API failed', err);
       }
     }
 
-    // 2. Fallback to execCommand for older browsers or restricted iframes
     if (!success) {
       try {
-        const tempDiv = document.createElement("div");
-        tempDiv.contentEditable = "true";
+        const tempDiv = document.createElement('div');
+        tempDiv.contentEditable = 'true';
         tempDiv.innerHTML = currentHtml;
-        tempDiv.style.position = "fixed";
-        tempDiv.style.left = "-9999px";
+        tempDiv.style.position = 'fixed';
+        tempDiv.style.left = '-9999px';
         document.body.appendChild(tempDiv);
-        
+
         const selection = window.getSelection();
         const range = document.createRange();
         range.selectNodeContents(tempDiv);
         selection?.removeAllRanges();
         selection?.addRange(range);
-        
-        const execSuccess = document.execCommand("copy");
-        
+        const execSuccess = document.execCommand('copy');
         selection?.removeAllRanges();
         document.body.removeChild(tempDiv);
-        
-        if (execSuccess) {
-          success = true;
-        }
+        success = execSuccess;
       } catch (fallbackErr) {
-        console.error("Fallback copy failed", fallbackErr);
+        console.error('Fallback copy failed', fallbackErr);
       }
     }
 
-    // 3. Final fallback: just copy text
     if (!success && navigator.clipboard) {
       try {
         await navigator.clipboard.writeText(plainText);
         success = true;
       } catch (textErr) {
-        console.error("Text copy failed", textErr);
+        console.error('Text copy failed', textErr);
       }
     }
 
@@ -219,23 +244,96 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.");
+      alert('클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.');
     }
   };
 
-  const getFormattedFilename = (extension: string): string => {
-    const now = new Date();
-    const dateStr =
-      now.getFullYear().toString() +
-      (now.getMonth() + 1).toString().padStart(2, '0') +
-      now.getDate().toString().padStart(2, '0');
+  const getHangulOptimizedHtml = (html: string): string => {
+    const doc = new DOMParser().parseFromString(markdownOrHtmlToHtml(html), 'text/html');
+    const body = doc.body;
+    const fontFamily = "'Malgun Gothic', 'Batang', 'Dotum', sans-serif";
 
-    let docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || "draft_document";
-    docTitle = docTitle.replace(/[\\/:*?"<>|]/g, "_");
+    body.style.margin = '0';
+    body.style.padding = '0';
+    body.style.fontFamily = fontFamily;
+    body.style.fontSize = '11pt';
+    body.style.lineHeight = '1.7';
+    body.style.color = '#000000';
+    body.style.backgroundColor = '#ffffff';
 
-    return `${docTitle}(${dateStr}).${extension}`;
+    body.querySelectorAll<HTMLElement>('h1').forEach(el => {
+      el.style.fontFamily = fontFamily;
+      el.style.fontSize = '16pt';
+      el.style.fontWeight = '700';
+      el.style.textAlign = el.style.textAlign || 'center';
+      el.style.lineHeight = '1.5';
+      el.style.margin = '0 0 12pt 0';
+      el.style.color = '#000000';
+    });
+
+    body.querySelectorAll<HTMLElement>('h2').forEach(el => {
+      el.style.fontFamily = fontFamily;
+      el.style.fontSize = '13pt';
+      el.style.fontWeight = '700';
+      el.style.lineHeight = '1.5';
+      el.style.margin = '10pt 0 6pt 0';
+      el.style.color = '#000000';
+    });
+
+    body.querySelectorAll<HTMLElement>('h3').forEach(el => {
+      el.style.fontFamily = fontFamily;
+      el.style.fontSize = '11pt';
+      el.style.fontWeight = '700';
+      el.style.lineHeight = '1.5';
+      el.style.margin = '8pt 0 4pt 0';
+      el.style.color = '#000000';
+    });
+
+    body.querySelectorAll<HTMLElement>('p, div, section, article, li').forEach(el => {
+      el.style.fontFamily = fontFamily;
+      el.style.fontSize = '11pt';
+      el.style.lineHeight = '1.7';
+      el.style.color = '#000000';
+      if (el.tagName.toLowerCase() === 'p') el.style.margin = '0 0 6pt 0';
+      if (el.tagName.toLowerCase() === 'li') el.style.margin = '0 0 3pt 0';
+    });
+
+    body.querySelectorAll<HTMLElement>('ul, ol').forEach(el => {
+      el.style.margin = '0 0 6pt 18pt';
+      el.style.padding = '0';
+    });
+
+    body.querySelectorAll<HTMLTableElement>('table').forEach(table => {
+      table.style.width = '100%';
+      table.style.borderCollapse = 'collapse';
+      table.style.tableLayout = 'fixed';
+      table.style.margin = '8pt 0';
+      table.style.border = '1pt solid #000000';
+    });
+
+    body.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
+      cell.style.border = '1pt solid #000000';
+      cell.style.padding = '5pt 7pt';
+      cell.style.fontFamily = fontFamily;
+      cell.style.fontSize = '10pt';
+      cell.style.lineHeight = '1.5';
+      cell.style.color = '#000000';
+      cell.style.verticalAlign = 'middle';
+      if (!cell.style.textAlign) cell.style.textAlign = cell.tagName.toLowerCase() === 'th' ? 'center' : 'left';
+    });
+
+    body.querySelectorAll<HTMLElement>('th').forEach(cell => {
+      cell.style.fontWeight = '700';
+      cell.style.backgroundColor = '#f2f2f2';
+    });
+
+    body.querySelectorAll<HTMLElement>('strong, b').forEach(el => {
+      el.style.fontWeight = '700';
+      el.style.color = '#000000';
+    });
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${body.innerHTML}</body></html>`;
   };
-
 
   const handleDownloadHwpx = async () => {
     if (!hwpxTemplate || !hwpxFillData) return;
@@ -243,10 +341,10 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     try {
       const { fillHwpxTemplate } = await import('../lib/hwpx-parser');
       const blob = await fillHwpxTemplate(hwpxTemplate, hwpxFillData);
-      await window.electronAPI.saveBuffer(await blob.arrayBuffer(), getFormattedFilename("hwpx"));
+      await window.electronAPI.saveBuffer(await blob.arrayBuffer(), getFormattedFilename('hwpx'));
     } catch (error) {
-      console.error("Failed to merge HWPX file", error);
-      alert("HWPX 양식 채우기 중 오류가 발생했습니다.");
+      console.error('Failed to merge HWPX file', error);
+      alert('HWPX 양식 채우기 중 오류가 발생했습니다.');
     } finally {
       setHwpxDownloading(false);
     }
@@ -255,13 +353,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const handleDownloadHtml = async () => {
     const currentHtml = getCurrentContent();
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body>${currentHtml}</body></html>`;
-    await window.electronAPI.saveFile(fullHtml, getFormattedFilename("html"), "html");
+    await window.electronAPI.saveFile(fullHtml, getFormattedFilename('html'), 'html');
   };
 
   const handleDownloadWord = async () => {
     const currentHtml = getCurrentContent();
     const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>body { font-family: 'Batang', 'Dotum', sans-serif; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } th, td { border: 1px solid black; padding: 8px; }</style></head><body>${currentHtml}</body></html>`;
-    await window.electronAPI.saveFile(fullHtml, getFormattedFilename("doc"), "doc");
+    await window.electronAPI.saveFile(fullHtml, getFormattedFilename('doc'), 'doc');
   };
 
   const handlePrint = () => {
@@ -296,6 +394,10 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       await copyText(convertToMarkdown(currentHtml));
       return;
     }
+    if (copyFormat === 'hangul') {
+      await copyHtmlToClipboard(getHangulOptimizedHtml(currentHtml), getPlainText());
+      return;
+    }
     await handleCopy();
   };
 
@@ -311,20 +413,19 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   };
 
   const selectedVersion = savedVersions.find(version => version.id === selectedVersionId) || null;
-  const compareLines: string[] = [];
+  const selectedVersionPreviewHtml = selectedVersion ? selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text) : '';
 
   const handleRestoreVersion = () => {
     if (!selectedVersion || !contentRef.current) return;
     saveGeneratedSnapshot(getCurrentContent());
     contentRef.current.innerHTML = selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text);
+    setSelectedVersionId('');
   };
 
   const handleSavePdf = async () => {
     const currentHtml = getCurrentContent();
-    const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-    const filename = `${docTitle.replace(/[\\/:*?"<>|]/g, '_')}(${dateStr}).pdf`;
+    const docTitle = getDocumentTitle();
+    const filename = getFormattedFilename('pdf');
     const fullHtml = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${docTitle}</title><style>
 @page{size:A4;margin:20mm 15mm;}
 *{box-sizing:border-box;}
@@ -338,7 +439,7 @@ h2,h3{page-break-after:avoid;}
 </style></head><body>${currentHtml}</body></html>`;
     try {
       await (window.electronAPI as any).savePdf(fullHtml, filename);
-    } catch (e) {
+    } catch {
       alert('PDF 저장 중 오류가 발생했습니다.');
     }
   };
@@ -365,16 +466,13 @@ h2,h3{page-break-after:avoid;}
       li.replaceWith(doc.createTextNode(`- ${(li.textContent || '').trim()}\n`));
     });
     doc.querySelectorAll('br').forEach(br => br.replaceWith(doc.createTextNode('\n')));
-    html = doc.body.innerHTML;
-    let md = html;
-    // Remove structure tags
-    md = md.replace(/<head>[\s\S]*?<\/head>/gi, "");
-    md = md.replace(/<style>[\s\S]*?<\/style>/gi, "");
-    md = md.replace(/<html>/gi, "").replace(/<\/html>/gi, "");
-    md = md.replace(/<body>/gi, "").replace(/<\/body>/gi, "");
-    md = md.replace(/<!DOCTYPE html>/gi, "");
 
-    // Basic Text Formatting
+    let md = doc.body.innerHTML;
+    md = md.replace(/<head>[\s\S]*?<\/head>/gi, '');
+    md = md.replace(/<style>[\s\S]*?<\/style>/gi, '');
+    md = md.replace(/<html>/gi, '').replace(/<\/html>/gi, '');
+    md = md.replace(/<body>/gi, '').replace(/<\/body>/gi, '');
+    md = md.replace(/<!DOCTYPE html>/gi, '');
     md = md.replace(/<h1>(.*?)<\/h1>/gim, '# $1\n');
     md = md.replace(/<h2>(.*?)<\/h2>/gim, '## $1\n');
     md = md.replace(/<h3>(.*?)<\/h3>/gim, '### $1\n');
@@ -385,40 +483,32 @@ h2,h3{page-break-after:avoid;}
     md = md.replace(/<div>/gim, '');
     md = md.replace(/<p>/gim, '');
     md = md.replace(/<\/p>/gim, '\n\n');
-    
-    // Lists
     md = md.replace(/<ul>/gim, '');
     md = md.replace(/<\/ul>/gim, '');
     md = md.replace(/<li>(.*?)<\/li>/gim, '- $1\n');
-
-    // Clean up entities
     md = md.replace(/&nbsp;/g, ' ');
     md = md.replace(/&lt;/g, '<');
     md = md.replace(/&gt;/g, '>');
     md = md.replace(/&amp;/g, '&');
-
-    // Clean up multiple newlines
     md = md.replace(/\n\s*\n/g, '\n\n');
-
     return md.trim();
   };
 
   const handleDownloadMarkdown = async () => {
     const currentHtml = getCurrentContent();
     const mdContent = convertToMarkdown(currentHtml);
-    await window.electronAPI.saveFile(mdContent, getFormattedFilename("md"), "md");
+    await window.electronAPI.saveFile(mdContent, getFormattedFilename('md'), 'md');
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 flex flex-col h-full overflow-hidden">
-      {/* Toolbar / Header */}
       <div className="bg-[#F8F9FA] dark:bg-gray-900 px-4 py-3 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-2 mr-4">
           <FileText className="w-5 h-5 text-blue-600 shrink-0" />
           <h2 className="font-bold text-gray-800 dark:text-gray-100 text-base">미리보기 및 편집</h2>
           <span className="text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-             <PenLine className="w-3 h-3" />
-             수정 가능
+            <PenLine className="w-3 h-3" />
+            수정 가능
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -440,16 +530,17 @@ h2,h3{page-break-after:avoid;}
               {hwpxDownloading ? '저장 중' : 'HWPX 양식 저장'}
             </button>
           )}
-          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white p-1 shadow-sm">
             <select
               value={saveFormat}
               onChange={e => setSaveFormat(e.target.value as typeof saveFormat)}
-              className="bg-transparent px-2 py-1 text-xs text-gray-700 dark:text-gray-200 outline-none"
+              className={selectClassName}
+              style={{ colorScheme: 'light' }}
             >
-              <option value="pdf">PDF</option>
-              <option value="doc">Word/HWP용</option>
-              <option value="html">HTML</option>
-              <option value="md">Markdown</option>
+              <option className={optionClassName} value="pdf">PDF</option>
+              <option className={optionClassName} value="doc">Word/HWP용</option>
+              <option className={optionClassName} value="html">HTML</option>
+              <option className={optionClassName} value="md">Markdown</option>
             </select>
             <button
               onClick={handleSaveByFormat}
@@ -459,15 +550,17 @@ h2,h3{page-break-after:avoid;}
               저장
             </button>
           </div>
-          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white p-1 shadow-sm">
             <select
               value={copyFormat}
               onChange={e => setCopyFormat(e.target.value as typeof copyFormat)}
-              className="bg-transparent px-2 py-1 text-xs text-gray-700 dark:text-gray-200 outline-none"
+              className={selectClassName}
+              style={{ colorScheme: 'light' }}
             >
-              <option value="html">HWP/웹 복사</option>
-              <option value="excel">Excel로 복사</option>
-              <option value="md">MD로 복사</option>
+              <option className={optionClassName} value="html">HWP/웹 복사</option>
+              <option className={optionClassName} value="hangul">한글 최적화 복사</option>
+              <option className={optionClassName} value="excel">Excel로 복사</option>
+              <option className={optionClassName} value="md">MD로 복사</option>
             </select>
             <button
               onClick={handleCopyByFormat}
@@ -479,7 +572,7 @@ h2,h3{page-break-after:avoid;}
           </div>
         </div>
       </div>
-      {/* Editor Viewport */}
+
       <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {content && (
           <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
@@ -487,13 +580,13 @@ h2,h3{page-break-after:avoid;}
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">생성 결과 히스토리</span>
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{'\uC0DD\uC131 \uACB0\uACFC \uD788\uC2A4\uD1A0\uB9AC'}</span>
                 </div>
                 <button
                   onClick={handleSaveCurrentVersion}
                   className="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
                 >
-                  현재 버전 저장
+                  {'\uD604\uC7AC \uBC84\uC804 \uC800\uC7A5'}
                 </button>
               </div>
               {savedVersions.length > 0 ? (
@@ -501,48 +594,48 @@ h2,h3{page-break-after:avoid;}
                   <select
                     value={selectedVersionId}
                     onChange={e => setSelectedVersionId(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900"
+                    style={{ colorScheme: 'light' }}
                   >
-                    <option value="">되돌릴 이전 버전 선택</option>
+                    <option className={optionClassName} value="">{'\uC774\uC804 \uBC84\uC804 \uBBF8\uB9AC\uBCF4\uAE30 \uC120\uD0DD'}</option>
                     {savedVersions.map(version => (
-                      <option key={version.id} value={version.id}>
+                      <option className={optionClassName} key={version.id} value={version.id}>
                         {new Date(version.createdAt).toLocaleString()} - {version.title}
                       </option>
                     ))}
                   </select>
                   {selectedVersion && (
-                    <button
-                      type="button"
-                      onClick={handleRestoreVersion}
-                      className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      이 문서로 되돌리기
-                    </button>
-                  )}
-                  {selectedVersion && (
-                    <div className="hidden">
-                      <p className="font-bold mb-1">현재 결과에 새로 보이는 문장</p>
-                      {compareLines.length > 0 ? (
-                        <ul className="space-y-1 list-disc pl-4">
-                          {compareLines.map(line => <li key={line}>{line}</li>)}
-                        </ul>
-                      ) : (
-                        <p>선택한 버전과 새 문장 차이가 없습니다.</p>
-                      )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRestoreVersion}
+                        className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        {'\uC774 \uBB38\uC11C\uB85C \uB418\uB3CC\uB9AC\uAE30'}
+                      </button>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {'\uC120\uD0DD\uD55C \uC774\uC804 \uBC84\uC804\uC740 \uC544\uB798\uC5D0 \uBBF8\uB9AC\uBCF4\uAE30\uB85C\uB9CC \uD45C\uC2DC\uB429\uB2C8\uB2E4.'}
+                      </span>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">현재 결과를 저장하면 다음 생성 결과와 비교하거나 되돌릴 수 있습니다.</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{'\uD604\uC7AC \uACB0\uACFC\uB97C \uC800\uC7A5\uD558\uBA74 \uB2E4\uC74C \uC0DD\uC131 \uACB0\uACFC\uC640 \uBE44\uAD50\uD558\uAC70\uB098 \uB418\uB3CC\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}</p>
               )}
             </div>
 
             {matchedCautionTerms.length > 0 && (
               <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
+                <div
+                  className="flex items-center gap-2 mb-2"
+                  title="설정에 등록한 사용자 주의어/금지 표현이 생성 결과에 포함되었는지 알려주는 안내입니다. 실제 사용 전 문맥에 맞게 표현을 직접 확인해 주세요."
+                >
                   <AlertTriangle className="w-4 h-4 text-rose-500" />
                   <span className="text-sm font-bold text-rose-700 dark:text-rose-200">주의어 감지</span>
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-rose-300 text-[10px] font-bold text-rose-600 dark:border-rose-700 dark:text-rose-200">
+                    ?
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {matchedCautionTerms.map(term => (
@@ -555,33 +648,43 @@ h2,h3{page-break-after:avoid;}
             )}
           </div>
         )}
-        <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] cursor-text print-section"
-             style={{ 
-               minHeight: "297mm",
-               backgroundColor: "white",
-               boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-               padding: "20mm",
-               fontFamily: "'Dotum', sans-serif",
-               wordBreak: "break-word",
-               overflowWrap: "break-word"
-             }}>
-             <div 
-                ref={contentRef}
-                contentEditable
-                suppressContentEditableWarning
-                className="prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full"
-                style={{ minHeight: "100%", color: "#000000" }}
-             />
+        <div
+          className={`mx-auto w-full max-w-[100%] sm:max-w-[210mm] print-section ${selectedVersion ? 'cursor-default' : 'cursor-text'}`}
+          style={{
+            minHeight: '297mm',
+            backgroundColor: 'white',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+            padding: '20mm',
+            fontFamily: "'Dotum', sans-serif",
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+          }}
+        >
+          {selectedVersion && (
+            <div
+              key="history-preview"
+              className="prose max-w-none text-black leading-relaxed w-full"
+              style={{ minHeight: '100%', color: '#000000' }}
+              dangerouslySetInnerHTML={{ __html: selectedVersionPreviewHtml }}
+            />
+          )}
+          <div
+            key="current-editor"
+            ref={contentRef}
+            contentEditable
+            suppressContentEditableWarning
+            className={selectedVersion ? 'hidden' : 'prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full'}
+            style={{ minHeight: '100%', color: '#000000' }}
+          />
         </div>
       </div>
-      
-      {/* Status Bar */}
+
       <div className="bg-white dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 px-4 py-1 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1">
           <PenLine className="w-3 h-3" />
-          내용을 직접 클릭하여 수정할 수 있습니다.
+          {'\uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD074\uB9AD\uD558\uC5EC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}
         </span>
-        <span>HTML, Word/HWP용, Markdown 저장 지원</span>
+        <span>{'HTML, Word/HWP\uC6A9, Markdown \uC800\uC7A5 \uC9C0\uC6D0'}</span>
       </div>
     </div>
   );

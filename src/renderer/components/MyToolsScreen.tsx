@@ -897,8 +897,10 @@ const ShareModal: React.FC<{
     params.set('usp', 'pp_url');
     params.set('entry.2111207561', tool.name);
     params.set('entry.1858341623', tool.description);
-    params.set('entry.173551723', catFormValues[tool.category] ?? '기타');
-    params.set('entry.1451003129', tool.toolType === 'html-app' ? 'HTML 앱' : 'AI 스킬');
+    const toolTypeFormValue = tool.toolType === 'html-app' ? 'HTML 앱' : 'AI 스킬';
+    params.set('entry.173551723', toolTypeFormValue);
+    params.set('entry.1451003129', toolTypeFormValue);
+    params.set('entry.1069978970', catFormValues[tool.category] ?? '기타');
     const affiliation = [authorName.trim(), authorSchool.trim()].filter(Boolean).join(' ');
     if (affiliation) params.set('entry.1531111128', affiliation);
     if (message.trim()) params.set('entry.127926671', message.trim());
