@@ -1211,6 +1211,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 ${insertImagePlaceholder ? "- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 '<div class=\"worksheet-image\">[WORKSHEET_IMAGE]</div>' 줄을 정확히 이 형태로 삽입하세요." : ''}
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 - 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 자연스러운 학교 자료 문체로 작성하세요.
+${insertImagePlaceholder ? "- 이미지는 반드시 '[WORKSHEET_IMAGE]' 플레이스홀더 하나로만 표시하고, 그 외 <img> 태그나 외부 이미지 URL은 절대 사용하지 마세요." : "- <img> 태그, 외부 이미지 URL, 이미지 파일 참조는 절대 사용하지 마세요. 이미지가 필요한 곳은 '[그림: 설명]' 형태의 텍스트로 대체하세요."}
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
 <style> 태그에 다음 CSS를 반드시 포함하세요:
