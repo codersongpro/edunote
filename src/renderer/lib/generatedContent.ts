@@ -3,6 +3,7 @@ import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
+import { sanitizeHtml } from './security';
 
 export function stripGeneratedCodeFences(content: string): string {
   let cleaned = String(content ?? '').trim();
@@ -23,7 +24,7 @@ export function markdownOrHtmlToHtml(content: string): string {
 
   // 이미 HTML 태그로 시작하거나 <table>, <ul>, <ol> 등이 포함된 경우 그대로 반환
   if (/^<[a-z][\s\S]*>/i.test(stripped) || /<(table|ul|ol|h[1-6]|p|div|span|br)\b/i.test(stripped)) {
-    return stripped;
+    return sanitizeHtml(stripped);
   }
 
   // 마크다운 문법이 포함되어 있으면 unified 파이프라인으로 HTML 변환
@@ -42,11 +43,11 @@ export function markdownOrHtmlToHtml(content: string): string {
         .use(remarkRehype)
         .use(rehypeStringify)
         .processSync(stripped);
-      return String(result);
+      return sanitizeHtml(String(result));
     } catch {
-      return stripped;
+      return sanitizeHtml(stripped);
     }
   }
 
-  return stripped;
+  return sanitizeHtml(stripped);
 }

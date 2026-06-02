@@ -25,10 +25,12 @@ const SettingsScreen: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
+  const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
+  const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
@@ -40,6 +42,8 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('saveDir'),
         window.electronAPI.getConfig('appDataDir'),
         window.electronAPI.getConfig('apiTier'),
+        window.electronAPI.getConfig('privacyModeEnabled'),
+        window.electronAPI.getConfig('reviewChecklistEnabled'),
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
@@ -52,6 +56,8 @@ const SettingsScreen: React.FC = () => {
       setSaveDir(sd as string || '');
       setAppDataDir(add as string || '');
       setApiTier((tier as 'free' | 'paid') || 'free');
+      setPrivacyModeEnabled(privacyMode !== false);
+      setReviewChecklistEnabled(reviewChecklist !== false);
       setGuideExpanded(!(hn as boolean));
     };
     load();
@@ -149,6 +155,8 @@ const SettingsScreen: React.FC = () => {
       studentNames,
       studentMaleNames,
       studentFemaleNames,
+      privacyModeEnabled,
+      reviewChecklistEnabled,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -579,6 +587,49 @@ const SettingsScreen: React.FC = () => {
               폴더 선택
             </button>
           </div>
+        </div>
+
+        {/* Safety Options */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <AlertTriangle className="w-4 h-4 text-amber-500" />
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">생성 안전 옵션</h3>
+          </div>
+          <label className="flex items-start gap-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={privacyModeEnabled}
+              onChange={e => setPrivacyModeEnabled(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-bold text-gray-700 dark:text-gray-200">개인정보 보호 모드</span>
+              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">학생 이름을 임시 토큰으로 바꿔 AI 요청을 보낸 뒤 결과에서 원래 이름으로 복원합니다.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={reviewChecklistEnabled}
+              onChange={e => setReviewChecklistEnabled(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <span className="block text-sm font-bold text-gray-700 dark:text-gray-200">생성 결과 검토 체크리스트</span>
+              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">생성 결과 화면에서 개인정보, 과장 표현, 최신 지침 확인 항목을 함께 표시합니다.</span>
+            </span>
+          </label>
+          <button
+            onClick={async () => {
+              await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled });
+              setSaved(true);
+              setTimeout(() => setSaved(false), 2500);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+          >
+            <Save className="w-4 h-4" />
+            안전 옵션 저장
+          </button>
         </div>
 
         {/* Backup */}

@@ -17,6 +17,8 @@ interface StoreSchema {
   studentFemaleNames: string;
   darkMode: boolean;
   apiKeyLastUsable: boolean;
+  privacyModeEnabled: boolean;
+  reviewChecklistEnabled: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -37,5 +39,7 @@ export const store = new Store<StoreSchema>({
     studentFemaleNames: '',
     darkMode: false,
     apiKeyLastUsable: false,
+    privacyModeEnabled: true,
+    reviewChecklistEnabled: true,
   },
 });

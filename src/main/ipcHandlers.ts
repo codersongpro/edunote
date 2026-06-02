@@ -9,7 +9,7 @@ import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);
@@ -168,26 +168,32 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('shell:open-external', async (_e, url: string) => {
-    if (typeof url !== 'string' || !url.startsWith('https://')) return false;
-    await shell.openExternal(url);
-    return true;
+    try {
+      if (typeof url !== 'string') return false;
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'https:') return false;
+      await shell.openExternal(parsed.href);
+      return true;
+    } catch {
+      return false;
+    }
   });
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _g, ...safe } = all;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safe } = all;
     return safe;
   });
 
   ipcMain.handle('config:set', (_e, data: Record<string, unknown>) => {
     for (const [key, value] of Object.entries(data)) {
-      if (key === 'geminiApiKey') {
+      if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') {
         // API key is set via dedicated channel only
         continue;
       }

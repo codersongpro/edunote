@@ -18,6 +18,7 @@ import {
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
+import { formatStudentMemos, withStudentPrivacy } from '../lib/generationSafety';
 
 // ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
 const getDateContext = (): string => {
@@ -397,6 +398,7 @@ ${getDateContext()}
 [긍정적 특성]: ${positiveStr}
 [보완할 점]: ${negativeStr}
 [추가 참고사항]: ${request.additionalContext}
+${formatStudentMemos(request.studentMemos)}
 
 [작성 길이]: ${lengthInstruction}
 
@@ -411,9 +413,11 @@ ${getDateContext()}
 8. 문장의 시작을 다양하게 하세요.
 ${avoidInstruction}`;
 
-    return await aiGenerate(prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
+    const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
     });
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
@@ -443,6 +447,7 @@ ${getDateContext()}
 ${tasksText}
 
 [추가 관찰내용]: ${request.additionalContext}
+${formatStudentMemos(request.studentMemos)}
 
 [작성 길이]: ${lengthInstruction}
 
@@ -452,9 +457,11 @@ ${tasksText}
 7. 작성 길이 엄수. 8. 문장 시작 다양화. 9. '중'/'하' 수준 과제에 과장 표현 금지.
 ${avoidInstruction}`;
 
-    return await aiGenerate(prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
+    const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -479,6 +486,7 @@ ${getDateContext()}
 [클럽명]: ${request.clubName}
 
 [개별 활동 내용 및 태도]: ${request.additionalContext}
+${formatStudentMemos(request.studentMemos)}
 
 [작성 길이]: ${lengthInstruction}
 
@@ -488,9 +496,11 @@ ${getDateContext()}
 6. 작성 길이 엄수. 7. 문장 시작 다양화.
 ${avoidInstruction}`;
 
-    return await aiGenerate(prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
+    const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -533,6 +543,7 @@ ${getDateContext()}
 [연간 지도 계획(공통)]: ${request.annualPlan}
 
 [개별 관찰 내용 및 역할]: ${request.additionalContext}
+${formatStudentMemos(request.studentMemos)}
 [주요 활동 키워드]: ${keywordsStr}
 
 [작성 길이]: ${lengthInstruction}
@@ -545,9 +556,11 @@ ${getDateContext()}
 ${leadershipInstruction}
 ${avoidInstruction}`;
 
-    return await aiGenerate(prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
+    const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';

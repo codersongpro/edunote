@@ -7,6 +7,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
+import { getStudentGenerationExtras } from '../lib/generationSafety';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -432,6 +433,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const student = newStudents[i];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateCreativeActivityReport({
                   schoolLevel,
                   studentName: student.name,
@@ -442,7 +444,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: creativeState.lengthOption,
                   customLength: creativeState.customLength,
-                  lengthUnit: creativeState.lengthUnit
+                  lengthUnit: creativeState.lengthUnit,
+                  ...extras
               }));
               newStudents[i].generatedContent = result;
               saveHistory('creative', student.name, result);
@@ -497,6 +500,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const index = selectedIndices[i];
             const student = newStudents[index];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateCreativeActivityReport({
                   schoolLevel,
                   studentName: student.name,
@@ -507,7 +511,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: creativeState.lengthOption,
                   customLength: creativeState.customLength,
-                  lengthUnit: creativeState.lengthUnit
+                  lengthUnit: creativeState.lengthUnit,
+                  ...extras
               }));
               newStudents[index].generatedContent = result;
               saveHistory('creative', student.name, result);
@@ -546,6 +551,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         : [];
 
     try {
+      const extras = await getStudentGenerationExtras(student.name);
       const result = await generateCreativeActivityReport({
         schoolLevel,
         studentName: student.name,
@@ -557,7 +563,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         lengthOption: creativeState.lengthOption,
         customLength: creativeState.customLength,
         lengthUnit: creativeState.lengthUnit,
-        avoidPhrases
+        avoidPhrases,
+        ...extras
       });
       
       const newStudents = [...creativeState.activeStudents];

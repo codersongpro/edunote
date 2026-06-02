@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown } from 'lucide-react';
+import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown, RefreshCw, ShieldCheck } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -17,7 +17,32 @@ interface GeneratedDisplayProps {
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
+  const [rewriting, setRewriting] = React.useState<string | null>(null);
+  const [reviewChecklistEnabled, setReviewChecklistEnabled] = React.useState(true);
+  const [checkedItems, setCheckedItems] = React.useState<Record<string, boolean>>({});
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const reviewItems = [
+    { id: 'privacy', label: '학생 개인정보와 민감 정보 최소화 확인' },
+    { id: 'exaggeration', label: '과장 표현, 단정 표현, 수상/대회 등 금지 표현 확인' },
+    { id: 'guideline', label: '최신 기재요령과 학교 기준 직접 확인' },
+    { id: 'tone', label: '문체, 분량, 중복 표현 검토' },
+    { id: 'final', label: '교사 최종 책임 검토 완료' },
+  ];
+
+  const rewriteActions = [
+    { label: '더 짧게', instruction: '핵심 의미는 유지하되 더 짧고 간결하게 다듬어 주세요.' },
+    { label: '더 공문답게', instruction: '학교 공문서에 어울리는 정중하고 명확한 문체로 다듬어 주세요.' },
+    { label: '더 따뜻하게', instruction: '과장하지 않으면서 더 따뜻하고 교육적인 표현으로 다듬어 주세요.' },
+    { label: '중복 표현 줄이기', instruction: '반복되는 단어와 문장 구조를 줄이고 자연스럽게 다듬어 주세요.' },
+    { label: 'NEIS 문체로 다듬기', instruction: '학교생활기록부에 어울리는 관찰 근거 중심의 간결한 문체로 다듬어 주세요.' },
+  ];
+
+  useEffect(() => {
+    window.electronAPI.getConfig('reviewChecklistEnabled')
+      .then(value => setReviewChecklistEnabled(value !== false))
+      .catch(() => setReviewChecklistEnabled(true));
+  }, []);
 
   // Sync content prop to the editable div whenever it changes (new generation).
   // Use execCommand so the replacement is recorded in the browser undo stack,
@@ -190,6 +215,29 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     window.print();
   };
 
+  const handleRewrite = async (label: string, instruction: string) => {
+    const currentHtml = getCurrentContent();
+    const plainText = contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+    if (!plainText.trim()) return;
+    setRewriting(label);
+    try {
+      const result = await window.electronAPI.aiGenerate(
+        `[다듬을 원문]\n${plainText}\n\n[요청]\n${instruction}\n\n[출력 규칙]\n- 원문과 같은 용도로 바로 붙여 넣을 수 있는 결과만 출력하세요.\n- 설명, 제목, 코드블록은 쓰지 마세요.`,
+        '교사가 검토 중인 학교 문서를 안전하고 자연스럽게 다듬는 편집자입니다.',
+        { temperature: 0.4 },
+      );
+      const nextHtml = markdownOrHtmlToHtml(result);
+      const el = contentRef.current;
+      if (el) {
+        el.innerHTML = nextHtml;
+      }
+    } catch {
+      alert('재작성 중 오류가 발생했습니다.');
+    } finally {
+      setRewriting(null);
+    }
+  };
+
   const handleSavePdf = async () => {
     const currentHtml = getCurrentContent();
     const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
@@ -357,6 +405,49 @@ h2,h3{page-break-after:avoid;}
       
       {/* Editor Viewport */}
       <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
+        {content && (
+          <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <RefreshCw className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">빠른 재작성</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {rewriteActions.map(action => (
+                  <button
+                    key={action.label}
+                    onClick={() => handleRewrite(action.label, action.instruction)}
+                    disabled={!!rewriting}
+                    className="px-3 py-1.5 text-xs font-bold rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-60 dark:border-blue-800 dark:text-blue-200 dark:bg-blue-950 dark:hover:bg-blue-900"
+                  >
+                    {rewriting === action.label ? '다듬는 중...' : action.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {reviewChecklistEnabled && (
+              <div className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">검토 체크리스트</span>
+                </div>
+                <div className="grid gap-2">
+                  {reviewItems.map(item => (
+                    <label key={item.id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={!!checkedItems[item.id]}
+                        onChange={e => setCheckedItems(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                      />
+                      <span>{item.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] cursor-text print-section"
              style={{ 
                minHeight: "297mm",
