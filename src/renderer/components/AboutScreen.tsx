@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, Shield, ClipboardList } from 'lucide-react';
+import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -83,6 +83,15 @@ const AboutScreen: React.FC = () => {
               <div>
                 <p className="text-sm font-bold text-gray-800 dark:text-gray-100">학생기록AI</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">생기부도우미(행발·세특·스포츠클럽·창체) · 우리반기록(수업관찰·상담일지·학급경영일지·학생 메모) · AI 챗봇</p>
+              </div>
+            </div>
+            <div className="flex gap-3 items-start">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                <Wrench className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-100">내 스킬</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">나만의 AI 스킬 만들기(위저드·대화형·HTML 앱) · 스킬 실행·수정·공유 · 스킬마켓</p>
               </div>
             </div>
           </div>
