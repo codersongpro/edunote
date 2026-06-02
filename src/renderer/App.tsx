@@ -591,7 +591,7 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className="min-w-[160px] w-[17%] max-w-[240px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className="min-w-[200px] w-[17%] max-w-[240px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
@@ -621,7 +621,7 @@ const App: React.FC = () => {
               }`}
             >
               <Home className="w-4 h-4 shrink-0" />
-              <span>홈</span>
+              <span className="truncate">홈</span>
             </button>
 
             <button
@@ -633,16 +633,16 @@ const App: React.FC = () => {
               }`}
             >
               <Settings className="w-4 h-4 shrink-0" />
-              <span>설정</span>
+              <span className="truncate">설정</span>
             </button>
 
             <button
               onClick={() => setShowSchoolLevelModal(true)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all shadow-sm"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700/70 transition-all shadow-sm"
             >
               <School className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-left text-sm font-bold">학교급 변경</span>
-              <span className="text-[10px] bg-white dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
+              <span className="flex-1 text-left text-sm font-bold truncate">학교급 변경</span>
+              <span className="text-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
             </button>
 
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
@@ -653,11 +653,11 @@ const App: React.FC = () => {
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center shrink-0">
                     <FileText className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 tracking-wide">교무행정AI</span>
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300 tracking-wide truncate">교무행정AI</span>
                 </div>
                 {adminSectionOpen ? <ChevronDown className="w-3 h-3 text-emerald-400" /> : <ChevronRight className="w-3 h-3 text-emerald-400" />}
               </button>
@@ -727,11 +727,11 @@ const App: React.FC = () => {
                 onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-amber-50/80 dark:hover:bg-amber-900/20 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide">수업자료AI</span>
+                  <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide truncate">수업자료AI</span>
                 </div>
                 {lessonSectionOpen ? <ChevronDown className="w-3 h-3 text-amber-400" /> : <ChevronRight className="w-3 h-3 text-amber-400" />}
               </button>
@@ -797,11 +797,11 @@ const App: React.FC = () => {
                 onClick={() => setStudentSectionOpen(!studentSectionOpen)}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-indigo-50/80 dark:hover:bg-indigo-900/20 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center shrink-0">
                     <Bot className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tracking-wide">학생기록AI</span>
+                  <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300 tracking-wide truncate">학생기록AI</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
@@ -907,11 +907,11 @@ const App: React.FC = () => {
                 onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-pink-50/80 dark:hover:bg-pink-900/20 transition-colors"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className="w-5 h-5 rounded-md bg-pink-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
-                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide">AI 스킬즈</span>
+                  <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide truncate">AI 스킬즈</span>
                 </div>
                 {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
               </button>
@@ -951,7 +951,7 @@ const App: React.FC = () => {
                 className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
               >
                 <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>API 사용 가능!</span>
+                <span className="truncate">API 사용 가능!</span>
               </button>
             ) : apiKeyAvailability === 'wait' ? (
               <button
@@ -986,7 +986,7 @@ const App: React.FC = () => {
               }`}
             >
               <BookMarked className="w-4 h-4 shrink-0" />
-              <span>사용 방법</span>
+              <span className="truncate">사용 방법</span>
             </button>
             <button
               onClick={() => goTo(AppMode.ABOUT)}
@@ -997,14 +997,14 @@ const App: React.FC = () => {
               }`}
             >
               <HelpCircle className="w-4 h-4 shrink-0" />
-              <span>도움말 / 정보</span>
+              <span className="truncate">도움말 / 정보</span>
             </button>
             <button
               onClick={() => window.electronAPI.openDemoWindow()}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <ClipboardList className="w-4 h-4 shrink-0" />
-              <span>Demo</span>
+              <span className="truncate">Demo</span>
             </button>
           </div>
         </aside>
