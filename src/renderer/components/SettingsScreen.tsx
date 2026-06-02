@@ -203,7 +203,9 @@ const SettingsScreen: React.FC = () => {
     try {
       const savedPath = await window.electronAPI.exportBackup();
       if (savedPath) {
-        await window.electronAPI.setConfig({ lastBackupAt: new Date().toISOString() });
+        const backupTime = new Date().toISOString();
+        await window.electronAPI.setConfig({ lastBackupAt: backupTime });
+        window.dispatchEvent(new CustomEvent('edunote:backup-done', { detail: { lastBackupAt: backupTime } }));
         setBackupStatus('전체 자료 백업을 저장했습니다.');
       }
     } catch (error) {

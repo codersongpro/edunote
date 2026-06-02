@@ -38,8 +38,8 @@ html, body, #root {
 .prose ul, .prose ol { padding-left: 1.25em; margin-bottom: 0.5em; }
 .prose li { margin-bottom: 0.25em; }
 .prose code { background: rgba(0,0,0,0.08); padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.9em; }
-.dark .prose code { background: rgba(255,255,255,0.12); }
-.dark .prose h1, .dark .prose h2, .dark .prose h3 { color: #f1f5f9; }
-.dark .prose p, .dark .prose li { color: #cbd5e1; }
-.dark .prose strong { color: #e2e8f0; }
+.dark .dark-prose-area .prose code { background: rgba(255,255,255,0.12); }
+.dark .dark-prose-area .prose h1, .dark .dark-prose-area .prose h2, .dark .dark-prose-area .prose h3 { color: #f1f5f9; }
+.dark .dark-prose-area .prose p, .dark .dark-prose-area .prose li { color: #cbd5e1; }
+.dark .dark-prose-area .prose strong { color: #e2e8f0; }
 .prose strong { font-weight: 700; }
