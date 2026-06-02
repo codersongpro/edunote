@@ -256,7 +256,7 @@ const OfficialDocAnalyzer: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-6">
           {result ? (
-            <div className="prose prose-sm dark:prose-invert max-w-none bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
+            <div className="prose prose-sm max-w-none bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm text-slate-900 dark:text-slate-100">
               <ReactMarkdown>{result}</ReactMarkdown>
             </div>
           ) : (

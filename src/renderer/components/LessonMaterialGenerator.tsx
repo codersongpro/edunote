@@ -340,6 +340,11 @@ const LessonMaterialGenerator: React.FC = () => {
             `<img src="${worksheetImageBase64}" alt="수업 이미지" style="max-width:100%;max-height:140pt;object-fit:contain;">`
           );
         }
+        // AI가 임의로 삽입한 외부 이미지 태그 제거 (data: URL이 아닌 모든 img 태그)
+        finalHtml = finalHtml.replace(/<img\b(?![^>]*src=["']data:)[^>]*>/gi, (match) => {
+          const altMatch = match.match(/alt=["']([^"']*)["']/i);
+          return altMatch?.[1] ? `<span style="display:block;text-align:center;color:#888;font-style:italic;">[그림: ${altMatch[1]}]</span>` : '';
+        });
         setWorksheetHtml(finalHtml);
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));

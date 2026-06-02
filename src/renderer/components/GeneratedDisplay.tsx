@@ -33,7 +33,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [matchedCautionTerms, setMatchedCautionTerms] = React.useState<string[]>([]);
   const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = React.useState('');
-  const [copyFormat, setCopyFormat] = React.useState<'html' | 'hangul' | 'excel' | 'md'>('html');
+  const [copyFormat, setCopyFormat] = React.useState<'html' | 'excel' | 'md'>('html');
   const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'html' | 'md'>('pdf');
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -394,10 +394,6 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       await copyText(convertToMarkdown(currentHtml));
       return;
     }
-    if (copyFormat === 'hangul') {
-      await copyHtmlToClipboard(getHangulOptimizedHtml(currentHtml), getPlainText());
-      return;
-    }
     await handleCopy();
   };
 
@@ -558,7 +554,6 @@ h2,h3{page-break-after:avoid;}
               style={{ colorScheme: 'light' }}
             >
               <option className={optionClassName} value="html">HWP/웹 복사</option>
-              <option className={optionClassName} value="hangul">한글 최적화 복사</option>
               <option className={optionClassName} value="excel">Excel로 복사</option>
               <option className={optionClassName} value="md">MD로 복사</option>
             </select>
