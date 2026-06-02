@@ -22,7 +22,7 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 860,
-    minWidth: 900,
+    minWidth: 1000,
     minHeight: 600,
     title: 'EduNote',
     icon: getAppIcon(),
