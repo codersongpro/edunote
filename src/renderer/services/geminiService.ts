@@ -1223,11 +1223,14 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 ${insertImagePlaceholder ? "- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 '<div class=\"worksheet-image\">[WORKSHEET_IMAGE]</div>' 줄을 정확히 이 형태로 삽입하세요." : ''}
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 - 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 자연스러운 학교 자료 문체로 작성하세요.
-${insertImagePlaceholder ? "- 이미지는 반드시 '[WORKSHEET_IMAGE]' 플레이스홀더 하나로만 표시하고, 그 외 <img> 태그나 외부 이미지 URL은 절대 사용하지 마세요." : "- <img> 태그, 외부 이미지 URL, 이미지 파일 참조는 절대 사용하지 마세요. 이미지가 필요한 곳은 '[그림: 설명]' 형태의 텍스트로 대체하세요."}
+${insertImagePlaceholder ? "- 이미지는 반드시 '[WORKSHEET_IMAGE]' 플레이스홀더 하나로만 표시하고, 그 외 <img> 태그나 외부 이미지 URL은 절대 사용하지 마세요." : "- <img> 태그, 외부 이미지 URL, 이미지 파일 참조, '[그림: ...]' 형태의 그림 설명 텍스트를 절대 사용하지 마세요. 그림이 필요한 부분은 그림 없이 텍스트와 표만으로 구성하세요."}
+- 반드시 A4 용지 1장 안에 모든 내용이 들어가도록 여백과 폰트 크기를 조절하세요. 내용이 잘려 넘어가지 않도록 하세요.
+- 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하고, 단어가 페이지 밖으로 넘치지 않도록 overflow-wrap: break-word도 적용하세요.
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
 <style> 태그에 다음 CSS를 반드시 포함하세요:
-@page { size: A4; margin: 10mm 12mm; }
+@page { size: A4; margin: 12mm 14mm; }
+html, body { width: 100%; max-width: 100%; box-sizing: border-box; }
 body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: ${baseFontSize}; color: #000; margin: 0; padding: 0; word-break: keep-all; overflow-wrap: break-word; }
 h1 { font-size: ${h1Size}; text-align: center; margin: 0 0 4pt; word-break: keep-all; }
 h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-break: keep-all; }
@@ -1238,10 +1241,11 @@ h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
 .worksheet-image { text-align: center; margin: 6pt 0 10pt; page-break-inside: avoid; }
 .worksheet-image img { max-width: 100%; max-height: 140pt; object-fit: contain; }
-table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; }
-th, td { border: 0.8pt solid #444; padding: 3pt 5pt; }
+table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; table-layout: fixed; }
+th, td { border: 0.8pt solid #444; padding: 3pt 5pt; word-break: keep-all; overflow-wrap: break-word; }
 p { margin: 2pt 0; line-height: 1.5; }
-또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;" 속성을 반드시 추가하세요.
+* { box-sizing: border-box; max-width: 100%; }
+또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;table-layout:fixed;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;word-break:keep-all;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
   return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
