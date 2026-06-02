@@ -161,7 +161,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         </div>
 
         {/* 메뉴 바로가기 */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 max-w-lg">
           <button
             onClick={() => onNavigate('settings')}
             className={`group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md ${
@@ -200,7 +200,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         {/* 앱 만족도 설문 */}
         <button
           onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
-          className="flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
+          className="flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md max-w-lg"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
