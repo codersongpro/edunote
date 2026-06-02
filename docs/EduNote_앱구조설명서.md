@@ -184,7 +184,7 @@ edunote
 | `src/renderer/components/MyToolEditor.tsx` | 도구 만들기 3단계 위저드 — 기본정보·입력필드·프롬프트 작성, AI 도움받기 |
 | `src/renderer/components/MyToolRunner.tsx` | 도구 실행 화면 — 동적 폼, 파일 업로드, 배치 처리, 취소 버튼 |
 | `src/renderer/components/MyToolChatCreator.tsx` | 대화형 도구 만들기 — AI 4단계 질문으로 도구 초안 자동 생성 |
-| `src/renderer/data/sampleTools.ts` | 기본 제공 샘플 도구 2개 (과제 피드백 생성기, 이수증 연수번호 수집기) |
+| `src/renderer/data/sampleTools.ts` | 기본 제공 샘플 도구 2개 (과제 피드백 생성기, 이수증 연수번호 수집기). 이수증 수집기 promptTemplate은 성명 추출 우선순위 강화(성명을 첫 번째 열로 명시), 마크다운 표 구분선 추가, 오름차순 정렬 유지로 파싱 안정성을 개선함 |
 | `src/renderer/hooks/useGenerationTracker.ts` | 메뉴별 생성 진행 상태를 전역 진행 상태와 연결 |
 
 ---
@@ -197,7 +197,7 @@ edunote
 
 | 섹션 | AppMode | 화면 컴포넌트 | 기능 |
 | --- | --- | --- | --- |
-| 기본 | `HOME` | `HomeScreen` | 홈 화면, 기능 요약, 업데이트 안내 |
+| 기본 | `HOME` | `HomeScreen` | 홈 화면, 기능 요약, 업데이트 안내. 상단 1행 4열 카드로 API 키 상태·사용자 정보 입력 여부·학생 정보 입력 여부·마지막 백업 시간을 표시함 |
 | 기본 | `USAGE_GUIDE` | `UsageGuideScreen` | 사용법 안내 |
 | 기본 | `SETTINGS` | `SettingsScreen` | API 키, 학교급, 소속기관, 저장 위치, 백업 설정 |
 | 기본 | `ABOUT` | `AboutScreen` | 앱 정보, 버전, 업데이트 확인 |
@@ -501,6 +501,7 @@ GitHub Actions 자동 실행
 - 파일 저장, 외부 브라우저 열기, PDF 저장은 Electron main process에서 처리한다.
 - 퀴즈 앱은 외부 CDN 없이 단일 HTML로 동작해야 하며, AI는 JSON 데이터만 생성하고 HTML 구조는 고정 템플릿을 사용해야 한다.
 - 인터넷 데이터를 가져올 때는 Node.js `https` 모듈이 아닌 `electron.net.fetch`를 사용해야 한다.
+- `index.css`의 prose 스타일(마크다운 렌더링용)은 `dark-prose-area` 클래스로 범위가 한정되어 있다. 문서 미리보기나 챗봇 응답 영역에 prose를 적용할 때 다크모드에서 배경색과 텍스트 색상이 충돌하지 않도록 적용 범위를 확인해야 한다.
 - 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하지 않는다.
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다.
 - Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다.
