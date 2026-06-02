@@ -27,10 +27,11 @@ const SettingsScreen: React.FC = () => {
   const [backupStatus, setBackupStatus] = useState('');
   const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
+  const [cautionTerms, setCautionTerms] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
@@ -44,6 +45,7 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('apiTier'),
         window.electronAPI.getConfig('privacyModeEnabled'),
         window.electronAPI.getConfig('reviewChecklistEnabled'),
+        window.electronAPI.getConfig('cautionTerms'),
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
@@ -58,6 +60,7 @@ const SettingsScreen: React.FC = () => {
       setApiTier((tier as 'free' | 'paid') || 'free');
       setPrivacyModeEnabled(privacyMode !== false);
       setReviewChecklistEnabled(reviewChecklist !== false);
+      setCautionTerms(cautionTermList as string || '');
       setGuideExpanded(!(hn as boolean));
     };
     load();
@@ -157,6 +160,7 @@ const SettingsScreen: React.FC = () => {
       studentFemaleNames,
       privacyModeEnabled,
       reviewChecklistEnabled,
+      cautionTerms,
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -198,7 +202,10 @@ const SettingsScreen: React.FC = () => {
   const handleExportBackup = async () => {
     try {
       const savedPath = await window.electronAPI.exportBackup();
-      if (savedPath) setBackupStatus('전체 자료 백업을 저장했습니다.');
+      if (savedPath) {
+        await window.electronAPI.setConfig({ lastBackupAt: new Date().toISOString() });
+        setBackupStatus('전체 자료 백업을 저장했습니다.');
+      }
     } catch (error) {
       setBackupStatus(error instanceof Error ? error.message : '백업 저장 중 오류가 발생했습니다.');
     }
@@ -619,9 +626,21 @@ const SettingsScreen: React.FC = () => {
               <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">생성 결과 화면에서 개인정보, 과장 표현, 최신 지침 확인 항목을 함께 표시합니다.</span>
             </span>
           </label>
+          <div>
+            <label className={labelClass}>사용자 주의어/금지 표현</label>
+            <textarea
+              className={`${inputClass} min-h-[90px] resize-y`}
+              placeholder={"성실함\n우수함\n대회\n수상"}
+              value={cautionTerms}
+              onChange={e => setCautionTerms(e.target.value)}
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              한 줄에 하나씩 입력하면 생성 결과 화면에서 포함 여부를 알려줍니다.
+            </p>
+          </div>
           <button
             onClick={async () => {
-              await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled });
+              await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled, cautionTerms });
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}

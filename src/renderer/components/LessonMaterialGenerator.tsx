@@ -18,6 +18,14 @@ import { getStandards, AchievementStandard } from '../constants/curriculumStanda
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
 
+interface LibraryResource {
+  id: string;
+  url: string;
+  title: string;
+  description?: string;
+  tags?: string;
+}
+
 const CONTENT_TYPES: { value: LessonContentType; icon: React.ElementType; label: string; desc: string }[] = [
   { value: 'SLIDE', icon: Layers, label: '수업 슬라이드', desc: '발표용 슬라이드 및 교사 메모' },
   { value: 'WORKSHEET', icon: ClipboardList, label: '워크시트', desc: '워크시트 및 평가지 (HTML/인쇄용)' },
@@ -70,6 +78,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const [unit, setUnit] = useState('');
   const [topic, setTopic] = useState('');
   const [details, setDetails] = useState('');
+  const [libraryResources, setLibraryResources] = useState<LibraryResource[]>([]);
   const [contentType, setContentType] = useState<LessonContentType>('SLIDE');
 
   const currentSubjects = getSubjectsForGrade(selectedGradeLabel);
@@ -83,6 +92,24 @@ const LessonMaterialGenerator: React.FC = () => {
   const domains = Object.keys(standardsByDomain).sort();
 
   const selectedStandard = currentStandards.find(s => s.code === selectedStandardCode) ?? null;
+
+  useEffect(() => {
+    window.electronAPI.readJsonData('resource-library')
+      .then((data: unknown) => setLibraryResources(Array.isArray(data) ? data.slice(0, 30) as LibraryResource[] : []))
+      .catch(() => setLibraryResources([]));
+  }, []);
+
+  const appendResourceToDetails = (resourceId: string) => {
+    const resource = libraryResources.find(item => item.id === resourceId);
+    if (!resource) return;
+    const text = [
+      '[자료실 참고자료]',
+      `제목: ${resource.title}`,
+      resource.description ? `설명: ${resource.description}` : '',
+      `URL: ${resource.url}`,
+    ].filter(Boolean).join('\n');
+    setDetails(prev => prev.trim() ? `${prev.trim()}\n\n${text}` : text);
+  };
 
   const handleGradeChange = (newGrade: string) => {
     setSelectedGradeLabel(newGrade);
@@ -613,6 +640,21 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </button>
               </div>
               <textarea className={`${inputClass} min-h-[80px] resize-none`} placeholder="특이사항, 강조할 내용, 제외할 내용 등을 자유롭게 입력하세요." value={details} onChange={e => setDetails(e.target.value)} />
+              {libraryResources.length > 0 && (
+                <select
+                  defaultValue=""
+                  onChange={e => {
+                    appendResourceToDetails(e.target.value);
+                    e.currentTarget.value = '';
+                  }}
+                  className="mt-2 w-full rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-2 py-1.5 text-xs text-amber-800 dark:text-amber-200"
+                >
+                  <option value="">자료실 참고자료 추가</option>
+                  {libraryResources.map(resource => (
+                    <option key={resource.id} value={resource.id}>{resource.title}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {error && (

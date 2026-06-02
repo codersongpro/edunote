@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown, RefreshCw, ShieldCheck, AlertTriangle, History } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -14,11 +14,24 @@ interface GeneratedDisplayProps {
   title?: string;
 }
 
+interface SavedGeneratedVersion {
+  id: string;
+  title: string;
+  text: string;
+  createdAt: string;
+}
+
+const RESULT_HISTORY_KEY_PREFIX = 'edunote_result_history_v1_';
+
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [rewriting, setRewriting] = React.useState<string | null>(null);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = React.useState(true);
+  const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
+  const [matchedCautionTerms, setMatchedCautionTerms] = React.useState<string[]>([]);
+  const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = React.useState('');
   const [checkedItems, setCheckedItems] = React.useState<Record<string, boolean>>({});
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -38,11 +51,45 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     { label: 'NEIS 문체로 다듬기', instruction: '학교생활기록부에 어울리는 관찰 근거 중심의 간결한 문체로 다듬어 주세요.' },
   ];
 
+  const getPlainText = (): string => {
+    const currentHtml = contentRef.current?.innerHTML || content;
+    return contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+  };
+
+  const getHistoryKey = (): string => {
+    const base = title || hwpxData?.["문서제목"] || 'default';
+    return `${RESULT_HISTORY_KEY_PREFIX}${encodeURIComponent(base.slice(0, 80))}`;
+  };
+
+  const loadSavedVersions = React.useCallback(() => {
+    try {
+      const raw = localStorage.getItem(getHistoryKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      setSavedVersions(Array.isArray(parsed) ? parsed.slice(0, 8) : []);
+    } catch {
+      setSavedVersions([]);
+    }
+  }, [title, hwpxData]);
+
   useEffect(() => {
-    window.electronAPI.getConfig('reviewChecklistEnabled')
-      .then(value => setReviewChecklistEnabled(value !== false))
-      .catch(() => setReviewChecklistEnabled(true));
-  }, []);
+    Promise.all([
+      window.electronAPI.getConfig('reviewChecklistEnabled'),
+      window.electronAPI.getConfig('cautionTerms'),
+    ])
+      .then(([reviewValue, termsValue]) => {
+        setReviewChecklistEnabled(reviewValue !== false);
+        const terms = String(termsValue || '')
+          .split(/\r?\n|,/)
+          .map(term => term.trim())
+          .filter(Boolean);
+        setCautionTerms(Array.from(new Set(terms)));
+      })
+      .catch(() => {
+        setReviewChecklistEnabled(true);
+        setCautionTerms([]);
+      });
+    loadSavedVersions();
+  }, [loadSavedVersions]);
 
   // Sync content prop to the editable div whenever it changes (new generation).
   // Use execCommand so the replacement is recorded in the browser undo stack,
@@ -87,13 +134,18 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     });
   }, [content]);
 
+  useEffect(() => {
+    const text = getPlainText();
+    setMatchedCautionTerms(cautionTerms.filter(term => text.includes(term)));
+  }, [content, cautionTerms]);
+
   const getCurrentContent = (): string => {
     return markdownOrHtmlToHtml(contentRef.current?.innerHTML || content);
   };
 
   const handleCopy = async () => {
     const currentHtml = getCurrentContent();
-    const plainText = contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+    const plainText = getPlainText();
     
     let success = false;
 
@@ -217,7 +269,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 
   const handleRewrite = async (label: string, instruction: string) => {
     const currentHtml = getCurrentContent();
-    const plainText = contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+    const plainText = getPlainText();
     if (!plainText.trim()) return;
     setRewriting(label);
     try {
@@ -237,6 +289,33 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       setRewriting(null);
     }
   };
+
+  const handleSaveCurrentVersion = () => {
+    const text = getPlainText().trim();
+    if (!text) return;
+    const now = new Date();
+    const next: SavedGeneratedVersion = {
+      id: `${now.getTime()}`,
+      title: title || text.slice(0, 24) || '생성 결과',
+      text,
+      createdAt: now.toISOString(),
+    };
+    const versions = [next, ...savedVersions].slice(0, 8);
+    localStorage.setItem(getHistoryKey(), JSON.stringify(versions));
+    setSavedVersions(versions);
+    setSelectedVersionId(next.id);
+  };
+
+  const selectedVersion = savedVersions.find(version => version.id === selectedVersionId) || null;
+  const compareLines = React.useMemo(() => {
+    if (!selectedVersion) return [];
+    const before = new Set(selectedVersion.text.split(/[.!?\n。]/).map(line => line.trim()).filter(Boolean));
+    return getPlainText()
+      .split(/[.!?\n。]/)
+      .map(line => line.trim())
+      .filter(line => line && !before.has(line))
+      .slice(0, 5);
+  }, [selectedVersion, content]);
 
   const handleSavePdf = async () => {
     const currentHtml = getCurrentContent();
@@ -425,6 +504,67 @@ h2,h3{page-break-after:avoid;}
                 ))}
               </div>
             </div>
+
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">생성 결과 히스토리</span>
+                </div>
+                <button
+                  onClick={handleSaveCurrentVersion}
+                  className="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
+                >
+                  현재 버전 저장
+                </button>
+              </div>
+              {savedVersions.length > 0 ? (
+                <div className="grid gap-2">
+                  <select
+                    value={selectedVersionId}
+                    onChange={e => setSelectedVersionId(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+                  >
+                    <option value="">비교할 이전 버전 선택</option>
+                    {savedVersions.map(version => (
+                      <option key={version.id} value={version.id}>
+                        {new Date(version.createdAt).toLocaleString()} - {version.title}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedVersion && (
+                    <div className="rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 text-xs text-slate-700 dark:text-slate-200">
+                      <p className="font-bold mb-1">현재 결과에 새로 보이는 문장</p>
+                      {compareLines.length > 0 ? (
+                        <ul className="space-y-1 list-disc pl-4">
+                          {compareLines.map(line => <li key={line}>{line}</li>)}
+                        </ul>
+                      ) : (
+                        <p>선택한 버전과 큰 문장 차이가 없습니다.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">현재 결과를 저장하면 다음 생성 결과와 비교할 수 있습니다.</p>
+              )}
+            </div>
+
+            {matchedCautionTerms.length > 0 && (
+              <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm font-bold text-rose-700 dark:text-rose-200">주의어 감지</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {matchedCautionTerms.map(term => (
+                    <span key={term} className="px-2 py-0.5 rounded-full bg-white dark:bg-rose-950 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-200">
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {reviewChecklistEnabled && (
               <div className="bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-800 rounded-lg p-3">

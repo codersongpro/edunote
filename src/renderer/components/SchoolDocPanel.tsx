@@ -48,6 +48,16 @@ interface SettingsProfile {
   institution: string;
 }
 
+interface DocTemplateFavorite {
+  id: string;
+  docType: DocType;
+  title: string;
+  text: string;
+  createdAt: string;
+}
+
+const DOC_TEMPLATE_FAVORITES_KEY = 'edunote_doc_template_favorites_v1';
+
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
@@ -81,6 +91,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [filesByTab, setFilesByTab] = useState<Record<DocType, FileData[]>>(initTabMap([]));
   const [templatesByTab, setTemplatesByTab] = useState<Record<DocType, FileData[]>>(initTabMap([]));
   const [templateTextByTab, setTemplateTextByTab] = useState<Record<DocType, string>>(initTabMap(''));
+  const [templateFavorites, setTemplateFavorites] = useState<DocTemplateFavorite[]>([]);
   const [hwpxFillDataByTab, setHwpxFillDataByTab] = useState<Record<DocType, any[] | null>>(initTabMap(null));
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
 
@@ -89,6 +100,40 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const templateText = templateTextByTab[activeTab] ?? '';
   const generatedContent = contentByTab[activeTab] ?? '';
   const hwpxFillData = hwpxFillDataByTab[activeTab] ?? null;
+  const activeTemplateFavorites = templateFavorites.filter(item => item.docType === activeTab);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DOC_TEMPLATE_FAVORITES_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setTemplateFavorites(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      setTemplateFavorites([]);
+    }
+  }, []);
+
+  const saveTemplateFavorites = (next: DocTemplateFavorite[]) => {
+    localStorage.setItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
+    setTemplateFavorites(next.slice(0, 20));
+  };
+
+  const handleSaveTemplateFavorite = () => {
+    const text = templateText.trim();
+    if (!text) return;
+    const title = window.prompt('템플릿 이름을 입력하세요.', text.split('\n')[0]?.slice(0, 30) || '문서 템플릿');
+    if (!title) return;
+    const now = new Date();
+    saveTemplateFavorites([
+      { id: `${now.getTime()}`, docType: activeTab, title, text, createdAt: now.toISOString() },
+      ...templateFavorites,
+    ]);
+  };
+
+  const handleLoadTemplateFavorite = (id: string) => {
+    const favorite = templateFavorites.find(item => item.id === id);
+    if (!favorite) return;
+    setTemplateTextByTab(prev => ({ ...prev, [activeTab]: favorite.text }));
+  };
 
   // Gongmun form
   const [gongmunData, setGongmunData] = useState<GongmunInputs>({
@@ -948,6 +993,31 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   value={templateText}
                   onChange={e => setTemplateTextByTab(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 />
+                <div className="mt-2 grid gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveTemplateFavorite}
+                    disabled={!templateText.trim()}
+                    className="w-full px-3 py-1.5 text-xs font-bold rounded-md border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800 dark:text-blue-200 dark:bg-blue-950 dark:hover:bg-blue-900"
+                  >
+                    현재 양식 즐겨찾기 저장
+                  </button>
+                  {activeTemplateFavorites.length > 0 && (
+                    <select
+                      defaultValue=""
+                      onChange={e => {
+                        handleLoadTemplateFavorite(e.target.value);
+                        e.currentTarget.value = '';
+                      }}
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+                    >
+                      <option value="">저장한 양식 불러오기</option>
+                      {activeTemplateFavorites.map(item => (
+                        <option key={item.id} value={item.id}>{item.title}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
 

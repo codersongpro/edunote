@@ -4,12 +4,8 @@ const MAX_IMPORTED_HTML_LENGTH = 250_000;
 const MAX_IMPORTED_JSON_LENGTH = 500_000;
 
 const DANGEROUS_HTML_PATTERNS = [
-  /<script\b/i,
   /<object\b/i,
   /<embed\b/i,
-  /<link\b/i,
-  /<meta\b/i,
-  /\son[a-z]+\s*=/i,
   /javascript:/i,
   /data:text\/html/i,
 ];
@@ -81,7 +77,7 @@ export function validateImportedTool(value: unknown): { ok: true; tool: CustomTo
     if (typeof value.htmlContent !== 'string' || !value.htmlContent.trim()) return { ok: false, reason: 'HTML 앱 코드가 없습니다.' };
     if (value.htmlContent.length > MAX_IMPORTED_HTML_LENGTH) return { ok: false, reason: 'HTML 앱 코드가 너무 큽니다.' };
     if (DANGEROUS_HTML_PATTERNS.some(pattern => pattern.test(value.htmlContent as string))) {
-      return { ok: false, reason: '실행 위험이 있는 HTML 코드가 포함되어 있습니다.' };
+      return { ok: false, reason: '허용되지 않는 HTML 실행 요소가 포함되어 있습니다.' };
     }
   }
 
