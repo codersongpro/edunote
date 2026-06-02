@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown, RefreshCw, ShieldCheck, AlertTriangle, History } from 'lucide-react';
+import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown, RefreshCw, ShieldCheck, AlertTriangle, History, RotateCcw } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -17,17 +17,18 @@ interface GeneratedDisplayProps {
 interface SavedGeneratedVersion {
   id: string;
   title: string;
+  html?: string;
   text: string;
   createdAt: string;
 }
 
-const RESULT_HISTORY_KEY_PREFIX = 'edunote_result_history_v1_';
+const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
 
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [rewriting, setRewriting] = React.useState<string | null>(null);
-  const [reviewChecklistEnabled, setReviewChecklistEnabled] = React.useState(true);
+  const [reviewChecklistEnabled] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
   const [matchedCautionTerms, setMatchedCautionTerms] = React.useState<string[]>([]);
   const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
@@ -65,19 +66,54 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     try {
       const raw = localStorage.getItem(getHistoryKey());
       const parsed = raw ? JSON.parse(raw) : [];
-      setSavedVersions(Array.isArray(parsed) ? parsed.slice(0, 8) : []);
+      const versions = Array.isArray(parsed)
+        ? parsed.map((version: Partial<SavedGeneratedVersion>) => ({
+          ...version,
+          html: version.html || markdownOrHtmlToHtml(version.text || ''),
+        })) as SavedGeneratedVersion[]
+        : [];
+      setSavedVersions(versions.slice(0, 8));
     } catch {
       setSavedVersions([]);
     }
   }, [title, hwpxData]);
 
+  const saveGeneratedSnapshot = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    const text = temp.innerText.trim();
+    if (!text) return;
+
+    let versions: SavedGeneratedVersion[] = [];
+    try {
+      const raw = localStorage.getItem(getHistoryKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      versions = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      versions = [];
+    }
+
+    if (versions[0]?.html === html) {
+      setSavedVersions(versions.slice(0, 8));
+      return;
+    }
+
+    const now = new Date();
+    const next: SavedGeneratedVersion = {
+      id: `${now.getTime()}`,
+      title: title || text.slice(0, 24) || '생성 문서',
+      html,
+      text,
+      createdAt: now.toISOString(),
+    };
+    const nextVersions = [next, ...versions.filter(version => version.html !== html)].slice(0, 8);
+    localStorage.setItem(getHistoryKey(), JSON.stringify(nextVersions));
+    setSavedVersions(nextVersions);
+  };
+
   useEffect(() => {
-    Promise.all([
-      window.electronAPI.getConfig('reviewChecklistEnabled'),
-      window.electronAPI.getConfig('cautionTerms'),
-    ])
-      .then(([reviewValue, termsValue]) => {
-        setReviewChecklistEnabled(reviewValue !== false);
+    window.electronAPI.getConfig('cautionTerms')
+      .then(termsValue => {
         const terms = String(termsValue || '')
           .split(/\r?\n|,/)
           .map(term => term.trim())
@@ -85,7 +121,6 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
         setCautionTerms(Array.from(new Set(terms)));
       })
       .catch(() => {
-        setReviewChecklistEnabled(true);
         setCautionTerms([]);
       });
     loadSavedVersions();
@@ -98,6 +133,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const el = contentRef.current;
     if (!el || !content) return;
     const cleanContent = markdownOrHtmlToHtml(content);
+    saveGeneratedSnapshot(cleanContent);
     el.focus();
     document.execCommand('selectAll', false);
     document.execCommand('insertHTML', false, cleanContent);
@@ -317,6 +353,12 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       .slice(0, 5);
   }, [selectedVersion, content]);
 
+  const handleRestoreVersion = () => {
+    if (!selectedVersion || !contentRef.current) return;
+    saveGeneratedSnapshot(getCurrentContent());
+    contentRef.current.innerHTML = selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text);
+  };
+
   const handleSavePdf = async () => {
     const currentHtml = getCurrentContent();
     const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
@@ -486,7 +528,7 @@ h2,h3{page-break-after:avoid;}
       <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {content && (
           <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div className="hidden">
               <div className="flex items-center gap-2 mb-2">
                 <RefreshCw className="w-4 h-4 text-blue-500" />
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-200">빠른 재작성</span>
@@ -533,7 +575,17 @@ h2,h3{page-break-after:avoid;}
                     ))}
                   </select>
                   {selectedVersion && (
-                    <div className="rounded-md bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-2 text-xs text-slate-700 dark:text-slate-200">
+                    <button
+                      type="button"
+                      onClick={handleRestoreVersion}
+                      className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      이 문서로 되돌리기
+                    </button>
+                  )}
+                  {selectedVersion && (
+                    <div className="hidden">
                       <p className="font-bold mb-1">현재 결과에 새로 보이는 문장</p>
                       {compareLines.length > 0 ? (
                         <ul className="space-y-1 list-disc pl-4">
