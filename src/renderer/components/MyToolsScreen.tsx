@@ -155,11 +155,16 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
 
 const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void; schoolLevel?: string }> = ({ activeTab = 'my', onTabChange, schoolLevel }) => {
   const [tab, setTab] = useState<Tab>(activeTab);
+  const [view, setView] = useState<View>('list');
+  const [tools, setTools] = useState<CustomTool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
 
   useEffect(() => {
     setTab(activeTab);
+    setView('list');
+    setSelectedTool(null);
   }, [activeTab]);
-  const [view, setView] = useState<View>('list');
+
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
 
@@ -173,8 +178,6 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       if (inst) setInstitution(inst as string);
     })();
   }, []);
-  const [tools, setTools] = useState<CustomTool[]>([]);
-  const [selectedTool, setSelectedTool] = useState<CustomTool | null>(null);
   const [marketEntries, setMarketEntries] = useState<MarketEntry[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketError, setMarketError] = useState('');
