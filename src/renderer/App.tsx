@@ -638,11 +638,11 @@ const App: React.FC = () => {
 
             <button
               onClick={() => setShowSchoolLevelModal(true)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-200 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all shadow-sm"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700/70 transition-all shadow-sm"
             >
               <School className="w-4 h-4 shrink-0" />
               <span className="flex-1 text-left text-sm font-bold truncate">학교급 변경</span>
-              <span className="text-[10px] bg-white dark:bg-indigo-900 border border-indigo-200 dark:border-indigo-700 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
+              <span className="text-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
             </button>
 
             <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
