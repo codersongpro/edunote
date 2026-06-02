@@ -591,7 +591,7 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className="min-w-[200px] w-[17%] max-w-[240px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className="min-w-[240px] w-[19%] max-w-[280px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
