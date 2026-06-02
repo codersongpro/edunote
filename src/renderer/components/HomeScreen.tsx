@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, Wifi, WifiOff, Database, CheckCircle } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -18,9 +18,9 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [version, setVersion] = useState('1.0.0');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
-  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
   const [storageInfo, setStorageInfo] = useState({ appDataDir: '', saveDir: '', lastBackupAt: '' });
-  const [studentProgress, setStudentProgress] = useState({ total: 0, generated: 0 });
+  const [hasUserInfo, setHasUserInfo] = useState(false);
+  const [hasStudentInfo, setHasStudentInfo] = useState(false);
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
@@ -30,43 +30,82 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       window.electronAPI.getConfig('appDataDir'),
       window.electronAPI.getConfig('saveDir'),
       window.electronAPI.getConfig('lastBackupAt'),
+      window.electronAPI.getConfig('teacherName'),
       window.electronAPI.getConfig('studentNames'),
-    ]).then(([appDataDir, saveDir, lastBackupAt, studentNames]) => {
-      const names = String(studentNames || '')
-        .split(/\r?\n/)
-        .map(line => line.replace(/^\s*\d+[.)]?\s*/, '').trim())
-        .filter(Boolean);
-      const generated = names.filter(name =>
-        ['opinion', 'subject', 'sports', 'creative'].some(mode => localStorage.getItem(`eduHist_${mode}_${name}`))
-      ).length;
+    ]).then(([appDataDir, saveDir, lastBackupAt, teacherName, studentNames]) => {
       setStorageInfo({
         appDataDir: String(appDataDir || ''),
         saveDir: String(saveDir || ''),
         lastBackupAt: String(lastBackupAt || ''),
       });
-      setStudentProgress({ total: names.length, generated });
+      setHasUserInfo(!!String(teacherName || '').trim());
+      setHasStudentInfo(!!String(studentNames || '').trim());
     }).catch(() => {});
-    const handleOnline = () => setOnline(true);
-    const handleOffline = () => setOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    const handleBackupDone = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setStorageInfo(prev => ({ ...prev, lastBackupAt: detail.lastBackupAt }));
+    };
+    window.addEventListener('edunote:backup-done', handleBackupDone);
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('edunote:backup-done', handleBackupDone);
     };
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
-      <div className="max-w-xl mx-auto w-full px-6 py-10 space-y-6">
+    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden">
+
+      {/* 상단: 앱 상태 1행 4열 */}
+      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-2">
+        <div className="grid grid-cols-4 gap-3 text-xs">
+          {[
+            {
+              label: 'API 키',
+              value: hasKey ? '등록됨' : '필요',
+              icon: <CheckCircle className="w-3 h-3" />,
+              color: hasKey ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400',
+            },
+            {
+              label: '사용자 정보',
+              value: hasUserInfo ? '입력됨' : '미입력',
+              icon: <CheckCircle className="w-3 h-3" />,
+              color: hasUserInfo ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400',
+            },
+            {
+              label: '학생 정보',
+              value: hasStudentInfo ? '입력됨' : '미입력',
+              icon: <CheckCircle className="w-3 h-3" />,
+              color: hasStudentInfo ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400',
+            },
+            {
+              label: '마지막 백업',
+              value: storageInfo.lastBackupAt
+                ? new Date(storageInfo.lastBackupAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : '기록 없음',
+              icon: null,
+              color: 'text-gray-700 dark:text-gray-200',
+            },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-2 py-1">
+              <span className="text-gray-400 dark:text-gray-500 shrink-0">{item.label}</span>
+              <span className={`font-bold flex items-center gap-0.5 truncate ${item.color}`}>
+                {item.icon}
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 메인 콘텐츠 */}
+      <div className="flex-1 flex flex-col justify-center px-8 py-6 gap-4 min-w-0 overflow-hidden">
 
         {/* 업데이트 알림 */}
         {updateInfo?.hasUpdate && (
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4 flex items-center justify-between gap-3">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Download className="w-4 h-4 text-blue-500 shrink-0" />
               <p className="text-sm text-blue-800 dark:text-blue-300">
-                새 버전 <strong>v{updateInfo.latestVersion}</strong>이 출시되었습니다. (현재 v{updateInfo.currentVersion})
+                새 버전 <strong>v{updateInfo.latestVersion}</strong>이 출시되었습니다.
               </p>
             </div>
             <button
@@ -79,155 +118,105 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
         )}
 
         {/* 앱 아이덴티티 */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl overflow-hidden shadow-lg mb-2">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-lg shrink-0">
             <img src={iconPng} alt="EduNote" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">EduNote</h1>
-          <div className="flex items-center justify-center gap-2">
-            <p className="text-sm text-gray-500 dark:text-gray-400">v{version}</p>
-            {updateInfo && !updateInfo.hasUpdate && (
-              <span className="text-[11px] px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
-                최신 버전
-              </span>
-            )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">EduNote</h1>
+              <span className="text-sm text-gray-500 dark:text-gray-400">v{version}</span>
+              {updateInfo && !updateInfo.hasUpdate && (
+                <span className="text-[11px] px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
+                  최신 버전
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              교무 행정 · 수업 준비 · 학생 기록을 AI가 도와드립니다.
+            </p>
           </div>
-          <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed">
-            교무 행정 · 수업 준비 · 학생 기록을 AI가 도와드립니다.
-          </p>
         </div>
 
         {/* API 키 미설정 경고 */}
         {hasKey === false && (
-          <div className="animate-pulse bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500 rounded-xl p-4">
+          <div className="animate-pulse bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-500 rounded-xl p-3">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">Gemini API 키를 입력해 주세요</p>
-                <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5 leading-relaxed">
-                  설정에서 무료 Gemini API 키를 입력해야 AI 기능을 사용할 수 있습니다.
-                </p>
-              </div>
+              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                설정에서 무료 Gemini API 키를 입력해야 AI 기능을 사용할 수 있습니다.
+              </p>
             </div>
           </div>
         )}
 
         {/* 주의 안내 */}
-        <div className="bg-fuchsia-50 dark:bg-fuchsia-950/30 border-2 border-fuchsia-300 dark:border-fuchsia-700 rounded-xl p-4 shadow-sm shadow-fuchsia-100/60 dark:shadow-none">
-          <div className="flex gap-3 items-start">
-            <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0 mt-1" />
-            <p className="text-sm text-fuchsia-900 dark:text-fuchsia-100 leading-relaxed">
+        <div className="bg-fuchsia-50 dark:bg-fuchsia-950/30 border-2 border-fuchsia-300 dark:border-fuchsia-700 rounded-xl p-3">
+          <div className="flex gap-2 items-center">
+            <Info className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-300 shrink-0" />
+            <p className="text-sm text-fuchsia-900 dark:text-fuchsia-100">
               생성된 내용은 <strong className="font-black text-rose-600 dark:text-rose-300">반드시 검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm space-y-3">
-          <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-            <p className="text-sm font-bold text-gray-800 dark:text-gray-100">앱 상태</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
-              <p className="text-gray-500 dark:text-gray-400">인터넷</p>
-              <p className={`mt-1 font-bold flex items-center gap-1 ${online ? 'text-green-600 dark:text-green-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-                {online ? '연결됨' : '오프라인'}
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
-              <p className="text-gray-500 dark:text-gray-400">API 키</p>
-              <p className={`mt-1 font-bold flex items-center gap-1 ${hasKey ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                <CheckCircle className="w-3 h-3" />
-                {hasKey ? '등록됨' : '필요'}
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
-              <p className="text-gray-500 dark:text-gray-400">마지막 백업</p>
-              <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 truncate">
-                {storageInfo.lastBackupAt ? new Date(storageInfo.lastBackupAt).toLocaleString() : '기록 없음'}
-              </p>
-            </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
-              <p className="text-gray-500 dark:text-gray-400">학생 기록</p>
-              <p className="mt-1 font-bold text-gray-700 dark:text-gray-200">
-                {studentProgress.total > 0 ? `${studentProgress.generated}/${studentProgress.total}명 생성됨` : '명단 없음'}
-              </p>
-            </div>
-          </div>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
-            데이터: {storageInfo.appDataDir || '기본 폴더'} / 저장: {storageInfo.saveDir || '기본 다운로드 폴더'}
-          </p>
         </div>
 
         {/* 메뉴 바로가기 */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => onNavigate('settings')}
-            className={`group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md overflow-hidden ${
+            className={`group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md ${
               hasKey === false
                 ? 'border-amber-400 dark:border-amber-500 animate-pulse hover:border-amber-500'
                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
           >
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
-              <Settings className={`w-5 h-5 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}`} />
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+              <Settings className={`w-4 h-4 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}`} />
             </div>
-            <div className="min-w-0 w-full">
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">
-                설정
-                {hasKey === false && <span className="ml-1 text-amber-500 text-sm">키 미설정</span>}
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">
+                설정{hasKey === false && <span className="ml-1 text-amber-500">키 미설정</span>}
               </p>
-              {hasKey === false ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">API 키 입력이 필요합니다</p>
-              ) : (
-                <ul className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
-                  <li>Gemini API 키</li>
-                  <li>교사 정보 입력</li>
-                  <li>학생 정보 입력</li>
-                </ul>
-              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">API 키 · 교사/학생 정보</p>
             </div>
-            <ChevronRight className={`w-4 h-4 self-end shrink-0 group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
+            <ChevronRight className={`w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
           </button>
 
           <button
             onClick={() => onNavigate('guide')}
-            className="group flex flex-col gap-3 p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left overflow-hidden"
+            className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left"
           >
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
-              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </div>
-            <div className="min-w-0 w-full">
-              <p className="font-bold text-gray-800 dark:text-gray-100 text-base">사용 방법</p>
-              <ul className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 space-y-0.5">
-                <li>API 키 발급</li>
-                <li>기능 소개</li>
-                <li>자주 묻는 질문</li>
-              </ul>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">사용 방법</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">API 키 발급 · 기능 소개</p>
             </div>
-            <ChevronRight className="w-4 h-4 text-purple-400 self-end shrink-0 group-hover:translate-x-1 transition-transform" />
+            <ChevronRight className="w-4 h-4 text-purple-400 shrink-0 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
 
         {/* 앱 만족도 설문 */}
         <button
           onClick={() => window.electronAPI.openExternal('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
-          className="w-full flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
+          className="flex items-center justify-between gap-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 rounded-xl p-4 text-left transition-all shadow-sm hover:shadow-md"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-              <ClipboardList className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+              <ClipboardList className="w-4 h-4 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-base font-bold text-white">앱 만족도 설문 참여하기</p>
-              <p className="text-sm text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다 (1분 소요)</p>
+              <p className="text-sm font-bold text-white">앱 만족도 설문 참여하기</p>
+              <p className="text-xs text-indigo-100 mt-0.5">소중한 의견이 더 나은 EduNote를 만듭니다</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
         </button>
 
       </div>
+
+
     </div>
   );
 };
