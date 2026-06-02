@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, Wifi, WifiOff, Database, CheckCircle } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 
 interface UpdateInfo {
@@ -18,11 +18,42 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [version, setVersion] = useState('1.0.0');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [storageInfo, setStorageInfo] = useState({ appDataDir: '', saveDir: '', lastBackupAt: '' });
+  const [studentProgress, setStudentProgress] = useState({ total: 0, generated: 0 });
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
     window.electronAPI.checkUpdate().then((info: UpdateInfo) => setUpdateInfo(info)).catch(() => {});
     window.electronAPI.hasApiKey().then((k: boolean) => setHasKey(k)).catch(() => setHasKey(false));
+    Promise.all([
+      window.electronAPI.getConfig('appDataDir'),
+      window.electronAPI.getConfig('saveDir'),
+      window.electronAPI.getConfig('lastBackupAt'),
+      window.electronAPI.getConfig('studentNames'),
+    ]).then(([appDataDir, saveDir, lastBackupAt, studentNames]) => {
+      const names = String(studentNames || '')
+        .split(/\r?\n/)
+        .map(line => line.replace(/^\s*\d+[.)]?\s*/, '').trim())
+        .filter(Boolean);
+      const generated = names.filter(name =>
+        ['opinion', 'subject', 'sports', 'creative'].some(mode => localStorage.getItem(`eduHist_${mode}_${name}`))
+      ).length;
+      setStorageInfo({
+        appDataDir: String(appDataDir || ''),
+        saveDir: String(saveDir || ''),
+        lastBackupAt: String(lastBackupAt || ''),
+      });
+      setStudentProgress({ total: names.length, generated });
+    }).catch(() => {});
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   return (
@@ -89,6 +120,44 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               생성된 내용은 <strong className="font-black text-rose-600 dark:text-rose-300">반드시 검토·수정</strong>하여 활용해 주세요.
             </p>
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+            <p className="text-sm font-bold text-gray-800 dark:text-gray-100">앱 상태</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
+              <p className="text-gray-500 dark:text-gray-400">인터넷</p>
+              <p className={`mt-1 font-bold flex items-center gap-1 ${online ? 'text-green-600 dark:text-green-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {online ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                {online ? '연결됨' : '오프라인'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
+              <p className="text-gray-500 dark:text-gray-400">API 키</p>
+              <p className={`mt-1 font-bold flex items-center gap-1 ${hasKey ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                <CheckCircle className="w-3 h-3" />
+                {hasKey ? '등록됨' : '필요'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
+              <p className="text-gray-500 dark:text-gray-400">마지막 백업</p>
+              <p className="mt-1 font-bold text-gray-700 dark:text-gray-200 truncate">
+                {storageInfo.lastBackupAt ? new Date(storageInfo.lastBackupAt).toLocaleString() : '기록 없음'}
+              </p>
+            </div>
+            <div className="rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-2">
+              <p className="text-gray-500 dark:text-gray-400">학생 기록</p>
+              <p className="mt-1 font-bold text-gray-700 dark:text-gray-200">
+                {studentProgress.total > 0 ? `${studentProgress.generated}/${studentProgress.total}명 생성됨` : '명단 없음'}
+              </p>
+            </div>
+          </div>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate">
+            데이터: {storageInfo.appDataDir || '기본 폴더'} / 저장: {storageInfo.saveDir || '기본 다운로드 폴더'}
+          </p>
         </div>
 
         {/* 메뉴 바로가기 */}

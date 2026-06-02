@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Copy, Download, FileText, Printer, FileType, PenLine, FileDown } from 'lucide-react';
+import { Copy, Download, FileText, Printer, PenLine, AlertTriangle, History, RotateCcw } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -14,24 +14,108 @@ interface GeneratedDisplayProps {
   title?: string;
 }
 
+interface SavedGeneratedVersion {
+  id: string;
+  title: string;
+  html?: string;
+  text: string;
+  createdAt: string;
+}
+
+const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
+
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
+  const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
+  const [matchedCautionTerms, setMatchedCautionTerms] = React.useState<string[]>([]);
+  const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = React.useState('');
+  const [copyFormat, setCopyFormat] = React.useState<'html' | 'excel' | 'md'>('html');
+  const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'html' | 'md'>('pdf');
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Sync content prop to the editable div whenever it changes (new generation).
-  // Use execCommand so the replacement is recorded in the browser undo stack,
-  // allowing Ctrl+Z to restore the previous generated result.
+  const getPlainText = (): string => {
+    const currentHtml = contentRef.current?.innerHTML || content;
+    return contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+  };
+
+  const getHistoryKey = (): string => {
+    const base = title || hwpxData?.["문서제목"] || 'default';
+    return `${RESULT_HISTORY_KEY_PREFIX}${encodeURIComponent(base.slice(0, 80))}`;
+  };
+
+  const loadSavedVersions = React.useCallback(() => {
+    try {
+      const raw = localStorage.getItem(getHistoryKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      const versions = Array.isArray(parsed)
+        ? parsed.map((version: Partial<SavedGeneratedVersion>) => ({
+          ...version,
+          html: version.html || markdownOrHtmlToHtml(version.text || ''),
+        })) as SavedGeneratedVersion[]
+        : [];
+      setSavedVersions(versions.slice(0, 8));
+    } catch {
+      setSavedVersions([]);
+    }
+  }, [title, hwpxData]);
+
+  const saveGeneratedSnapshot = (html: string) => {
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    const text = temp.innerText.trim();
+    if (!text) return;
+
+    let versions: SavedGeneratedVersion[] = [];
+    try {
+      const raw = localStorage.getItem(getHistoryKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      versions = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      versions = [];
+    }
+
+    if (versions[0]?.html === html) {
+      setSavedVersions(versions.slice(0, 8));
+      return;
+    }
+
+    const now = new Date();
+    const next: SavedGeneratedVersion = {
+      id: `${now.getTime()}`,
+      title: title || text.slice(0, 24) || '생성 문서',
+      html,
+      text,
+      createdAt: now.toISOString(),
+    };
+    const nextVersions = [next, ...versions.filter(version => version.html !== html)].slice(0, 8);
+    localStorage.setItem(getHistoryKey(), JSON.stringify(nextVersions));
+    setSavedVersions(nextVersions);
+  };
+
+  useEffect(() => {
+    window.electronAPI.getConfig('cautionTerms')
+      .then(termsValue => {
+        const terms = String(termsValue || '')
+          .split(/\r?\n|,/)
+          .map(term => term.trim())
+          .filter(Boolean);
+        setCautionTerms(Array.from(new Set(terms)));
+      })
+      .catch(() => {
+        setCautionTerms([]);
+      });
+    loadSavedVersions();
+  }, [loadSavedVersions]);
+
   useEffect(() => {
     const el = contentRef.current;
     if (!el || !content) return;
     const cleanContent = markdownOrHtmlToHtml(content);
-    el.focus();
-    document.execCommand('selectAll', false);
-    document.execCommand('insertHTML', false, cleanContent);
-    window.getSelection()?.collapse(el, 0);
+    saveGeneratedSnapshot(cleanContent);
+    el.innerHTML = cleanContent;
 
-    // contentEditable에 삽입 시 <style> 태그가 무시되므로 테이블에 인라인 스타일 직접 적용
     el.querySelectorAll<HTMLTableElement>('table').forEach(table => {
       if (!table.style.borderCollapse) table.style.borderCollapse = 'collapse';
       if (!table.style.width) table.style.width = '100%';
@@ -41,12 +125,10 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       if (!cell.style.padding) cell.style.padding = '5pt 8pt';
     });
 
-    // 워크시트 제목(h1) 가운데 정렬
     el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
       if (!h1.style.textAlign) h1.style.textAlign = 'center';
     });
 
-    // 학년/반/이름 기입란 오른쪽 정렬
     el.querySelectorAll<HTMLElement>('.student-info').forEach(div => {
       div.style.display = 'flex';
       div.style.gap = '16pt';
@@ -62,13 +144,18 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     });
   }, [content]);
 
+  useEffect(() => {
+    const text = getPlainText();
+    setMatchedCautionTerms(cautionTerms.filter(term => text.includes(term)));
+  }, [content, cautionTerms]);
+
   const getCurrentContent = (): string => {
     return markdownOrHtmlToHtml(contentRef.current?.innerHTML || content);
   };
 
   const handleCopy = async () => {
     const currentHtml = getCurrentContent();
-    const plainText = contentRef.current?.innerText || currentHtml.replace(/<[^>]*>?/gm, '');
+    const plainText = getPlainText();
     
     let success = false;
 
@@ -132,7 +219,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인해주세요.");
+      alert("클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.");
     }
   };
 
@@ -171,15 +258,6 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename("html"), "html");
   };
 
-  const handleDownloadBasicHwpx = async () => {
-    const currentHtml = getCurrentContent();
-    const docTitle = hwpxData?.["문서제목"] || title || contentRef.current?.innerText?.split('\n')[0]?.slice(0, 30) || '문서';
-    await window.electronAPI.saveHwpx(docTitle, currentHtml, {
-      title: docTitle,
-      date: new Date().toISOString().slice(0, 10),
-    });
-  };
-
   const handleDownloadWord = async () => {
     const currentHtml = getCurrentContent();
     const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>body { font-family: 'Batang', 'Dotum', sans-serif; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } th, td { border: 1px solid black; padding: 8px; }</style></head><body>${currentHtml}</body></html>`;
@@ -188,6 +266,57 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const htmlToExcelText = (html: string): string => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const tables = Array.from(doc.querySelectorAll('table'));
+    if (tables.length === 0) return doc.body.innerText.trim();
+
+    return tables.map(table => Array.from(table.querySelectorAll('tr'))
+      .map(row => Array.from(row.querySelectorAll('th,td'))
+        .map(cell => cell.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+        .join('\t'))
+      .join('\n')).join('\n\n');
+  };
+
+  const copyText = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyByFormat = async () => {
+    const currentHtml = getCurrentContent();
+    if (copyFormat === 'excel') {
+      await copyText(htmlToExcelText(currentHtml));
+      return;
+    }
+    if (copyFormat === 'md') {
+      await copyText(convertToMarkdown(currentHtml));
+      return;
+    }
+    await handleCopy();
+  };
+
+  const handleSaveByFormat = async () => {
+    if (saveFormat === 'pdf') await handleSavePdf();
+    else if (saveFormat === 'doc') await handleDownloadWord();
+    else if (saveFormat === 'html') await handleDownloadHtml();
+    else await handleDownloadMarkdown();
+  };
+
+  const handleSaveCurrentVersion = () => {
+    saveGeneratedSnapshot(contentRef.current?.innerHTML || markdownOrHtmlToHtml(content));
+  };
+
+  const selectedVersion = savedVersions.find(version => version.id === selectedVersionId) || null;
+  const compareLines: string[] = [];
+
+  const handleRestoreVersion = () => {
+    if (!selectedVersion || !contentRef.current) return;
+    saveGeneratedSnapshot(getCurrentContent());
+    contentRef.current.innerHTML = selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text);
   };
 
   const handleSavePdf = async () => {
@@ -215,6 +344,28 @@ h2,h3{page-break-after:avoid;}
   };
 
   const convertToMarkdown = (html: string): string => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('table').forEach(table => {
+      const rows = Array.from(table.querySelectorAll('tr')).map(row =>
+        Array.from(row.querySelectorAll('th,td')).map(cell => (cell.textContent || '').replace(/\s+/g, ' ').trim())
+      ).filter(row => row.length > 0);
+      if (rows.length === 0) return;
+      const width = Math.max(...rows.map(row => row.length));
+      const normalized = rows.map(row => [...row, ...Array(Math.max(0, width - row.length)).fill('')]);
+      const header = normalized[0];
+      const body = normalized.slice(1);
+      const mdTable = [
+        `| ${header.join(' | ')} |`,
+        `| ${header.map(() => '---').join(' | ')} |`,
+        ...body.map(row => `| ${row.join(' | ')} |`),
+      ].join('\n');
+      table.replaceWith(doc.createTextNode(`\n${mdTable}\n`));
+    });
+    doc.querySelectorAll('li').forEach(li => {
+      li.replaceWith(doc.createTextNode(`- ${(li.textContent || '').trim()}\n`));
+    });
+    doc.querySelectorAll('br').forEach(br => br.replaceWith(doc.createTextNode('\n')));
+    html = doc.body.innerHTML;
     let md = html;
     // Remove structure tags
     md = md.replace(/<head>[\s\S]*?<\/head>/gi, "");
@@ -270,93 +421,140 @@ h2,h3{page-break-after:avoid;}
              수정 가능
           </span>
         </div>
-        <div className="flex gap-2 shrink-0">
-           <button
+        <div className="flex items-center gap-2 shrink-0">
+          <button
             onClick={handlePrint}
             className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
-            title="인쇄하기"
+            title="인쇄"
           >
             <Printer className="w-4 h-4" />
           </button>
-
-          {content && (
+          {hwpxTemplate && hwpxFillData && (
             <button
-              onClick={handleSavePdf}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded transition-colors shadow-sm"
-              title="A4 PDF 파일로 저장"
+              onClick={handleDownloadHwpx}
+              disabled={hwpxDownloading}
+              className="inline-flex items-center gap-1 rounded bg-emerald-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+              title="업로드한 HWPX 양식에 현재 데이터를 채워 저장"
             >
-              <FileDown className="w-4 h-4" />
-              <span>PDF 저장</span>
+              <Download className="w-3.5 h-3.5" />
+              {hwpxDownloading ? '저장 중' : 'HWPX 양식 저장'}
             </button>
           )}
-          
-          {content && (
-            <button
-              onClick={handleDownloadMarkdown}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors shadow-sm"
-              title="마크다운(.md) 파일로 저장"
+          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+            <select
+              value={saveFormat}
+              onChange={e => setSaveFormat(e.target.value as typeof saveFormat)}
+              className="bg-transparent px-2 py-1 text-xs text-gray-700 dark:text-gray-200 outline-none"
             >
-              <FileText className="w-4 h-4" />
-              <span>MD 저장</span>
-            </button>
-          )}
-
-          <button
-            onClick={handleDownloadWord}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
-            title="HWP에서 열기 좋은 Word 파일로 저장"
-          >
-            <Download className="w-4 h-4" />
-            <span>Doc 저장</span>
-          </button>
-
-
-          <button 
-            onClick={handleDownloadHtml}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 rounded transition-colors shadow-sm"
-            title="HTML 파일로 저장"
-          >
-            <FileType className="w-4 h-4" />
-            <span>HTML 저장</span>
-          </button>
-          
-          <button 
-            onClick={handleCopy}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded shadow-sm transition-all
-              ${copied ? 'bg-green-600 hover:bg-green-700' : 'bg-[#1E88E5] hover:bg-[#1565C0]'}
-            `}
-            title="HWP 붙여넣기 최적화 복사"
-          >
-            <Copy className="w-4 h-4" />
-            {copied ? '복사됨' : '복사하기'}
-          </button>
-
-          {content && (
+              <option value="pdf">PDF</option>
+              <option value="doc">Word/HWP용</option>
+              <option value="html">HTML</option>
+              <option value="md">Markdown</option>
+            </select>
             <button
-              disabled
-              title="HWPX 저장 기능은 현재 구현중입니다."
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
+              onClick={handleSaveByFormat}
+              className="inline-flex items-center gap-1 rounded bg-slate-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
             >
-              <FileType className="w-4 h-4" />
-              <span>HWPX 양식 저장 (구현중)</span>
+              <Download className="w-3.5 h-3.5" />
+              저장
             </button>
-          )}
-
-          {content && (
+          </div>
+          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+            <select
+              value={copyFormat}
+              onChange={e => setCopyFormat(e.target.value as typeof copyFormat)}
+              className="bg-transparent px-2 py-1 text-xs text-gray-700 dark:text-gray-200 outline-none"
+            >
+              <option value="html">HWP/웹 복사</option>
+              <option value="excel">Excel로 복사</option>
+              <option value="md">MD로 복사</option>
+            </select>
             <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded transition-colors shadow-sm text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 border border-dashed border-gray-300 dark:border-gray-700 cursor-not-allowed"
-              title="HWPX 저장 기능은 현재 구현중입니다."
+              onClick={handleCopyByFormat}
+              className={`inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-bold text-white ${copied ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
             >
-              <FileType className="w-4 h-4" />
-              <span>HWPX 기본 저장 (구현중)</span>
+              <Copy className="w-3.5 h-3.5" />
+              {copied ? '복사됨' : '복사'}
             </button>
-          )}
+          </div>
         </div>
       </div>
-      
       {/* Editor Viewport */}
       <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
+        {content && (
+          <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">생성 결과 히스토리</span>
+                </div>
+                <button
+                  onClick={handleSaveCurrentVersion}
+                  className="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
+                >
+                  현재 버전 저장
+                </button>
+              </div>
+              {savedVersions.length > 0 ? (
+                <div className="grid gap-2">
+                  <select
+                    value={selectedVersionId}
+                    onChange={e => setSelectedVersionId(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+                  >
+                    <option value="">되돌릴 이전 버전 선택</option>
+                    {savedVersions.map(version => (
+                      <option key={version.id} value={version.id}>
+                        {new Date(version.createdAt).toLocaleString()} - {version.title}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedVersion && (
+                    <button
+                      type="button"
+                      onClick={handleRestoreVersion}
+                      className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      이 문서로 되돌리기
+                    </button>
+                  )}
+                  {selectedVersion && (
+                    <div className="hidden">
+                      <p className="font-bold mb-1">현재 결과에 새로 보이는 문장</p>
+                      {compareLines.length > 0 ? (
+                        <ul className="space-y-1 list-disc pl-4">
+                          {compareLines.map(line => <li key={line}>{line}</li>)}
+                        </ul>
+                      ) : (
+                        <p>선택한 버전과 새 문장 차이가 없습니다.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">현재 결과를 저장하면 다음 생성 결과와 비교하거나 되돌릴 수 있습니다.</p>
+              )}
+            </div>
+
+            {matchedCautionTerms.length > 0 && (
+              <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  <span className="text-sm font-bold text-rose-700 dark:text-rose-200">주의어 감지</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {matchedCautionTerms.map(term => (
+                    <span key={term} className="px-2 py-0.5 rounded-full bg-white dark:bg-rose-950 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-200">
+                      {term}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] cursor-text print-section"
              style={{ 
                minHeight: "297mm",
@@ -383,7 +581,7 @@ h2,h3{page-break-after:avoid;}
           <PenLine className="w-3 h-3" />
           내용을 직접 클릭하여 수정할 수 있습니다.
         </span>
-        <span>HTML & MD 호환 | HWP 복사 가능</span>
+        <span>HTML, Word/HWP용, Markdown 저장 지원</span>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
+import { getStudentGenerationExtras } from '../lib/generationSafety';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -615,6 +616,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateSubjectReport({
                   schoolLevel,
                   studentName: student.name,
@@ -623,7 +625,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: subjectState.lengthOption as LengthOption,
                   customLength: subjectState.customLength as number,
-                  lengthUnit: subjectState.lengthUnit as LengthUnit
+                  lengthUnit: subjectState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[i].generatedContent = result;
               saveHistory('subject', student.name, result);
@@ -683,6 +686,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateSubjectReport({
                   schoolLevel,
                   studentName: student.name,
@@ -691,7 +695,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: subjectState.lengthOption as LengthOption,
                   customLength: subjectState.customLength as number,
-                  lengthUnit: subjectState.lengthUnit as LengthUnit
+                  lengthUnit: subjectState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[index].generatedContent = result;
               saveHistory('subject', student.name, result);
@@ -740,6 +745,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
       mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
 
+      const extras = await getStudentGenerationExtras(student.name);
       const result = await generateSubjectReport({
           schoolLevel,
           studentName: student.name,
@@ -749,7 +755,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           lengthOption: subjectState.lengthOption as LengthOption,
           customLength: subjectState.customLength as number,
           lengthUnit: subjectState.lengthUnit as LengthUnit,
-          avoidPhrases
+          avoidPhrases,
+          ...extras
       });
       
       const newStudents = [...subjectState.activeStudents];

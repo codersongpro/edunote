@@ -40,13 +40,17 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   }, []);
 
   const firstTextInputIdx = tool.inputs.findIndex(i => i.type !== 'file-upload');
+  const fileUploadMaxFiles = tool.id === 'sample-cert' || tool.name.includes('연수번호') || tool.name.includes('이수증') ? 10 : 20;
+  const getFileUploadLabel = (label: string) => fileUploadMaxFiles === 10 ? label.replace(/20/g, '10') : label;
 
   const handleGenerate = async () => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
     setIsLoading(true);
     setError('');
-    setProgress(null);
+    setResult('');
+    const uploadCount = Object.values(fileValues).flat().length;
+    setProgress(uploadCount > 0 ? { current: 0, total: uploadCount } : null);
     try {
       const output = await runCustomTool(
         tool,
@@ -155,11 +159,11 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
               )}
               {input.type === 'file-upload' ? (
                 <FileUpload
-                  label={input.label}
+                  label={getFileUploadLabel(input.label)}
                   files={fileValues[input.id] ?? []}
                   onFilesChange={files => setFileValues(prev => ({ ...prev, [input.id]: files }))}
                   multiple={true}
-                  maxFiles={20}
+                  maxFiles={fileUploadMaxFiles}
                 />
               ) : input.type === 'textarea' ? (
                 <textarea

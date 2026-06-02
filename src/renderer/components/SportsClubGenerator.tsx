@@ -5,6 +5,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
+import { getStudentGenerationExtras } from '../lib/generationSafety';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -209,6 +210,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const student = newStudents[i];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateSportsClubReport({
                   schoolLevel,
                   studentName: student.name,
@@ -217,7 +219,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: sportsState.lengthOption as LengthOption,
                   customLength: sportsState.customLength as number,
-                  lengthUnit: sportsState.lengthUnit as LengthUnit
+                  lengthUnit: sportsState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[i].generatedContent = result;
               saveHistory('sports', student.name, result);
@@ -275,6 +278,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const index = selectedIndices[i];
             const student = newStudents[index];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateSportsClubReport({
                   schoolLevel,
                   studentName: student.name,
@@ -283,7 +287,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: sportsState.lengthOption as LengthOption,
                   customLength: sportsState.customLength as number,
-                  lengthUnit: sportsState.lengthUnit as LengthUnit
+                  lengthUnit: sportsState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[index].generatedContent = result;
               saveHistory('sports', student.name, result);
@@ -322,6 +327,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         : [];
 
     try {
+      const extras = await getStudentGenerationExtras(student.name);
       const result = await generateSportsClubReport({
           schoolLevel,
           studentName: student.name,
@@ -331,7 +337,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
           lengthOption: sportsState.lengthOption as LengthOption,
           customLength: sportsState.customLength as number,
           lengthUnit: sportsState.lengthUnit as LengthUnit,
-          avoidPhrases
+          avoidPhrases,
+          ...extras
       });
       
       const newStudents = [...sportsState.students];

@@ -167,6 +167,8 @@ export interface GenerationRequest {
   customLength?: number;
   lengthUnit: LengthUnit;
   avoidPhrases?: string[];
+  privacyModeEnabled?: boolean;
+  studentMemos?: string[];
 }
 
 export interface SubjectGenerationRequest {
@@ -179,6 +181,8 @@ export interface SubjectGenerationRequest {
   customLength?: number;
   lengthUnit: LengthUnit;
   avoidPhrases?: string[];
+  privacyModeEnabled?: boolean;
+  studentMemos?: string[];
 }
 
 export interface SportsGenerationRequest {
@@ -191,6 +195,8 @@ export interface SportsGenerationRequest {
   customLength?: number;
   lengthUnit: LengthUnit;
   avoidPhrases?: string[];
+  privacyModeEnabled?: boolean;
+  studentMemos?: string[];
 }
 
 export interface CreativeActivityGenerationRequest {
@@ -205,6 +211,8 @@ export interface CreativeActivityGenerationRequest {
   customLength?: number;
   lengthUnit: LengthUnit;
   avoidPhrases?: string[];
+  privacyModeEnabled?: boolean;
+  studentMemos?: string[];
 }
 
 // ─── Global State ─────────────────────────────────────────────────

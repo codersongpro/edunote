@@ -5,6 +5,7 @@ import MyToolEditor from './MyToolEditor';
 import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
+import { parseImportedTools, validateImportedTool } from '../lib/security';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
   RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
@@ -266,8 +267,11 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     const raw = await window.electronAPI.openJsonFile();
     if (!raw) return;
     try {
-      const data = JSON.parse(raw);
-      const items: CustomTool[] = Array.isArray(data) ? data : [data];
+      const { tools: items, error } = parseImportedTools(raw);
+      if (error) {
+        alert(error);
+        return;
+      }
       const now = new Date().toISOString();
       const imported = items.map(t => ({
         ...t,
@@ -294,13 +298,13 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
 
       // JSON 파싱 시도 → 실패하고 HTML 앱이면 htmlContent로 감싸서 가져오기
       try {
-        const data = JSON.parse(raw);
-        const items: CustomTool[] = Array.isArray(data) ? data : [data];
+        const { tools: items, error } = parseImportedTools(raw);
+        if (error) throw new Error(error);
         // 마켓 entry 이름으로 통일 (isAdded 체크와 일치시키기 위해)
         imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now, name: entry.name || t.name }));
       } catch {
         if (entry.toolType === 'html-app' && raw.trim().startsWith('<')) {
-          imported = [{
+          const htmlTool: CustomTool = {
             id: crypto.randomUUID(),
             name: entry.name,
             description: entry.description,
@@ -312,7 +316,10 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
             author: [entry.author, entry.authorSchool].filter(Boolean).join(' / ') || undefined,
             createdAt: entry.createdAt || now,
             updatedAt: now,
-          }];
+          };
+          const validation = validateImportedTool(htmlTool);
+          if (validation.ok === false) throw new Error(validation.reason);
+          imported = [validation.tool];
         } else {
           throw new Error('유효한 스킬 파일이 아닙니다');
         }

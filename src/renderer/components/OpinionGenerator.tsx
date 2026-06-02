@@ -6,6 +6,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
+import { getStudentGenerationExtras } from '../lib/generationSafety';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -196,6 +197,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const student = newStudents[i];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateOpinion({
                   schoolLevel,
                   studentName: student.name,
@@ -204,7 +206,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: opState.lengthOption as LengthOption,
                   customLength: opState.customLength as number,
-                  lengthUnit: opState.lengthUnit as LengthUnit
+                  lengthUnit: opState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[i].generatedContent = result;
               saveHistory('opinion', student.name, result);
@@ -255,6 +258,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const index = selectedIndices[i];
             const student = newStudents[index];
             try {
+              const extras = await getStudentGenerationExtras(student.name);
               const result = await callWithAbort(() => generateOpinion({
                   schoolLevel,
                   studentName: student.name,
@@ -263,7 +267,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   additionalContext: student.additionalContext,
                   lengthOption: opState.lengthOption as LengthOption,
                   customLength: opState.customLength as number,
-                  lengthUnit: opState.lengthUnit as LengthUnit
+                  lengthUnit: opState.lengthUnit as LengthUnit,
+                  ...extras
               }));
               newStudents[index].generatedContent = result;
               saveHistory('opinion', student.name, result);
@@ -301,6 +306,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
         : [];
 
     try {
+      const extras = await getStudentGenerationExtras(student.name);
       const result = await generateOpinion({
           schoolLevel,
           studentName: student.name,
@@ -310,7 +316,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
           lengthOption: opState.lengthOption as LengthOption,
           customLength: opState.customLength as number,
           lengthUnit: opState.lengthUnit as LengthUnit,
-          avoidPhrases
+          avoidPhrases,
+          ...extras
       });
       
       const newStudents = [...opState.students];
