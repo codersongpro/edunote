@@ -26,20 +26,18 @@ export default function PrintFormScreen() {
         let rows = '';
         if (names.length === 0) {
           rows = Array.from({ length: perPage }, (_, i) =>
-            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td></td><td></td><td></td><td></td></tr>`
+            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td></td><td></td></tr>`
           ).join('');
         } else {
           rows = names.map((name, i) =>
-            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td></td><td></td><td>${name}</td><td></td></tr>`
+            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td>${name}</td><td></td></tr>`
           ).join('');
         }
         const tableHtml = `<table class="reg-table" style="width:100%;border-collapse:collapse;">
           <thead><tr>
-            <th style="width:8%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">번호</th>
-            <th style="border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">소속 학교</th>
-            <th style="width:14%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">직위</th>
-            <th style="width:18%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">성명</th>
-            <th style="width:18%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">서명</th>
+            <th style="width:10%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">번호</th>
+            <th style="border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">성명</th>
+            <th style="width:25%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">서명</th>
           </tr></thead>
           <tbody style="font-size:10pt;">
             <style>.reg-row td{border:1px solid #555;padding:4pt 6pt;height:22pt;}</style>

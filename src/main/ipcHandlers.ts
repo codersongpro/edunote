@@ -587,15 +587,15 @@ export function registerIpcHandlers(): void {
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
-    // 인코딩된 키(+, /, = 포함)를 붙여넣은 경우를 위해 encodeURIComponent 적용
-    // 이미 %로 시작하는 인코딩이면 그대로 사용
+    // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const params = new URLSearchParams();
     params.set('pageNo', String(pageNo));
     params.set('numOfRows', '30');
-    params.set('thngNm', keyword);
-    params.set('resultType', 'json');
-    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo?serviceKey=${encodedKey}&${params.toString()}`;
+    params.set('krnPrdctNm', keyword);  // 한글품목명으로 검색
+    params.set('type', 'json');
+    // 오퍼레이션명: getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch (품목 목록 조회)
+    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch?ServiceKey=${encodedKey}&${params.toString()}`;
     const response = await net.fetch(rawUrl);
     if (!response.ok) {
       const body = await response.text().catch(() => '');

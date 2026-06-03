@@ -28,11 +28,10 @@ const CATEGORY_KEYWORDS: Record<BudgetCategory, { label: string; keywords: strin
 };
 
 interface NaraItem {
-  thngNm: string;
-  thngCd: string;
-  assetClCd?: string;
-  assetClNm?: string;
-  stdUntNm?: string;
+  thngNm: string;       // 표시용 (krnPrdctNm 또는 prdctClsfcNoNm 에서 채움)
+  thngCd: string;       // prdctIdntNo
+  spec?: string;        // prdctClsfcNoNm (품명)
+  mnfctCorpNm?: string; // 제조업체명
   unitPrice?: number;
 }
 
@@ -115,7 +114,15 @@ export default function BudgetPlannerScreen() {
     setSearchError('');
     try {
       const data = await window.electronAPI.naramarketSearch(keyword.trim(), apiKey);
-      const items: NaraItem[] = data?.response?.body?.items?.item ?? [];
+      const raw: any[] = data?.response?.body?.items?.item ?? [];
+      const itemArr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+      const items: NaraItem[] = itemArr.map((r: any) => ({
+        thngNm: r.krnPrdctNm || r.prdctClsfcNoNm || '(이름 없음)',
+        thngCd: r.prdctIdntNo || '',
+        spec: r.prdctClsfcNoNm,
+        mnfctCorpNm: r.mnfctCorpNm,
+        unitPrice: undefined,
+      }));
       if (!Array.isArray(items) || items.length === 0) {
         setSearchResults([]);
         setSearchError('검색 결과가 없습니다.');
@@ -413,7 +420,7 @@ export default function BudgetPlannerScreen() {
                       <button key={idx} onClick={() => addItem(item)}
                         className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
                         <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
-                        <p className="text-[11px] text-gray-400">{item.thngCd} {item.stdUntNm ? `· ${item.stdUntNm}` : ''}</p>
+                        <p className="text-[11px] text-gray-400 truncate">{item.spec}{item.mnfctCorpNm ? ` · ${item.mnfctCorpNm}` : ''}</p>
                         {item.unitPrice != null && <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{fmt(item.unitPrice)}원</p>}
                       </button>
                     ))}

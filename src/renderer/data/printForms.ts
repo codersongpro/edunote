@@ -17,7 +17,7 @@ export interface PrintForm {
 
 const baseStyle = `
 <style>
-  @page { size: A4 portrait; margin: 15mm 18mm; }
+  @page { size: A4 portrait; margin: 20mm 22mm; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; width: 100%; }
   body {
@@ -58,7 +58,7 @@ export const PRINT_FORMS: PrintForm[] = [
       { key: '날짜', label: '날짜', type: 'text', placeholder: '예: 2026년 6월 3일' },
       { key: '학년반', label: '학년/반', type: 'text', placeholder: '3학년 2반' },
       { key: '이름', label: '이름', type: 'text', placeholder: '홍길동' },
-      { key: '날씨', label: '날씨', type: 'select', options: ['맑음 ☀️', '흐림 ☁️', '비 🌧️', '눈 ❄️', '바람 💨'] },
+      { key: '날씨', label: '날씨', type: 'text', placeholder: '' },
       { key: '제목', label: '제목', type: 'text', placeholder: '일기 제목' },
       { key: '내용', label: '내용', type: 'textarea', rows: 12 },
     ],
@@ -325,10 +325,8 @@ export const PRINT_FORMS: PrintForm[] = [
     title: '연수 등록부',
     fields: [
       { key: '연수명', label: '연수명', type: 'text', placeholder: '2026년 1학기 직무연수' },
-      { key: '연수기관', label: '연수 기관', type: 'text' },
-      { key: '연수기간', label: '연수 기간', type: 'text', placeholder: '2026.03.10. ~ 2026.03.12.' },
       { key: '연수장소', label: '연수 장소', type: 'text' },
-      { key: '연수시간', label: '연수 시간', type: 'text', placeholder: '15시간' },
+      { key: '일시', label: '일시', type: 'text', placeholder: '2026.06.10. 09:00~17:00' },
       { key: '참가자목록', label: '참가자 명단 (한 줄에 한 명)', type: 'participants', rows: 10, placeholder: '홍길동\n이순신\n김유신' },
     ],
     htmlTemplate: `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${baseStyle}
@@ -344,12 +342,8 @@ export const PRINT_FORMS: PrintForm[] = [
     <th style="width:14%;">연수명</th><td colspan="3">{{연수명}}</td>
   </tr>
   <tr>
-    <th>연수 기관</th><td class="nowrap" style="width:30%;">{{연수기관}}</td>
-    <th style="width:14%;">연수 시간</th><td class="nowrap">{{연수시간}}</td>
-  </tr>
-  <tr>
-    <th>연수 기간</th><td class="nowrap">{{연수기간}}</td>
-    <th>연수 장소</th><td class="nowrap">{{연수장소}}</td>
+    <th style="width:14%;">일시</th><td class="nowrap" style="width:36%;">{{일시}}</td>
+    <th style="width:14%;">연수 장소</th><td class="nowrap">{{연수장소}}</td>
   </tr>
 </table>
 {{참가자행}}
