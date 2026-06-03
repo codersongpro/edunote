@@ -21,6 +21,7 @@ interface StoreSchema {
   reviewChecklistEnabled: boolean;
   cautionTerms: string;
   lastBackupAt: string;
+  naramarketApiKey: string;
 }
 
 export const store = new Store<StoreSchema>({
@@ -45,5 +46,6 @@ export const store = new Store<StoreSchema>({
     reviewChecklistEnabled: true,
     cautionTerms: '성실함\n우수함\n대회\n수상\n자격증\n모의고사',
     lastBackupAt: '',
+    naramarketApiKey: '',
   },
 });
