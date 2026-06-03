@@ -598,7 +598,7 @@ export function registerIpcHandlers(): void {
       const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch?ServiceKey=${encodedKey}&${params.toString()}`;
       const response = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-        signal: AbortSignal.timeout(12000),
+        signal: AbortSignal.timeout(20000),
       });
       if (!response.ok) {
         const body = await response.text().catch(() => '');
@@ -619,8 +619,6 @@ export function registerIpcHandlers(): void {
     if (items.length > 0) {
       return { response: { body: { items: { item: items } } } };
     }
-    const firstError = responses.find((result): result is PromiseRejectedResult => result.status === 'rejected');
-    if (firstError) throw firstError.reason;
     return { response: { body: { items: { item: [] } } } };
   });
 
@@ -635,7 +633,7 @@ export function registerIpcHandlers(): void {
       const rawUrl = `https://apis.data.go.kr/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList?ServiceKey=${encodedKey}&${params.toString()}`;
       const response = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-        signal: AbortSignal.timeout(12000),
+        signal: AbortSignal.timeout(20000),
       });
       if (!response.ok) {
         const body = await response.text().catch(() => '');
@@ -657,8 +655,6 @@ export function registerIpcHandlers(): void {
     if (items.length > 0) {
       return { response: { body: { items: { item: items } } } };
     }
-    const firstError = responses.find((result): result is PromiseRejectedResult => result.status === 'rejected');
-    if (firstError) throw firstError.reason;
     return { response: { body: { items: { item: [] } } } };
   });
 

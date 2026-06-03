@@ -321,15 +321,22 @@ export default function BudgetPlannerScreen() {
     setIsSearching(true);
     setSearchError('');
     try {
-      const [listData, mallData] = await Promise.all([
+      const responses = await Promise.allSettled([
         window.electronAPI.naramarketSearch(keyword.trim(), apiKey),
-        window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey).catch(() => null),
+        window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey),
       ]);
+      const listData = responses[0].status === 'fulfilled' ? responses[0].value : null;
+      const mallData = responses[1].status === 'fulfilled' ? responses[1].value : null;
       const listRows = normalizeApiItems(listData, false);
       const mallRows = normalizeApiItems(mallData, true);
       const merged = uniqueSearchItems([...mallRows, ...listRows]);
       setSearchResults(merged);
-      if (merged.length === 0) setSearchError('검색 결과가 없습니다.');
+      if (merged.length === 0) {
+        const failed = responses.filter(result => result.status === 'rejected');
+        setSearchError(failed.length > 0 ? '나라장터 응답이 지연되어 결과를 가져오지 못했습니다. 잠시 후 다시 검색해주세요.' : '검색 결과가 없습니다.');
+      } else if (responses.some(result => result.status === 'rejected')) {
+        setSearchError('일부 나라장터 응답이 지연되어 가능한 결과만 표시했습니다.');
+      }
     } catch (e: any) {
       setSearchError(e?.message ?? '검색 오류');
     } finally {
