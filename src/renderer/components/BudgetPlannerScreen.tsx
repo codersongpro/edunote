@@ -18,6 +18,27 @@ import {
 
 const CATEGORIES: BudgetCategory[] = ['교육운영비', '일반수용비', '업무추진비'];
 
+const CATEGORY_COLORS: Record<BudgetCategory, { row: string; cell: string; select: string; footer: string }> = {
+  교육운영비: {
+    row: 'bg-sky-50/70 dark:bg-sky-950/20 hover:bg-sky-100/80 dark:hover:bg-sky-900/30',
+    cell: 'bg-sky-100 dark:bg-sky-900/50 text-sky-900 dark:text-sky-100',
+    select: 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-100',
+    footer: 'bg-sky-50 dark:bg-sky-950/30',
+  },
+  일반수용비: {
+    row: 'bg-emerald-50/70 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30',
+    cell: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100',
+    select: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-100',
+    footer: 'bg-emerald-50 dark:bg-emerald-950/30',
+  },
+  업무추진비: {
+    row: 'bg-amber-50/70 dark:bg-amber-950/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30',
+    cell: 'bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100',
+    select: 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-100',
+    footer: 'bg-amber-50 dark:bg-amber-950/30',
+  },
+};
+
 const CATEGORY_KEYWORDS: Record<BudgetCategory, string[]> = {
   교육운영비: ['도서', '교재', '학습지', '실험키트', '색연필', '줄넘기'],
   일반수용비: ['복사용지', '볼펜', '토너', '파일', '청소용품', '테이프'],
@@ -65,10 +86,43 @@ const TITLE_HINTS: Record<string, Partial<Record<BudgetCategory, string[]>>> = {
   과학: { 교육운영비: ['실험', '과학 실험 키트'] },
   미술: { 교육운영비: ['색연필', '물감', '도화지'] },
   체육: { 교육운영비: ['줄넘기'] },
+  음악: { 교육운영비: ['이어폰', '헤드셋', '스피커', '마이크'] },
+  방송: { 교육운영비: ['이어폰', '헤드셋', '마이크', '스피커'] },
+  어학: { 교육운영비: ['이어폰', '헤드셋', '마이크'] },
+  온라인: { 교육운영비: ['이어폰', '헤드셋', '마이크', '웹캠'] },
+  원격: { 교육운영비: ['이어폰', '헤드셋', '마이크', '웹캠'] },
+  컴퓨터: { 교육운영비: ['USB', '마우스', '키보드', '헤드셋'] },
+  디지털: { 교육운영비: ['USB', '이어폰', '헤드셋', '마우스', '키보드'] },
   학급: { 교육운영비: ['학습', '도서'], 일반수용비: ['복사용지', '파일'] },
   사무: { 일반수용비: ['복사용지', '볼펜', '파일'] },
   회의: { 업무추진비: ['커피', '차', '회의용 다과'] },
   협의: { 업무추진비: ['커피', '차', '회의용 다과'] },
+};
+
+const TITLE_DIRECT_ITEMS: Record<string, Partial<Record<BudgetCategory, NaraItem[]>>> = {
+  이어폰: {
+    교육운영비: [
+      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 12000, preferred: true },
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 25000, preferred: true },
+    ],
+  },
+  헤드셋: {
+    교육운영비: [
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 25000, preferred: true },
+      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 12000, preferred: true },
+    ],
+  },
+  마이크: {
+    교육운영비: [
+      { thngNm: '마이크', thngCd: 'title-mic', spec: '수업·방송용', unitPrice: 35000, preferred: true },
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '마이크 포함', unitPrice: 25000, preferred: true },
+    ],
+  },
+  복사용지: {
+    일반수용비: [
+      { thngNm: '복사용지', thngCd: 'title-copy-paper', spec: 'A4 2500매', unitPrice: 25000, preferred: true },
+    ],
+  },
 };
 
 interface NaraItem {
@@ -78,6 +132,8 @@ interface NaraItem {
   mnfctCorpNm?: string;
   unitPrice?: number;
   preferred?: boolean;
+  priceSource?: string;
+  priceSourceUrl?: string;
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -113,6 +169,8 @@ function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetIte
     unitPrice,
     quantity,
     subtotal: unitPrice * quantity,
+    priceSource: item?.priceSource ?? (unitPrice > 0 ? '내장 기준단가' : undefined),
+    priceSourceUrl: item?.priceSourceUrl,
   };
 }
 
@@ -169,6 +227,28 @@ function splitDesiredItems(value: string): string[] {
     .split(/[,，\n]/)
     .map(item => item.trim())
     .filter(Boolean);
+}
+
+function getTitleKeywords(title: string): Partial<Record<BudgetCategory, string[]>> {
+  const titleText = title.replace(/\s/g, '');
+  const result: Partial<Record<BudgetCategory, string[]>> = {};
+  for (const [hint, additions] of Object.entries(TITLE_HINTS)) {
+    if (!titleText.includes(hint)) continue;
+    for (const category of CATEGORIES) {
+      const words = additions[category] ?? [];
+      if (words.length === 0) continue;
+      result[category] = [...(result[category] ?? []), ...words];
+    }
+  }
+  for (const [hint, additions] of Object.entries(TITLE_DIRECT_ITEMS)) {
+    if (!titleText.includes(hint)) continue;
+    for (const category of CATEGORIES) {
+      const words = (additions[category] ?? []).map(item => item.thngNm);
+      if (words.length === 0) continue;
+      result[category] = [...(result[category] ?? []), ...words];
+    }
+  }
+  return Object.fromEntries(Object.entries(result).map(([category, words]) => [category, Array.from(new Set(words))])) as Partial<Record<BudgetCategory, string[]>>;
 }
 
 function parseCsvRows(text: string): string[][] {
@@ -246,6 +326,29 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
   return { items, totalBudget };
 }
 
+function sortItemsByCategory(items: BudgetItem[]): BudgetItem[] {
+  return [...items].sort((a, b) => {
+    const categoryDiff = CATEGORIES.indexOf(a.budgetCategory) - CATEGORIES.indexOf(b.budgetCategory);
+    if (categoryDiff !== 0) return categoryDiff;
+    if (a.memo === AUTO_BALANCE_MEMO && b.memo !== AUTO_BALANCE_MEMO) return 1;
+    if (a.memo !== AUTO_BALANCE_MEMO && b.memo === AUTO_BALANCE_MEMO) return -1;
+    return 0;
+  });
+}
+
+function filterItemsByTitleIntent(items: BudgetItem[], title: string): BudgetItem[] {
+  const titleKeywords = getTitleKeywords(title);
+  const intentWords = Array.from(new Set(Object.values(titleKeywords).flat()))
+    .map(word => word.replace(/\s/g, ''))
+    .filter(word => word.length >= 2);
+  if (intentWords.length === 0) return items;
+  const matched = items.filter(item => {
+    const text = `${item.thngNm} ${item.spec ?? ''}`.replace(/\s/g, '');
+    return intentWords.some(word => text.includes(word) || word.includes(text));
+  });
+  return matched.length > 0 ? matched : items;
+}
+
 function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategory; thngNm: string; spec?: string; unitPrice: number; quantity: number }> {
   const trimmed = text.trim();
   const jsonText = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1]?.trim()
@@ -265,11 +368,21 @@ function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategor
 
 function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, string>): Record<BudgetCategory, NaraItem[]> {
   const candidates: Record<BudgetCategory, NaraItem[]> = {
-    교육운영비: [...LOCAL_CATALOG.교육운영비],
-    일반수용비: [...LOCAL_CATALOG.일반수용비],
-    업무추진비: [...LOCAL_CATALOG.업무추진비],
+    교육운영비: [],
+    일반수용비: [],
+    업무추진비: [],
   };
   const titleText = title.replace(/\s/g, '');
+  const titleKeywords = getTitleKeywords(title);
+  for (const [hint, additions] of Object.entries(TITLE_DIRECT_ITEMS)) {
+    if (!titleText.includes(hint)) continue;
+    for (const category of CATEGORIES) {
+      candidates[category] = [
+        ...(additions[category] ?? []),
+        ...candidates[category],
+      ];
+    }
+  }
   for (const [hint, additions] of Object.entries(TITLE_HINTS)) {
     if (!titleText.includes(hint)) continue;
     for (const category of CATEGORIES) {
@@ -281,7 +394,7 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
     }
   }
   for (const category of CATEGORIES) {
-    const words = splitDesiredItems(keywordMap[category]);
+    const words = Array.from(new Set([...splitDesiredItems(keywordMap[category]), ...(titleKeywords[category] ?? [])]));
     const desiredItems = words.map(word => {
       const matched = LOCAL_CATALOG[category].find(item => item.thngNm.includes(word) || item.spec?.includes(word));
       return matched
@@ -292,6 +405,7 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
       ...desiredItems,
       ...LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word))),
       ...candidates[category],
+      ...LOCAL_CATALOG[category],
     ];
   }
   return candidates;
@@ -318,7 +432,7 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
       memo: AUTO_BALANCE_MEMO,
     });
   }
-  return [...userItems, ...adjustmentItems];
+  return sortItemsByCategory([...userItems, ...adjustmentItems]);
 }
 
 export default function BudgetPlannerScreen() {
@@ -328,6 +442,8 @@ export default function BudgetPlannerScreen() {
   const [planTitle, setPlanTitle] = useState('');
 
   const [apiKey, setApiKey] = useState('');
+  const [naverClientId, setNaverClientId] = useState('');
+  const [naverClientSecret, setNaverClientSecret] = useState('');
   const [showApiGuide, setShowApiGuide] = useState(false);
   const [apiGuideStep, setApiGuideStep] = useState(1);
 
@@ -356,6 +472,12 @@ export default function BudgetPlannerScreen() {
   useEffect(() => {
     window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
       if (typeof key === 'string') setApiKey(key);
+    }).catch(() => {});
+    window.electronAPI.getConfig('naverShoppingClientId').then((key: unknown) => {
+      if (typeof key === 'string') setNaverClientId(key);
+    }).catch(() => {});
+    window.electronAPI.getConfig('naverShoppingClientSecret').then((key: unknown) => {
+      if (typeof key === 'string') setNaverClientSecret(key);
     }).catch(() => {});
     window.electronAPI.readJsonData('budget-plans').then((data: unknown) => {
       if (Array.isArray(data)) setPlans(data as BudgetPlan[]);
@@ -401,7 +523,13 @@ export default function BudgetPlannerScreen() {
 
   const saveApiKey = async () => {
     setApiKey(apiKey.trim());
-    await window.electronAPI.setConfig({ naramarketApiKey: apiKey.trim() });
+    setNaverClientId(naverClientId.trim());
+    setNaverClientSecret(naverClientSecret.trim());
+    await window.electronAPI.setConfig({
+      naramarketApiKey: apiKey.trim(),
+      naverShoppingClientId: naverClientId.trim(),
+      naverShoppingClientSecret: naverClientSecret.trim(),
+    });
   };
 
   const handleNewPlan = () => {
@@ -444,22 +572,27 @@ export default function BudgetPlannerScreen() {
 
   const handleSearch = async (keyword: string) => {
     if (!keyword.trim()) return;
-    if (!apiKey.trim()) {
-      setSearchError('나라장터 API 키를 설정해주세요.');
+    const hasNaraKey = !!apiKey.trim();
+    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
+    if (!hasNaraKey && !hasNaverKey) {
+      setSearchError('나라장터 또는 인터넷 가격 조회 API 키를 설정해주세요.');
       return;
     }
     setIsSearching(true);
     setSearchError('');
     try {
       const responses = await Promise.allSettled([
-        window.electronAPI.naramarketSearch(keyword.trim(), apiKey),
-        window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey),
+        hasNaraKey ? window.electronAPI.naramarketSearch(keyword.trim(), apiKey) : Promise.resolve(null),
+        hasNaraKey ? window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey) : Promise.resolve(null),
+        hasNaverKey ? window.electronAPI.naverShoppingSearch(keyword.trim(), naverClientId, naverClientSecret) : Promise.resolve(null),
       ]);
       const listData = responses[0].status === 'fulfilled' ? responses[0].value : null;
       const mallData = responses[1].status === 'fulfilled' ? responses[1].value : null;
+      const naverData = responses[2].status === 'fulfilled' ? responses[2].value : null;
       const listRows = normalizeApiItems(listData, false);
       const mallRows = normalizeApiItems(mallData, true);
-      const merged = uniqueSearchItems([...mallRows, ...listRows]);
+      const naverRows = normalizeNaverShoppingItems(naverData);
+      const merged = uniqueSearchItems([...mallRows, ...naverRows, ...listRows]);
       setSearchResults(merged);
       if (merged.length === 0) {
         const failed = responses.filter(result => result.status === 'rejected');
@@ -483,6 +616,7 @@ export default function BudgetPlannerScreen() {
     const item = makeItem(manualCategory, {
       thngNm: manualName.trim(),
       unitPrice: parseMoney(manualPrice),
+      priceSource: '직접입력',
     });
     item.quantity = Math.max(1, parseInt(manualQty, 10) || 1);
     item.subtotal = calcSubtotal(item);
@@ -494,19 +628,32 @@ export default function BudgetPlannerScreen() {
 
   const collectBudgetCandidates = async (): Promise<Record<BudgetCategory, NaraItem[]>> => {
     const localCandidates = buildLocalCandidates(activePlan?.title ?? planTitle, keywordMap);
+    const titleKeywords = getTitleKeywords(activePlan?.title ?? planTitle);
     const candidates: Record<BudgetCategory, NaraItem[]> = {
       교육운영비: [...localCandidates.교육운영비],
       일반수용비: [...localCandidates.일반수용비],
       업무추진비: [...localCandidates.업무추진비],
     };
 
-    if (!apiKey.trim()) return candidates;
+    const hasNaraKey = !!apiKey.trim();
+    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
+    if (!hasNaraKey && !hasNaverKey) return candidates;
     for (const category of CATEGORIES) {
-      const keywords = splitDesiredItems(keywordMap[category]).slice(0, 3);
+      const keywords = Array.from(new Set([...(titleKeywords[category] ?? []), ...splitDesiredItems(keywordMap[category])])).slice(0, 5);
       for (const keyword of keywords) {
+        if (hasNaverKey) {
+          try {
+            const data = await window.electronAPI.naverShoppingSearch(keyword, naverClientId, naverClientSecret);
+            candidates[category].push(...normalizeNaverShoppingItems(data));
+          } catch {
+            // Internet reference prices are optional.
+          }
+        }
         try {
-          const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
-          candidates[category].unshift(...normalizeApiItems(data, true));
+          if (hasNaraKey) {
+            const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
+            candidates[category].unshift(...normalizeApiItems(data, true));
+          }
         } catch {
           // API 결과가 없어도 내장 후보로 예산안을 계속 만듭니다.
         }
@@ -516,6 +663,7 @@ export default function BudgetPlannerScreen() {
   };
 
   const makeAiBudgetPlan = async (candidates: Record<BudgetCategory, NaraItem[]>): Promise<BudgetItem[]> => {
+    const titleKeywords = getTitleKeywords(activePlan?.title ?? planTitle);
     const candidateSummary = Object.fromEntries(CATEGORIES.map(category => [
       category,
       uniqueItems(candidates[category]).slice(0, 20).map(item => ({
@@ -531,12 +679,15 @@ export default function BudgetPlannerScreen() {
       'budgetCategory는 교육운영비, 일반수용비, 업무추진비 중 하나만 사용해.',
       'unitPrice와 quantity는 양의 정수로 작성해.',
       '예산 제목과 구입 희망 물품의 성격을 분석해 어울리는 품목을 고르고, 과목별 배정액에 가깝게 맞춰.',
-      '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 교육 현장에서 자연스러운 품목을 직접 제안해.',
+      '예산 제목에 특정 품목이나 활동명이 있으면 그 품목·활동과 직접 관련된 품목만 사용해.',
+      '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
+      '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 같은 성격의 품목만 직접 제안해.',
       '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
       JSON.stringify({
         title: activePlan?.title ?? planTitle,
         totalBudget: budgetForCalc,
         allocations,
+        titleKeywords,
         desiredItems: keywordMap,
         candidateItems: candidateSummary,
       }, null, 2),
@@ -545,7 +696,7 @@ export default function BudgetPlannerScreen() {
     const text = await window.electronAPI.aiGenerate(prompt, systemInstruction, { temperature: 0.4 });
     const parsed = parseAiBudgetItems(text);
     if (parsed.length === 0) throw new Error('AI가 사용할 수 있는 예산안 품목을 만들지 못했습니다.');
-    return parsed.map(item => ({
+    const aiItems = parsed.map(item => ({
       id: genId(),
       budgetCategory: item.budgetCategory,
       thngNm: item.thngNm,
@@ -554,7 +705,9 @@ export default function BudgetPlannerScreen() {
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       subtotal: item.unitPrice * item.quantity,
+      priceSource: 'AI 추정',
     }));
+    return filterItemsByTitleIntent(aiItems, activePlan?.title ?? planTitle);
   };
 
   const makeRecommendations = async (): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
@@ -565,7 +718,7 @@ export default function BudgetPlannerScreen() {
       const aiItems = await makeAiBudgetPlan(candidates);
       return { items: balanceItemsByCategory(aiItems, allocations), source: 'ai' };
     } catch {
-      const fallback = buildRecommendation(candidates, allocations);
+      const fallback = filterItemsByTitleIntent(buildRecommendation(candidates, allocations), activePlan?.title ?? planTitle);
       if (fallback.length === 0) throw new Error('예산안 품목을 만들지 못했습니다. Gemini API 키, 예산 금액, 과목별 비율을 확인해주세요.');
       return { items: balanceItemsByCategory(fallback, allocations), source: 'local' };
     }
@@ -623,6 +776,7 @@ export default function BudgetPlannerScreen() {
         String(item.unitPrice),
         String(item.quantity),
         String(item.subtotal),
+        item.priceSource ?? '',
       ]),
       ['', '', '', '', '합계', '', '', String(planTotalUsed)],
       ['', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
@@ -662,6 +816,13 @@ export default function BudgetPlannerScreen() {
     { title: 'EduNote에 저장', desc: '아래 입력란에 인증키를 붙여넣고 저장합니다.' },
   ];
 
+  const PRICE_API_GUIDE_STEPS = [
+    { title: '나라장터 키 발급', desc: '공공데이터포털에서 물품목록정보서비스와 종합쇼핑몰 품목정보 서비스를 활용신청합니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
+    { title: '인터넷 가격 조회 키 발급', desc: '개발자 센터에서 쇼핑 검색 API 애플리케이션을 만들고 Client ID와 Client Secret을 발급받습니다.', action: { label: '개발자 센터 열기', url: 'https://developers.naver.com' } },
+    { title: '키 저장', desc: '아래 입력칸에 나라장터 인증키와 인터넷 가격 조회 키를 붙여넣고 저장합니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
+    { title: '단가 적용 방식', desc: '나라장터 계약단가를 우선 사용하고, 없을 때 인터넷 참고가와 AI 추정 단가를 보조로 사용합니다.' },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
       <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 flex items-center gap-3">
@@ -681,19 +842,19 @@ export default function BudgetPlannerScreen() {
             {showApiGuide && (
               <div className="mb-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-xs">
                 <div className="flex gap-1 mb-2">
-                  {API_GUIDE_STEPS.map((_, i) => (
+                  {PRICE_API_GUIDE_STEPS.map((_, i) => (
                     <button key={i} onClick={() => setApiGuideStep(i + 1)}
                       className={`w-6 h-6 rounded-full text-[10px] font-bold ${apiGuideStep === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
                       {i + 1}
                     </button>
                   ))}
                 </div>
-                <p className="font-bold text-blue-800 dark:text-blue-200 mb-1">{API_GUIDE_STEPS[apiGuideStep - 1].title}</p>
-                <p className="text-blue-700 dark:text-blue-300 leading-relaxed">{API_GUIDE_STEPS[apiGuideStep - 1].desc}</p>
-                {(API_GUIDE_STEPS[apiGuideStep - 1] as any).action && (
-                  <button onClick={() => window.electronAPI.openExternal((API_GUIDE_STEPS[apiGuideStep - 1] as any).action.url)}
+                <p className="font-bold text-blue-800 dark:text-blue-200 mb-1">{PRICE_API_GUIDE_STEPS[apiGuideStep - 1].title}</p>
+                <p className="text-blue-700 dark:text-blue-300 leading-relaxed">{PRICE_API_GUIDE_STEPS[apiGuideStep - 1].desc}</p>
+                {(PRICE_API_GUIDE_STEPS[apiGuideStep - 1] as any).action && (
+                  <button onClick={() => window.electronAPI.openExternal((PRICE_API_GUIDE_STEPS[apiGuideStep - 1] as any).action.url)}
                     className="mt-2 flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:underline font-semibold">
-                    <ExternalLink className="w-3 h-3" /> {(API_GUIDE_STEPS[apiGuideStep - 1] as any).action.label}
+                    <ExternalLink className="w-3 h-3" /> {(PRICE_API_GUIDE_STEPS[apiGuideStep - 1] as any).action.label}
                   </button>
                 )}
               </div>
@@ -704,6 +865,14 @@ export default function BudgetPlannerScreen() {
             </div>
             {apiKey && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
           </section>
+
+          <div className="px-4 pb-4 -mt-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="space-y-2">
+              <input type="password" value={naverClientId} onChange={e => setNaverClientId(e.target.value)} placeholder="인터넷 가격 조회 Client ID" className={inputCls} />
+              <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder="인터넷 가격 조회 Client Secret" className={inputCls} />
+            </div>
+            {(naverClientId && naverClientSecret) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 인터넷 가격 조회 키 설정됨</p>}
+          </div>
 
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-2">
             <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
@@ -775,6 +944,7 @@ export default function BudgetPlannerScreen() {
                   <button key={`${item.thngCd}-${idx}`} onClick={() => addSearchResult(item)}
                     className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30">
                     <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
+                    {item.priceSource && <p className="text-[10px] text-gray-500">{item.priceSource}</p>}
                     <p className="text-[11px] text-gray-400 truncate">{item.spec}{item.mnfctCorpNm ? ` · ${item.mnfctCorpNm}` : ''}</p>
                     <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{item.unitPrice ? `${fmt(item.unitPrice)}원` : '단가 없음'}</p>
                   </button>
@@ -873,8 +1043,9 @@ export default function BudgetPlannerScreen() {
 }
 
 function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
-  const raw = data?.response?.body?.items?.item ?? data?.body?.items?.item ?? [];
-  const rows = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  const raw = data?.response?.body?.items ?? data?.body?.items ?? [];
+  const source = raw?.item ?? raw;
+  const rows = Array.isArray(source) ? source : (source ? [source] : []);
   return rows.map((row: any) => {
     const unitPrice = Number(
       row.cntrctPrceAmt ?? row.cntrctPrce ?? row.cntrctAmt ?? row.prdctUprc ?? row.unitPrice ?? row.price ?? 0
@@ -885,8 +1056,26 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
       spec: row.itemSpec || row.prdctSpecNm || row.stdUntNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || '',
       mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.mnfctCmpyNm || '',
       unitPrice: preferPrice ? unitPrice : undefined,
+      priceSource: preferPrice && unitPrice ? '나라장터 계약단가' : '나라장터 품목목록',
     };
   });
+}
+
+function normalizeNaverShoppingItems(data: any): NaraItem[] {
+  const rows = Array.isArray(data?.items) ? data.items : [];
+  return rows.map((row: any) => {
+    const unitPrice = Number(row.lprice ?? row.lowPrice ?? row.price ?? 0) || undefined;
+    const title = String(row.title ?? '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
+    return {
+      thngNm: title || '(이름 없음)',
+      thngCd: row.productId ? `internet-${row.productId}` : `internet-${title}`,
+      spec: row.mallName ? `인터넷 참고가 · ${row.mallName}` : '인터넷 참고가',
+      mnfctCorpNm: row.maker || row.brand || row.mallName || '',
+      unitPrice,
+      priceSource: '인터넷 참고가',
+      priceSourceUrl: row.link || '',
+    };
+  }).filter((item: NaraItem) => item.thngNm && (item.unitPrice ?? 0) > 0);
 }
 
 function uniqueSearchItems(items: NaraItem[]): NaraItem[] {
@@ -963,18 +1152,21 @@ function EditableBudgetTable({
           </tr>
         </thead>
         <tbody>
-          {items.map((item, idx) => (
-            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          {items.map((item, idx) => {
+            const categoryColor = CATEGORY_COLORS[item.budgetCategory];
+            return (
+            <tr key={item.id} className={categoryColor.row}>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${categoryColor.cell}`}>
                 <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
-                  className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-700 dark:text-gray-300">
+                  className={`w-full text-xs border-none rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 ${categoryColor.select}`}>
                   {CATEGORIES.map(category => <option key={category}>{category}</option>)}
                 </select>
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
                   placeholder="품목명" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                {item.priceSource && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">{item.priceSource}</div>}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input value={item.spec ?? ''} onChange={e => onChange(item.id, { spec: e.target.value })}
@@ -999,11 +1191,12 @@ function EditableBudgetTable({
                 </button>
               </td>
             </tr>
-          ))}
+          );
+          })}
         </tbody>
         <tfoot>
           {CATEGORIES.map(category => (
-            <tr key={category} className="bg-gray-50 dark:bg-gray-700/50 text-xs">
+            <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
               <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
                 {category} 배정 {fmt(allocations[category])}원 / 집행 {fmt(usedByCategory[category])}원
               </td>

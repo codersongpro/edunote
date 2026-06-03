@@ -9,7 +9,7 @@ import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);
@@ -36,6 +36,12 @@ function getDataDir(): string {
   const dir = store.get('appDataDir') || path.join(app.getPath('userData'), 'data');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+function readOpenApiItems(data: any): any[] {
+  const raw = data?.response?.body?.items ?? data?.body?.items ?? [];
+  const rows = raw?.item ?? raw;
+  return Array.isArray(rows) ? rows : (rows ? [rows] : []);
 }
 
 export function registerIpcHandlers(): void {
@@ -200,7 +206,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safe } = all;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safe } = all;
     return safe;
   });
 
@@ -214,7 +220,7 @@ export function registerIpcHandlers(): void {
         store.set(key as any, value as any);
       }
     }
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
     } catch {
@@ -266,7 +272,7 @@ export function registerIpcHandlers(): void {
     });
     if (result.canceled || !result.filePath) return null;
 
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
     for (const fileName of fs.readdirSync(dataDir)) {
@@ -623,11 +629,11 @@ export function registerIpcHandlers(): void {
     const responses = await Promise.allSettled([
       fetchList('krnPrdctNm'),
       fetchList('prdctClsfcNoNm'),
+      fetchList('dtilPrdctClsfcNoNm'),
     ]);
     const items = responses.flatMap(result => {
       if (result.status !== 'fulfilled') return [];
-      const raw = (result.value as any)?.response?.body?.items?.item ?? [];
-      return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+      return readOpenApiItems(result.value);
     });
     if (items.length > 0) {
       return { response: { body: { items: { item: items } } } };
@@ -662,8 +668,7 @@ export function registerIpcHandlers(): void {
     ]);
     const items = responses.flatMap(result => {
       if (result.status !== 'fulfilled') return [];
-      const raw = (result.value as any)?.response?.body?.items?.item ?? [];
-      return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+      return readOpenApiItems(result.value);
     });
     if (items.length > 0) {
       return { response: { body: { items: { item: items } } } };
@@ -672,6 +677,45 @@ export function registerIpcHandlers(): void {
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
+  ipcMain.handle('api:naver-shopping-search', async (_e, {
+    keyword,
+    clientId,
+    clientSecret,
+    pageNo = 1,
+  }: {
+    keyword: string;
+    clientId: string;
+    clientSecret: string;
+    pageNo?: number;
+  }) => {
+    const trimmedKeyword = String(keyword || '').trim();
+    const trimmedId = String(clientId || '').trim();
+    const trimmedSecret = String(clientSecret || '').trim();
+    if (!trimmedKeyword || !trimmedId || !trimmedSecret) {
+      return { items: [] };
+    }
+
+    const params = new URLSearchParams();
+    params.set('query', trimmedKeyword);
+    params.set('display', '20');
+    params.set('start', String(Math.max(1, (pageNo - 1) * 20 + 1)));
+    params.set('sort', 'sim');
+
+    const response = await net.fetch(`https://openapi.naver.com/v1/search/shop.json?${params.toString()}`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 edunote-app',
+        'X-Naver-Client-Id': trimmedId,
+        'X-Naver-Client-Secret': trimmedSecret,
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Internet price API error: ${response.status} ${body.slice(0, 300)}`);
+    }
+    return response.json();
+  });
+
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');

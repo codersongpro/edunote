@@ -86,4 +86,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('api:naramarket-search', { keyword, serviceKey, pageNo }),
   naramarketShoppingSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
     ipcRenderer.invoke('api:naramarket-shopping-search', { keyword, serviceKey, pageNo }),
+  naverShoppingSearch: (keyword: string, clientId: string, clientSecret: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naver-shopping-search', { keyword, clientId, clientSecret, pageNo }),
 });

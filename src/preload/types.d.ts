@@ -48,6 +48,7 @@ export interface ElectronAPI {
   fetchUrlJson(url: string): Promise<string>;
   naramarketSearch(keyword: string, serviceKey: string, pageNo?: number): Promise<unknown>;
   naramarketShoppingSearch(keyword: string, serviceKey: string, pageNo?: number): Promise<unknown>;
+  naverShoppingSearch(keyword: string, clientId: string, clientSecret: string, pageNo?: number): Promise<unknown>;
 }
 
 declare global {

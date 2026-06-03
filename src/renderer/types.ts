@@ -470,6 +470,8 @@ export interface BudgetItem {
   quantity: number;
   subtotal: number;
   memo?: string;
+  priceSource?: string;
+  priceSourceUrl?: string;
 }
 
 export interface BudgetPlan {
