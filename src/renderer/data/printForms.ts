@@ -17,7 +17,7 @@ export interface PrintForm {
 
 const baseStyle = `
 <style>
-  @page { size: A4 portrait; margin: 20mm 22mm; }
+  @page { size: A4 portrait; margin: 14mm 16mm; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; width: 100%; }
   body {
@@ -25,11 +25,12 @@ const baseStyle = `
     font-size: 11pt;
     line-height: 1.7;
     color: #000;
-    min-height: 267mm;
+    min-height: 297mm;
+    padding: 14mm 16mm;
     display: flex;
     flex-direction: column;
   }
-  .page-wrap { flex: 1; display: flex; flex-direction: column; }
+  .page-wrap { flex: 1; height: 269mm; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
   h2 { font-size: 11.5pt; font-weight: bold; margin: 10pt 0 4pt; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 6pt; }
   th, td { border: 1px solid #555; padding: 5pt 7pt; vertical-align: middle; }
@@ -45,6 +46,10 @@ const baseStyle = `
   .small { font-size: 9pt; color: #555; }
   td { white-space: pre-wrap; word-break: break-all; }
   td.nowrap { white-space: nowrap; }
+  @media print {
+    body { min-height: auto; padding: 0; }
+    .page-wrap { height: 269mm; page-break-inside: avoid; }
+  }
 </style>
 `;
 

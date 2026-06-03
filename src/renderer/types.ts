@@ -468,10 +468,14 @@ export interface BudgetItem {
   spec?: string;
   unitPrice: number;
   quantity: number;
+  minQuantity?: number;
+  maxQuantity?: number;
   subtotal: number;
   memo?: string;
   priceSource?: string;
   priceSourceUrl?: string;
+  quantityLocked?: boolean;
+  unitPriceLocked?: boolean;
 }
 
 export interface BudgetPlan {

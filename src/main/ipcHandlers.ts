@@ -725,6 +725,7 @@ export function registerIpcHandlers(): void {
       const pdfData = await win.webContents.printToPDF({
         pageSize: 'A4',
         printBackground: true,
+        preferCSSPageSize: true,
         margins: { marginType: 'none' },
       });
       const saveDir = store.get('saveDir');

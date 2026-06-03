@@ -99,6 +99,16 @@ const TITLE_HINTS: Record<string, Partial<Record<BudgetCategory, string[]>>> = {
   협의: { 업무추진비: ['커피', '차', '회의용 다과'] },
 };
 
+const DESIRED_ITEM_HINTS: Record<string, string[]> = {
+  에듀테크: ['태블릿', '스마트패드', '스마트기기', '코딩교구', '로봇교구', '디지털 교구', '충전기', '보관함'],
+  디지털: ['태블릿', '스마트패드', '스마트기기', '코딩교구', 'USB', '마우스', '키보드'],
+  스마트: ['태블릿', '스마트패드', '스마트기기', '충전기', '보관함'],
+  교구: ['학습교구', '수학교구', '과학교구', '보드게임', '실험키트', '조작교구'],
+  다과: ['다과', '간식', '과자', '쿠키', '음료', '차', '커피'],
+  식비: ['도시락', '식비', '간식', '음료', '다과'],
+  간식: ['간식', '과자', '쿠키', '음료', '다과'],
+};
+
 const TITLE_DIRECT_ITEMS: Record<string, Partial<Record<BudgetCategory, NaraItem[]>>> = {
   이어폰: {
     교육운영비: [
@@ -157,6 +167,12 @@ function calcSubtotal(item: Pick<BudgetItem, 'unitPrice' | 'quantity'>): number 
   return Math.max(0, item.unitPrice) * Math.max(1, item.quantity);
 }
 
+function normalizeQuantity(value: number | undefined, minQuantity?: number, maxQuantity?: number): number {
+  const min = Math.max(1, minQuantity || 1);
+  const max = maxQuantity && maxQuantity >= min ? maxQuantity : undefined;
+  return Math.min(max ?? Number.MAX_SAFE_INTEGER, Math.max(min, value || min));
+}
+
 function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetItem {
   const unitPrice = item?.unitPrice ?? 0;
   const quantity = 1;
@@ -211,6 +227,11 @@ function buildRecommendation(candidates: Record<BudgetCategory, NaraItem[]>, all
 
 function estimateUnitPrice(category: BudgetCategory, itemName: string): number {
   const name = itemName.replace(/\s/g, '');
+  if (/에듀테크|태블릿|스마트패드|스마트기기/.test(name)) return 300000;
+  if (/코딩교구|로봇교구|디지털교구/.test(name)) return 80000;
+  if (/교구|학습교구|수학교구|과학교구|조작교구/.test(name)) return 30000;
+  if (/식비|도시락/.test(name)) return 12000;
+  if (/다과|간식|과자|쿠키|음료/.test(name)) return 15000;
   if (/토너|프린터|카트리지/.test(name)) return 85000;
   if (/키트|세트|보드게임|다과/.test(name)) return 25000;
   if (/도서|책|교재/.test(name)) return 15000;
@@ -227,6 +248,20 @@ function splitDesiredItems(value: string): string[] {
     .split(/[,，\n]/)
     .map(item => item.trim())
     .filter(Boolean);
+}
+
+function expandDesiredWords(words: string[]): string[] {
+  const expanded: string[] = [];
+  for (const word of words) {
+    expanded.push(word);
+    const normalized = word.replace(/\s/g, '');
+    for (const [hint, additions] of Object.entries(DESIRED_ITEM_HINTS)) {
+      if (normalized.includes(hint) || hint.includes(normalized)) {
+        expanded.push(...additions);
+      }
+    }
+  }
+  return Array.from(new Set(expanded.filter(Boolean)));
 }
 
 function getTitleKeywords(title: string): Partial<Record<BudgetCategory, string[]>> {
@@ -349,6 +384,21 @@ function filterItemsByTitleIntent(items: BudgetItem[], title: string): BudgetIte
   return matched.length > 0 ? matched : items;
 }
 
+function filterItemsByDesiredIntent(items: BudgetItem[], keywordMap: Record<BudgetCategory, string>): BudgetItem[] {
+  return CATEGORIES.flatMap(category => {
+    const desiredWords = expandDesiredWords(splitDesiredItems(keywordMap[category]))
+      .map(word => word.replace(/\s/g, ''))
+      .filter(word => word.length >= 2);
+    const categoryItems = items.filter(item => item.budgetCategory === category);
+    if (desiredWords.length === 0) return categoryItems;
+    const matched = categoryItems.filter(item => {
+      const text = `${item.thngNm} ${item.spec ?? ''}`.replace(/\s/g, '');
+      return desiredWords.some(word => text.includes(word) || word.includes(text));
+    });
+    return matched.length > 0 ? matched : categoryItems;
+  });
+}
+
 function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategory; thngNm: string; spec?: string; unitPrice: number; quantity: number }> {
   const trimmed = text.trim();
   const jsonText = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1]?.trim()
@@ -394,7 +444,8 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
     }
   }
   for (const category of CATEGORIES) {
-    const words = Array.from(new Set([...splitDesiredItems(keywordMap[category]), ...(titleKeywords[category] ?? [])]));
+    const explicitWords = splitDesiredItems(keywordMap[category]);
+    const words = Array.from(new Set([...expandDesiredWords(explicitWords), ...(explicitWords.length > 0 ? [] : (titleKeywords[category] ?? []))]));
     const desiredItems = words.map(word => {
       const matched = LOCAL_CATALOG[category].find(item => item.thngNm.includes(word) || item.spec?.includes(word));
       return matched
@@ -412,27 +463,38 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
 }
 
 function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetCategory, number>): BudgetItem[] {
-  const userItems = items.filter(item => item.memo !== AUTO_BALANCE_MEMO);
-  const adjustmentItems: BudgetItem[] = [];
+  const userItems = items
+    .filter(item => item.memo !== AUTO_BALANCE_MEMO)
+    .map(item => {
+      const quantity = normalizeQuantity(item.quantity, item.minQuantity, item.maxQuantity);
+      const unitPrice = Math.max(0, item.unitPrice || 0);
+      return { ...item, quantity, unitPrice, subtotal: unitPrice * quantity };
+    });
+
   for (const category of CATEGORIES) {
-    const used = userItems
+    let used = userItems
       .filter(item => item.budgetCategory === category)
       .reduce((sum, item) => sum + item.subtotal, 0);
-    const remaining = allocations[category] - used;
+    let remaining = allocations[category] - used;
     if (remaining <= 0) continue;
-    adjustmentItems.push({
-      id: genId(),
-      budgetCategory: category,
-      thngNm: '자동 비율 맞춤 조정',
-      thngCd: '',
-      spec: '사용자 수정 행 보존',
-      unitPrice: 1,
-      quantity: remaining,
-      subtotal: remaining,
-      memo: AUTO_BALANCE_MEMO,
-    });
+
+    const categoryItems = userItems
+      .filter(item => item.budgetCategory === category && item.unitPrice > 0 && !item.quantityLocked && !item.unitPriceLocked)
+      .sort((a, b) => a.unitPrice - b.unitPrice);
+
+    for (const item of categoryItems) {
+      if (remaining < item.unitPrice) continue;
+      const maxExtraQuantity = item.maxQuantity && item.maxQuantity > item.quantity ? item.maxQuantity - item.quantity : Number.MAX_SAFE_INTEGER;
+      const extraQuantity = Math.min(Math.floor(remaining / item.unitPrice), maxExtraQuantity);
+      if (extraQuantity <= 0) continue;
+      item.quantity += extraQuantity;
+      item.subtotal = calcSubtotal(item);
+      used += extraQuantity * item.unitPrice;
+      remaining = allocations[category] - used;
+      if (remaining <= 0) break;
+    }
   }
-  return sortItemsByCategory([...userItems, ...adjustmentItems]);
+  return sortItemsByCategory(userItems);
 }
 
 export default function BudgetPlannerScreen() {
@@ -560,11 +622,18 @@ export default function BudgetPlannerScreen() {
   const updateRows = (
     rows: BudgetItem[],
     id: string,
-    patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'spec'>>,
+    patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>,
   ): BudgetItem[] => rows.map(item => {
     if (item.id !== id) return item;
-    const updated = { ...item, ...patch };
-    updated.quantity = Math.max(1, updated.quantity || 1);
+    const updated = {
+      ...item,
+      ...patch,
+      quantityLocked: Object.prototype.hasOwnProperty.call(patch, 'quantity') ? true : item.quantityLocked,
+      unitPriceLocked: Object.prototype.hasOwnProperty.call(patch, 'unitPrice') ? true : item.unitPriceLocked,
+    };
+    updated.minQuantity = updated.minQuantity ? Math.max(1, updated.minQuantity) : undefined;
+    updated.maxQuantity = updated.maxQuantity && updated.maxQuantity >= (updated.minQuantity ?? 1) ? updated.maxQuantity : undefined;
+    updated.quantity = normalizeQuantity(updated.quantity, updated.minQuantity, updated.maxQuantity);
     updated.unitPrice = Math.max(0, updated.unitPrice || 0);
     updated.subtotal = calcSubtotal(updated);
     return updated;
@@ -620,6 +689,8 @@ export default function BudgetPlannerScreen() {
     });
     item.quantity = Math.max(1, parseInt(manualQty, 10) || 1);
     item.subtotal = calcSubtotal(item);
+    item.quantityLocked = true;
+    item.unitPriceLocked = true;
     if (activePlan) updatePlanItems([...activePlan.items, item]);
     setManualName('');
     setManualPrice('');
@@ -639,7 +710,11 @@ export default function BudgetPlannerScreen() {
     const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
     if (!hasNaraKey && !hasNaverKey) return candidates;
     for (const category of CATEGORIES) {
-      const keywords = Array.from(new Set([...(titleKeywords[category] ?? []), ...splitDesiredItems(keywordMap[category])])).slice(0, 5);
+      const explicitWords = splitDesiredItems(keywordMap[category]);
+      const keywords = Array.from(new Set([
+        ...expandDesiredWords(explicitWords),
+        ...(explicitWords.length > 0 ? [] : (titleKeywords[category] ?? [])),
+      ])).slice(0, 6);
       for (const keyword of keywords) {
         if (hasNaverKey) {
           try {
@@ -683,6 +758,9 @@ export default function BudgetPlannerScreen() {
       '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
       '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 같은 성격의 품목만 직접 제안해.',
       '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
+      '사용자가 과목별로 입력한 구입 물품이 있으면 그 입력을 최우선으로 반영해.',
+      '입력한 물품이 넓은 표현이면 같은 목적의 구체 품목으로만 확장해. 예: 에듀테크는 태블릿, 스마트기기, 코딩교구 / 다과와 식비는 간식, 음료, 도시락.',
+      '입력한 물품과 무관한 기본 사무용품이나 다른 과목 물품을 예산 맞추기용으로 섞지 마.',
       JSON.stringify({
         title: activePlan?.title ?? planTitle,
         totalBudget: budgetForCalc,
@@ -707,7 +785,10 @@ export default function BudgetPlannerScreen() {
       subtotal: item.unitPrice * item.quantity,
       priceSource: 'AI 추정',
     }));
-    return filterItemsByTitleIntent(aiItems, activePlan?.title ?? planTitle);
+    const desiredItems = filterItemsByDesiredIntent(aiItems, keywordMap);
+    return Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
+      ? desiredItems
+      : filterItemsByTitleIntent(desiredItems, activePlan?.title ?? planTitle);
   };
 
   const makeRecommendations = async (): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
@@ -718,7 +799,10 @@ export default function BudgetPlannerScreen() {
       const aiItems = await makeAiBudgetPlan(candidates);
       return { items: balanceItemsByCategory(aiItems, allocations), source: 'ai' };
     } catch {
-      const fallback = filterItemsByTitleIntent(buildRecommendation(candidates, allocations), activePlan?.title ?? planTitle);
+      const desiredFallback = filterItemsByDesiredIntent(buildRecommendation(candidates, allocations), keywordMap);
+      const fallback = Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
+        ? desiredFallback
+        : filterItemsByTitleIntent(desiredFallback, activePlan?.title ?? planTitle);
       if (fallback.length === 0) throw new Error('예산안 품목을 만들지 못했습니다. Gemini API 키, 예산 금액, 과목별 비율을 확인해주세요.');
       return { items: balanceItemsByCategory(fallback, allocations), source: 'local' };
     }
@@ -818,8 +902,11 @@ export default function BudgetPlannerScreen() {
 
   const PRICE_API_GUIDE_STEPS = [
     { title: '나라장터 키 발급', desc: '공공데이터포털에서 물품목록정보서비스와 종합쇼핑몰 품목정보 서비스를 활용신청합니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
-    { title: '인터넷 가격 조회 키 발급', desc: '개발자 센터에서 쇼핑 검색 API 애플리케이션을 만들고 Client ID와 Client Secret을 발급받습니다.', action: { label: '개발자 센터 열기', url: 'https://developers.naver.com' } },
-    { title: '키 저장', desc: '아래 입력칸에 나라장터 인증키와 인터넷 가격 조회 키를 붙여넣고 저장합니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
+    { title: '인터넷 가격 조회 신청', desc: '개발자 센터에 로그인한 뒤 애플리케이션 등록 화면에서 새 애플리케이션을 만듭니다.', action: { label: '개발자 센터 열기', url: 'https://developers.naver.com' } },
+    { title: '쇼핑 검색 API 선택', desc: '사용 API 항목에서 검색 API를 선택하고, 세부 항목에서 쇼핑 검색을 사용할 수 있게 설정합니다.' },
+    { title: '사용 환경 입력', desc: '앱 이름은 EduNote처럼 알아보기 쉽게 입력하고, 사용 환경은 PC 프로그램 또는 웹 서비스 항목 중 제공되는 방식에 맞춰 등록합니다.' },
+    { title: '키 복사', desc: '등록이 끝나면 애플리케이션 정보 화면에서 Client ID와 Client Secret을 각각 복사합니다.' },
+    { title: '키 저장', desc: '아래 입력칸에 인터넷 가격 조회 Client ID와 Client Secret을 붙여넣고 저장합니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
     { title: '단가 적용 방식', desc: '나라장터 계약단가를 우선 사용하고, 없을 때 인터넷 참고가와 AI 추정 단가를 보조로 사용합니다.' },
   ];
 
@@ -1125,7 +1212,7 @@ function EditableBudgetTable({
   remaining: number;
   allocations: Record<BudgetCategory, number>;
   usedByCategory: Record<BudgetCategory, number>;
-  onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'spec'>>) => void;
+  onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>) => void;
   onRemove: (id: string) => void;
 }) {
   if (items.length === 0) {
@@ -1146,7 +1233,9 @@ function EditableBudgetTable({
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-52">품목</th>
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-40">규격</th>
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최소</th>
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최대</th>
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계</th>
             <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-10"></th>
           </tr>
@@ -1176,10 +1265,22 @@ function EditableBudgetTable({
                 <input type="number" min={0} value={item.unitPrice}
                   onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
                   className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-right">고정</div>}
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input type="number" min={1} value={item.minQuantity ?? ''}
+                  onChange={e => onChange(item.id, { minQuantity: e.target.value ? parseInt(e.target.value, 10) || 1 : undefined })}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input type="number" min={1} value={item.quantity}
                   onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                {item.quantityLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-center">고정</div>}
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input type="number" min={item.minQuantity ?? 1} value={item.maxQuantity ?? ''}
+                  onChange={e => onChange(item.id, { maxQuantity: e.target.value ? parseInt(e.target.value, 10) || undefined : undefined })}
                   className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs">
@@ -1197,7 +1298,7 @@ function EditableBudgetTable({
         <tfoot>
           {CATEGORIES.map(category => (
             <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
-              <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
+              <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
                 {category} 배정 {fmt(allocations[category])}원 / 집행 {fmt(usedByCategory[category])}원
               </td>
               <td className={`border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-right font-bold ${allocations[category] - usedByCategory[category] < 0 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -1207,17 +1308,17 @@ function EditableBudgetTable({
             </tr>
           ))}
           <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
-            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
+            <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
             <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(usedTotal)}</td>
             <td className="border border-gray-300 dark:border-gray-600"></td>
           </tr>
           <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
-            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
+            <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
             <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(totalBudget)}</td>
             <td className="border border-gray-300 dark:border-gray-600"></td>
           </tr>
           <tr className={`text-sm font-black ${remaining === 0 ? 'bg-green-50 dark:bg-green-900/20' : remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
+            <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
             <td className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-right ${remaining === 0 ? 'text-green-700 dark:text-green-400' : remaining < 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-400'}`}>
               {remaining === 0 ? '0' : fmt(remaining)}
             </td>

@@ -184,11 +184,11 @@ export default function PrintFormScreen() {
           )}
 
           {/* 미리보기 */}
-          <div className="flex-1 overflow-hidden bg-gray-200 dark:bg-gray-950 flex items-start justify-center p-4">
-            <div className="bg-white shadow-xl" style={{ width: '210mm', minHeight: '297mm', padding: '0' }}>
+          <div className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-950 flex items-start justify-center p-6">
+            <div className="bg-white shadow-xl shrink-0" style={{ width: '210mm', height: '297mm', padding: '0' }}>
               <iframe
                 srcDoc={rendered}
-                style={{ width: '100%', minHeight: '297mm', border: 'none', display: 'block' }}
+                style={{ width: '100%', height: '297mm', border: 'none', display: 'block' }}
                 title="양식 미리보기"
               />
             </div>
