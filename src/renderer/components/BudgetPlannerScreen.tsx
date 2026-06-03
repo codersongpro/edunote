@@ -76,6 +76,7 @@ interface NaraItem {
   spec?: string;
   mnfctCorpNm?: string;
   unitPrice?: number;
+  preferred?: boolean;
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -128,7 +129,7 @@ function buildRecommendation(candidates: Record<BudgetCategory, NaraItem[]>, all
     let remaining = allocations[category];
     const priced = uniqueItems(candidates[category])
       .filter(item => (item.unitPrice ?? 0) > 0 && (item.unitPrice ?? 0) <= allocations[category])
-      .sort((a, b) => (b.unitPrice ?? 0) - (a.unitPrice ?? 0));
+      .sort((a, b) => Number(!!b.preferred) - Number(!!a.preferred) || (b.unitPrice ?? 0) - (a.unitPrice ?? 0));
 
     for (const candidate of priced.slice(0, 18)) {
       if (remaining <= 0) break;
@@ -145,6 +146,26 @@ function buildRecommendation(candidates: Record<BudgetCategory, NaraItem[]>, all
     }
   }
   return result;
+}
+
+function estimateUnitPrice(category: BudgetCategory, itemName: string): number {
+  const name = itemName.replace(/\s/g, '');
+  if (/토너|프린터|카트리지/.test(name)) return 85000;
+  if (/키트|세트|보드게임|다과/.test(name)) return 25000;
+  if (/도서|책|교재/.test(name)) return 15000;
+  if (/복사용지|용지/.test(name)) return 25000;
+  if (/커피|음료|차|과자|쿠키/.test(name)) return 15000;
+  if (/파일|테이프|볼펜|펜|수건/.test(name)) return 6000;
+  if (category === '일반수용비') return 10000;
+  if (category === '업무추진비') return 15000;
+  return 12000;
+}
+
+function splitDesiredItems(value: string): string[] {
+  return value
+    .split(/[,，\n]/)
+    .map(item => item.trim())
+    .filter(Boolean);
 }
 
 function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, string>): Record<BudgetCategory, NaraItem[]> {
@@ -165,8 +186,15 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
     }
   }
   for (const category of CATEGORIES) {
-    const words = keywordMap[category].split(',').map(value => value.trim()).filter(Boolean);
+    const words = splitDesiredItems(keywordMap[category]);
+    const desiredItems = words.map(word => {
+      const matched = LOCAL_CATALOG[category].find(item => item.thngNm.includes(word) || item.spec?.includes(word));
+      return matched
+        ? { ...matched, preferred: true }
+        : { thngNm: word, thngCd: `desired-${category}-${word}`, spec: '직접 입력', unitPrice: estimateUnitPrice(category, word), preferred: true };
+    });
     candidates[category] = [
+      ...desiredItems,
       ...LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word))),
       ...candidates[category],
     ];
@@ -376,7 +404,7 @@ export default function BudgetPlannerScreen() {
 
     if (apiKey.trim()) {
       for (const category of CATEGORIES) {
-        const keywords = keywordMap[category].split(',').map(v => v.trim()).filter(Boolean).slice(0, 3);
+        const keywords = splitDesiredItems(keywordMap[category]).slice(0, 3);
         for (const keyword of keywords) {
           try {
             const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
@@ -394,13 +422,15 @@ export default function BudgetPlannerScreen() {
   };
 
   const handleMakeRecommendations = async () => {
+    if (!activePlan) return;
     setRecommendationStatus('loading');
     setRecommendationMessage('');
     try {
       const next = await makeRecommendations();
       setRecommendations(next);
       setRecommendationStatus('ready');
-      setRecommendationMessage(`추천 품목 ${next.length}개를 만들었습니다.`);
+      setActivePlan({ ...activePlan, items: next.map(item => ({ ...item, id: genId() })), updatedAt: Date.now() });
+      setRecommendationMessage(`구입 물품을 바탕으로 예산안 ${next.length}개 행을 만들었습니다.`);
     } catch (e: any) {
       setRecommendationStatus('error');
       setRecommendationMessage(e?.message ?? '추천안을 만들지 못했습니다.');
@@ -533,7 +563,7 @@ export default function BudgetPlannerScreen() {
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
             <button onClick={() => setShowRatio(v => !v)} className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
               {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              2. 과목별 비율과 검색어
+              2. 과목별 비율과 구입하고자 하는 물품
             </button>
             {showRatio && CATEGORIES.map(category => (
               <div key={category} className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2">
@@ -548,7 +578,7 @@ export default function BudgetPlannerScreen() {
                   />
                   <span className="text-xs text-gray-500">% · {fmt(allocations[category])}원</span>
                 </div>
-                <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder="검색어를 쉼표로 구분" className={inputCls} />
+                <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder="구입 물품을 쉼표로 구분" className={inputCls} />
               </div>
             ))}
           </section>
@@ -642,7 +672,7 @@ export default function BudgetPlannerScreen() {
                   </div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     <button onClick={handleMakeRecommendations} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1`}>
-                      <Wand2 className="w-3.5 h-3.5" />추천안 만들기
+                      <Wand2 className="w-3.5 h-3.5" />예산안 만들기
                     </button>
                     <button onClick={applyRecommendations} disabled={recommendations.length === 0} className={`${btnCls} bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1`}>
                       추천안 적용
@@ -680,7 +710,7 @@ export default function BudgetPlannerScreen() {
                   </div>
                   <EditableBudgetTable
                     items={recommendations}
-                    emptyText="추천안 만들기를 누르거나 왼쪽에서 추천안에 품목을 추가하세요"
+                    emptyText="예산안 만들기를 누르거나 왼쪽에서 추천안에 품목을 추가하세요"
                     totalBudget={budgetForCalc}
                     usedTotal={recommendationTotal}
                     remaining={recommendationRemaining}
