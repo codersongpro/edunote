@@ -46,6 +46,10 @@ export enum AppMode {
   MY_AI_TOOLS_SHARED = 'MY_AI_TOOLS_SHARED',
   // 예산사용계획
   BUDGET_PLANNER = 'BUDGET_PLANNER',
+  // 공문 보관함
+  DOC_ARCHIVE = 'DOC_ARCHIVE',
+  // 양식 인쇄
+  PRINT_FORM = 'PRINT_FORM',
 }
 
 // ─── Custom Tool ───────────────────────────────────────────────────
@@ -69,6 +73,8 @@ export interface CustomTool {
   author?: string;
   createdAt: string;
   updatedAt: string;
+  pinned?: boolean;
+  pinnedAt?: number;
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────

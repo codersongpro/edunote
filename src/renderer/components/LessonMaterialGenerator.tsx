@@ -3,6 +3,7 @@ import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
   Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, ExternalLink,
+  BookMarked, Trash2, FolderOpen,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -17,6 +18,16 @@ import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/c
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
+
+interface SavedWorksheet {
+  id: string;
+  title: string;
+  grade: string;
+  subject: string;
+  html: string;
+  createdAt: number;
+  updatedAt: number;
+}
 
 interface LibraryResource {
   id: string;
@@ -97,6 +108,9 @@ const LessonMaterialGenerator: React.FC = () => {
     window.electronAPI.readJsonData('resource-library')
       .then((data: unknown) => setLibraryResources(Array.isArray(data) ? data.slice(0, 30) as LibraryResource[] : []))
       .catch(() => setLibraryResources([]));
+    window.electronAPI.readJsonData('saved-worksheets')
+      .then((data: unknown) => setSavedWorksheets(Array.isArray(data) ? data as SavedWorksheet[] : []))
+      .catch(() => setSavedWorksheets([]));
   }, []);
 
   const appendResourceToDetails = (resourceId: string) => {
@@ -168,6 +182,8 @@ const LessonMaterialGenerator: React.FC = () => {
 
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
   const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
+  const [savedWorksheets, setSavedWorksheets] = useState<SavedWorksheet[]>([]);
+  const [worksheetTab, setWorksheetTab] = useState<'generate' | 'saved'>('generate');
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
   const [planContent, setPlanContent] = useState<string>('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
@@ -419,6 +435,35 @@ li{margin-bottom:5pt;line-height:1.6;}
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     await window.electronAPI.saveFile(content, `${topic}(${d}).html`, 'html');
+  };
+
+  const handleSaveWorksheetToLibrary = async () => {
+    if (!worksheetHtml) return;
+    const ws: SavedWorksheet = {
+      id: crypto.randomUUID(),
+      title: `${subject} - ${topic}`,
+      grade: selectedGradeLabel,
+      subject,
+      html: worksheetHtml,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const updated = [ws, ...savedWorksheets];
+    setSavedWorksheets(updated);
+    await window.electronAPI.writeJsonData('saved-worksheets', updated);
+    alert('워크시트가 저장되었습니다.');
+  };
+
+  const handleDeleteWorksheet = async (id: string) => {
+    if (!confirm('삭제할까요?')) return;
+    const updated = savedWorksheets.filter(w => w.id !== id);
+    setSavedWorksheets(updated);
+    await window.electronAPI.writeJsonData('saved-worksheets', updated);
+  };
+
+  const handleLoadWorksheet = (ws: SavedWorksheet) => {
+    setWorksheetHtml(ws.html);
+    setWorksheetTab('generate');
   };
 
   const currentTypeHasResult =
@@ -797,11 +842,79 @@ li{margin-bottom:5pt;line-height:1.6;}
           )}
 
           {/* Worksheet result — editable via GeneratedDisplay */}
-          {contentType === 'WORKSHEET' && worksheetHtml && (
-            <GeneratedDisplay
-              content={worksheetHtml}
-              title={`${topic} 워크시트`}
-            />
+          {contentType === 'WORKSHEET' && (
+            <div className="flex flex-col flex-1 overflow-hidden gap-2">
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setWorksheetTab('generate')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${worksheetTab === 'generate' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                >
+                  생성된 워크시트
+                </button>
+                <button
+                  onClick={() => setWorksheetTab('saved')}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${worksheetTab === 'saved' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                >
+                  <BookMarked className="w-3.5 h-3.5" />
+                  저장된 워크시트 {savedWorksheets.length > 0 && <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-1.5 rounded-full">{savedWorksheets.length}</span>}
+                </button>
+                {worksheetTab === 'generate' && worksheetHtml && (
+                  <button
+                    onClick={handleSaveWorksheetToLibrary}
+                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
+                  >
+                    <BookMarked className="w-3.5 h-3.5" />
+                    저장하기
+                  </button>
+                )}
+              </div>
+              {worksheetTab === 'generate' && worksheetHtml && (
+                <GeneratedDisplay content={worksheetHtml} title={`${topic} 워크시트`} />
+              )}
+              {worksheetTab === 'generate' && !worksheetHtml && (
+                <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm">아직 생성된 워크시트가 없습니다.</div>
+              )}
+              {worksheetTab === 'saved' && (
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  {savedWorksheets.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-gray-600">
+                      <BookMarked className="w-8 h-8 mb-2 opacity-40" />
+                      <p className="text-sm">저장된 워크시트가 없습니다.</p>
+                    </div>
+                  ) : (
+                    savedWorksheets.map(ws => (
+                      <div key={ws.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{ws.title}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{ws.grade} · {new Date(ws.createdAt).toLocaleDateString('ko-KR')}</p>
+                        </div>
+                        <button
+                          onClick={() => handleLoadWorksheet(ws)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors shrink-0"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          불러오기
+                        </button>
+                        <button
+                          onClick={() => {
+                            const d = new Date(ws.createdAt);
+                            const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+                            (window.electronAPI as any).savePdf(ws.html, `${ws.title}(${ds}).pdf`).catch(() => alert('PDF 저장 오류'));
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-300 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shrink-0"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          PDF
+                        </button>
+                        <button onClick={() => handleDeleteWorksheet(ws.id)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Quiz result — iframe preview + HTML source editor */}

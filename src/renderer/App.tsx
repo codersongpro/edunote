@@ -28,10 +28,12 @@ import {
   FileText, Eye, StickyNote, GraduationCap, MessageCircle, CalendarDays,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical, ClipboardList, Wrench, Download, Wallet,
+  GripVertical, ClipboardList, Wrench, Download, Wallet, Archive, Printer,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
+import DocArchivePanel from './components/DocArchivePanel';
+import PrintFormScreen from './components/PrintFormScreen';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -384,6 +386,8 @@ const App: React.FC = () => {
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
     { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '공문서 작성기' },
+    { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
+    { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
     { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산사용계획' },
   ];
 
@@ -418,7 +422,7 @@ const App: React.FC = () => {
     setDraggedMenu(null);
   };
 
-  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER];
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM];
 
   const contentAccent =
     STUDENT_RECORD_MODES.includes(mode)
@@ -444,6 +448,8 @@ const App: React.FC = () => {
       case AppMode.OFFICIAL_DOC_ANALYZER: return <OfficialDocAnalyzer />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.BUDGET_PLANNER: return <BudgetPlannerScreen />;
+      case AppMode.DOC_ARCHIVE: return <DocArchivePanel />;
+      case AppMode.PRINT_FORM: return <PrintFormScreen />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.STUDENT_RECORD_GROUP: return null;

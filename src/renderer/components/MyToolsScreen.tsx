@@ -9,6 +9,7 @@ import { parseImportedTools, validateImportedTool } from '../lib/security';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
   RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
+  Pin, PinOff, Copy,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -195,12 +196,19 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     setCategoryFilter('all');
   };
 
-  const filteredTools = tools.filter(t => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || t.name.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q);
-    const matchCat = categoryFilter === 'all' || t.category === categoryFilter;
-    return matchSearch && matchCat;
-  });
+  const filteredTools = tools
+    .filter(t => {
+      const q = search.toLowerCase();
+      const matchSearch = !q || t.name.toLowerCase().includes(q) || (t.description ?? '').toLowerCase().includes(q);
+      const matchCat = categoryFilter === 'all' || t.category === categoryFilter;
+      return matchSearch && matchCat;
+    })
+    .sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      if (a.pinned && b.pinned) return (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0);
+      return 0;
+    });
 
   const filteredMarket = marketEntries.filter(e => {
     const q = search.toLowerCase();
@@ -255,6 +263,19 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   const handleDelete = async (id: string) => {
     if (!confirm('이 스킬을 삭제할까요?')) return;
     saveTools(tools.filter(t => t.id !== id));
+  };
+
+  const handleTogglePin = (id: string) => {
+    const updated = tools.map(t =>
+      t.id === id ? { ...t, pinned: !t.pinned, pinnedAt: !t.pinned ? Date.now() : undefined } : t,
+    );
+    saveTools(updated);
+  };
+
+  const handleDuplicate = (tool: CustomTool) => {
+    const now = new Date().toISOString();
+    const clone: CustomTool = { ...tool, id: crypto.randomUUID(), name: `${tool.name} (복사본)`, createdAt: now, updatedAt: now, pinned: false, pinnedAt: undefined };
+    saveTools([clone, ...tools]);
   };
 
   const handleExport = async (tool: CustomTool) => {
@@ -584,17 +605,23 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredTools.map(tool => (
-                  <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    onRun={() => { setSelectedTool(tool); setView('run'); }}
-                    onEdit={() => { setSelectedTool(tool); setView('edit'); }}
-                    onEditHtml={() => { setSelectedTool(tool); setView('edit-html'); }}
-                    onExport={() => handleExport(tool)}
-                    onDelete={() => handleDelete(tool.id)}
-                    onShare={() => setSharingTool(tool)}
-                  />
+                {filteredTools.map((tool, idx) => (
+                  <React.Fragment key={tool.id}>
+                    {idx > 0 && tool.pinned === false && filteredTools[idx - 1].pinned && (
+                      <div className="col-span-full border-t border-dashed border-gray-200 dark:border-gray-700 my-1" />
+                    )}
+                    <ToolCard
+                      tool={tool}
+                      onRun={() => { setSelectedTool(tool); setView('run'); }}
+                      onEdit={() => { setSelectedTool(tool); setView('edit'); }}
+                      onEditHtml={() => { setSelectedTool(tool); setView('edit-html'); }}
+                      onExport={() => handleExport(tool)}
+                      onDelete={() => handleDelete(tool.id)}
+                      onShare={() => setSharingTool(tool)}
+                      onTogglePin={() => handleTogglePin(tool.id)}
+                      onDuplicate={() => handleDuplicate(tool)}
+                    />
+                  </React.Fragment>
                 ))}
               </div>
             )}
@@ -725,7 +752,9 @@ const ToolCard: React.FC<{
   onExport: () => void;
   onDelete: () => void;
   onShare: () => void;
-}> = ({ tool, onRun, onEdit, onEditHtml, onExport, onDelete, onShare }) => {
+  onTogglePin: () => void;
+  onDuplicate: () => void;
+}> = ({ tool, onRun, onEdit, onEditHtml, onExport, onDelete, onShare, onTogglePin, onDuplicate }) => {
   const isHtmlApp = tool.toolType === 'html-app';
   const handleRun = () => {
     if (isHtmlApp && tool.htmlContent) {
@@ -744,6 +773,7 @@ const ToolCard: React.FC<{
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
+            {tool.pinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
             {isHtmlApp && <Monitor className="w-3.5 h-3.5 text-violet-500 shrink-0" />}
             <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</h3>
           </div>
@@ -786,6 +816,12 @@ const ToolCard: React.FC<{
         >
           <Pencil className="w-3.5 h-3.5" />
           수정
+        </button>
+        <button onClick={onTogglePin} className={`p-2 transition-colors ${tool.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`} title={tool.pinned ? '고정 해제' : '상단 고정'}>
+          {tool.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+        </button>
+        <button onClick={onDuplicate} className="p-2 text-gray-400 hover:text-blue-500 transition-colors" title="복제">
+          <Copy className="w-4 h-4" />
         </button>
         <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
           <Share2 className="w-4 h-4" />
