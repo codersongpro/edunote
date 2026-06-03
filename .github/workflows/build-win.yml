@@ -8,6 +8,13 @@ on:
       - main
     paths:
       - 'package.json'
+      - 'package-lock.json'
+      - 'RELEASE_NOTES.md'
+      - 'electron-builder.yml'
+      - 'electron.vite.config.ts'
+      - 'src/**'
+      - 'build/**'
+      - '.github/workflows/build-win.yml'
   workflow_dispatch:
 
 permissions:
