@@ -9,7 +9,7 @@ import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);
@@ -589,19 +589,77 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
     // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
-    const params = new URLSearchParams();
-    params.set('pageNo', String(pageNo));
-    params.set('numOfRows', '30');
-    params.set('krnPrdctNm', keyword);  // 한글품목명으로 검색
-    params.set('type', 'json');
-    // 오퍼레이션명: getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch (품목 목록 조회)
-    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch?ServiceKey=${encodedKey}&${params.toString()}`;
-    const response = await net.fetch(rawUrl);
-    if (!response.ok) {
-      const body = await response.text().catch(() => '');
-      throw new Error(`API 오류: ${response.status} — ${body.slice(0, 500)}`);
+    const fetchList = async (queryKey: string) => {
+      const params = new URLSearchParams();
+      params.set('pageNo', String(pageNo));
+      params.set('numOfRows', '30');
+      params.set(queryKey, keyword);
+      params.set('type', 'json');
+      const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch?ServiceKey=${encodedKey}&${params.toString()}`;
+      const response = await net.fetch(rawUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`API 오류: ${response.status} — ${body.slice(0, 500)}`);
+      }
+      return response.json();
+    };
+
+    const responses = await Promise.allSettled([
+      fetchList('krnPrdctNm'),
+      fetchList('prdctClsfcNoNm'),
+    ]);
+    const items = responses.flatMap(result => {
+      if (result.status !== 'fulfilled') return [];
+      const raw = (result.value as any)?.response?.body?.items?.item ?? [];
+      return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    });
+    if (items.length > 0) {
+      return { response: { body: { items: { item: items } } } };
     }
-    return response.json();
+    const firstError = responses.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (firstError) throw firstError.reason;
+    return { response: { body: { items: { item: [] } } } };
+  });
+
+  ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+    const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
+    const fetchMall = async (queryKey: string) => {
+      const params = new URLSearchParams();
+      params.set('pageNo', String(pageNo));
+      params.set('numOfRows', '30');
+      params.set(queryKey, keyword);
+      params.set('type', 'json');
+      const rawUrl = `https://apis.data.go.kr/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList?ServiceKey=${encodedKey}&${params.toString()}`;
+      const response = await net.fetch(rawUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`종합쇼핑몰 API 오류: ${response.status} — ${body.slice(0, 500)}`);
+      }
+      return response.json();
+    };
+
+    const responses = await Promise.allSettled([
+      fetchMall('prdctIdntNoNm'),
+      fetchMall('prdctClsfcNoNm'),
+      fetchMall('dtilPrdctClsfcNoNm'),
+    ]);
+    const items = responses.flatMap(result => {
+      if (result.status !== 'fulfilled') return [];
+      const raw = (result.value as any)?.response?.body?.items?.item ?? [];
+      return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    });
+    if (items.length > 0) {
+      return { response: { body: { items: { item: items } } } };
+    }
+    const firstError = responses.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (firstError) throw firstError.reason;
+    return { response: { body: { items: { item: [] } } } };
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────

@@ -1,42 +1,178 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
-import { Search, Plus, Trash2, Save, Download, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertCircle, CheckCircle2, Wand2, PenLine } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Download,
+  ExternalLink,
+  Plus,
+  RefreshCw,
+  Save,
+  Search,
+  Trash2,
+  Wand2,
+} from 'lucide-react';
 
-// ─── 예산 과목별 추천 키워드 ──────────────────────────────────────
-const CATEGORY_KEYWORDS: Record<BudgetCategory, { label: string; keywords: string[] }[]> = {
+const CATEGORIES: BudgetCategory[] = ['교육운영비', '일반수용비', '업무추진비'];
+
+const CATEGORY_KEYWORDS: Record<BudgetCategory, string[]> = {
+  교육운영비: ['도서', '교재', '학습지', '실험키트', '색연필', '줄넘기'],
+  일반수용비: ['복사용지', '볼펜', '토너', '파일', '청소용품', '테이프'],
+  업무추진비: ['커피', '음료', '과자', '차', '쿠키', '머그컵'],
+};
+
+const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
   교육운영비: [
-    { label: '교재·도서', keywords: ['도서', '교재', '학습지', '문제집', '참고서'] },
-    { label: '미술·공예', keywords: ['색연필', '크레파스', '물감', '도화지', '스케치북', '찰흙'] },
-    { label: '과학·실험', keywords: ['실험키트', '돋보기', '저울', '비커', '자석'] },
-    { label: '체육·활동', keywords: ['줄넘기', '공', '훌라후프', '배드민턴', '탁구채'] },
-    { label: '음악·악기', keywords: ['리코더', '멜로디언', '캐스터네츠', '탬버린'] },
-    { label: 'ICT·디지털', keywords: ['USB', '마우스', '이어폰', '태블릿', '케이블'] },
+    { thngNm: '학급 문고 도서', thngCd: 'local-book', spec: '권', unitPrice: 15000 },
+    { thngNm: '학습 활동지 인쇄 세트', thngCd: 'local-worksheet', spec: '묶음', unitPrice: 12000 },
+    { thngNm: '색연필 세트', thngCd: 'local-colored-pencil', spec: '12색', unitPrice: 7000 },
+    { thngNm: '수채화 물감', thngCd: 'local-paint', spec: '12색', unitPrice: 8500 },
+    { thngNm: '도화지', thngCd: 'local-paper-art', spec: '100매', unitPrice: 9000 },
+    { thngNm: '과학 실험 키트', thngCd: 'local-science-kit', spec: '개', unitPrice: 18000 },
+    { thngNm: '줄넘기', thngCd: 'local-rope', spec: '개', unitPrice: 6000 },
+    { thngNm: '학습용 보드게임', thngCd: 'local-boardgame', spec: '개', unitPrice: 22000 },
+    { thngNm: 'USB 메모리', thngCd: 'local-usb', spec: '32GB', unitPrice: 9000 },
   ],
   일반수용비: [
-    { label: '사무용품', keywords: ['복사용지', '볼펜', '스테이플러', '클립', '메모지', '바인더'] },
-    { label: '인쇄·소모품', keywords: ['토너', '잉크', '레이블지', 'OHP필름'] },
-    { label: '청소·위생', keywords: ['청소용품', '세제', '걸레', '쓰레기봉투', '화장지', '손세정제'] },
-    { label: '사무기기', keywords: ['계산기', '타공기', '코팅기', '라미네이트'] },
-    { label: '포장·보관', keywords: ['파일', '서류함', '보관함', '지퍼백', '테이프'] },
+    { thngNm: '복사용지', thngCd: 'local-copy-paper', spec: 'A4 2500매', unitPrice: 25000 },
+    { thngNm: '볼펜', thngCd: 'local-pen', spec: '12개입', unitPrice: 6000 },
+    { thngNm: '클리어 파일', thngCd: 'local-clear-file', spec: '20매', unitPrice: 5000 },
+    { thngNm: '바인더', thngCd: 'local-binder', spec: '개', unitPrice: 4500 },
+    { thngNm: '스테이플러', thngCd: 'local-stapler', spec: '개', unitPrice: 8000 },
+    { thngNm: '테이프', thngCd: 'local-tape', spec: '3개입', unitPrice: 4500 },
+    { thngNm: '프린터 토너', thngCd: 'local-toner', spec: '개', unitPrice: 85000 },
+    { thngNm: '청소용품 세트', thngCd: 'local-cleaning', spec: '세트', unitPrice: 18000 },
+    { thngNm: '손세정제', thngCd: 'local-sanitizer', spec: '500ml', unitPrice: 7000 },
   ],
   업무추진비: [
-    { label: '음료·다과', keywords: ['커피', '음료', '주스', '차', '물'] },
-    { label: '간식·제과', keywords: ['과자', '빵', '케이크', '쿠키', '사탕'] },
-    { label: '선물·기념품', keywords: ['선물세트', '수건', '에코백', '노트', '머그컵'] },
-    { label: '회의용품', keywords: ['화이트보드', '마커', '포스트잇', '네임택'] },
+    { thngNm: '커피', thngCd: 'local-coffee', spec: '박스', unitPrice: 18000 },
+    { thngNm: '차 세트', thngCd: 'local-tea', spec: '박스', unitPrice: 16000 },
+    { thngNm: '생수', thngCd: 'local-water', spec: '묶음', unitPrice: 7000 },
+    { thngNm: '음료', thngCd: 'local-drink', spec: '박스', unitPrice: 15000 },
+    { thngNm: '쿠키', thngCd: 'local-cookie', spec: '상자', unitPrice: 12000 },
+    { thngNm: '과자 세트', thngCd: 'local-snack', spec: '상자', unitPrice: 10000 },
+    { thngNm: '회의용 다과', thngCd: 'local-meeting-snack', spec: '세트', unitPrice: 30000 },
+    { thngNm: '기념품 수건', thngCd: 'local-towel', spec: '개', unitPrice: 5000 },
   ],
 };
 
+const TITLE_HINTS: Record<string, Partial<Record<BudgetCategory, string[]>>> = {
+  독서: { 교육운영비: ['도서', '학급 문고 도서'] },
+  도서: { 교육운영비: ['도서', '학급 문고 도서'] },
+  과학: { 교육운영비: ['실험', '과학 실험 키트'] },
+  미술: { 교육운영비: ['색연필', '물감', '도화지'] },
+  체육: { 교육운영비: ['줄넘기'] },
+  학급: { 교육운영비: ['학습', '도서'], 일반수용비: ['복사용지', '파일'] },
+  사무: { 일반수용비: ['복사용지', '볼펜', '파일'] },
+  회의: { 업무추진비: ['커피', '차', '회의용 다과'] },
+  협의: { 업무추진비: ['커피', '차', '회의용 다과'] },
+};
+
 interface NaraItem {
-  thngNm: string;       // 표시용 (krnPrdctNm 또는 prdctClsfcNoNm 에서 채움)
-  thngCd: string;       // prdctIdntNo
-  spec?: string;        // prdctClsfcNoNm (품명)
-  mnfctCorpNm?: string; // 제조업체명
+  thngNm: string;
+  thngCd: string;
+  spec?: string;
+  mnfctCorpNm?: string;
   unitPrice?: number;
 }
 
+type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
+
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 const genId = () => crypto.randomUUID();
+const inputCls = 'w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500';
+const btnCls = 'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-40';
+
+function parseMoney(value: string): number {
+  return parseInt(value.replace(/,/g, ''), 10) || 0;
+}
+
+function moneyInput(value: string): string {
+  return value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function calcSubtotal(item: Pick<BudgetItem, 'unitPrice' | 'quantity'>): number {
+  return Math.max(0, item.unitPrice) * Math.max(1, item.quantity);
+}
+
+function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetItem {
+  const unitPrice = item?.unitPrice ?? 0;
+  const quantity = 1;
+  return {
+    id: genId(),
+    budgetCategory: category,
+    thngNm: item?.thngNm || '',
+    thngCd: item?.thngCd || '',
+    spec: item?.spec || '',
+    unitPrice,
+    quantity,
+    subtotal: unitPrice * quantity,
+  };
+}
+
+function uniqueItems(items: NaraItem[]): NaraItem[] {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    const key = `${item.thngCd}-${item.thngNm}-${item.unitPrice}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return !!item.thngNm && (item.unitPrice ?? 0) > 0;
+  });
+}
+
+function buildRecommendation(candidates: Record<BudgetCategory, NaraItem[]>, allocations: Record<BudgetCategory, number>): BudgetItem[] {
+  const result: BudgetItem[] = [];
+  for (const category of CATEGORIES) {
+    let remaining = allocations[category];
+    const priced = uniqueItems(candidates[category])
+      .filter(item => (item.unitPrice ?? 0) > 0 && (item.unitPrice ?? 0) <= allocations[category])
+      .sort((a, b) => (b.unitPrice ?? 0) - (a.unitPrice ?? 0));
+
+    for (const candidate of priced.slice(0, 18)) {
+      if (remaining <= 0) break;
+      const unitPrice = candidate.unitPrice ?? 0;
+      if (unitPrice <= 0 || unitPrice > remaining) continue;
+      const quantity = Math.max(1, Math.floor(remaining / unitPrice));
+      const subtotal = unitPrice * quantity;
+      result.push({
+        ...makeItem(category, candidate),
+        quantity,
+        subtotal,
+      });
+      remaining -= subtotal;
+    }
+  }
+  return result;
+}
+
+function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, string>): Record<BudgetCategory, NaraItem[]> {
+  const candidates: Record<BudgetCategory, NaraItem[]> = {
+    교육운영비: [...LOCAL_CATALOG.교육운영비],
+    일반수용비: [...LOCAL_CATALOG.일반수용비],
+    업무추진비: [...LOCAL_CATALOG.업무추진비],
+  };
+  const titleText = title.replace(/\s/g, '');
+  for (const [hint, additions] of Object.entries(TITLE_HINTS)) {
+    if (!titleText.includes(hint)) continue;
+    for (const category of CATEGORIES) {
+      const words = additions[category] ?? [];
+      candidates[category] = [
+        ...LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word))),
+        ...candidates[category],
+      ];
+    }
+  }
+  for (const category of CATEGORIES) {
+    const words = keywordMap[category].split(',').map(value => value.trim()).filter(Boolean);
+    candidates[category] = [
+      ...LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word))),
+      ...candidates[category],
+    ];
+  }
+  return candidates;
+}
 
 export default function BudgetPlannerScreen() {
   const [plans, setPlans] = useState<BudgetPlan[]>([]);
@@ -44,199 +180,267 @@ export default function BudgetPlannerScreen() {
   const [totalBudget, setTotalBudget] = useState('');
   const [planTitle, setPlanTitle] = useState('');
 
-  // 검색
+  const [apiKey, setApiKey] = useState('');
+  const [showApiGuide, setShowApiGuide] = useState(false);
+  const [apiGuideStep, setApiGuideStep] = useState(1);
+
+  const [ratioEdu, setRatioEdu] = useState('60');
+  const [ratioGeneral, setRatioGeneral] = useState('30');
+  const [ratioBiz, setRatioBiz] = useState('10');
+  const [keywordEdu, setKeywordEdu] = useState(CATEGORY_KEYWORDS.교육운영비.join(', '));
+  const [keywordGeneral, setKeywordGeneral] = useState(CATEGORY_KEYWORDS.일반수용비.join(', '));
+  const [keywordBiz, setKeywordBiz] = useState(CATEGORY_KEYWORDS.업무추진비.join(', '));
+
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory>('교육운영비');
   const [searchResults, setSearchResults] = useState<NaraItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [showApiGuide, setShowApiGuide] = useState(false);
-  const [apiGuideStep, setApiGuideStep] = useState(1);
+  const [searchTarget, setSearchTarget] = useState<'plan' | 'recommendation'>('plan');
 
-  // 필터
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [minQty, setMinQty] = useState('1');
-  const [maxQty, setMaxQty] = useState('');
-
-  // 직접 입력
   const [manualName, setManualName] = useState('');
   const [manualPrice, setManualPrice] = useState('');
   const [manualQty, setManualQty] = useState('1');
   const [manualCategory, setManualCategory] = useState<BudgetCategory>('교육운영비');
-  const [searchTab, setSearchTab] = useState<'search' | 'manual'>('search');
+  const [manualTarget, setManualTarget] = useState<'plan' | 'recommendation'>('plan');
 
-  // 예산 비율 배분
-  const [showRatio, setShowRatio] = useState(false);
-  const [ratioEdu, setRatioEdu] = useState('60');
-  const [ratioGeneral, setRatioGeneral] = useState('30');
-  const [ratioBiz, setRatioBiz] = useState('10');
+  const [showRatio, setShowRatio] = useState(true);
+  const [recommendations, setRecommendations] = useState<BudgetItem[]>([]);
+  const [recommendationStatus, setRecommendationStatus] = useState<RecommendationStatus>('idle');
+  const [recommendationMessage, setRecommendationMessage] = useState('');
 
-  // 로드
   useEffect(() => {
-    window.electronAPI.getConfig('naramarketApiKey').then((k: string) => { if (k) setApiKey(k); }).catch(() => {});
+    window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
+      if (typeof key === 'string') setApiKey(key);
+    }).catch(() => {});
     window.electronAPI.readJsonData('budget-plans').then((data: unknown) => {
       if (Array.isArray(data)) setPlans(data as BudgetPlan[]);
     }).catch(() => {});
   }, []);
+
+  const ratioTotal = (parseInt(ratioEdu) || 0) + (parseInt(ratioGeneral) || 0) + (parseInt(ratioBiz) || 0);
+  const budgetForCalc = activePlan?.totalBudget ?? parseMoney(totalBudget);
+  const allocEdu = ratioTotal > 0 ? Math.round(budgetForCalc * (parseInt(ratioEdu) || 0) / ratioTotal) : 0;
+  const allocGeneral = ratioTotal > 0 ? Math.round(budgetForCalc * (parseInt(ratioGeneral) || 0) / ratioTotal) : 0;
+  const allocBiz = Math.max(0, budgetForCalc - allocEdu - allocGeneral);
+  const allocations: Record<BudgetCategory, number> = {
+    교육운영비: allocEdu,
+    일반수용비: allocGeneral,
+    업무추진비: allocBiz,
+  };
+
+  const planTotalUsed = activePlan?.items.reduce((sum, item) => sum + item.subtotal, 0) ?? 0;
+  const planRemaining = (activePlan?.totalBudget ?? 0) - planTotalUsed;
+  const recommendationTotal = recommendations.reduce((sum, item) => sum + item.subtotal, 0);
+  const recommendationRemaining = budgetForCalc - recommendationTotal;
+
+  const usedByCategory = useMemo(() => {
+    const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반수용비: 0, 업무추진비: 0 };
+    for (const item of activePlan?.items ?? []) used[item.budgetCategory] += item.subtotal;
+    return used;
+  }, [activePlan]);
+
+  const recommendationUsedByCategory = useMemo(() => {
+    const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반수용비: 0, 업무추진비: 0 };
+    for (const item of recommendations) used[item.budgetCategory] += item.subtotal;
+    return used;
+  }, [recommendations]);
+
+  const keywordMap: Record<BudgetCategory, string> = {
+    교육운영비: keywordEdu,
+    일반수용비: keywordGeneral,
+    업무추진비: keywordBiz,
+  };
+
+  const setKeywordMap: Record<BudgetCategory, React.Dispatch<React.SetStateAction<string>>> = {
+    교육운영비: setKeywordEdu,
+    일반수용비: setKeywordGeneral,
+    업무추진비: setKeywordBiz,
+  };
 
   const savePlans = async (updated: BudgetPlan[]) => {
     setPlans(updated);
     await window.electronAPI.writeJsonData('budget-plans', updated);
   };
 
-  const saveApiKey = async (key: string) => {
-    setApiKey(key);
-    await window.electronAPI.setConfig({ naramarketApiKey: key });
+  const saveApiKey = async () => {
+    setApiKey(apiKey.trim());
+    await window.electronAPI.setConfig({ naramarketApiKey: apiKey.trim() });
   };
 
-  // 새 계획 만들기
   const handleNewPlan = () => {
-    const budget = parseInt(totalBudget.replace(/,/g, ''), 10);
-    if (!planTitle.trim() || isNaN(budget) || budget <= 0) return;
-    const plan: BudgetPlan = {
+    const budget = parseMoney(totalBudget);
+    if (!planTitle.trim() || budget <= 0) return;
+    setActivePlan({
       id: genId(),
       title: planTitle.trim(),
       totalBudget: budget,
       items: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    };
-    setActivePlan(plan);
+    });
+    setRecommendations([]);
+    setRecommendationStatus('idle');
+    setRecommendationMessage('');
   };
 
-  // 나라장터 검색
+  const updatePlanItems = (items: BudgetItem[]) => {
+    if (!activePlan) return;
+    setActivePlan({ ...activePlan, items, updatedAt: Date.now() });
+  };
+
+  const addItemToPlan = (item?: Partial<NaraItem>, category = selectedCategory) => {
+    if (!activePlan) return;
+    updatePlanItems([...activePlan.items, makeItem(category, item)]);
+  };
+
+  const addItemToRecommendations = (item?: Partial<NaraItem>, category = selectedCategory) => {
+    setRecommendations(prev => [...prev, makeItem(category, item)]);
+    setRecommendationStatus('ready');
+  };
+
+  const updateRows = (
+    rows: BudgetItem[],
+    id: string,
+    patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'spec'>>,
+  ): BudgetItem[] => rows.map(item => {
+    if (item.id !== id) return item;
+    const updated = { ...item, ...patch };
+    updated.quantity = Math.max(1, updated.quantity || 1);
+    updated.unitPrice = Math.max(0, updated.unitPrice || 0);
+    updated.subtotal = calcSubtotal(updated);
+    return updated;
+  });
+
   const handleSearch = async (keyword: string) => {
     if (!keyword.trim()) return;
-    if (!apiKey.trim()) { setSearchError('나라장터 API 키를 설정해주세요.'); return; }
+    if (!apiKey.trim()) {
+      setSearchError('나라장터 API 키를 설정해주세요.');
+      return;
+    }
     setIsSearching(true);
     setSearchError('');
     try {
-      const data = await window.electronAPI.naramarketSearch(keyword.trim(), apiKey);
-      const raw: any[] = data?.response?.body?.items?.item ?? [];
-      const itemArr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-      const items: NaraItem[] = itemArr.map((r: any) => ({
-        thngNm: r.krnPrdctNm || r.prdctClsfcNoNm || '(이름 없음)',
-        thngCd: r.prdctIdntNo || '',
-        spec: r.prdctClsfcNoNm,
-        mnfctCorpNm: r.mnfctCorpNm,
-        unitPrice: undefined,
-      }));
-      if (!Array.isArray(items) || items.length === 0) {
-        setSearchResults([]);
-        setSearchError('검색 결과가 없습니다.');
-      } else {
-        let filtered = items;
-        if (minPrice) filtered = filtered.filter(i => (i.unitPrice ?? 0) >= parseInt(minPrice.replace(/,/g, ''), 10));
-        if (maxPrice) filtered = filtered.filter(i => (i.unitPrice ?? 0) <= parseInt(maxPrice.replace(/,/g, ''), 10));
-        setSearchResults(filtered);
-      }
+      const [listData, mallData] = await Promise.all([
+        window.electronAPI.naramarketSearch(keyword.trim(), apiKey),
+        window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey).catch(() => null),
+      ]);
+      const listRows = normalizeApiItems(listData, false);
+      const mallRows = normalizeApiItems(mallData, true);
+      const merged = uniqueSearchItems([...mallRows, ...listRows]);
+      setSearchResults(merged);
+      if (merged.length === 0) setSearchError('검색 결과가 없습니다.');
     } catch (e: any) {
-      setSearchError(e.message ?? '검색 오류');
+      setSearchError(e?.message ?? '검색 오류');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // 물품 추가
-  const addItem = (naraItem: NaraItem) => {
-    if (!activePlan) return;
-    const qty = parseInt(minQty || '1', 10);
-    const unitPrice = naraItem.unitPrice ?? 0;
-    const item: BudgetItem = {
-      id: genId(),
-      budgetCategory: selectedCategory,
-      thngNm: naraItem.thngNm,
-      thngCd: naraItem.thngCd,
-      spec: naraItem.stdUntNm,
-      unitPrice,
-      quantity: qty,
-      subtotal: unitPrice * qty,
-    };
-    const updated = { ...activePlan, items: [...activePlan.items, item], updatedAt: Date.now() };
-    setActivePlan(updated);
-  };
-
-  // 아이템 수정
-  const updateItem = (id: string, field: 'unitPrice' | 'quantity', value: number) => {
-    if (!activePlan) return;
-    const items = activePlan.items.map(item => {
-      if (item.id !== id) return item;
-      const updated = { ...item, [field]: value };
-      updated.subtotal = updated.unitPrice * updated.quantity;
-      return updated;
-    });
-    setActivePlan({ ...activePlan, items, updatedAt: Date.now() });
-  };
-
-  const removeItem = (id: string) => {
-    if (!activePlan) return;
-    setActivePlan({ ...activePlan, items: activePlan.items.filter(i => i.id !== id), updatedAt: Date.now() });
+  const addSearchResult = (item: NaraItem) => {
+    if (searchTarget === 'recommendation') addItemToRecommendations(item);
+    else addItemToPlan(item);
   };
 
   const addManualItem = () => {
-    if (!activePlan || !manualName.trim()) return;
-    const price = parseInt(manualPrice.replace(/,/g, ''), 10) || 0;
-    const qty = parseInt(manualQty, 10) || 1;
-    const item: BudgetItem = {
-      id: genId(),
-      budgetCategory: manualCategory,
+    if (!manualName.trim()) return;
+    const item = makeItem(manualCategory, {
       thngNm: manualName.trim(),
-      unitPrice: price,
-      quantity: qty,
-      subtotal: price * qty,
-    };
-    setActivePlan({ ...activePlan, items: [...activePlan.items, item], updatedAt: Date.now() });
+      unitPrice: parseMoney(manualPrice),
+    });
+    item.quantity = Math.max(1, parseInt(manualQty, 10) || 1);
+    item.subtotal = calcSubtotal(item);
+    if (manualTarget === 'recommendation') setRecommendations(prev => [...prev, item]);
+    else if (activePlan) updatePlanItems([...activePlan.items, item]);
     setManualName('');
     setManualPrice('');
     setManualQty('1');
   };
 
-  // 합계 계산
-  const totalUsed = activePlan?.items.reduce((s, i) => s + i.subtotal, 0) ?? 0;
-  const remaining = (activePlan?.totalBudget ?? 0) - totalUsed;
+  const makeRecommendations = async (): Promise<BudgetItem[]> => {
+    if (budgetForCalc <= 0) throw new Error('예산을 먼저 입력해주세요.');
 
-  const ratioTotal = (parseInt(ratioEdu) || 0) + (parseInt(ratioGeneral) || 0) + (parseInt(ratioBiz) || 0);
-  const allocEdu = activePlan ? Math.round(activePlan.totalBudget * (parseInt(ratioEdu) || 0) / ratioTotal) : 0;
-  const allocGeneral = activePlan ? Math.round(activePlan.totalBudget * (parseInt(ratioGeneral) || 0) / ratioTotal) : 0;
-  const allocBiz = activePlan ? activePlan.totalBudget - allocEdu - allocGeneral : 0;
+    const localCandidates = buildLocalCandidates(activePlan?.title ?? planTitle, keywordMap);
+    const candidates: Record<BudgetCategory, NaraItem[]> = {
+      교육운영비: [...localCandidates.교육운영비],
+      일반수용비: [...localCandidates.일반수용비],
+      업무추진비: [...localCandidates.업무추진비],
+    };
 
-  const usedEdu = activePlan?.items.filter(i => i.budgetCategory === '교육운영비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
-  const usedGeneral = activePlan?.items.filter(i => i.budgetCategory === '일반수용비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
-  const usedBiz = activePlan?.items.filter(i => i.budgetCategory === '업무추진비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
-
-  // 자동 0원 맞추기: 마지막 아이템의 수량을 조정
-  const autoBalance = () => {
-    if (!activePlan || activePlan.items.length === 0 || remaining === 0) return;
-    const items = [...activePlan.items];
-    // 단가가 있는 마지막 아이템의 수량으로 조정
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i].unitPrice > 0) {
-        const others = items.filter((_, idx) => idx !== i).reduce((s, x) => s + x.subtotal, 0);
-        const needed = activePlan.totalBudget - others;
-        const qty = Math.max(1, Math.round(needed / items[i].unitPrice));
-        const maxQ = maxQty ? parseInt(maxQty, 10) : Infinity;
-        const minQ = minQty ? parseInt(minQty, 10) : 1;
-        items[i] = { ...items[i], quantity: Math.min(Math.max(qty, minQ), maxQ), subtotal: 0 };
-        items[i].subtotal = items[i].unitPrice * items[i].quantity;
-        break;
+    if (apiKey.trim()) {
+      for (const category of CATEGORIES) {
+        const keywords = keywordMap[category].split(',').map(v => v.trim()).filter(Boolean).slice(0, 3);
+        for (const keyword of keywords) {
+          try {
+            const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
+            candidates[category].unshift(...normalizeApiItems(data, true));
+          } catch {
+            // API 결과가 없어도 내장 후보로 추천안을 계속 만듭니다.
+          }
+        }
       }
     }
-    setActivePlan({ ...activePlan, items, updatedAt: Date.now() });
+
+    const next = buildRecommendation(candidates, allocations);
+    if (next.length === 0) throw new Error('추천 품목을 만들지 못했습니다. 예산 금액이나 과목별 비율을 확인해주세요.');
+    return next;
   };
 
-  // 저장
+  const handleMakeRecommendations = async () => {
+    setRecommendationStatus('loading');
+    setRecommendationMessage('');
+    try {
+      const next = await makeRecommendations();
+      setRecommendations(next);
+      setRecommendationStatus('ready');
+      setRecommendationMessage(`추천 품목 ${next.length}개를 만들었습니다.`);
+    } catch (e: any) {
+      setRecommendationStatus('error');
+      setRecommendationMessage(e?.message ?? '추천안을 만들지 못했습니다.');
+    }
+  };
+
+  const applyRecommendations = () => {
+    if (!activePlan || recommendations.length === 0) return;
+    const copied = recommendations.map(item => ({ ...item, id: genId() }));
+    updatePlanItems(copied);
+  };
+
+  const handleInstantApply = async () => {
+    if (!activePlan) return;
+    setRecommendationStatus('loading');
+    setRecommendationMessage('');
+    try {
+      const next = await makeRecommendations();
+      setRecommendations(next);
+      setRecommendationStatus('ready');
+      setRecommendationMessage(`추천 품목 ${next.length}개를 예산안에 적용했습니다.`);
+      setActivePlan({ ...activePlan, items: next.map(item => ({ ...item, id: genId() })), updatedAt: Date.now() });
+    } catch (e: any) {
+      setRecommendationStatus('error');
+      setRecommendationMessage(e?.message ?? '즉시 적용하지 못했습니다.');
+    }
+  };
+
+  const autoBalancePlan = () => {
+    if (!activePlan || activePlan.items.length === 0 || planRemaining === 0) return;
+    const items = [...activePlan.items];
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (items[i].unitPrice <= 0) continue;
+      const others = items.filter((_, idx) => idx !== i).reduce((sum, item) => sum + item.subtotal, 0);
+      const quantity = Math.max(1, Math.round((activePlan.totalBudget - others) / items[i].unitPrice));
+      items[i] = { ...items[i], quantity, subtotal: items[i].unitPrice * quantity };
+      break;
+    }
+    updatePlanItems(items);
+  };
+
   const handleSave = async () => {
     if (!activePlan) return;
-    const exists = plans.find(p => p.id === activePlan.id);
-    const updated = exists
-      ? plans.map(p => p.id === activePlan.id ? activePlan : p)
-      : [...plans, activePlan];
-    await savePlans(updated);
+    const exists = plans.some(plan => plan.id === activePlan.id);
+    await savePlans(exists ? plans.map(plan => plan.id === activePlan.id ? activePlan : plan) : [...plans, activePlan]);
   };
 
-  // CSV 내보내기
   const handleExportCsv = async () => {
     if (!activePlan) return;
     const rows = [
@@ -251,39 +455,32 @@ export default function BudgetPlannerScreen() {
         String(item.quantity),
         String(item.subtotal),
       ]),
-      ['', '', '', '', '합계', '', '', String(totalUsed)],
+      ['', '', '', '', '합계', '', '', String(planTotalUsed)],
       ['', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
-      ['', '', '', '', '잔액', '', '', String(remaining)],
+      ['', '', '', '', '잔액', '', '', String(planRemaining)],
     ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    await window.electronAPI.saveCsv('﻿' + csv, `${activePlan.title}_예산사용계획`);
+    const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
+    await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산사용계획`);
   };
 
-  const inputCls = 'w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500';
-  const btnCls = 'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors';
-
-  // ── API 발급 안내 ──────────────────────────────────────────────
   const API_GUIDE_STEPS = [
-    { title: 'data.go.kr 접속 및 회원가입', desc: '공공데이터포털(data.go.kr)에 접속해 회원가입합니다. 일반 이메일로 가입 가능하며 공공기관 이메일은 필요 없습니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
-    { title: '"조달청 물품목록" 검색', desc: '로그인 후 검색창에 "조달청 물품목록정보서비스"를 검색하고 해당 API를 클릭합니다.' },
-    { title: '[활용신청] 클릭', desc: '상세 페이지에서 [활용신청] 버튼을 클릭합니다. 자동승인으로 즉시 발급되며 별도 심사가 없습니다.' },
-    { title: '인증키 복사', desc: '마이페이지 → 개발계정 → 개발계정 상세보기 에서 "일반 인증키"를 복사합니다.' },
-    { title: 'EduNote에 붙여넣기', desc: '아래 입력란에 복사한 인증키를 붙여넣고 저장 버튼을 누르세요.' },
+    { title: 'data.go.kr 접속 및 회원가입', desc: '공공데이터포털(data.go.kr)에 접속해 회원가입합니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
+    { title: '조달청 API 검색', desc: '물품목록정보서비스와 종합쇼핑몰 품목정보 서비스를 활용신청합니다.' },
+    { title: '활용신청', desc: '상세 페이지에서 활용신청을 누릅니다. 자동승인 후 바로 사용할 수 있습니다.' },
+    { title: '인증키 복사', desc: '마이페이지의 개발계정 상세보기에서 일반 인증키를 복사합니다.' },
+    { title: 'EduNote에 저장', desc: '아래 입력란에 인증키를 붙여넣고 저장합니다.' },
   ];
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
       <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 flex items-center gap-3">
         <h1 className="text-base font-black text-gray-900 dark:text-white">예산사용계획</h1>
-        <span className="text-xs text-gray-400">나라장터 물품으로 예산 0원 만들기</span>
+        <span className="text-xs text-gray-400">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* 왼쪽: 설정 + 검색 */}
-        <div className="w-72 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col overflow-y-auto">
-
-          {/* API 키 설정 */}
-          <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <aside className="w-80 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
+          <section className="p-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">나라장터 API 키</span>
               <button onClick={() => { setShowApiGuide(!showApiGuide); setApiGuideStep(1); }} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
@@ -295,7 +492,7 @@ export default function BudgetPlannerScreen() {
                 <div className="flex gap-1 mb-2">
                   {API_GUIDE_STEPS.map((_, i) => (
                     <button key={i} onClick={() => setApiGuideStep(i + 1)}
-                      className={`w-6 h-6 rounded-full text-[10px] font-bold transition-colors ${apiGuideStep === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                      className={`w-6 h-6 rounded-full text-[10px] font-bold ${apiGuideStep === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
                       {i + 1}
                     </button>
                   ))}
@@ -308,190 +505,146 @@ export default function BudgetPlannerScreen() {
                     <ExternalLink className="w-3 h-3" /> {(API_GUIDE_STEPS[apiGuideStep - 1] as any).action.label}
                   </button>
                 )}
-                <div className="flex justify-between mt-2">
-                  <button onClick={() => setApiGuideStep(s => Math.max(1, s - 1))} disabled={apiGuideStep === 1} className="text-gray-400 disabled:opacity-30">◀ 이전</button>
-                  <button onClick={() => setApiGuideStep(s => Math.min(5, s + 1))} disabled={apiGuideStep === 5} className="text-blue-500 disabled:opacity-30">다음 ▶</button>
-                </div>
               </div>
             )}
             <div className="flex gap-2">
               <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="인증키 붙여넣기" className={inputCls} />
-              <button onClick={() => saveApiKey(apiKey)} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>저장</button>
+              <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>저장</button>
             </div>
             {apiKey && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
-          </div>
+          </section>
 
-          {/* 새 계획 */}
-          <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">새 예산계획</p>
-            <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder="계획 제목 (예: 2026-2학기 교육운영비)" className={`${inputCls} mb-2`} />
-            <input value={totalBudget} onChange={e => setTotalBudget(e.target.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ','))} placeholder="배정 예산 (원)" className={`${inputCls} mb-2`} />
-            <button onClick={handleNewPlan} disabled={!planTitle.trim() || !totalBudget} className={`${btnCls} w-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40`}>
+          <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-2">
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
+            <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder="예산 제목" className={inputCls} />
+            <input value={totalBudget} onChange={e => setTotalBudget(moneyInput(e.target.value))} placeholder="예산 (원)" className={inputCls} />
+            <button onClick={handleNewPlan} disabled={!planTitle.trim() || !totalBudget} className={`${btnCls} w-full bg-emerald-600 text-white hover:bg-emerald-700`}>
               <Plus className="w-4 h-4 inline mr-1" />계획 시작
             </button>
-          </div>
+          </section>
 
-          {/* 저장된 계획 목록 */}
+          <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
+            <button onClick={() => setShowRatio(v => !v)} className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+              {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              2. 과목별 비율과 검색어
+            </button>
+            {showRatio && CATEGORIES.map(category => (
+              <div key={category} className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-20 text-xs font-bold text-gray-700 dark:text-gray-300">{category}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={category === '교육운영비' ? ratioEdu : category === '일반수용비' ? ratioGeneral : ratioBiz}
+                    onChange={e => category === '교육운영비' ? setRatioEdu(e.target.value) : category === '일반수용비' ? setRatioGeneral(e.target.value) : setRatioBiz(e.target.value)}
+                    className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  />
+                  <span className="text-xs text-gray-500">% · {fmt(allocations[category])}원</span>
+                </div>
+                <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder="검색어를 쉼표로 구분" className={inputCls} />
+              </div>
+            ))}
+          </section>
+
           {plans.length > 0 && (
-            <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+            <section className="p-4 border-b border-gray-100 dark:border-gray-700">
               <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">저장된 계획</p>
               <div className="space-y-1">
-                {plans.map(p => (
-                  <button key={p.id} onClick={() => setActivePlan(p)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${activePlan?.id === p.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
-                    <p className="font-semibold truncate">{p.title}</p>
-                    <p className="text-gray-400">{fmt(p.totalBudget)}원</p>
+                {plans.map(plan => (
+                  <button key={plan.id} onClick={() => { setActivePlan(plan); setTotalBudget(fmt(plan.totalBudget)); }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs ${activePlan?.id === plan.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                    <p className="font-semibold truncate">{plan.title}</p>
+                    <p className="text-gray-400">{fmt(plan.totalBudget)}원</p>
                   </button>
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
-          {/* 물품 추가 패널 */}
           {activePlan && (
-            <div className="p-4 flex-1 flex flex-col overflow-hidden">
-              {/* 탭 */}
-              <div className="flex gap-1 mb-3 shrink-0">
-                <button
-                  onClick={() => setSearchTab('search')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 ${searchTab === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                >
-                  <Search className="w-3 h-3" />나라장터 검색
-                </button>
-                <button
-                  onClick={() => setSearchTab('manual')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 ${searchTab === 'manual' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
-                >
-                  <PenLine className="w-3 h-3" />직접 입력
+            <section className="p-4 space-y-3">
+              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">품목 추가</p>
+              <div className="grid grid-cols-2 gap-2">
+                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
+                  {CATEGORIES.map(category => <option key={category}>{category}</option>)}
+                </select>
+                <select value={searchTarget} onChange={e => setSearchTarget(e.target.value as 'plan' | 'recommendation')} className={inputCls}>
+                  <option value="plan">예산안에 추가</option>
+                  <option value="recommendation">추천안에 추가</option>
+                </select>
+              </div>
+              <div className="flex gap-1">
+                <input value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword)}
+                  placeholder="나라장터 검색어" className={inputCls} />
+                <button onClick={() => handleSearch(searchKeyword)} disabled={isSearching}
+                  className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>
+                  {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </button>
               </div>
-
-              {/* 나라장터 검색 탭 */}
-              {searchTab === 'search' && (
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
-                    <option value="교육운영비">교육운영비</option>
-                    <option value="일반수용비">일반수용비</option>
-                    <option value="업무추진비">업무추진비</option>
-                  </select>
-                  {/* 추천 키워드 */}
-                  <div>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1">추천 키워드</p>
-                    <div className="space-y-1">
-                      {CATEGORY_KEYWORDS[selectedCategory].map(group => (
-                        <div key={group.label}>
-                          <p className="text-[10px] text-gray-400 dark:text-gray-500">{group.label}</p>
-                          <div className="flex flex-wrap gap-1">
-                            {group.keywords.map(kw => (
-                              <button key={kw} onClick={() => { setSearchKeyword(kw); handleSearch(kw); }}
-                                className="px-2 py-0.5 text-[11px] bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 rounded-full transition-colors">
-                                {kw}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* 검색어 직접 입력 */}
-                  <div className="flex gap-1">
-                    <input value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword)}
-                      placeholder="검색어 입력 후 Enter" className={inputCls} />
-                    <button onClick={() => handleSearch(searchKeyword)} disabled={isSearching}
-                      className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 shrink-0`}>
-                      {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  {/* 단가/수량 필터 */}
-                  <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2 text-xs">
-                    <p className="font-bold text-gray-600 dark:text-gray-400 mb-1">단가·수량 필터</p>
-                    <div className="grid grid-cols-2 gap-1">
-                      <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="최소 단가" className={inputCls} />
-                      <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="최대 단가" className={inputCls} />
-                      <input value={minQty} onChange={e => setMinQty(e.target.value)} placeholder="최소 수량" className={inputCls} />
-                      <input value={maxQty} onChange={e => setMaxQty(e.target.value)} placeholder="최대 수량" className={inputCls} />
-                    </div>
-                  </div>
-                  {searchError && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{searchError}</p>}
-                  {/* 검색 결과 */}
-                  <div className="space-y-1">
-                    {searchResults.map((item, idx) => (
-                      <button key={idx} onClick={() => addItem(item)}
-                        className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
-                        <p className="text-[11px] text-gray-400 truncate">{item.spec}{item.mnfctCorpNm ? ` · ${item.mnfctCorpNm}` : ''}</p>
-                        {item.unitPrice != null && <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{fmt(item.unitPrice)}원</p>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 직접 입력 탭 */}
-              {searchTab === 'manual' && (
-                <div className="flex-1 space-y-2">
-                  <select value={manualCategory} onChange={e => setManualCategory(e.target.value as BudgetCategory)} className={inputCls}>
-                    <option value="교육운영비">교육운영비</option>
-                    <option value="일반수용비">일반수용비</option>
-                    <option value="업무추진비">업무추진비</option>
-                  </select>
-                  <input
-                    value={manualName}
-                    onChange={e => setManualName(e.target.value)}
-                    placeholder="품목명 *"
-                    className={inputCls}
-                  />
-                  <input
-                    value={manualPrice}
-                    onChange={e => setManualPrice(e.target.value)}
-                    placeholder="단가 (원)"
-                    className={inputCls}
-                  />
-                  <input
-                    value={manualQty}
-                    onChange={e => setManualQty(e.target.value)}
-                    placeholder="수량"
-                    type="number"
-                    min={1}
-                    className={inputCls}
-                  />
-                  <button
-                    onClick={addManualItem}
-                    disabled={!manualName.trim()}
-                    className={`w-full ${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-1`}
-                  >
-                    <Plus className="w-4 h-4" />
-                    품목 추가
+              {searchError && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{searchError}</p>}
+              <div className="space-y-1 max-h-44 overflow-y-auto">
+                {searchResults.map((item, idx) => (
+                  <button key={`${item.thngCd}-${idx}`} onClick={() => addSearchResult(item)}
+                    className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
+                    <p className="text-[11px] text-gray-400 truncate">{item.spec}{item.mnfctCorpNm ? ` · ${item.mnfctCorpNm}` : ''}</p>
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{item.unitPrice ? `${fmt(item.unitPrice)}원` : '단가 없음'}</p>
                   </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
 
-        {/* 오른쪽: 계획표 */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <select value={manualCategory} onChange={e => setManualCategory(e.target.value as BudgetCategory)} className={inputCls}>
+                    {CATEGORIES.map(category => <option key={category}>{category}</option>)}
+                  </select>
+                  <select value={manualTarget} onChange={e => setManualTarget(e.target.value as 'plan' | 'recommendation')} className={inputCls}>
+                    <option value="plan">예산안</option>
+                    <option value="recommendation">추천안</option>
+                  </select>
+                </div>
+                <input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="직접 입력 품목명" className={inputCls} />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={manualPrice} onChange={e => setManualPrice(moneyInput(e.target.value))} placeholder="단가" className={inputCls} />
+                  <input value={manualQty} onChange={e => setManualQty(e.target.value.replace(/[^0-9]/g, ''))} placeholder="수량" className={inputCls} />
+                </div>
+                <button onClick={addManualItem} disabled={!manualName.trim()} className={`${btnCls} w-full bg-emerald-600 text-white hover:bg-emerald-700`}>
+                  <Plus className="w-4 h-4 inline mr-1" />직접 추가
+                </button>
+              </div>
+            </section>
+          )}
+        </aside>
+
+        <main className="flex-1 flex flex-col overflow-hidden">
           {!activePlan ? (
             <div className="flex-1 flex items-center justify-center text-gray-400">
               <div className="text-center">
                 <p className="text-4xl mb-3">💰</p>
-                <p className="font-bold">왼쪽에서 새 예산계획을 시작하거나</p>
-                <p className="text-sm">저장된 계획을 선택하세요</p>
+                <p className="font-bold">예산 제목과 예산을 입력한 뒤 계획을 시작하세요</p>
               </div>
             </div>
           ) : (
             <>
-              {/* 헤더 */}
-              <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3">
-                <div className="flex items-center justify-between">
+              <header className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 space-y-3">
+                <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="text-base font-black text-gray-900 dark:text-white">{activePlan.title}</h2>
                     <p className="text-xs text-gray-500">배정 예산: {fmt(activePlan.totalBudget)}원</p>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={autoBalance} className={`${btnCls} bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1`}>
-                      <Wand2 className="w-3.5 h-3.5" />자동 0원
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <button onClick={handleMakeRecommendations} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1`}>
+                      <Wand2 className="w-3.5 h-3.5" />추천안 만들기
+                    </button>
+                    <button onClick={applyRecommendations} disabled={recommendations.length === 0} className={`${btnCls} bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1`}>
+                      추천안 적용
+                    </button>
+                    <button onClick={handleInstantApply} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-rose-600 text-white hover:bg-rose-700 flex items-center gap-1`}>
+                      즉시 적용
+                    </button>
+                    <button onClick={autoBalancePlan} className={`${btnCls} bg-gray-700 text-white hover:bg-gray-800 flex items-center gap-1`}>
+                      자동 0원
                     </button>
                     <button onClick={handleSave} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
                       <Save className="w-3.5 h-3.5" />저장
@@ -501,174 +654,224 @@ export default function BudgetPlannerScreen() {
                     </button>
                   </div>
                 </div>
-
-                {/* 예산 현황 바 */}
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-500">집행: {fmt(totalUsed)}원</span>
-                    <span className={`font-bold ${remaining === 0 ? 'text-green-600' : remaining < 0 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-                      {remaining === 0 ? '✓ 잔액 0원 달성!' : remaining > 0 ? `잔액 ${fmt(remaining)}원` : `초과 ${fmt(Math.abs(remaining))}원`}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${remaining < 0 ? 'bg-red-500' : remaining === 0 ? 'bg-green-500' : 'bg-blue-500'}`}
-                      style={{ width: `${Math.min(100, (totalUsed / activePlan.totalBudget) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* 예산 과목별 비율 배분 */}
-                <div className="mt-3">
-                  <button
-                    onClick={() => setShowRatio(r => !r)}
-                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                  >
-                    {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    과목별 예산 비율 배분
-                  </button>
-                  {showRatio && (
-                    <div className="mt-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 space-y-2">
-                      <p className="text-[11px] text-blue-700 dark:text-blue-300">비율 합계가 100%가 아니어도 자동으로 계산됩니다. 마지막 항목에서 원단위 오차를 조정합니다.</p>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        {[
-                          { label: '교육운영비', val: ratioEdu, set: setRatioEdu, alloc: allocEdu, used: usedEdu, color: 'text-indigo-600 dark:text-indigo-400' },
-                          { label: '일반수용비', val: ratioGeneral, set: setRatioGeneral, alloc: allocGeneral, used: usedGeneral, color: 'text-emerald-600 dark:text-emerald-400' },
-                          { label: '업무추진비', val: ratioBiz, set: setRatioBiz, alloc: allocBiz, used: usedBiz, color: 'text-amber-600 dark:text-amber-400' },
-                        ].map(({ label, val, set, alloc, used, color }) => (
-                          <div key={label} className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-blue-100 dark:border-blue-800">
-                            <p className={`font-bold mb-1 ${color}`}>{label}</p>
-                            <div className="flex items-center gap-1 mb-1">
-                              <input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={val}
-                                onChange={e => set(e.target.value)}
-                                className="w-12 px-1.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              />
-                              <span className="text-gray-500">%</span>
-                            </div>
-                            <p className="text-[11px] text-gray-600 dark:text-gray-300">배분: <span className="font-bold">{fmt(alloc)}원</span></p>
-                            <p className="text-[11px] text-gray-500">집행: {fmt(used)}원</p>
-                            <p className={`text-[11px] font-bold ${alloc - used === 0 ? 'text-green-600' : alloc - used < 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                              잔액: {fmt(alloc - used)}원
-                            </p>
-                            <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${alloc - used < 0 ? 'bg-red-500' : alloc - used === 0 ? 'bg-green-500' : 'bg-blue-400'}`}
-                                style={{ width: `${alloc > 0 ? Math.min(100, used / alloc * 100) : 0}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[11px] text-blue-600 dark:text-blue-400">
-                        총 배분: {fmt(allocEdu + allocGeneral + allocBiz)}원 / 배정 예산: {fmt(activePlan.totalBudget)}원
-                        {ratioTotal !== 100 && <span className="ml-1 text-amber-500">(비율 합계 {ratioTotal}%)</span>}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* 테이블 */}
-              <div className="flex-1 overflow-auto px-4 py-3">
-                {activePlan.items.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                    왼쪽 검색 결과에서 물품을 클릭하여 추가하세요
-                  </div>
-                ) : (
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center w-8">순</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-24">예산 과목</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2">품목</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가(원)</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계(원)</th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-8"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activePlan.items.map((item, idx) => (
-                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                            <select value={item.budgetCategory}
-                              onChange={e => {
-                                const items = activePlan.items.map(i => i.id === item.id ? { ...i, budgetCategory: e.target.value as BudgetCategory } : i);
-                                setActivePlan({ ...activePlan, items });
-                              }}
-                              className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-700 dark:text-gray-300">
-                              <option>교육운영비</option>
-                              <option>일반수용비</option>
-                              <option>업무추진비</option>
-                            </select>
-                          </td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                            <div>
-                              <p className="font-semibold text-gray-800 dark:text-gray-100 text-xs">{item.thngNm}</p>
-                              {item.spec && <p className="text-[11px] text-gray-400">{item.spec}</p>}
-                            </div>
-                          </td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                            <input type="number" value={item.unitPrice}
-                              onChange={e => updateItem(item.id, 'unitPrice', parseInt(e.target.value, 10) || 0)}
-                              className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
-                          </td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                            <div className="flex items-center gap-1 justify-center">
-                              <button onClick={() => updateItem(item.id, 'quantity', Math.max(1, item.quantity - 1))} className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 text-xs font-bold">−</button>
-                              <input type="number" value={item.quantity}
-                                onChange={e => {
-                                  let v = parseInt(e.target.value, 10) || 1;
-                                  if (minQty) v = Math.max(parseInt(minQty, 10), v);
-                                  if (maxQty) v = Math.min(parseInt(maxQty, 10), v);
-                                  updateItem(item.id, 'quantity', v);
-                                }}
-                                className="w-10 text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
-                              <button onClick={() => updateItem(item.id, 'quantity', item.quantity + 1)} className="w-5 h-5 rounded bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 text-xs font-bold">+</button>
-                            </div>
-                          </td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs">
-                            {fmt(item.subtotal)}
-                          </td>
-                          <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center">
-                            <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
-                        <td colSpan={5} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(totalUsed)}</td>
-                        <td className="border border-gray-300 dark:border-gray-600"></td>
-                      </tr>
-                      <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
-                        <td colSpan={5} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
-                        <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(activePlan.totalBudget)}</td>
-                        <td className="border border-gray-300 dark:border-gray-600"></td>
-                      </tr>
-                      <tr className={`text-sm font-black ${remaining === 0 ? 'bg-green-50 dark:bg-green-900/20' : remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-                        <td colSpan={5} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
-                        <td className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-right ${remaining === 0 ? 'text-green-700 dark:text-green-400' : remaining < 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-400'}`}>
-                          {remaining === 0 ? '0 ✓' : fmt(remaining)}
-                        </td>
-                        <td className="border border-gray-300 dark:border-gray-600"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                {recommendationMessage && (
+                  <p className={`text-xs flex items-center gap-1 ${recommendationStatus === 'error' ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}>
+                    {recommendationStatus === 'error' ? <AlertCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                    {recommendationMessage}
+                  </p>
                 )}
+                <BudgetSummary total={activePlan.totalBudget} used={planTotalUsed} remaining={planRemaining} />
+              </header>
+
+              <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
+                <section>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">추천 결과</h3>
+                    <button onClick={() => addItemToRecommendations(undefined, selectedCategory)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                      <Plus className="w-3.5 h-3.5" />행 추가
+                    </button>
+                  </div>
+                  <EditableBudgetTable
+                    items={recommendations}
+                    emptyText="추천안 만들기를 누르거나 왼쪽에서 추천안에 품목을 추가하세요"
+                    totalBudget={budgetForCalc}
+                    usedTotal={recommendationTotal}
+                    remaining={recommendationRemaining}
+                    allocations={allocations}
+                    usedByCategory={recommendationUsedByCategory}
+                    onChange={(id, patch) => setRecommendations(prev => updateRows(prev, id, patch))}
+                    onRemove={(id) => setRecommendations(prev => prev.filter(item => item.id !== id))}
+                  />
+                </section>
+
+                <section>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">적용된 예산안</h3>
+                    <button onClick={() => addItemToPlan(undefined, selectedCategory)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                      <Plus className="w-3.5 h-3.5" />행 추가
+                    </button>
+                  </div>
+                  <EditableBudgetTable
+                    items={activePlan.items}
+                    emptyText="추천안을 적용하거나 왼쪽에서 품목을 추가하세요"
+                    totalBudget={activePlan.totalBudget}
+                    usedTotal={planTotalUsed}
+                    remaining={planRemaining}
+                    allocations={allocations}
+                    usedByCategory={usedByCategory}
+                    onChange={(id, patch) => updatePlanItems(updateRows(activePlan.items, id, patch))}
+                    onRemove={(id) => updatePlanItems(activePlan.items.filter(item => item.id !== id))}
+                  />
+                </section>
               </div>
             </>
           )}
-        </div>
+        </main>
       </div>
+    </div>
+  );
+}
+
+function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
+  const raw = data?.response?.body?.items?.item ?? data?.body?.items?.item ?? [];
+  const rows = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  return rows.map((row: any) => {
+    const unitPrice = Number(
+      row.cntrctPrceAmt ?? row.cntrctPrce ?? row.cntrctAmt ?? row.prdctUprc ?? row.unitPrice ?? row.price ?? 0
+    ) || undefined;
+    return {
+      thngNm: row.prdctIdntNoNm || row.krnPrdctNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || row.prdctNm || '(이름 없음)',
+      thngCd: row.prdctIdntNo || row.prdctNo || '',
+      spec: row.itemSpec || row.prdctSpecNm || row.stdUntNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || '',
+      mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.mnfctCmpyNm || '',
+      unitPrice: preferPrice ? unitPrice : undefined,
+    };
+  });
+}
+
+function uniqueSearchItems(items: NaraItem[]): NaraItem[] {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    const key = `${item.thngCd}-${item.thngNm}-${item.unitPrice ?? 0}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function BudgetSummary({ total, used, remaining }: { total: number; used: number; remaining: number }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-gray-500">집행: {fmt(used)}원</span>
+        <span className={`font-bold ${remaining === 0 ? 'text-green-600' : remaining < 0 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
+          {remaining === 0 ? '잔액 0원 달성' : remaining > 0 ? `잔액 ${fmt(remaining)}원` : `초과 ${fmt(Math.abs(remaining))}원`}
+        </span>
+      </div>
+      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${remaining < 0 ? 'bg-red-500' : remaining === 0 ? 'bg-green-500' : 'bg-blue-500'}`}
+          style={{ width: `${total > 0 ? Math.min(100, (used / total) * 100) : 0}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function EditableBudgetTable({
+  items,
+  emptyText,
+  totalBudget,
+  usedTotal,
+  remaining,
+  allocations,
+  usedByCategory,
+  onChange,
+  onRemove,
+}: {
+  items: BudgetItem[];
+  emptyText: string;
+  totalBudget: number;
+  usedTotal: number;
+  remaining: number;
+  allocations: Record<BudgetCategory, number>;
+  usedByCategory: Record<BudgetCategory, number>;
+  onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'spec'>>) => void;
+  onRemove: (id: string) => void;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="h-28 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 text-gray-400 text-sm">
+        {emptyText}
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center w-8">순</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28">예산 과목</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-52">품목</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-40">규격</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계</th>
+            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-10"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, idx) => (
+            <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
+                  className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-700 dark:text-gray-300">
+                  {CATEGORIES.map(category => <option key={category}>{category}</option>)}
+                </select>
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
+                  placeholder="품목명" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input value={item.spec ?? ''} onChange={e => onChange(item.id, { spec: e.target.value })}
+                  placeholder="규격" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-500 dark:text-gray-300 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input type="number" min={0} value={item.unitPrice}
+                  onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
+                  className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <input type="number" min={1} value={item.quantity}
+                  onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs">
+                {fmt(item.subtotal)}
+              </td>
+              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center">
+                <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600" title="행 삭제">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          {CATEGORIES.map(category => (
+            <tr key={category} className="bg-gray-50 dark:bg-gray-700/50 text-xs">
+              <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
+                {category} 배정 {fmt(allocations[category])}원 / 집행 {fmt(usedByCategory[category])}원
+              </td>
+              <td className={`border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-right font-bold ${allocations[category] - usedByCategory[category] < 0 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                {fmt(allocations[category] - usedByCategory[category])}
+              </td>
+              <td className="border border-gray-300 dark:border-gray-600"></td>
+            </tr>
+          ))}
+          <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
+            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
+            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(usedTotal)}</td>
+            <td className="border border-gray-300 dark:border-gray-600"></td>
+          </tr>
+          <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
+            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
+            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(totalBudget)}</td>
+            <td className="border border-gray-300 dark:border-gray-600"></td>
+          </tr>
+          <tr className={`text-sm font-black ${remaining === 0 ? 'bg-green-50 dark:bg-green-900/20' : remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
+            <td colSpan={6} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
+            <td className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-right ${remaining === 0 ? 'text-green-700 dark:text-green-400' : remaining < 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-400'}`}>
+              {remaining === 0 ? '0' : fmt(remaining)}
+            </td>
+            <td className="border border-gray-300 dark:border-gray-600"></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   );
 }

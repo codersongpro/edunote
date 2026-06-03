@@ -82,4 +82,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 나라장터 물품 검색
   naramarketSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
     ipcRenderer.invoke('api:naramarket-search', { keyword, serviceKey, pageNo }),
+  naramarketShoppingSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naramarket-shopping-search', { keyword, serviceKey, pageNo }),
 });
