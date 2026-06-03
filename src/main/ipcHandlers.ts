@@ -587,15 +587,20 @@ export function registerIpcHandlers(): void {
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
-    // serviceKey는 발급 시 이미 URL 인코딩된 상태 — URLSearchParams에 넣으면 이중 인코딩되므로 raw URL에 직접 조합
+    // 인코딩된 키(+, /, = 포함)를 붙여넣은 경우를 위해 encodeURIComponent 적용
+    // 이미 %로 시작하는 인코딩이면 그대로 사용
+    const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const params = new URLSearchParams();
     params.set('pageNo', String(pageNo));
     params.set('numOfRows', '30');
     params.set('thngNm', keyword);
-    params.set('type', 'json');
-    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo?serviceKey=${serviceKey}&${params.toString()}`;
+    params.set('resultType', 'json');
+    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo?serviceKey=${encodedKey}&${params.toString()}`;
     const response = await net.fetch(rawUrl);
-    if (!response.ok) throw new Error(`API 오류: ${response.status}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`API 오류: ${response.status} — ${body.slice(0, 500)}`);
+    }
     return response.json();
   });
 
