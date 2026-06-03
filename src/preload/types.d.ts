@@ -13,6 +13,7 @@ export interface ElectronAPI {
   saveTxt(content: string, suggestedName?: string): Promise<string | null>;
   exportHtml(content: string, suggestedName?: string): Promise<string | null>;
   saveCsv(content: string, suggestedName?: string): Promise<string | null>;
+  openCsvFile(): Promise<{ filePath: string; content: string } | null>;
   saveHwpx(templateName: string, content: string, meta: Record<string, string>): Promise<string | null>;
   savePdf(htmlContent: string, suggestedName: string): Promise<string | null>;
   openHtmlExternal(htmlContent: string, suggestedName?: string): Promise<string | null>;

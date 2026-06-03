@@ -144,6 +144,19 @@ export function registerIpcHandlers(): void {
     return result.filePath;
   });
 
+  ipcMain.handle('file:open-csv', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+      properties: ['openFile'],
+    });
+    if (canceled || !filePaths[0]) return null;
+    const filePath = validatePath(filePaths[0]);
+    return {
+      filePath,
+      content: fs.readFileSync(filePath, 'utf-8'),
+    };
+  });
+
   ipcMain.handle('file:save-hwpx', async (_e, templateName: string, content: string, meta: Record<string, string>) => {
     const saveDir = store.get('saveDir');
     const title = meta.title || templateName;

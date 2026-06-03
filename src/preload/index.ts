@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   saveCsv: (content: string, suggestedName?: string) =>
     ipcRenderer.invoke('file:save-csv', content, suggestedName),
+  openCsvFile: (): Promise<{ filePath: string; content: string } | null> =>
+    ipcRenderer.invoke('file:open-csv'),
 
   saveHwpx: (templateName: string, content: string, meta: Record<string, string>) =>
     ipcRenderer.invoke('file:save-hwpx', templateName, content, meta),

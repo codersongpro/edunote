@@ -12,6 +12,7 @@ import {
   Save,
   Search,
   Trash2,
+  Upload,
   Wand2,
 } from 'lucide-react';
 
@@ -80,6 +81,8 @@ interface NaraItem {
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+const AUTO_BALANCE_MEMO = 'auto-balance-adjustment';
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 const genId = () => crypto.randomUUID();
@@ -168,6 +171,98 @@ function splitDesiredItems(value: string): string[] {
     .filter(Boolean);
 }
 
+function parseCsvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = '';
+  let inQuotes = false;
+  const source = text.replace(/^\uFEFF/, '');
+  for (let i = 0; i < source.length; i++) {
+    const char = source[i];
+    const next = source[i + 1];
+    if (char === '"' && inQuotes && next === '"') {
+      cell += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      row.push(cell);
+      cell = '';
+    } else if ((char === '\n' || char === '\r') && !inQuotes) {
+      if (char === '\r' && next === '\n') i++;
+      row.push(cell);
+      if (row.some(value => value.trim())) rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some(value => value.trim())) rows.push(row);
+  return rows;
+}
+
+function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudget: number | null } {
+  const rows = parseCsvRows(text);
+  const headerIndex = rows.findIndex(row => row.includes('예산 과목') && row.includes('품목'));
+  if (headerIndex < 0) throw new Error('예산사용계획 CSV 형식이 아닙니다.');
+  const header = rows[headerIndex].map(value => value.trim());
+  const idx = (name: string) => header.indexOf(name);
+  const categoryIdx = idx('예산 과목');
+  const nameIdx = idx('품목');
+  const codeIdx = idx('품목코드');
+  const specIdx = idx('규격');
+  const priceIdx = idx('단가(원)');
+  const qtyIdx = idx('수량');
+  const subtotalIdx = idx('소계(원)');
+  const items: BudgetItem[] = [];
+  let totalBudget: number | null = null;
+
+  for (const row of rows.slice(headerIndex + 1)) {
+    const label = row[specIdx]?.trim();
+    const amount = parseInt((row[subtotalIdx] ?? '').replace(/[^0-9-]/g, ''), 10) || 0;
+    if (label === '배정 예산') totalBudget = amount;
+
+    const category = row[categoryIdx]?.trim() as BudgetCategory;
+    const thngNm = row[nameIdx]?.trim();
+    if (!CATEGORIES.includes(category) || !thngNm) continue;
+
+    const unitPrice = parseInt((row[priceIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 0;
+    const quantity = Math.max(1, parseInt((row[qtyIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1);
+    items.push({
+      id: genId(),
+      budgetCategory: category,
+      thngNm,
+      thngCd: row[codeIdx]?.trim() || '',
+      spec: row[specIdx]?.trim() || '',
+      unitPrice,
+      quantity,
+      subtotal: amount > 0 ? amount : unitPrice * quantity,
+    });
+  }
+
+  if (items.length === 0) throw new Error('불러올 품목 행이 없습니다.');
+  return { items, totalBudget };
+}
+
+function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategory; thngNm: string; spec?: string; unitPrice: number; quantity: number }> {
+  const trimmed = text.trim();
+  const jsonText = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1]?.trim()
+    ?? trimmed.slice(trimmed.indexOf('['), trimmed.lastIndexOf(']') + 1);
+  const parsed = JSON.parse(jsonText);
+  if (!Array.isArray(parsed)) throw new Error('AI 응답 형식이 올바르지 않습니다.');
+  return parsed
+    .map((row: any) => ({
+      budgetCategory: row.budgetCategory,
+      thngNm: String(row.thngNm ?? '').trim(),
+      spec: String(row.spec ?? '').trim(),
+      unitPrice: Math.max(0, Math.round(Number(row.unitPrice) || 0)),
+      quantity: Math.max(1, Math.round(Number(row.quantity) || 1)),
+    }))
+    .filter(item => CATEGORIES.includes(item.budgetCategory) && item.thngNm && item.unitPrice > 0);
+}
+
 function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, string>): Record<BudgetCategory, NaraItem[]> {
   const candidates: Record<BudgetCategory, NaraItem[]> = {
     교육운영비: [...LOCAL_CATALOG.교육운영비],
@@ -202,6 +297,30 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
   return candidates;
 }
 
+function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetCategory, number>): BudgetItem[] {
+  const userItems = items.filter(item => item.memo !== AUTO_BALANCE_MEMO);
+  const adjustmentItems: BudgetItem[] = [];
+  for (const category of CATEGORIES) {
+    const used = userItems
+      .filter(item => item.budgetCategory === category)
+      .reduce((sum, item) => sum + item.subtotal, 0);
+    const remaining = allocations[category] - used;
+    if (remaining <= 0) continue;
+    adjustmentItems.push({
+      id: genId(),
+      budgetCategory: category,
+      thngNm: '자동 비율 맞춤 조정',
+      thngCd: '',
+      spec: '사용자 수정 행 보존',
+      unitPrice: 1,
+      quantity: remaining,
+      subtotal: remaining,
+      memo: AUTO_BALANCE_MEMO,
+    });
+  }
+  return [...userItems, ...adjustmentItems];
+}
+
 export default function BudgetPlannerScreen() {
   const [plans, setPlans] = useState<BudgetPlan[]>([]);
   const [activePlan, setActivePlan] = useState<BudgetPlan | null>(null);
@@ -224,16 +343,13 @@ export default function BudgetPlannerScreen() {
   const [searchResults, setSearchResults] = useState<NaraItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [searchTarget, setSearchTarget] = useState<'plan' | 'recommendation'>('plan');
 
   const [manualName, setManualName] = useState('');
   const [manualPrice, setManualPrice] = useState('');
   const [manualQty, setManualQty] = useState('1');
   const [manualCategory, setManualCategory] = useState<BudgetCategory>('교육운영비');
-  const [manualTarget, setManualTarget] = useState<'plan' | 'recommendation'>('plan');
 
   const [showRatio, setShowRatio] = useState(true);
-  const [recommendations, setRecommendations] = useState<BudgetItem[]>([]);
   const [recommendationStatus, setRecommendationStatus] = useState<RecommendationStatus>('idle');
   const [recommendationMessage, setRecommendationMessage] = useState('');
 
@@ -259,20 +375,12 @@ export default function BudgetPlannerScreen() {
 
   const planTotalUsed = activePlan?.items.reduce((sum, item) => sum + item.subtotal, 0) ?? 0;
   const planRemaining = (activePlan?.totalBudget ?? 0) - planTotalUsed;
-  const recommendationTotal = recommendations.reduce((sum, item) => sum + item.subtotal, 0);
-  const recommendationRemaining = budgetForCalc - recommendationTotal;
 
   const usedByCategory = useMemo(() => {
     const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반수용비: 0, 업무추진비: 0 };
     for (const item of activePlan?.items ?? []) used[item.budgetCategory] += item.subtotal;
     return used;
   }, [activePlan]);
-
-  const recommendationUsedByCategory = useMemo(() => {
-    const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반수용비: 0, 업무추진비: 0 };
-    for (const item of recommendations) used[item.budgetCategory] += item.subtotal;
-    return used;
-  }, [recommendations]);
 
   const keywordMap: Record<BudgetCategory, string> = {
     교육운영비: keywordEdu,
@@ -307,7 +415,6 @@ export default function BudgetPlannerScreen() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
-    setRecommendations([]);
     setRecommendationStatus('idle');
     setRecommendationMessage('');
   };
@@ -320,11 +427,6 @@ export default function BudgetPlannerScreen() {
   const addItemToPlan = (item?: Partial<NaraItem>, category = selectedCategory) => {
     if (!activePlan) return;
     updatePlanItems([...activePlan.items, makeItem(category, item)]);
-  };
-
-  const addItemToRecommendations = (item?: Partial<NaraItem>, category = selectedCategory) => {
-    setRecommendations(prev => [...prev, makeItem(category, item)]);
-    setRecommendationStatus('ready');
   };
 
   const updateRows = (
@@ -373,8 +475,7 @@ export default function BudgetPlannerScreen() {
   };
 
   const addSearchResult = (item: NaraItem) => {
-    if (searchTarget === 'recommendation') addItemToRecommendations(item);
-    else addItemToPlan(item);
+    addItemToPlan(item);
   };
 
   const addManualItem = () => {
@@ -385,16 +486,13 @@ export default function BudgetPlannerScreen() {
     });
     item.quantity = Math.max(1, parseInt(manualQty, 10) || 1);
     item.subtotal = calcSubtotal(item);
-    if (manualTarget === 'recommendation') setRecommendations(prev => [...prev, item]);
-    else if (activePlan) updatePlanItems([...activePlan.items, item]);
+    if (activePlan) updatePlanItems([...activePlan.items, item]);
     setManualName('');
     setManualPrice('');
     setManualQty('1');
   };
 
-  const makeRecommendations = async (): Promise<BudgetItem[]> => {
-    if (budgetForCalc <= 0) throw new Error('예산을 먼저 입력해주세요.');
-
+  const collectBudgetCandidates = async (): Promise<Record<BudgetCategory, NaraItem[]>> => {
     const localCandidates = buildLocalCandidates(activePlan?.title ?? planTitle, keywordMap);
     const candidates: Record<BudgetCategory, NaraItem[]> = {
       교육운영비: [...localCandidates.교육운영비],
@@ -402,23 +500,75 @@ export default function BudgetPlannerScreen() {
       업무추진비: [...localCandidates.업무추진비],
     };
 
-    if (apiKey.trim()) {
-      for (const category of CATEGORIES) {
-        const keywords = splitDesiredItems(keywordMap[category]).slice(0, 3);
-        for (const keyword of keywords) {
-          try {
-            const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
-            candidates[category].unshift(...normalizeApiItems(data, true));
-          } catch {
-            // API 결과가 없어도 내장 후보로 추천안을 계속 만듭니다.
-          }
+    if (!apiKey.trim()) return candidates;
+    for (const category of CATEGORIES) {
+      const keywords = splitDesiredItems(keywordMap[category]).slice(0, 3);
+      for (const keyword of keywords) {
+        try {
+          const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
+          candidates[category].unshift(...normalizeApiItems(data, true));
+        } catch {
+          // API 결과가 없어도 내장 후보로 예산안을 계속 만듭니다.
         }
       }
     }
+    return candidates;
+  };
 
-    const next = buildRecommendation(candidates, allocations);
-    if (next.length === 0) throw new Error('추천 품목을 만들지 못했습니다. 예산 금액이나 과목별 비율을 확인해주세요.');
-    return next;
+  const makeAiBudgetPlan = async (candidates: Record<BudgetCategory, NaraItem[]>): Promise<BudgetItem[]> => {
+    const candidateSummary = Object.fromEntries(CATEGORIES.map(category => [
+      category,
+      uniqueItems(candidates[category]).slice(0, 20).map(item => ({
+        name: item.thngNm,
+        spec: item.spec ?? '',
+        unitPrice: item.unitPrice ?? 0,
+      })),
+    ]));
+    const prompt = [
+      '학교 예산사용계획 품목표를 만들어줘.',
+      '반드시 JSON 배열만 응답해. 설명, 마크다운, 코드블록은 쓰지 마.',
+      '각 항목 필드: budgetCategory, thngNm, spec, unitPrice, quantity',
+      'budgetCategory는 교육운영비, 일반수용비, 업무추진비 중 하나만 사용해.',
+      'unitPrice와 quantity는 양의 정수로 작성해.',
+      '예산 제목과 구입 희망 물품의 성격을 분석해 어울리는 품목을 고르고, 과목별 배정액에 가깝게 맞춰.',
+      '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 교육 현장에서 자연스러운 품목을 직접 제안해.',
+      '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
+      JSON.stringify({
+        title: activePlan?.title ?? planTitle,
+        totalBudget: budgetForCalc,
+        allocations,
+        desiredItems: keywordMap,
+        candidateItems: candidateSummary,
+      }, null, 2),
+    ].join('\n');
+    const systemInstruction = '너는 한국 학교 예산사용계획을 작성하는 행정 보조자다. 사용자가 바로 수정하고 CSV로 내려받을 수 있는 품목표만 만든다.';
+    const text = await window.electronAPI.aiGenerate(prompt, systemInstruction, { temperature: 0.4 });
+    const parsed = parseAiBudgetItems(text);
+    if (parsed.length === 0) throw new Error('AI가 사용할 수 있는 예산안 품목을 만들지 못했습니다.');
+    return parsed.map(item => ({
+      id: genId(),
+      budgetCategory: item.budgetCategory,
+      thngNm: item.thngNm,
+      thngCd: 'ai-generated',
+      spec: item.spec ?? '',
+      unitPrice: item.unitPrice,
+      quantity: item.quantity,
+      subtotal: item.unitPrice * item.quantity,
+    }));
+  };
+
+  const makeRecommendations = async (): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
+    if (budgetForCalc <= 0) throw new Error('예산을 먼저 입력해주세요.');
+
+    const candidates = await collectBudgetCandidates();
+    try {
+      const aiItems = await makeAiBudgetPlan(candidates);
+      return { items: balanceItemsByCategory(aiItems, allocations), source: 'ai' };
+    } catch {
+      const fallback = buildRecommendation(candidates, allocations);
+      if (fallback.length === 0) throw new Error('예산안 품목을 만들지 못했습니다. Gemini API 키, 예산 금액, 과목별 비율을 확인해주세요.');
+      return { items: balanceItemsByCategory(fallback, allocations), source: 'local' };
+    }
   };
 
   const handleMakeRecommendations = async () => {
@@ -426,50 +576,32 @@ export default function BudgetPlannerScreen() {
     setRecommendationStatus('loading');
     setRecommendationMessage('');
     try {
-      const next = await makeRecommendations();
-      setRecommendations(next);
+      const { items: next, source } = await makeRecommendations();
       setRecommendationStatus('ready');
       setActivePlan({ ...activePlan, items: next.map(item => ({ ...item, id: genId() })), updatedAt: Date.now() });
-      setRecommendationMessage(`구입 물품을 바탕으로 예산안 ${next.length}개 행을 만들었습니다.`);
+      setRecommendationMessage(source === 'ai'
+        ? `Gemini가 예산 성격을 분석해 예산안 ${next.length}개 행을 만들었습니다.`
+        : `Gemini 호출이 어려워 내장 후보로 예산안 ${next.length}개 행을 만들었습니다.`);
     } catch (e: any) {
       setRecommendationStatus('error');
-      setRecommendationMessage(e?.message ?? '추천안을 만들지 못했습니다.');
-    }
-  };
-
-  const applyRecommendations = () => {
-    if (!activePlan || recommendations.length === 0) return;
-    const copied = recommendations.map(item => ({ ...item, id: genId() }));
-    updatePlanItems(copied);
-  };
-
-  const handleInstantApply = async () => {
-    if (!activePlan) return;
-    setRecommendationStatus('loading');
-    setRecommendationMessage('');
-    try {
-      const next = await makeRecommendations();
-      setRecommendations(next);
-      setRecommendationStatus('ready');
-      setRecommendationMessage(`추천 품목 ${next.length}개를 예산안에 적용했습니다.`);
-      setActivePlan({ ...activePlan, items: next.map(item => ({ ...item, id: genId() })), updatedAt: Date.now() });
-    } catch (e: any) {
-      setRecommendationStatus('error');
-      setRecommendationMessage(e?.message ?? '즉시 적용하지 못했습니다.');
+      setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
     }
   };
 
   const autoBalancePlan = () => {
-    if (!activePlan || activePlan.items.length === 0 || planRemaining === 0) return;
-    const items = [...activePlan.items];
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i].unitPrice <= 0) continue;
-      const others = items.filter((_, idx) => idx !== i).reduce((sum, item) => sum + item.subtotal, 0);
-      const quantity = Math.max(1, Math.round((activePlan.totalBudget - others) / items[i].unitPrice));
-      items[i] = { ...items[i], quantity, subtotal: items[i].unitPrice * quantity };
-      break;
-    }
-    updatePlanItems(items);
+    if (!activePlan || activePlan.items.length === 0) return;
+    const balancedItems = balanceItemsByCategory(activePlan.items, allocations);
+    updatePlanItems(balancedItems);
+    const overCategories = CATEGORIES.filter(category => {
+      const used = activePlan.items
+        .filter(item => item.memo !== AUTO_BALANCE_MEMO && item.budgetCategory === category)
+        .reduce((sum, item) => sum + item.subtotal, 0);
+      return used > allocations[category];
+    });
+    setRecommendationStatus('ready');
+    setRecommendationMessage(overCategories.length > 0
+      ? `사용자가 수정한 행은 유지했습니다. ${overCategories.join(', ')}는 배정액을 초과해 직접 조정이 필요합니다.`
+      : '사용자가 수정한 행을 유지하고, 부족한 금액만 자동 조정 행으로 맞췄습니다.');
   };
 
   const handleSave = async () => {
@@ -498,6 +630,28 @@ export default function BudgetPlannerScreen() {
     ];
     const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
     await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산사용계획`);
+  };
+
+  const handleImportCsv = async () => {
+    if (!activePlan) return;
+    try {
+      const opened = await window.electronAPI.openCsvFile();
+      if (!opened) return;
+      const imported = readBudgetItemsFromCsv(opened.content);
+      const importedBudget = imported.totalBudget ?? activePlan.totalBudget;
+      setActivePlan({
+        ...activePlan,
+        totalBudget: importedBudget,
+        items: imported.items,
+        updatedAt: Date.now(),
+      });
+      setTotalBudget(fmt(importedBudget));
+      setRecommendationStatus('ready');
+      setRecommendationMessage(`CSV에서 ${imported.items.length}개 품목을 불러왔습니다.`);
+    } catch (e: any) {
+      setRecommendationStatus('error');
+      setRecommendationMessage(e?.message ?? 'CSV를 불러오지 못했습니다.');
+    }
   };
 
   const API_GUIDE_STEPS = [
@@ -601,13 +755,9 @@ export default function BudgetPlannerScreen() {
           {activePlan && (
             <section className="p-4 space-y-3">
               <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">품목 추가</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div>
                 <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
                   {CATEGORIES.map(category => <option key={category}>{category}</option>)}
-                </select>
-                <select value={searchTarget} onChange={e => setSearchTarget(e.target.value as 'plan' | 'recommendation')} className={inputCls}>
-                  <option value="plan">예산안에 추가</option>
-                  <option value="recommendation">추천안에 추가</option>
                 </select>
               </div>
               <div className="flex gap-1">
@@ -632,13 +782,9 @@ export default function BudgetPlannerScreen() {
               </div>
 
               <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2 space-y-2">
-                <div className="grid grid-cols-2 gap-2">
+                <div>
                   <select value={manualCategory} onChange={e => setManualCategory(e.target.value as BudgetCategory)} className={inputCls}>
                     {CATEGORIES.map(category => <option key={category}>{category}</option>)}
-                  </select>
-                  <select value={manualTarget} onChange={e => setManualTarget(e.target.value as 'plan' | 'recommendation')} className={inputCls}>
-                    <option value="plan">예산안</option>
-                    <option value="recommendation">추천안</option>
                   </select>
                 </div>
                 <input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="직접 입력 품목명" className={inputCls} />
@@ -674,20 +820,17 @@ export default function BudgetPlannerScreen() {
                     <button onClick={handleMakeRecommendations} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1`}>
                       <Wand2 className="w-3.5 h-3.5" />예산안 만들기
                     </button>
-                    <button onClick={applyRecommendations} disabled={recommendations.length === 0} className={`${btnCls} bg-amber-500 text-white hover:bg-amber-600 flex items-center gap-1`}>
-                      추천안 적용
-                    </button>
-                    <button onClick={handleInstantApply} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-rose-600 text-white hover:bg-rose-700 flex items-center gap-1`}>
-                      즉시 적용
-                    </button>
                     <button onClick={autoBalancePlan} className={`${btnCls} bg-gray-700 text-white hover:bg-gray-800 flex items-center gap-1`}>
-                      자동 0원
+                      자동 비율 및 0원 맞추기
                     </button>
                     <button onClick={handleSave} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
                       <Save className="w-3.5 h-3.5" />저장
                     </button>
+                    <button onClick={handleImportCsv} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                      <Upload className="w-3.5 h-3.5" />CSV 불러오기
+                    </button>
                     <button onClick={handleExportCsv} className={`${btnCls} bg-green-600 text-white hover:bg-green-700 flex items-center gap-1`}>
-                      <Download className="w-3.5 h-3.5" />CSV
+                      <Download className="w-3.5 h-3.5" />CSV 다운로드
                     </button>
                   </div>
                 </div>
@@ -703,34 +846,14 @@ export default function BudgetPlannerScreen() {
               <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
                 <section>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">추천 결과</h3>
-                    <button onClick={() => addItemToRecommendations(undefined, selectedCategory)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
-                      <Plus className="w-3.5 h-3.5" />행 추가
-                    </button>
-                  </div>
-                  <EditableBudgetTable
-                    items={recommendations}
-                    emptyText="예산안 만들기를 누르거나 왼쪽에서 추천안에 품목을 추가하세요"
-                    totalBudget={budgetForCalc}
-                    usedTotal={recommendationTotal}
-                    remaining={recommendationRemaining}
-                    allocations={allocations}
-                    usedByCategory={recommendationUsedByCategory}
-                    onChange={(id, patch) => setRecommendations(prev => updateRows(prev, id, patch))}
-                    onRemove={(id) => setRecommendations(prev => prev.filter(item => item.id !== id))}
-                  />
-                </section>
-
-                <section>
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">적용된 예산안</h3>
+                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
                     <button onClick={() => addItemToPlan(undefined, selectedCategory)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
                       <Plus className="w-3.5 h-3.5" />행 추가
                     </button>
                   </div>
                   <EditableBudgetTable
                     items={activePlan.items}
-                    emptyText="추천안을 적용하거나 왼쪽에서 품목을 추가하세요"
+                    emptyText="예산안 만들기를 누르거나 왼쪽에서 품목을 추가하세요"
                     totalBudget={activePlan.totalBudget}
                     usedTotal={planTotalUsed}
                     remaining={planRemaining}

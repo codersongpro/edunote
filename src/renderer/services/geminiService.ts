@@ -626,7 +626,8 @@ export const generateDocument = async (
 2. 제목 바로 다음 줄에 소속기관이 있으면 오른쪽 정렬로 표시하세요. 예: <div style="text-align:right;font-size:12pt;font-weight:bold;margin-bottom:24px;">소속기관명</div>
 3. 제목과 소속기관 줄은 본문 표나 첫 항목보다 앞에 배치하세요.
 4. 실제 보고서·계획서처럼 간결하고 자연스러운 문체를 사용하고, AI가 작성했다는 표현은 절대 쓰지 마세요.
-5. 표는 border="1"을 사용하고, 모든 th와 td에 border:1px solid black; padding:6px 8px;를 넣어 선으로 명확히 구분하세요.`
+5. 표는 border="1"을 사용하고, 모든 th와 td에 border:1px solid black; padding:10px 12px; vertical-align:middle;를 넣어 선과 여백이 명확하게 보이도록 하세요.
+6. 문단과 표가 너무 붙지 않도록 주요 구역에는 margin-bottom:16px 이상을 사용하세요.`
     : '';
 
   const reportStyleInstruction = docType === DocType.NEWSLETTER || docType === DocType.MESSAGE

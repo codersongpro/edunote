@@ -156,10 +156,12 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     el.querySelectorAll<HTMLTableElement>('table').forEach(table => {
       if (!table.style.borderCollapse) table.style.borderCollapse = 'collapse';
       if (!table.style.width) table.style.width = '100%';
+      if (!table.style.margin) table.style.margin = '10pt 0 14pt';
     });
     el.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
       if (!cell.style.border) cell.style.border = '1pt solid #333';
-      if (!cell.style.padding) cell.style.padding = '5pt 8pt';
+      if (!cell.style.padding) cell.style.padding = '8pt 10pt';
+      if (!cell.style.verticalAlign) cell.style.verticalAlign = 'middle';
     });
     el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
       if (!h1.style.textAlign) h1.style.textAlign = 'center';
@@ -254,7 +256,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const fontFamily = "'Malgun Gothic', 'Batang', 'Dotum', sans-serif";
 
     body.style.margin = '0';
-    body.style.padding = '0';
+    body.style.padding = '18mm 16mm';
     body.style.fontFamily = fontFamily;
     body.style.fontSize = '11pt';
     body.style.lineHeight = '1.7';
@@ -294,7 +296,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       el.style.fontSize = '11pt';
       el.style.lineHeight = '1.7';
       el.style.color = '#000000';
-      if (el.tagName.toLowerCase() === 'p') el.style.margin = '0 0 6pt 0';
+      if (el.tagName.toLowerCase() === 'p') el.style.margin = '0 0 8pt 0';
       if (el.tagName.toLowerCase() === 'li') el.style.margin = '0 0 3pt 0';
     });
 
@@ -307,13 +309,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       table.style.width = '100%';
       table.style.borderCollapse = 'collapse';
       table.style.tableLayout = 'fixed';
-      table.style.margin = '8pt 0';
+      table.style.margin = '10pt 0 14pt 0';
       table.style.border = '1pt solid #000000';
     });
 
     body.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
       cell.style.border = '1pt solid #000000';
-      cell.style.padding = '5pt 7pt';
+      cell.style.padding = '8pt 10pt';
       cell.style.fontFamily = fontFamily;
       cell.style.fontSize = '10pt';
       cell.style.lineHeight = '1.5';
@@ -332,7 +334,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       el.style.color = '#000000';
     });
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${body.innerHTML}</body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>@page{size:A4;margin:18mm 16mm;}body{box-sizing:border-box;}</style></head><body>${body.innerHTML}</body></html>`;
   };
 
   const handleDownloadHwpx = async () => {
@@ -352,13 +354,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 
   const handleDownloadHtml = async () => {
     const currentHtml = getCurrentContent();
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body>${currentHtml}</body></html>`;
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Malgun Gothic','Dotum',sans-serif;line-height:1.7;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;margin:10pt 0 14pt;}th,td{border:1pt solid #333;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename('html'), 'html');
   };
 
   const handleDownloadWord = async () => {
     const currentHtml = getCurrentContent();
-    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>body { font-family: 'Batang', 'Dotum', sans-serif; } table { border-collapse: collapse; width: 100%; border: 1px solid black; } th, td { border: 1px solid black; padding: 8px; }</style></head><body>${currentHtml}</body></html>`;
+    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Batang','Dotum',sans-serif;line-height:1.7;}table{border-collapse:collapse;width:100%;border:1px solid black;margin:10pt 0 14pt;}th,td{border:1px solid black;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename('doc'), 'doc');
   };
 
@@ -423,13 +425,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const docTitle = getDocumentTitle();
     const filename = getFormattedFilename('pdf');
     const fullHtml = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${docTitle}</title><style>
-@page{size:A4;margin:20mm 15mm;}
+@page{size:A4;margin:18mm 16mm;}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum','Apple SD Gothic Neo',sans-serif;font-size:11pt;color:#000;background:#fff;}
 h1{font-size:15pt;margin:0 0 10pt;}h2{font-size:13pt;margin:8pt 0 6pt;}h3{font-size:11pt;margin:6pt 0 4pt;}
-p,li{line-height:1.7;margin:0 0 6pt;}
-table{width:100%;border-collapse:collapse;page-break-inside:avoid;margin:8pt 0;}
-th,td{border:1pt solid #333;padding:5pt 7pt;font-size:10pt;}
+p,li{line-height:1.75;margin:0 0 8pt;}
+table{width:100%;border-collapse:collapse;page-break-inside:avoid;margin:10pt 0 14pt;}
+th,td{border:1pt solid #333;padding:8pt 10pt;font-size:10pt;vertical-align:middle;}
 section,.section,tr{page-break-inside:avoid;}
 h2,h3{page-break-after:avoid;}
 </style></head><body>${currentHtml}</body></html>`;
@@ -649,7 +651,7 @@ h2,h3{page-break-after:avoid;}
             minHeight: '297mm',
             backgroundColor: 'white',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            padding: '20mm',
+            padding: '22mm 18mm',
             fontFamily: "'Dotum', sans-serif",
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
@@ -681,6 +683,22 @@ h2,h3{page-break-after:avoid;}
         </span>
         <span>{'HTML, Word/HWP\uC6A9, Markdown \uC800\uC7A5 \uC9C0\uC6D0'}</span>
       </div>
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 18mm 16mm; }
+          body { background: #fff !important; }
+          .print-section {
+            box-shadow: none !important;
+            border: 0 !important;
+            max-width: none !important;
+            min-height: auto !important;
+            padding: 0 !important;
+          }
+          .print-section table { margin: 10pt 0 14pt !important; }
+          .print-section th,
+          .print-section td { padding: 8pt 10pt !important; vertical-align: middle !important; }
+        }
+      `}</style>
     </div>
   );
 };

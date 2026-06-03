@@ -446,8 +446,15 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const hwpxTemplateFile = uploadedTemplates.length > 0 ? uploadedTemplates[0].file : undefined;
   const previewHtml = EXAMPLE_DOCS[activeTab]?.replace(
     /<body([^>]*)>/i,
-    '<body$1 style="margin:0; background:#ffffff; color:#000000;">',
-  );
+    `<body$1 style="margin:0; background:#f3f4f6; color:#000000; padding:24px;">
+      <style>
+        .edunote-doc-page{max-width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:22mm 18mm;box-sizing:border-box;box-shadow:0 8px 24px rgba(15,23,42,.16);}
+        .edunote-doc-page table{width:100%;border-collapse:collapse;margin:10pt 0 14pt;}
+        .edunote-doc-page th,.edunote-doc-page td{padding:8pt 10pt;vertical-align:middle;}
+        .edunote-doc-page p{margin:0 0 8pt;line-height:1.75;}
+      </style>
+      <div class="edunote-doc-page">`,
+  )?.replace(/<\/body>/i, '</div></body>');
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
