@@ -585,6 +585,19 @@ export function registerIpcHandlers(): void {
     return await fetchUrl(safeUrl, 6);
   });
 
+  // ── 나라장터 물품 검색 ────────────────────────────────────────────
+  ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+    const url = new URL('https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo');
+    url.searchParams.set('serviceKey', serviceKey);
+    url.searchParams.set('pageNo', String(pageNo));
+    url.searchParams.set('numOfRows', '30');
+    url.searchParams.set('thngNm', keyword);
+    url.searchParams.set('type', 'json');
+    const response = await net.fetch(url.toString());
+    if (!response.ok) throw new Error(`API 오류: ${response.status}`);
+    return response.json();
+  });
+
   // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);

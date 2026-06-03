@@ -78,4 +78,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openJsonFile: (): Promise<string | null> => ipcRenderer.invoke('file:open-json'),
   fetchMarket: (sheetId: string): Promise<string> => ipcRenderer.invoke('data:fetch-market', sheetId),
   fetchUrlJson: (url: string): Promise<string> => ipcRenderer.invoke('data:fetch-url-json', url),
+
+  // 나라장터 물품 검색
+  naramarketSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naramarket-search', { keyword, serviceKey, pageNo }),
 });

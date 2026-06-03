@@ -44,6 +44,8 @@ export enum AppMode {
   // 나만의AI
   MY_AI_TOOLS = 'MY_AI_TOOLS',
   MY_AI_TOOLS_SHARED = 'MY_AI_TOOLS_SHARED',
+  // 예산사용계획
+  BUDGET_PLANNER = 'BUDGET_PLANNER',
 }
 
 // ─── Custom Tool ───────────────────────────────────────────────────
@@ -447,4 +449,28 @@ export interface PromotionInputs {
   content: string;
   purpose: string;
   interview: string;
+}
+
+// ─── Budget Planner ───────────────────────────────────────────────
+export type BudgetCategory = '교육운영비' | '일반수용비' | '업무추진비';
+
+export interface BudgetItem {
+  id: string;
+  budgetCategory: BudgetCategory;
+  thngNm: string;
+  thngCd?: string;
+  spec?: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+  memo?: string;
+}
+
+export interface BudgetPlan {
+  id: string;
+  title: string;
+  totalBudget: number;
+  items: BudgetItem[];
+  createdAt: number;
+  updatedAt: number;
 }
