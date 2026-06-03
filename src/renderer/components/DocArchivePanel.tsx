@@ -161,7 +161,7 @@ export default function DocArchivePanel() {
           {selected.captureBase64 && (
             <div>
               <p className={labelClass}>캡처 이미지</p>
-              <img src={`data:${selected.captureMimeType};base64,${selected.captureBase64}`} alt="공문 캡처" className="max-w-full rounded-lg border border-gray-200 dark:border-gray-700 shadow" />
+              <img src={selected.captureBase64} alt="공문 캡처" className="max-w-full rounded-lg border border-gray-200 dark:border-gray-700 shadow" />
             </div>
           )}
           {selected.attachments.length > 0 && (
@@ -175,7 +175,7 @@ export default function DocArchivePanel() {
                     <button
                       onClick={() => {
                         const a = document.createElement('a');
-                        a.href = `data:${att.mimeType};base64,${att.base64}`;
+                        a.href = att.base64;
                         a.download = att.name;
                         a.click();
                       }}
@@ -265,7 +265,7 @@ export default function DocArchivePanel() {
               >
                 {item.captureBase64 ? (
                   <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <img src={`data:${item.captureMimeType};base64,${item.captureBase64}`} alt="" className="w-full h-full object-cover" />
+                    <img src={item.captureBase64} alt="" className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="w-12 h-12 shrink-0 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-200 dark:border-emerald-800">

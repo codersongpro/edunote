@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
-import { Search, Plus, Trash2, Save, Download, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertCircle, CheckCircle2, Wand2 } from 'lucide-react';
+import { Search, Plus, Trash2, Save, Download, RefreshCw, ChevronDown, ChevronUp, ExternalLink, AlertCircle, CheckCircle2, Wand2, PenLine } from 'lucide-react';
 
 // ─── 예산 과목별 추천 키워드 ──────────────────────────────────────
 const CATEGORY_KEYWORDS: Record<BudgetCategory, { label: string; keywords: string[] }[]> = {
@@ -60,6 +60,13 @@ export default function BudgetPlannerScreen() {
   const [maxPrice, setMaxPrice] = useState('');
   const [minQty, setMinQty] = useState('1');
   const [maxQty, setMaxQty] = useState('');
+
+  // 직접 입력
+  const [manualName, setManualName] = useState('');
+  const [manualPrice, setManualPrice] = useState('');
+  const [manualQty, setManualQty] = useState('1');
+  const [manualCategory, setManualCategory] = useState<BudgetCategory>('교육운영비');
+  const [searchTab, setSearchTab] = useState<'search' | 'manual'>('search');
 
   // 로드
   useEffect(() => {
@@ -153,6 +160,24 @@ export default function BudgetPlannerScreen() {
   const removeItem = (id: string) => {
     if (!activePlan) return;
     setActivePlan({ ...activePlan, items: activePlan.items.filter(i => i.id !== id), updatedAt: Date.now() });
+  };
+
+  const addManualItem = () => {
+    if (!activePlan || !manualName.trim()) return;
+    const price = parseInt(manualPrice.replace(/,/g, ''), 10) || 0;
+    const qty = parseInt(manualQty, 10) || 1;
+    const item: BudgetItem = {
+      id: genId(),
+      budgetCategory: manualCategory,
+      thngNm: manualName.trim(),
+      unitPrice: price,
+      quantity: qty,
+      subtotal: price * qty,
+    };
+    setActivePlan({ ...activePlan, items: [...activePlan.items, item], updatedAt: Date.now() });
+    setManualName('');
+    setManualPrice('');
+    setManualQty('1');
   };
 
   // 합계 계산
@@ -300,68 +325,125 @@ export default function BudgetPlannerScreen() {
             </div>
           )}
 
-          {/* 예산 과목 + 키워드 검색 */}
+          {/* 물품 추가 패널 */}
           {activePlan && (
-            <div className="p-4 flex-1">
-              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">물품 검색</p>
-              <div className="mb-2">
-                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
-                  <option value="교육운영비">교육운영비</option>
-                  <option value="일반수용비">일반수용비</option>
-                  <option value="업무추진비">업무추진비</option>
-                </select>
-              </div>
-              {/* 추천 키워드 */}
-              <div className="mb-2">
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1">추천 키워드</p>
-                <div className="space-y-1">
-                  {CATEGORY_KEYWORDS[selectedCategory].map(group => (
-                    <div key={group.label}>
-                      <p className="text-[10px] text-gray-400 dark:text-gray-500">{group.label}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {group.keywords.map(kw => (
-                          <button key={kw} onClick={() => { setSearchKeyword(kw); handleSearch(kw); }}
-                            className="px-2 py-0.5 text-[11px] bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 rounded-full transition-colors">
-                            {kw}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* 직접 검색 */}
-              <div className="flex gap-1 mb-2">
-                <input value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword)}
-                  placeholder="직접 검색" className={inputCls} />
-                <button onClick={() => handleSearch(searchKeyword)} disabled={isSearching}
-                  className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 shrink-0`}>
-                  {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <div className="p-4 flex-1 flex flex-col overflow-hidden">
+              {/* 탭 */}
+              <div className="flex gap-1 mb-3 shrink-0">
+                <button
+                  onClick={() => setSearchTab('search')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 ${searchTab === 'search' ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  <Search className="w-3 h-3" />나라장터 검색
+                </button>
+                <button
+                  onClick={() => setSearchTab('manual')}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 ${searchTab === 'manual' ? 'bg-emerald-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+                >
+                  <PenLine className="w-3 h-3" />직접 입력
                 </button>
               </div>
-              {/* 단가/수량 필터 */}
-              <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2 mb-2 text-xs">
-                <p className="font-bold text-gray-600 dark:text-gray-400 mb-1">필터</p>
-                <div className="grid grid-cols-2 gap-1">
-                  <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="최소 단가" className={inputCls} />
-                  <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="최대 단가" className={inputCls} />
-                  <input value={minQty} onChange={e => setMinQty(e.target.value)} placeholder="최소 수량" className={inputCls} />
-                  <input value={maxQty} onChange={e => setMaxQty(e.target.value)} placeholder="최대 수량" className={inputCls} />
+
+              {/* 나라장터 검색 탭 */}
+              {searchTab === 'search' && (
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
+                    <option value="교육운영비">교육운영비</option>
+                    <option value="일반수용비">일반수용비</option>
+                    <option value="업무추진비">업무추진비</option>
+                  </select>
+                  {/* 추천 키워드 */}
+                  <div>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1">추천 키워드</p>
+                    <div className="space-y-1">
+                      {CATEGORY_KEYWORDS[selectedCategory].map(group => (
+                        <div key={group.label}>
+                          <p className="text-[10px] text-gray-400 dark:text-gray-500">{group.label}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {group.keywords.map(kw => (
+                              <button key={kw} onClick={() => { setSearchKeyword(kw); handleSearch(kw); }}
+                                className="px-2 py-0.5 text-[11px] bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 rounded-full transition-colors">
+                                {kw}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 검색어 직접 입력 */}
+                  <div className="flex gap-1">
+                    <input value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword)}
+                      placeholder="검색어 입력 후 Enter" className={inputCls} />
+                    <button onClick={() => handleSearch(searchKeyword)} disabled={isSearching}
+                      className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 shrink-0`}>
+                      {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  {/* 단가/수량 필터 */}
+                  <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-2 text-xs">
+                    <p className="font-bold text-gray-600 dark:text-gray-400 mb-1">단가·수량 필터</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      <input value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="최소 단가" className={inputCls} />
+                      <input value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="최대 단가" className={inputCls} />
+                      <input value={minQty} onChange={e => setMinQty(e.target.value)} placeholder="최소 수량" className={inputCls} />
+                      <input value={maxQty} onChange={e => setMaxQty(e.target.value)} placeholder="최대 수량" className={inputCls} />
+                    </div>
+                  </div>
+                  {searchError && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{searchError}</p>}
+                  {/* 검색 결과 */}
+                  <div className="space-y-1">
+                    {searchResults.map((item, idx) => (
+                      <button key={idx} onClick={() => addItem(item)}
+                        className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
+                        <p className="text-[11px] text-gray-400">{item.thngCd} {item.stdUntNm ? `· ${item.stdUntNm}` : ''}</p>
+                        {item.unitPrice != null && <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{fmt(item.unitPrice)}원</p>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              {searchError && <p className="text-xs text-red-500 flex items-center gap-1 mb-2"><AlertCircle className="w-3 h-3" />{searchError}</p>}
-              {/* 검색 결과 */}
-              <div className="space-y-1 max-h-60 overflow-y-auto">
-                {searchResults.map((item, idx) => (
-                  <button key={idx} onClick={() => addItem(item)}
-                    className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
-                    <p className="text-[11px] text-gray-400">{item.thngCd} {item.stdUntNm ? `· ${item.stdUntNm}` : ''}</p>
-                    {item.unitPrice != null && <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{fmt(item.unitPrice)}원</p>}
+              )}
+
+              {/* 직접 입력 탭 */}
+              {searchTab === 'manual' && (
+                <div className="flex-1 space-y-2">
+                  <select value={manualCategory} onChange={e => setManualCategory(e.target.value as BudgetCategory)} className={inputCls}>
+                    <option value="교육운영비">교육운영비</option>
+                    <option value="일반수용비">일반수용비</option>
+                    <option value="업무추진비">업무추진비</option>
+                  </select>
+                  <input
+                    value={manualName}
+                    onChange={e => setManualName(e.target.value)}
+                    placeholder="품목명 *"
+                    className={inputCls}
+                  />
+                  <input
+                    value={manualPrice}
+                    onChange={e => setManualPrice(e.target.value)}
+                    placeholder="단가 (원)"
+                    className={inputCls}
+                  />
+                  <input
+                    value={manualQty}
+                    onChange={e => setManualQty(e.target.value)}
+                    placeholder="수량"
+                    type="number"
+                    min={1}
+                    className={inputCls}
+                  />
+                  <button
+                    onClick={addManualItem}
+                    disabled={!manualName.trim()}
+                    className={`w-full ${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 flex items-center justify-center gap-1`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    품목 추가
                   </button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>

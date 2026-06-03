@@ -802,36 +802,42 @@ const ToolCard: React.FC<{
         }
       </div>
 
-      <div className={`flex gap-2 pt-1 border-t ${isHtmlApp ? 'border-violet-100 dark:border-violet-900/40' : 'border-amber-100 dark:border-amber-900/40'}`}>
-        <button
-          onClick={handleRun}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-white text-xs font-bold rounded-lg transition-colors ${isHtmlApp ? 'bg-violet-500 hover:bg-violet-600' : 'bg-amber-500 hover:bg-amber-600'}`}
-        >
-          {isHtmlApp ? <Monitor className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          {isHtmlApp ? '열기' : '실행'}
-        </button>
-        <button
-          onClick={isHtmlApp ? onEditHtml : onEdit}
-          className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          수정
-        </button>
-        <button onClick={onTogglePin} className={`p-2 transition-colors ${tool.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`} title={tool.pinned ? '고정 해제' : '상단 고정'}>
-          {tool.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-        </button>
-        <button onClick={onDuplicate} className="p-2 text-gray-400 hover:text-blue-500 transition-colors" title="복제">
-          <Copy className="w-4 h-4" />
-        </button>
-        <button onClick={onShare} className="p-2 text-gray-400 hover:text-pink-500 transition-colors" title="공유하기">
-          <Share2 className="w-4 h-4" />
-        </button>
-        <button onClick={onExport} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors" title="JSON 내보내기">
-          <Download className="w-4 h-4" />
-        </button>
-        <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 transition-colors" title="삭제">
-          <Trash2 className="w-4 h-4" />
-        </button>
+      <div className={`flex flex-col gap-1 pt-1 border-t ${isHtmlApp ? 'border-violet-100 dark:border-violet-900/40' : 'border-amber-100 dark:border-amber-900/40'}`}>
+        {/* 1행: 실행·수정 */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleRun}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-white text-xs font-bold rounded-lg transition-colors ${isHtmlApp ? 'bg-violet-500 hover:bg-violet-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+          >
+            {isHtmlApp ? <Monitor className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            {isHtmlApp ? '열기' : '실행'}
+          </button>
+          <button
+            onClick={isHtmlApp ? onEditHtml : onEdit}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            수정
+          </button>
+        </div>
+        {/* 2행: 아이콘 버튼들 */}
+        <div className="flex items-center justify-around">
+          <button onClick={onTogglePin} className={`p-1.5 rounded transition-colors ${tool.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`} title={tool.pinned ? '고정 해제' : '상단 고정'}>
+            {tool.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+          </button>
+          <button onClick={onDuplicate} className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded" title="복제">
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onShare} className="p-1.5 text-gray-400 hover:text-pink-500 transition-colors rounded" title="공유하기">
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onExport} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded" title="JSON 내보내기">
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded" title="삭제">
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

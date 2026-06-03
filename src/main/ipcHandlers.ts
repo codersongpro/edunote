@@ -587,13 +587,14 @@ export function registerIpcHandlers(): void {
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
-    const url = new URL('https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo');
-    url.searchParams.set('serviceKey', serviceKey);
-    url.searchParams.set('pageNo', String(pageNo));
-    url.searchParams.set('numOfRows', '30');
-    url.searchParams.set('thngNm', keyword);
-    url.searchParams.set('type', 'json');
-    const response = await net.fetch(url.toString());
+    // serviceKey는 발급 시 이미 URL 인코딩된 상태 — URLSearchParams에 넣으면 이중 인코딩되므로 raw URL에 직접 조합
+    const params = new URLSearchParams();
+    params.set('pageNo', String(pageNo));
+    params.set('numOfRows', '30');
+    params.set('thngNm', keyword);
+    params.set('type', 'json');
+    const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngListInfo?serviceKey=${serviceKey}&${params.toString()}`;
+    const response = await net.fetch(rawUrl);
     if (!response.ok) throw new Error(`API 오류: ${response.status}`);
     return response.json();
   });
