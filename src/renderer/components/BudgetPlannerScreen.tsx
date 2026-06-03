@@ -68,6 +68,12 @@ export default function BudgetPlannerScreen() {
   const [manualCategory, setManualCategory] = useState<BudgetCategory>('교육운영비');
   const [searchTab, setSearchTab] = useState<'search' | 'manual'>('search');
 
+  // 예산 비율 배분
+  const [showRatio, setShowRatio] = useState(false);
+  const [ratioEdu, setRatioEdu] = useState('60');
+  const [ratioGeneral, setRatioGeneral] = useState('30');
+  const [ratioBiz, setRatioBiz] = useState('10');
+
   // 로드
   useEffect(() => {
     window.electronAPI.getConfig('naramarketApiKey').then((k: string) => { if (k) setApiKey(k); }).catch(() => {});
@@ -183,6 +189,15 @@ export default function BudgetPlannerScreen() {
   // 합계 계산
   const totalUsed = activePlan?.items.reduce((s, i) => s + i.subtotal, 0) ?? 0;
   const remaining = (activePlan?.totalBudget ?? 0) - totalUsed;
+
+  const ratioTotal = (parseInt(ratioEdu) || 0) + (parseInt(ratioGeneral) || 0) + (parseInt(ratioBiz) || 0);
+  const allocEdu = activePlan ? Math.round(activePlan.totalBudget * (parseInt(ratioEdu) || 0) / ratioTotal) : 0;
+  const allocGeneral = activePlan ? Math.round(activePlan.totalBudget * (parseInt(ratioGeneral) || 0) / ratioTotal) : 0;
+  const allocBiz = activePlan ? activePlan.totalBudget - allocEdu - allocGeneral : 0;
+
+  const usedEdu = activePlan?.items.filter(i => i.budgetCategory === '교육운영비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
+  const usedGeneral = activePlan?.items.filter(i => i.budgetCategory === '일반수용비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
+  const usedBiz = activePlan?.items.filter(i => i.budgetCategory === '업무추진비').reduce((s, i) => s + i.subtotal, 0) ?? 0;
 
   // 자동 0원 맞추기: 마지막 아이템의 수량을 조정
   const autoBalance = () => {
@@ -494,6 +509,59 @@ export default function BudgetPlannerScreen() {
                       style={{ width: `${Math.min(100, (totalUsed / activePlan.totalBudget) * 100)}%` }}
                     />
                   </div>
+                </div>
+
+                {/* 예산 과목별 비율 배분 */}
+                <div className="mt-3">
+                  <button
+                    onClick={() => setShowRatio(r => !r)}
+                    className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                  >
+                    {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    과목별 예산 비율 배분
+                  </button>
+                  {showRatio && (
+                    <div className="mt-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 space-y-2">
+                      <p className="text-[11px] text-blue-700 dark:text-blue-300">비율 합계가 100%가 아니어도 자동으로 계산됩니다. 마지막 항목에서 원단위 오차를 조정합니다.</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        {[
+                          { label: '교육운영비', val: ratioEdu, set: setRatioEdu, alloc: allocEdu, used: usedEdu, color: 'text-indigo-600 dark:text-indigo-400' },
+                          { label: '일반수용비', val: ratioGeneral, set: setRatioGeneral, alloc: allocGeneral, used: usedGeneral, color: 'text-emerald-600 dark:text-emerald-400' },
+                          { label: '업무추진비', val: ratioBiz, set: setRatioBiz, alloc: allocBiz, used: usedBiz, color: 'text-amber-600 dark:text-amber-400' },
+                        ].map(({ label, val, set, alloc, used, color }) => (
+                          <div key={label} className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-blue-100 dark:border-blue-800">
+                            <p className={`font-bold mb-1 ${color}`}>{label}</p>
+                            <div className="flex items-center gap-1 mb-1">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={val}
+                                onChange={e => set(e.target.value)}
+                                className="w-12 px-1.5 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <span className="text-gray-500">%</span>
+                            </div>
+                            <p className="text-[11px] text-gray-600 dark:text-gray-300">배분: <span className="font-bold">{fmt(alloc)}원</span></p>
+                            <p className="text-[11px] text-gray-500">집행: {fmt(used)}원</p>
+                            <p className={`text-[11px] font-bold ${alloc - used === 0 ? 'text-green-600' : alloc - used < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                              잔액: {fmt(alloc - used)}원
+                            </p>
+                            <div className="mt-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${alloc - used < 0 ? 'bg-red-500' : alloc - used === 0 ? 'bg-green-500' : 'bg-blue-400'}`}
+                                style={{ width: `${alloc > 0 ? Math.min(100, used / alloc * 100) : 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-blue-600 dark:text-blue-400">
+                        총 배분: {fmt(allocEdu + allocGeneral + allocBiz)}원 / 배정 예산: {fmt(activePlan.totalBudget)}원
+                        {ratioTotal !== 100 && <span className="ml-1 text-amber-500">(비율 합계 {ratioTotal}%)</span>}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
