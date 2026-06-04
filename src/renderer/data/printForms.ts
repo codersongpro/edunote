@@ -403,9 +403,9 @@ export const PRINT_FORMS: PrintForm[] = [
 </div></body></html>`,
   },
   {
-    id: 'class-roles-duty',
+    id: 'class-roles',
     category: '학급 활동',
-    title: '1인 1역할·청소 당번표',
+    title: '1인 1역할',
     fields: [
       { key: '학기', label: '학기', type: 'text', placeholder: '2026학년도 1학기' },
       { key: '학년반', label: '학년/반', type: 'text', placeholder: '3학년 2반' },
@@ -415,21 +415,13 @@ export const PRINT_FORMS: PrintForm[] = [
         label: '1인 1역할 (한 줄에 "역할/담당 학생")',
         type: 'table',
         columns: ['역할', '담당 학생'],
-        minRows: 12,
+        minRows: 18,
         placeholder: '칠판 정리/홍길동\n우유 당번/이순신\n분리수거/김유신',
-      },
-      {
-        key: '당번표',
-        label: '청소 당번표 (한 줄에 "구역/월/화/수/목/금")',
-        type: 'table',
-        columns: ['청소 구역', '월', '화', '수', '목', '금'],
-        minRows: 5,
-        placeholder: '교실 앞/홍길동/이순신/김유신/박지성/손흥민\n교실 뒤/.../.../.../.../...\n복도/.../.../.../.../...',
       },
     ],
     htmlTemplate: `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${baseStyle}</head><body>
 <div class="page-wrap">
-<div class="title-box" style="font-size:14pt; letter-spacing:1px;">1인 1역할 · 청소 당번표</div>
+<div class="title-box" style="font-size:15pt; letter-spacing:2px;">1인 1역할</div>
 <table style="margin-bottom:8pt;">
   <tr>
     <th style="width:14%;">학기</th><td class="nowrap" style="width:36%;">{{학기}}</td>
@@ -441,8 +433,6 @@ export const PRINT_FORMS: PrintForm[] = [
 </table>
 <h2>1인 1역할</h2>
 {{역할표}}
-<h2>청소 당번표</h2>
-{{당번표}}
 </div></body></html>`,
   },
 ];
