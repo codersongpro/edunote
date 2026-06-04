@@ -697,8 +697,8 @@ export function registerIpcHandlers(): void {
 
     const params = new URLSearchParams();
     params.set('query', trimmedKeyword);
-    params.set('display', '20');
-    params.set('start', String(Math.max(1, (pageNo - 1) * 20 + 1)));
+    params.set('display', '10');
+    params.set('start', String(Math.max(1, (pageNo - 1) * 10 + 1)));
     params.set('sort', 'sim');
 
     const response = await net.fetch(`https://openapi.naver.com/v1/search/shop.json?${params.toString()}`, {

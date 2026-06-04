@@ -29,6 +29,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Download, Wallet, Archive, Printer,
+  PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -406,6 +407,7 @@ const App: React.FC = () => {
   const [lessonMenuItems, setLessonMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('lesson', defaultLessonMenuItems));
   const [adminMenuItems, setAdminMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('admin', defaultAdminMenuItems));
   const [draggedMenu, setDraggedMenu] = useState<{ section: 'student' | 'lesson' | 'admin'; mode: AppMode } | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const reorderMenuItem = (
     section: 'student' | 'lesson' | 'admin',
@@ -659,8 +661,28 @@ const App: React.FC = () => {
           </div>
         )}
 
+        {/* 사이드바가 접혀 있을 때: 펼치기 버튼만 있는 얇은 바 */}
+        {sidebarCollapsed && (
+          <div className="w-11 shrink-0 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-3 gap-2">
+            <button
+              onClick={() => setSidebarCollapsed(false)}
+              className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="메뉴 펼치기"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setMode(AppMode.HOME)}
+              className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="홈"
+            >
+              <Home className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Sidebar */}
-        <aside className="min-w-[240px] w-[19%] max-w-[280px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shrink-0 overflow-hidden">
+        <aside className={`${sidebarCollapsed ? 'hidden' : 'flex'} min-w-[240px] w-[19%] max-w-[280px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col shrink-0 overflow-hidden`}>
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
             <button
@@ -670,13 +692,22 @@ const App: React.FC = () => {
               <span>EduNote</span>
               {appVersion && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">v{appVersion}</span>}
             </button>
-            <button
-              onClick={toggleDarkMode}
-              className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-amber-500 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
-            >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-500" />}
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleDarkMode}
+                className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-amber-500 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+              >
+                {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-500" />}
+              </button>
+              <button
+                onClick={() => setSidebarCollapsed(true)}
+                className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="메뉴 접기"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <nav className="flex-1 min-h-0 overflow-y-auto py-3 px-2 space-y-1">
