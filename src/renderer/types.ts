@@ -458,12 +458,13 @@ export interface PromotionInputs {
 }
 
 // ─── Budget Planner ───────────────────────────────────────────────
-export type BudgetCategory = '교육운영비' | '일반수용비' | '업무추진비';
+export type BudgetCategory = '교육운영비' | '일반운영비' | '업무추진비';
 
 export interface BudgetItem {
   id: string;
   budgetCategory: BudgetCategory;
   thngNm: string;
+  parentId?: string;
   thngCd?: string;
   spec?: string;
   unitPrice: number;
@@ -476,6 +477,7 @@ export interface BudgetItem {
   priceSourceUrl?: string;
   quantityLocked?: boolean;
   unitPriceLocked?: boolean;
+  quantityAdjusted?: boolean;
 }
 
 export interface BudgetPlan {

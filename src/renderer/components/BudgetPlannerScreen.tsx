@@ -16,7 +16,10 @@ import {
   Wand2,
 } from 'lucide-react';
 
-const CATEGORIES: BudgetCategory[] = ['교육운영비', '일반수용비', '업무추진비'];
+const CATEGORIES: BudgetCategory[] = ['교육운영비', '일반운영비', '업무추진비'];
+const DEFAULT_BUDGET_TITLE = '2026. 디지털선도학교 운영 예산';
+const DEFAULT_BUDGET_TOTAL = '10,000,000';
+const BUDGET_NOTEBOOK_LM_URL = 'https://notebooklm.google.com/notebook/1219f9f1-d26d-4e02-bc29-01a04feb15fb';
 
 const CATEGORY_COLORS: Record<BudgetCategory, { row: string; cell: string; select: string; footer: string }> = {
   교육운영비: {
@@ -25,7 +28,7 @@ const CATEGORY_COLORS: Record<BudgetCategory, { row: string; cell: string; selec
     select: 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-100',
     footer: 'bg-sky-50 dark:bg-sky-950/30',
   },
-  일반수용비: {
+  일반운영비: {
     row: 'bg-emerald-50/70 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30',
     cell: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100',
     select: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-100',
@@ -40,9 +43,9 @@ const CATEGORY_COLORS: Record<BudgetCategory, { row: string; cell: string; selec
 };
 
 const CATEGORY_KEYWORDS: Record<BudgetCategory, string[]> = {
-  교육운영비: ['도서', '교재', '학습지', '실험키트', '색연필', '줄넘기'],
-  일반수용비: ['복사용지', '볼펜', '토너', '파일', '청소용품', '테이프'],
-  업무추진비: ['커피', '음료', '과자', '차', '쿠키', '머그컵'],
+  교육운영비: ['에듀테크 라이선스', '학생 간식', '학생 기념품', '행사 예산'],
+  일반운영비: ['AI 라이선스', '강사비', '원고비', '홍보용품', '현수막'],
+  업무추진비: ['식비', '다과비'],
 };
 
 const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
@@ -57,7 +60,7 @@ const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
     { thngNm: '학습용 보드게임', thngCd: 'local-boardgame', spec: '개', unitPrice: 22000 },
     { thngNm: 'USB 메모리', thngCd: 'local-usb', spec: '32GB', unitPrice: 9000 },
   ],
-  일반수용비: [
+  일반운영비: [
     { thngNm: '복사용지', thngCd: 'local-copy-paper', spec: 'A4 2500매', unitPrice: 25000 },
     { thngNm: '볼펜', thngCd: 'local-pen', spec: '12개입', unitPrice: 6000 },
     { thngNm: '클리어 파일', thngCd: 'local-clear-file', spec: '20매', unitPrice: 5000 },
@@ -67,6 +70,12 @@ const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
     { thngNm: '프린터 토너', thngCd: 'local-toner', spec: '개', unitPrice: 85000 },
     { thngNm: '청소용품 세트', thngCd: 'local-cleaning', spec: '세트', unitPrice: 18000 },
     { thngNm: '손세정제', thngCd: 'local-sanitizer', spec: '500ml', unitPrice: 7000 },
+    { thngNm: 'AI 문서 작성 라이선스', thngCd: 'local-ai-doc', spec: '1년 구독', unitPrice: 500000 },
+    { thngNm: 'AI 콘텐츠 제작 라이선스', thngCd: 'local-ai-content', spec: '1년 구독', unitPrice: 400000 },
+    { thngNm: '강사비', thngCd: 'local-lecture-fee', spec: '운영수당', unitPrice: 180000 },
+    { thngNm: '원고비', thngCd: 'local-writing-fee', spec: '운영수당', unitPrice: 100000 },
+    { thngNm: '홍보용품', thngCd: 'local-promo', spec: '홍보 물품', unitPrice: 260000 },
+    { thngNm: '현수막', thngCd: 'local-banner', spec: '홍보물', unitPrice: 200000 },
   ],
   업무추진비: [
     { thngNm: '커피', thngCd: 'local-coffee', spec: '박스', unitPrice: 18000 },
@@ -93,8 +102,9 @@ const TITLE_HINTS: Record<string, Partial<Record<BudgetCategory, string[]>>> = {
   원격: { 교육운영비: ['이어폰', '헤드셋', '마이크', '웹캠'] },
   컴퓨터: { 교육운영비: ['USB', '마우스', '키보드', '헤드셋'] },
   디지털: { 교육운영비: ['USB', '이어폰', '헤드셋', '마우스', '키보드'] },
-  학급: { 교육운영비: ['학습', '도서'], 일반수용비: ['복사용지', '파일'] },
-  사무: { 일반수용비: ['복사용지', '볼펜', '파일'] },
+  학급: { 교육운영비: ['학습', '도서'], 일반운영비: ['복사용지', '파일'] },
+  사무: { 일반운영비: ['복사용지', '볼펜', '파일'] },
+  디지털선도학교: { 교육운영비: ['에듀테크', '학생 간식', '행사'], 일반운영비: ['AI 라이선스', '강사비', '원고비', '홍보용품', '현수막'] },
   회의: { 업무추진비: ['커피', '차', '회의용 다과'] },
   협의: { 업무추진비: ['커피', '차', '회의용 다과'] },
 };
@@ -107,6 +117,10 @@ const DESIRED_ITEM_HINTS: Record<string, string[]> = {
   다과: ['다과', '간식', '과자', '쿠키', '음료', '차', '커피'],
   식비: ['도시락', '식비', '간식', '음료', '다과'],
   간식: ['간식', '과자', '쿠키', '음료', '다과'],
+  라이선스: ['AI 라이선스', '에듀테크 라이선스', '구독'],
+  강사비: ['강사비', '운영수당'],
+  원고비: ['원고비', '운영수당'],
+  홍보: ['홍보용품', '현수막', '홍보물'],
 };
 
 const TITLE_DIRECT_ITEMS: Record<string, Partial<Record<BudgetCategory, NaraItem[]>>> = {
@@ -129,8 +143,29 @@ const TITLE_DIRECT_ITEMS: Record<string, Partial<Record<BudgetCategory, NaraItem
     ],
   },
   복사용지: {
-    일반수용비: [
+    일반운영비: [
       { thngNm: '복사용지', thngCd: 'title-copy-paper', spec: 'A4 2500매', unitPrice: 25000, preferred: true },
+    ],
+  },
+  디지털선도학교: {
+    교육운영비: [
+      { thngNm: '패들렛', thngCd: 'title-padlet', spec: '1년 구독', unitPrice: 1500000, preferred: true },
+      { thngNm: '젭퀴즈', thngCd: 'title-zepquiz', spec: '1년 구독', unitPrice: 1500000, preferred: true },
+      { thngNm: 'AI 코스웨어 라이선스', thngCd: 'title-ai-courseware', spec: '1년 구독', unitPrice: 2000000, preferred: true },
+      { thngNm: '수업 참여 간식', thngCd: 'title-student-snack', spec: '행사 및 수업 참여 간식', unitPrice: 5000, preferred: true },
+      { thngNm: '참여 학생 기념품', thngCd: 'title-student-gift', spec: '기념품', unitPrice: 5000, preferred: true },
+    ],
+    일반운영비: [
+      { thngNm: 'AI 문서 작성 라이선스', thngCd: 'title-ai-doc', spec: '1년 구독', unitPrice: 500000, preferred: true },
+      { thngNm: 'AI 콘텐츠 제작 라이선스', thngCd: 'title-ai-content', spec: '1년 구독', unitPrice: 400000, preferred: true },
+      { thngNm: '강사비', thngCd: 'title-lecture-fee', spec: '운영수당', unitPrice: 180000, preferred: true },
+      { thngNm: '원고비', thngCd: 'title-writing-fee', spec: '운영수당', unitPrice: 100000, preferred: true },
+      { thngNm: '홍보용품', thngCd: 'title-promo', spec: '홍보 물품', unitPrice: 260000, preferred: true },
+      { thngNm: '현수막', thngCd: 'title-banner', spec: '홍보물', unitPrice: 200000, preferred: true },
+    ],
+    업무추진비: [
+      { thngNm: '식비', thngCd: 'title-meal', spec: '협의회 식비', unitPrice: 350000, preferred: true },
+      { thngNm: '다과비', thngCd: 'title-refreshment', spec: '협의회 다과', unitPrice: 150000, preferred: true },
     ],
   },
 };
@@ -149,6 +184,39 @@ interface NaraItem {
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
 
 const AUTO_BALANCE_MEMO = 'auto-balance-adjustment';
+const SMALL_BALANCE_LIMIT = 50000;
+const MAX_BUDGET_DEPTH = 3;
+const EXCLUDED_AUTO_ITEM_WORDS = ['상품권', '문화상품권', '기프트카드', '모바일쿠폰', '모바일 쿠폰', '기프티콘'];
+const SCHOOL_ACCOUNTING_GUIDE = [
+  '학교회계 과목 기준:',
+  '일반운영비: 학교 공통 운영 경비. 일반수용비(사무용품, 인쇄비, 소모성 물품, 수수료, 임차료), 운영수당(강사수당, 위원회 수당, 원고비), 공공요금, 급식 관련, 교직원 경비.',
+  '교육운영비: 학생의 직접 교과 및 교육활동 지원 경비. 교육용 재료, 교구 및 기자재 유지보수, 학생 체험비, 숙박식비, 행사비, 학습준비물, 학생복지비.',
+  '업무추진비: 학교 운영, 유관기관 협조, 직무 수행, 목적사업 추진을 위한 일반업무추진비, 직책급 업무수행경비, 목적사업 업무추진비.',
+].join('\n');
+
+const SMALL_BALANCE_CATALOG: Record<BudgetCategory, NaraItem[]> = {
+  교육운영비: [
+    { thngNm: '학습 스티커', thngCd: 'balance-learning-sticker', spec: '소액 보정', unitPrice: 500 },
+    { thngNm: '색종이', thngCd: 'balance-color-paper', spec: '소액 보정', unitPrice: 1000 },
+    { thngNm: '학습 파일', thngCd: 'balance-learning-file', spec: '소액 보정', unitPrice: 2000 },
+    { thngNm: '학습 노트', thngCd: 'balance-learning-note', spec: '소액 보정', unitPrice: 3000 },
+    { thngNm: '학습 준비물', thngCd: 'balance-learning-supply', spec: '소액 보정', unitPrice: 5000 },
+  ],
+  일반운영비: [
+    { thngNm: '클립', thngCd: 'balance-clip', spec: '소액 보정', unitPrice: 500 },
+    { thngNm: '라벨지', thngCd: 'balance-label', spec: '소액 보정', unitPrice: 1000 },
+    { thngNm: '파일철', thngCd: 'balance-file-folder', spec: '소액 보정', unitPrice: 2000 },
+    { thngNm: '사무용품', thngCd: 'balance-office-supply', spec: '소액 보정', unitPrice: 3000 },
+    { thngNm: '정리용품', thngCd: 'balance-organizer', spec: '소액 보정', unitPrice: 5000 },
+  ],
+  업무추진비: [
+    { thngNm: '종이컵', thngCd: 'balance-paper-cup', spec: '소액 보정', unitPrice: 500 },
+    { thngNm: '생수', thngCd: 'balance-water', spec: '소액 보정', unitPrice: 1000 },
+    { thngNm: '다과', thngCd: 'balance-refreshment', spec: '소액 보정', unitPrice: 2000 },
+    { thngNm: '간식', thngCd: 'balance-snack', spec: '소액 보정', unitPrice: 3000 },
+    { thngNm: '회의 음료', thngCd: 'balance-meeting-drink', spec: '소액 보정', unitPrice: 5000 },
+  ],
+};
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 const genId = () => crypto.randomUUID();
@@ -165,6 +233,53 @@ function moneyInput(value: string): string {
 
 function calcSubtotal(item: Pick<BudgetItem, 'unitPrice' | 'quantity'>): number {
   return Math.max(0, item.unitPrice) * Math.max(1, item.quantity);
+}
+
+function isExcludedAutoItemName(name: string): boolean {
+  const normalized = name.replace(/\s/g, '');
+  return EXCLUDED_AUTO_ITEM_WORDS.some(word => normalized.includes(word.replace(/\s/g, '')));
+}
+
+function normalizeBudgetCategory(value: unknown): BudgetCategory | null {
+  if (value === '일반수용비') return '일반운영비';
+  return CATEGORIES.includes(value as BudgetCategory) ? value as BudgetCategory : null;
+}
+
+function parentIdsWithChildren(items: BudgetItem[]): Set<string> {
+  return new Set(items.map(item => item.parentId).filter((id): id is string => !!id));
+}
+
+function displaySubtotal(item: BudgetItem, items: BudgetItem[]): number {
+  const children = items.filter(child => child.parentId === item.id);
+  if (children.length === 0) return item.subtotal;
+  return children.reduce((sum, child) => sum + displaySubtotal(child, items), 0);
+}
+
+function countableItems(items: BudgetItem[]): BudgetItem[] {
+  const parentIds = parentIdsWithChildren(items);
+  return items.filter(item => !parentIds.has(item.id));
+}
+
+function getItemDepth(items: BudgetItem[], item: BudgetItem): number {
+  let depth = 1;
+  let parentId = item.parentId;
+  while (parentId && depth < 10) {
+    depth += 1;
+    parentId = items.find(row => row.id === parentId)?.parentId;
+  }
+  return depth;
+}
+
+function collectDescendantIds(items: BudgetItem[], id: string): Set<string> {
+  const result = new Set<string>();
+  const visit = (parentId: string) => {
+    for (const child of items.filter(item => item.parentId === parentId)) {
+      result.add(child.id);
+      visit(child.id);
+    }
+  };
+  visit(id);
+  return result;
 }
 
 function normalizeQuantity(value: number | undefined, minQuantity?: number, maxQuantity?: number): number {
@@ -190,13 +305,108 @@ function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetIte
   };
 }
 
+function makeBudgetItem(category: BudgetCategory, thngNm: string, spec: string, unitPrice: number, quantity: number, parentId?: string): BudgetItem {
+  const item = makeItem(category, { thngNm, spec, unitPrice, thngCd: 'example-draft', priceSource: '예시 초안' });
+  item.quantity = quantity;
+  item.subtotal = calcSubtotal(item);
+  item.parentId = parentId;
+  return item;
+}
+
+function buildExampleBudgetItems(): BudgetItem[] {
+  const rows: BudgetItem[] = [];
+  const add = (category: BudgetCategory, thngNm: string, spec: string, unitPrice = 0, quantity = 1, parentId?: string) => {
+    const item = makeBudgetItem(category, thngNm, spec, unitPrice, quantity, parentId);
+    rows.push(item);
+    return item;
+  };
+
+  const edutech = add('교육운영비', '에듀테크 라이선스', '하위항목 합계');
+  const classTools = add('교육운영비', '수업 참여 도구', '하위항목 합계', 0, 1, edutech.id);
+  add('교육운영비', '패들렛', '1년 구독', 1500000, 1, classTools.id);
+  add('교육운영비', '젭퀴즈', '1년 구독', 1500000, 1, classTools.id);
+  const courseware = add('교육운영비', 'AI 코스웨어', '하위항목 합계', 0, 1, edutech.id);
+  add('교육운영비', 'AI 코스웨어 라이선스', '1년 구독', 2000000, 1, courseware.id);
+
+  const studentSupport = add('교육운영비', '학생 지원 물품', '하위항목 합계');
+  const snacks = add('교육운영비', '학생 간식', '하위항목 합계', 0, 1, studentSupport.id);
+  add('교육운영비', '수업 참여 간식', '행사 및 수업 참여 간식', 5000, 120, snacks.id);
+  const souvenirs = add('교육운영비', '참여 학생 기념품', '하위항목 합계', 0, 1, studentSupport.id);
+  add('교육운영비', '참여 학생 기념품', '기념품', 5000, 80, souvenirs.id);
+
+  const event = add('교육운영비', '행사 예산', '하위항목 합계');
+  const sharing = add('교육운영비', '디지털 수업 나눔 행사', '하위항목 합계', 0, 1, event.id);
+  add('교육운영비', '행사 운영 물품', '1식', 800000, 1, sharing.id);
+  const report = add('교육운영비', '성과 공유회', '하위항목 합계', 0, 1, event.id);
+  add('교육운영비', '성과 공유회 운영 물품', '1식', 500000, 1, report.id);
+  const booth = add('교육운영비', '체험 부스', '하위항목 합계', 0, 1, event.id);
+  add('교육운영비', '체험 부스 운영 물품', '1식', 200000, 1, booth.id);
+
+  const aiLicense = add('일반운영비', 'AI 라이선스', '하위항목 합계');
+  const workAi = add('일반운영비', '업무 지원 AI', '하위항목 합계', 0, 1, aiLicense.id);
+  add('일반운영비', 'AI 문서 작성 라이선스', '1년 구독', 500000, 1, workAi.id);
+  add('일반운영비', 'AI 콘텐츠 제작 라이선스', '1년 구독', 400000, 1, workAi.id);
+
+  const fee = add('일반운영비', '강사 및 원고 수당', '하위항목 합계');
+  const operatingAllowance = add('일반운영비', '운영수당', '하위항목 합계', 0, 1, fee.id);
+  add('일반운영비', '강사비', '운영수당', 180000, 3, operatingAllowance.id);
+  add('일반운영비', '원고비', '운영수당', 100000, 1, operatingAllowance.id);
+
+  const promo = add('일반운영비', '홍보 및 운영 물품', '하위항목 합계');
+  const promoProduction = add('일반운영비', '홍보물 제작', '하위항목 합계', 0, 1, promo.id);
+  add('일반운영비', '홍보용품', '홍보 물품', 260000, 1, promoProduction.id);
+  add('일반운영비', '현수막', '홍보물', 200000, 1, promoProduction.id);
+
+  const biz = add('업무추진비', '업무추진 식비 및 다과비', '하위항목 합계');
+  const meeting = add('업무추진비', '협의회 운영', '하위항목 합계', 0, 1, biz.id);
+  add('업무추진비', '식비', '협의회 식비', 350000, 1, meeting.id);
+  add('업무추진비', '다과비', '협의회 다과', 150000, 1, meeting.id);
+
+  return rows;
+}
+
+function makeSmallBalanceItem(category: BudgetCategory, candidate: NaraItem, quantity: number): BudgetItem {
+  const item = makeItem(category, candidate);
+  item.quantity = Math.max(1, quantity);
+  item.subtotal = calcSubtotal(item);
+  item.memo = AUTO_BALANCE_MEMO;
+  item.priceSource = '소액 보정';
+  item.quantityAdjusted = true;
+  return item;
+}
+
+function pickSmallBalanceItems(category: BudgetCategory, gap: number): BudgetItem[] {
+  if (gap <= 0 || gap > SMALL_BALANCE_LIMIT) return [];
+  const candidates = [...SMALL_BALANCE_CATALOG[category]]
+    .filter(item => (item.unitPrice ?? 0) > 0)
+    .sort((a, b) => (b.unitPrice ?? 0) - (a.unitPrice ?? 0));
+  const picked: BudgetItem[] = [];
+  let remaining = gap;
+
+  for (const candidate of candidates) {
+    const unitPrice = candidate.unitPrice ?? 0;
+    const quantity = Math.floor(remaining / unitPrice);
+    if (quantity <= 0) continue;
+    picked.push(makeSmallBalanceItem(category, candidate, quantity));
+    remaining -= unitPrice * quantity;
+    if (remaining === 0) break;
+  }
+
+  const smallest = candidates[candidates.length - 1];
+  if (smallest && remaining > 0 && Math.abs(remaining - (smallest.unitPrice ?? 0)) < remaining) {
+    picked.push(makeSmallBalanceItem(category, smallest, 1));
+  }
+
+  return picked;
+}
+
 function uniqueItems(items: NaraItem[]): NaraItem[] {
   const seen = new Set<string>();
   return items.filter(item => {
     const key = `${item.thngCd}-${item.thngNm}-${item.unitPrice}`;
     if (seen.has(key)) return false;
     seen.add(key);
-    return !!item.thngNm && (item.unitPrice ?? 0) > 0;
+    return !!item.thngNm && !isExcludedAutoItemName(item.thngNm) && (item.unitPrice ?? 0) > 0;
   });
 }
 
@@ -238,7 +448,7 @@ function estimateUnitPrice(category: BudgetCategory, itemName: string): number {
   if (/복사용지|용지/.test(name)) return 25000;
   if (/커피|음료|차|과자|쿠키/.test(name)) return 15000;
   if (/파일|테이프|볼펜|펜|수건/.test(name)) return 6000;
-  if (category === '일반수용비') return 10000;
+  if (category === '일반운영비') return 10000;
   if (category === '업무추진비') return 15000;
   return 12000;
 }
@@ -331,7 +541,10 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
   const priceIdx = idx('단가(원)');
   const qtyIdx = idx('수량');
   const subtotalIdx = idx('소계(원)');
+  const depthIdx = idx('단계');
+  const parentIdx = idx('상위항목');
   const items: BudgetItem[] = [];
+  const latestByDepth = new Map<number, string>();
   let totalBudget: number | null = null;
 
   for (const row of rows.slice(headerIndex + 1)) {
@@ -339,13 +552,18 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
     const amount = parseInt((row[subtotalIdx] ?? '').replace(/[^0-9-]/g, ''), 10) || 0;
     if (label === '배정 예산') totalBudget = amount;
 
-    const category = row[categoryIdx]?.trim() as BudgetCategory;
+    const category = normalizeBudgetCategory(row[categoryIdx]?.trim());
     const thngNm = row[nameIdx]?.trim();
-    if (!CATEGORIES.includes(category) || !thngNm) continue;
+    if (!category || !thngNm) continue;
 
     const unitPrice = parseInt((row[priceIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 0;
     const quantity = Math.max(1, parseInt((row[qtyIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1);
-    items.push({
+    const depth = Math.min(MAX_BUDGET_DEPTH, Math.max(1, parseInt((row[depthIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1));
+    const parentName = row[parentIdx]?.trim();
+    const parentId = depth > 1
+      ? (parentName ? [...items].reverse().find(item => item.thngNm === parentName)?.id : latestByDepth.get(depth - 1))
+      : undefined;
+    const item = {
       id: genId(),
       budgetCategory: category,
       thngNm,
@@ -354,7 +572,13 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
       unitPrice,
       quantity,
       subtotal: amount > 0 ? amount : unitPrice * quantity,
-    });
+      parentId,
+    };
+    items.push(item);
+    latestByDepth.set(depth, item.id);
+    for (const key of Array.from(latestByDepth.keys())) {
+      if (key > depth) latestByDepth.delete(key);
+    }
   }
 
   if (items.length === 0) throw new Error('불러올 품목 행이 없습니다.');
@@ -362,13 +586,84 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
 }
 
 function sortItemsByCategory(items: BudgetItem[]): BudgetItem[] {
-  return [...items].sort((a, b) => {
+  const childrenByParent = new Map<string, BudgetItem[]>();
+  for (const item of items) {
+    if (!item.parentId) continue;
+    childrenByParent.set(item.parentId, [...(childrenByParent.get(item.parentId) ?? []), item]);
+  }
+  const roots = items.filter(item => !item.parentId).sort((a, b) => {
     const categoryDiff = CATEGORIES.indexOf(a.budgetCategory) - CATEGORIES.indexOf(b.budgetCategory);
     if (categoryDiff !== 0) return categoryDiff;
     if (a.memo === AUTO_BALANCE_MEMO && b.memo !== AUTO_BALANCE_MEMO) return 1;
     if (a.memo !== AUTO_BALANCE_MEMO && b.memo === AUTO_BALANCE_MEMO) return -1;
     return 0;
   });
+  const append = (item: BudgetItem): BudgetItem[] => [
+    item,
+    ...(childrenByParent.get(item.id) ?? []).flatMap(child => append(child)),
+  ];
+  return roots.flatMap(item => append(item));
+}
+
+function normalizeBudgetItem(item: BudgetItem): BudgetItem | null {
+  const budgetCategory = normalizeBudgetCategory(item.budgetCategory);
+  if (!budgetCategory) return null;
+  const quantity = normalizeQuantity(item.quantity, item.minQuantity, item.maxQuantity);
+  const unitPrice = Math.max(0, item.unitPrice || 0);
+  return {
+    ...item,
+    budgetCategory,
+    quantity,
+    unitPrice,
+    subtotal: unitPrice * quantity,
+  };
+}
+
+function normalizeBudgetPlan(plan: BudgetPlan): BudgetPlan {
+  return {
+    ...plan,
+    items: sortItemsByCategory((plan.items ?? []).map(normalizeBudgetItem).filter((item): item is BudgetItem => !!item)),
+  };
+}
+
+function groupGeneratedBudgetItems(items: BudgetItem[], keywordMap: Record<BudgetCategory, string>): BudgetItem[] {
+  if (parentIdsWithChildren(items).size > 0) return sortItemsByCategory(items);
+  const groupedRows: BudgetItem[] = [];
+
+  for (const category of CATEGORIES) {
+    const categoryItems = items.filter(item => item.budgetCategory === category);
+    if (categoryItems.length === 0) continue;
+    const desiredGroups = splitDesiredItems(keywordMap[category]).filter(word => !isExcludedAutoItemName(word));
+    const fallbackGroup = category === '교육운영비' ? '교육활동 운영' : category === '일반운영비' ? '학교 운영 지원' : '업무추진 운영';
+    const groups = new Map<string, BudgetItem[]>();
+
+    for (const item of categoryItems) {
+      const text = `${item.thngNm} ${item.spec ?? ''}`.replace(/\s/g, '');
+      const groupName = desiredGroups.find(word => {
+        const normalized = word.replace(/\s/g, '');
+        return text.includes(normalized) || normalized.includes(text);
+      }) ?? desiredGroups[0] ?? fallbackGroup;
+      groups.set(groupName, [...(groups.get(groupName) ?? []), item]);
+    }
+
+    for (const [groupName, rows] of groups) {
+      const parent = makeItem(category, { thngNm: groupName, spec: '하위항목 합계', thngCd: 'generated-parent', priceSource: '자동 구성' });
+      const detail = makeItem(category, { thngNm: `${groupName} 산출내역`, spec: '하위항목 합계', thngCd: 'generated-detail', priceSource: '자동 구성' });
+      detail.parentId = parent.id;
+      groupedRows.push(parent, detail);
+      for (const row of rows) {
+        groupedRows.push({
+          ...row,
+          id: genId(),
+          parentId: detail.id,
+          budgetCategory: category,
+          subtotal: calcSubtotal(row),
+        });
+      }
+    }
+  }
+
+  return groupedRows;
 }
 
 function filterItemsByTitleIntent(items: BudgetItem[], title: string): BudgetItem[] {
@@ -407,19 +702,20 @@ function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategor
   if (!Array.isArray(parsed)) throw new Error('AI 응답 형식이 올바르지 않습니다.');
   return parsed
     .map((row: any) => ({
-      budgetCategory: row.budgetCategory,
+      budgetCategory: normalizeBudgetCategory(row.budgetCategory),
       thngNm: String(row.thngNm ?? '').trim(),
       spec: String(row.spec ?? '').trim(),
       unitPrice: Math.max(0, Math.round(Number(row.unitPrice) || 0)),
       quantity: Math.max(1, Math.round(Number(row.quantity) || 1)),
     }))
-    .filter(item => CATEGORIES.includes(item.budgetCategory) && item.thngNm && item.unitPrice > 0);
+    .filter((item): item is { budgetCategory: BudgetCategory; thngNm: string; spec: string; unitPrice: number; quantity: number } =>
+      !!item.budgetCategory && item.thngNm && item.unitPrice > 0 && !isExcludedAutoItemName(item.thngNm));
 }
 
 function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, string>): Record<BudgetCategory, NaraItem[]> {
   const candidates: Record<BudgetCategory, NaraItem[]> = {
     교육운영비: [],
-    일반수용비: [],
+    일반운영비: [],
     업무추진비: [],
   };
   const titleText = title.replace(/\s/g, '');
@@ -466,32 +762,99 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
   const userItems = items
     .filter(item => item.memo !== AUTO_BALANCE_MEMO)
     .map(item => {
+      const originalQuantity = item.quantity;
       const quantity = normalizeQuantity(item.quantity, item.minQuantity, item.maxQuantity);
       const unitPrice = Math.max(0, item.unitPrice || 0);
-      return { ...item, quantity, unitPrice, subtotal: unitPrice * quantity };
+      return { ...item, quantity, unitPrice, subtotal: unitPrice * quantity, quantityAdjusted: quantity !== originalQuantity };
     });
+  const parentIds = parentIdsWithChildren(userItems);
 
   for (const category of CATEGORIES) {
     let used = userItems
-      .filter(item => item.budgetCategory === category)
+      .filter(item => item.budgetCategory === category && !parentIds.has(item.id))
       .reduce((sum, item) => sum + item.subtotal, 0);
-    let remaining = allocations[category] - used;
-    if (remaining <= 0) continue;
 
     const categoryItems = userItems
-      .filter(item => item.budgetCategory === category && item.unitPrice > 0 && !item.quantityLocked && !item.unitPriceLocked)
-      .sort((a, b) => a.unitPrice - b.unitPrice);
+      .filter(item => item.budgetCategory === category && !parentIds.has(item.id) && item.unitPrice > 0 && !item.quantityLocked && !item.unitPriceLocked)
+      .sort((a, b) => b.unitPrice - a.unitPrice);
 
-    for (const item of categoryItems) {
-      if (remaining < item.unitPrice) continue;
-      const maxExtraQuantity = item.maxQuantity && item.maxQuantity > item.quantity ? item.maxQuantity - item.quantity : Number.MAX_SAFE_INTEGER;
-      const extraQuantity = Math.min(Math.floor(remaining / item.unitPrice), maxExtraQuantity);
-      if (extraQuantity <= 0) continue;
-      item.quantity += extraQuantity;
-      item.subtotal = calcSubtotal(item);
-      used += extraQuantity * item.unitPrice;
-      remaining = allocations[category] - used;
-      if (remaining <= 0) break;
+    let diff = allocations[category] - used;
+    if (diff < 0) {
+      for (const item of categoryItems) {
+        const minQuantity = Math.max(1, item.minQuantity || 1);
+        const removable = Math.max(0, item.quantity - minQuantity);
+        if (removable <= 0) continue;
+        const over = used - allocations[category];
+        const removeQuantity = Math.min(removable, Math.floor(over / item.unitPrice));
+        const shouldRemoveOne = removeQuantity === 0 && Math.abs(over - item.unitPrice) < over;
+        const quantityToRemove = shouldRemoveOne ? 1 : removeQuantity;
+        if (quantityToRemove <= 0) continue;
+        item.quantity -= quantityToRemove;
+        item.subtotal = calcSubtotal(item);
+        item.quantityAdjusted = true;
+        used -= quantityToRemove * item.unitPrice;
+        if (used <= allocations[category]) break;
+      }
+    }
+
+    diff = allocations[category] - used;
+    if (diff > 0) {
+      for (const item of categoryItems) {
+        const maxExtraQuantity = item.maxQuantity && item.maxQuantity > item.quantity
+          ? item.maxQuantity - item.quantity
+          : Math.floor(diff / item.unitPrice);
+        const extraQuantity = Math.min(Math.floor(diff / item.unitPrice), maxExtraQuantity);
+        if (extraQuantity <= 0) continue;
+        item.quantity += extraQuantity;
+        item.subtotal = calcSubtotal(item);
+        item.quantityAdjusted = true;
+        used += extraQuantity * item.unitPrice;
+        diff = allocations[category] - used;
+        if (diff <= 0) break;
+      }
+    }
+
+    let improved = true;
+    while (improved) {
+      improved = false;
+      const currentGap = Math.abs(allocations[category] - used);
+      let bestItem: BudgetItem | null = null;
+      let bestDelta = 0;
+      let bestGap = currentGap;
+
+      for (const item of categoryItems) {
+        const minQuantity = Math.max(1, item.minQuantity || 1);
+        const maxQuantity = item.maxQuantity && item.maxQuantity >= minQuantity ? item.maxQuantity : undefined;
+        const candidates: Array<1 | -1> = [];
+        if (!maxQuantity || item.quantity < maxQuantity) candidates.push(1);
+        if (item.quantity > minQuantity) candidates.push(-1);
+
+        for (const delta of candidates) {
+          const nextGap = Math.abs(allocations[category] - (used + delta * item.unitPrice));
+          if (nextGap < bestGap) {
+            bestGap = nextGap;
+            bestItem = item;
+            bestDelta = delta;
+          }
+        }
+      }
+
+      if (bestItem && bestDelta !== 0) {
+        bestItem.quantity += bestDelta;
+        bestItem.subtotal = calcSubtotal(bestItem);
+        bestItem.quantityAdjusted = true;
+        used += bestDelta * bestItem.unitPrice;
+        improved = true;
+      }
+    }
+
+    const finalGap = allocations[category] - used;
+    const hasCategoryItem = userItems.some(item => item.budgetCategory === category);
+    if (hasCategoryItem && finalGap > 0) {
+      const balanceItems = pickSmallBalanceItems(category, finalGap);
+      if (balanceItems.length > 0) {
+        userItems.push(...balanceItems);
+      }
     }
   }
   return sortItemsByCategory(userItems);
@@ -500,32 +863,24 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
 export default function BudgetPlannerScreen() {
   const [plans, setPlans] = useState<BudgetPlan[]>([]);
   const [activePlan, setActivePlan] = useState<BudgetPlan | null>(null);
-  const [totalBudget, setTotalBudget] = useState('');
-  const [planTitle, setPlanTitle] = useState('');
+  const [totalBudget, setTotalBudget] = useState(DEFAULT_BUDGET_TOTAL);
+  const [planTitle, setPlanTitle] = useState(DEFAULT_BUDGET_TITLE);
 
   const [apiKey, setApiKey] = useState('');
   const [naverClientId, setNaverClientId] = useState('');
   const [naverClientSecret, setNaverClientSecret] = useState('');
+  const [showPriceSettings, setShowPriceSettings] = useState(false);
   const [showApiGuide, setShowApiGuide] = useState(false);
   const [apiGuideStep, setApiGuideStep] = useState(1);
+  const [internetPriceTestMessage, setInternetPriceTestMessage] = useState('');
+  const [isTestingInternetPrice, setIsTestingInternetPrice] = useState(false);
 
-  const [ratioEdu, setRatioEdu] = useState('60');
-  const [ratioGeneral, setRatioGeneral] = useState('30');
-  const [ratioBiz, setRatioBiz] = useState('10');
+  const [ratioEdu, setRatioEdu] = useState('75');
+  const [ratioGeneral, setRatioGeneral] = useState('20');
+  const [ratioBiz, setRatioBiz] = useState('5');
   const [keywordEdu, setKeywordEdu] = useState(CATEGORY_KEYWORDS.교육운영비.join(', '));
-  const [keywordGeneral, setKeywordGeneral] = useState(CATEGORY_KEYWORDS.일반수용비.join(', '));
+  const [keywordGeneral, setKeywordGeneral] = useState(CATEGORY_KEYWORDS.일반운영비.join(', '));
   const [keywordBiz, setKeywordBiz] = useState(CATEGORY_KEYWORDS.업무추진비.join(', '));
-
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<BudgetCategory>('교육운영비');
-  const [searchResults, setSearchResults] = useState<NaraItem[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState('');
-
-  const [manualName, setManualName] = useState('');
-  const [manualPrice, setManualPrice] = useState('');
-  const [manualQty, setManualQty] = useState('1');
-  const [manualCategory, setManualCategory] = useState<BudgetCategory>('교육운영비');
 
   const [showRatio, setShowRatio] = useState(true);
   const [recommendationStatus, setRecommendationStatus] = useState<RecommendationStatus>('idle');
@@ -542,7 +897,7 @@ export default function BudgetPlannerScreen() {
       if (typeof key === 'string') setNaverClientSecret(key);
     }).catch(() => {});
     window.electronAPI.readJsonData('budget-plans').then((data: unknown) => {
-      if (Array.isArray(data)) setPlans(data as BudgetPlan[]);
+      if (Array.isArray(data)) setPlans((data as BudgetPlan[]).map(normalizeBudgetPlan));
     }).catch(() => {});
   }, []);
 
@@ -553,28 +908,29 @@ export default function BudgetPlannerScreen() {
   const allocBiz = Math.max(0, budgetForCalc - allocEdu - allocGeneral);
   const allocations: Record<BudgetCategory, number> = {
     교육운영비: allocEdu,
-    일반수용비: allocGeneral,
+    일반운영비: allocGeneral,
     업무추진비: allocBiz,
   };
 
-  const planTotalUsed = activePlan?.items.reduce((sum, item) => sum + item.subtotal, 0) ?? 0;
+  const countablePlanItems = useMemo(() => countableItems(activePlan?.items ?? []), [activePlan]);
+  const planTotalUsed = countablePlanItems.reduce((sum, item) => sum + item.subtotal, 0);
   const planRemaining = (activePlan?.totalBudget ?? 0) - planTotalUsed;
 
   const usedByCategory = useMemo(() => {
-    const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반수용비: 0, 업무추진비: 0 };
-    for (const item of activePlan?.items ?? []) used[item.budgetCategory] += item.subtotal;
+    const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반운영비: 0, 업무추진비: 0 };
+    for (const item of countableItems(activePlan?.items ?? [])) used[item.budgetCategory] += item.subtotal;
     return used;
   }, [activePlan]);
 
   const keywordMap: Record<BudgetCategory, string> = {
     교육운영비: keywordEdu,
-    일반수용비: keywordGeneral,
+    일반운영비: keywordGeneral,
     업무추진비: keywordBiz,
   };
 
   const setKeywordMap: Record<BudgetCategory, React.Dispatch<React.SetStateAction<string>>> = {
     교육운영비: setKeywordEdu,
-    일반수용비: setKeywordGeneral,
+    일반운영비: setKeywordGeneral,
     업무추진비: setKeywordBiz,
   };
 
@@ -594,6 +950,29 @@ export default function BudgetPlannerScreen() {
     });
   };
 
+  const testInternetPriceSearch = async () => {
+    const clientId = naverClientId.trim();
+    const clientSecret = naverClientSecret.trim();
+    if (!clientId || !clientSecret) {
+      setInternetPriceTestMessage('Client ID와 Client Secret을 모두 입력해주세요.');
+      return;
+    }
+    setIsTestingInternetPrice(true);
+    setInternetPriceTestMessage('');
+    try {
+      await saveApiKey();
+      const data = await window.electronAPI.naverShoppingSearch('복사용지', clientId, clientSecret);
+      const rows = normalizeNaverShoppingItems(data);
+      setInternetPriceTestMessage(rows.length > 0
+        ? `인터넷 가격조회 연결됨 · 복사용지 ${rows.length}건 확인`
+        : '연결은 되었지만 복사용지 검색 결과가 없습니다. 검색 API 권한을 확인해주세요.');
+    } catch (e: any) {
+      setInternetPriceTestMessage(e?.message ?? '인터넷 가격조회 테스트 중 오류가 발생했습니다.');
+    } finally {
+      setIsTestingInternetPrice(false);
+    }
+  };
+
   const handleNewPlan = () => {
     const budget = parseMoney(totalBudget);
     if (!planTitle.trim() || budget <= 0) return;
@@ -601,7 +980,7 @@ export default function BudgetPlannerScreen() {
       id: genId(),
       title: planTitle.trim(),
       totalBudget: budget,
-      items: [],
+      items: planTitle.trim() === DEFAULT_BUDGET_TITLE && budget === parseMoney(DEFAULT_BUDGET_TOTAL) ? buildExampleBudgetItems() : [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -614,9 +993,26 @@ export default function BudgetPlannerScreen() {
     setActivePlan({ ...activePlan, items, updatedAt: Date.now() });
   };
 
-  const addItemToPlan = (item?: Partial<NaraItem>, category = selectedCategory) => {
+  const addItemToPlan = (item?: Partial<NaraItem>, category: BudgetCategory = '교육운영비') => {
     if (!activePlan) return;
     updatePlanItems([...activePlan.items, makeItem(category, item)]);
+  };
+
+  const addChildItemToPlan = (parentId: string) => {
+    if (!activePlan) return;
+    const parent = activePlan.items.find(item => item.id === parentId);
+    if (!parent) return;
+    const parentDepth = getItemDepth(activePlan.items, parent);
+    if (parentDepth >= MAX_BUDGET_DEPTH) return;
+    const child = makeItem(parent.budgetCategory, { thngNm: '', spec: parentDepth === 1 ? '하위항목 합계' : '직접 입력' });
+    child.parentId = parentId;
+    const descendants = collectDescendantIds(activePlan.items, parentId);
+    const insertAt = activePlan.items.reduce((last, item, index) => item.id === parentId || descendants.has(item.id) ? index + 1 : last, 0);
+    updatePlanItems([
+      ...activePlan.items.slice(0, insertAt),
+      child,
+      ...activePlan.items.slice(insertAt),
+    ]);
   };
 
   const updateRows = (
@@ -624,12 +1020,17 @@ export default function BudgetPlannerScreen() {
     id: string,
     patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>,
   ): BudgetItem[] => rows.map(item => {
+    const descendantIds = patch.budgetCategory ? collectDescendantIds(rows, id) : new Set<string>();
+    if (descendantIds.has(item.id) && patch.budgetCategory) {
+      return { ...item, budgetCategory: patch.budgetCategory };
+    }
     if (item.id !== id) return item;
     const updated = {
       ...item,
       ...patch,
       quantityLocked: Object.prototype.hasOwnProperty.call(patch, 'quantity') ? true : item.quantityLocked,
       unitPriceLocked: Object.prototype.hasOwnProperty.call(patch, 'unitPrice') ? true : item.unitPriceLocked,
+      quantityAdjusted: false,
     };
     updated.minQuantity = updated.minQuantity ? Math.max(1, updated.minQuantity) : undefined;
     updated.maxQuantity = updated.maxQuantity && updated.maxQuantity >= (updated.minQuantity ?? 1) ? updated.maxQuantity : undefined;
@@ -639,70 +1040,12 @@ export default function BudgetPlannerScreen() {
     return updated;
   });
 
-  const handleSearch = async (keyword: string) => {
-    if (!keyword.trim()) return;
-    const hasNaraKey = !!apiKey.trim();
-    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
-    if (!hasNaraKey && !hasNaverKey) {
-      setSearchError('나라장터 또는 인터넷 가격 조회 API 키를 설정해주세요.');
-      return;
-    }
-    setIsSearching(true);
-    setSearchError('');
-    try {
-      const responses = await Promise.allSettled([
-        hasNaraKey ? window.electronAPI.naramarketSearch(keyword.trim(), apiKey) : Promise.resolve(null),
-        hasNaraKey ? window.electronAPI.naramarketShoppingSearch(keyword.trim(), apiKey) : Promise.resolve(null),
-        hasNaverKey ? window.electronAPI.naverShoppingSearch(keyword.trim(), naverClientId, naverClientSecret) : Promise.resolve(null),
-      ]);
-      const listData = responses[0].status === 'fulfilled' ? responses[0].value : null;
-      const mallData = responses[1].status === 'fulfilled' ? responses[1].value : null;
-      const naverData = responses[2].status === 'fulfilled' ? responses[2].value : null;
-      const listRows = normalizeApiItems(listData, false);
-      const mallRows = normalizeApiItems(mallData, true);
-      const naverRows = normalizeNaverShoppingItems(naverData);
-      const merged = uniqueSearchItems([...mallRows, ...naverRows, ...listRows]);
-      setSearchResults(merged);
-      if (merged.length === 0) {
-        const failed = responses.filter(result => result.status === 'rejected');
-        setSearchError(failed.length > 0 ? '나라장터 응답이 지연되어 결과를 가져오지 못했습니다. 잠시 후 다시 검색해주세요.' : '검색 결과가 없습니다.');
-      } else if (responses.some(result => result.status === 'rejected')) {
-        setSearchError('일부 나라장터 응답이 지연되어 가능한 결과만 표시했습니다.');
-      }
-    } catch (e: any) {
-      setSearchError(e?.message ?? '검색 오류');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const addSearchResult = (item: NaraItem) => {
-    addItemToPlan(item);
-  };
-
-  const addManualItem = () => {
-    if (!manualName.trim()) return;
-    const item = makeItem(manualCategory, {
-      thngNm: manualName.trim(),
-      unitPrice: parseMoney(manualPrice),
-      priceSource: '직접입력',
-    });
-    item.quantity = Math.max(1, parseInt(manualQty, 10) || 1);
-    item.subtotal = calcSubtotal(item);
-    item.quantityLocked = true;
-    item.unitPriceLocked = true;
-    if (activePlan) updatePlanItems([...activePlan.items, item]);
-    setManualName('');
-    setManualPrice('');
-    setManualQty('1');
-  };
-
   const collectBudgetCandidates = async (): Promise<Record<BudgetCategory, NaraItem[]>> => {
     const localCandidates = buildLocalCandidates(activePlan?.title ?? planTitle, keywordMap);
     const titleKeywords = getTitleKeywords(activePlan?.title ?? planTitle);
     const candidates: Record<BudgetCategory, NaraItem[]> = {
       교육운영비: [...localCandidates.교육운영비],
-      일반수용비: [...localCandidates.일반수용비],
+      일반운영비: [...localCandidates.일반운영비],
       업무추진비: [...localCandidates.업무추진비],
     };
 
@@ -751,9 +1094,14 @@ export default function BudgetPlannerScreen() {
       '학교 예산사용계획 품목표를 만들어줘.',
       '반드시 JSON 배열만 응답해. 설명, 마크다운, 코드블록은 쓰지 마.',
       '각 항목 필드: budgetCategory, thngNm, spec, unitPrice, quantity',
-      'budgetCategory는 교육운영비, 일반수용비, 업무추진비 중 하나만 사용해.',
+      'budgetCategory는 교육운영비, 일반운영비, 업무추진비 중 하나만 사용해.',
+      SCHOOL_ACCOUNTING_GUIDE,
       'unitPrice와 quantity는 양의 정수로 작성해.',
       '예산 제목과 구입 희망 물품의 성격을 분석해 어울리는 품목을 고르고, 과목별 배정액에 가깝게 맞춰.',
+      '강사비, 원고비, 수수료, 임차료, 홍보물, 현수막, 사무·운영성 라이선스는 일반운영비로 분류해.',
+      '학생이 직접 쓰는 교육활동 물품, 학생 간식, 학생 기념품, 체험·행사 운영 물품은 교육운영비로 분류해.',
+      '업무추진비는 협의회나 사업 추진을 위한 식비와 다과비처럼 업무추진 목적이 분명할 때만 사용해.',
+      '상품권, 문화상품권, 기프트카드, 모바일 쿠폰, 기프티콘은 자동 생성하지 마. 학생 보상성 항목은 간식, 기념품, 체험 물품, 학습 활동 물품으로 대체해.',
       '예산 제목에 특정 품목이나 활동명이 있으면 그 품목·활동과 직접 관련된 품목만 사용해.',
       '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
       '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 같은 성격의 품목만 직접 제안해.',
@@ -767,6 +1115,7 @@ export default function BudgetPlannerScreen() {
         allocations,
         titleKeywords,
         desiredItems: keywordMap,
+        excludedAutoItems: EXCLUDED_AUTO_ITEM_WORDS,
         candidateItems: candidateSummary,
       }, null, 2),
     ].join('\n');
@@ -814,11 +1163,12 @@ export default function BudgetPlannerScreen() {
     setRecommendationMessage('');
     try {
       const { items: next, source } = await makeRecommendations();
+      const grouped = groupGeneratedBudgetItems(next, keywordMap);
       setRecommendationStatus('ready');
-      setActivePlan({ ...activePlan, items: next.map(item => ({ ...item, id: genId() })), updatedAt: Date.now() });
+      setActivePlan({ ...activePlan, items: grouped, updatedAt: Date.now() });
       setRecommendationMessage(source === 'ai'
-        ? `Gemini가 예산 성격을 분석해 예산안 ${next.length}개 행을 만들었습니다.`
-        : `Gemini 호출이 어려워 내장 후보로 예산안 ${next.length}개 행을 만들었습니다.`);
+        ? `Gemini가 예산 성격을 분석해 3단계 예산안 ${grouped.length}개 행을 만들었습니다.`
+        : `Gemini 호출이 어려워 내장 후보로 3단계 예산안 ${grouped.length}개 행을 만들었습니다.`);
     } catch (e: any) {
       setRecommendationStatus('error');
       setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
@@ -830,7 +1180,7 @@ export default function BudgetPlannerScreen() {
     const balancedItems = balanceItemsByCategory(activePlan.items, allocations);
     updatePlanItems(balancedItems);
     const overCategories = CATEGORIES.filter(category => {
-      const used = activePlan.items
+      const used = countableItems(activePlan.items)
         .filter(item => item.memo !== AUTO_BALANCE_MEMO && item.budgetCategory === category)
         .reduce((sum, item) => sum + item.subtotal, 0);
       return used > allocations[category];
@@ -850,21 +1200,23 @@ export default function BudgetPlannerScreen() {
   const handleExportCsv = async () => {
     if (!activePlan) return;
     const rows = [
-      ['순', '예산 과목', '품목', '품목코드', '규격', '단가(원)', '수량', '소계(원)'],
+      ['순', '단계', '상위항목', '예산 과목', '품목', '품목코드', '규격', '단가(원)', '수량', '소계(원)'],
       ...activePlan.items.map((item, idx) => [
         String(idx + 1),
+        String(getItemDepth(activePlan.items, item)),
+        item.parentId ? activePlan.items.find(parent => parent.id === item.parentId)?.thngNm ?? '' : '',
         item.budgetCategory,
         item.thngNm,
         item.thngCd ?? '',
         item.spec ?? '',
         String(item.unitPrice),
         String(item.quantity),
-        String(item.subtotal),
+        String(displaySubtotal(item, activePlan.items)),
         item.priceSource ?? '',
       ]),
-      ['', '', '', '', '합계', '', '', String(planTotalUsed)],
-      ['', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
-      ['', '', '', '', '잔액', '', '', String(planRemaining)],
+      ['', '', '', '', '', '', '합계', '', '', String(planTotalUsed)],
+      ['', '', '', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
+      ['', '', '', '', '', '', '잔액', '', '', String(planRemaining)],
     ];
     const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
     await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산사용계획`);
@@ -921,11 +1273,19 @@ export default function BudgetPlannerScreen() {
         <aside className="w-80 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto">
           <section className="p-4 border-b border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">나라장터 API 키</span>
-              <button onClick={() => { setShowApiGuide(!showApiGuide); setApiGuideStep(1); }} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                발급 방법 {showApiGuide ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">가격 조회 정보 선택 입력</span>
+              <button onClick={() => setShowPriceSettings(v => !v)} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                {showPriceSettings ? '닫기' : '열기'} {showPriceSettings ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
             </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
+            </p>
+            {showPriceSettings && (
+              <>
+            <button onClick={() => { setShowApiGuide(!showApiGuide); setApiGuideStep(1); }} className="mb-2 text-xs text-blue-500 hover:underline flex items-center gap-1">
+              발급 방법 {showApiGuide ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
             {showApiGuide && (
               <div className="mb-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 text-xs">
                 <div className="flex gap-1 mb-2">
@@ -948,18 +1308,40 @@ export default function BudgetPlannerScreen() {
             )}
             <div className="flex gap-2">
               <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="인증키 붙여넣기" className={inputCls} />
-              <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>저장</button>
+              <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>나라장터 키 저장</button>
             </div>
             {apiKey && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
-          </section>
-
-          <div className="px-4 pb-4 -mt-2 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+              나라장터 API 키와 인터넷 가격조회 Client 정보는 선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
+            </p>
+          <div className="pt-3">
+            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">인터넷 가격조회 Client 정보 (선택)</p>
             <div className="space-y-2">
               <input type="password" value={naverClientId} onChange={e => setNaverClientId(e.target.value)} placeholder="인터넷 가격 조회 Client ID" className={inputCls} />
               <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder="인터넷 가격 조회 Client Secret" className={inputCls} />
             </div>
+            <div className="mt-2 flex gap-2">
+              <button onClick={saveApiKey} className={`${btnCls} bg-slate-600 text-white hover:bg-slate-700 flex-1`}>
+                <Save className="w-3.5 h-3.5 inline mr-1" />인터넷 키 저장
+              </button>
+              <button onClick={testInternetPriceSearch} disabled={isTestingInternetPrice} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex-1`}>
+                {isTestingInternetPrice ? <RefreshCw className="w-3.5 h-3.5 inline mr-1 animate-spin" /> : <Search className="w-3.5 h-3.5 inline mr-1" />}
+                테스트 조회
+              </button>
+            </div>
             {(naverClientId && naverClientSecret) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 인터넷 가격 조회 키 설정됨</p>}
+            {internetPriceTestMessage && (
+              <p className={`text-xs mt-1 flex items-start gap-1 ${internetPriceTestMessage.includes('연결됨') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> {internetPriceTestMessage}
+              </p>
+            )}
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+              저장 후 품목 추가에서 돋보기를 누르면 나라장터 결과와 인터넷 참고가를 함께 보여줍니다.
+            </p>
           </div>
+              </>
+            )}
+          </section>
 
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-2">
             <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
@@ -982,8 +1364,8 @@ export default function BudgetPlannerScreen() {
                   <input
                     type="number"
                     min={0}
-                    value={category === '교육운영비' ? ratioEdu : category === '일반수용비' ? ratioGeneral : ratioBiz}
-                    onChange={e => category === '교육운영비' ? setRatioEdu(e.target.value) : category === '일반수용비' ? setRatioGeneral(e.target.value) : setRatioBiz(e.target.value)}
+                    value={category === '교육운영비' ? ratioEdu : category === '일반운영비' ? ratioGeneral : ratioBiz}
+                    onChange={e => category === '교육운영비' ? setRatioEdu(e.target.value) : category === '일반운영비' ? setRatioGeneral(e.target.value) : setRatioBiz(e.target.value)}
                     className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
                   />
                   <span className="text-xs text-gray-500">% · {fmt(allocations[category])}원</span>
@@ -998,7 +1380,7 @@ export default function BudgetPlannerScreen() {
               <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">저장된 계획</p>
               <div className="space-y-1">
                 {plans.map(plan => (
-                  <button key={plan.id} onClick={() => { setActivePlan(plan); setTotalBudget(fmt(plan.totalBudget)); }}
+                  <button key={plan.id} onClick={() => { const normalized = normalizeBudgetPlan(plan); setActivePlan(normalized); setTotalBudget(fmt(normalized.totalBudget)); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs ${activePlan?.id === plan.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
                     <p className="font-semibold truncate">{plan.title}</p>
                     <p className="text-gray-400">{fmt(plan.totalBudget)}원</p>
@@ -1008,53 +1390,6 @@ export default function BudgetPlannerScreen() {
             </section>
           )}
 
-          {activePlan && (
-            <section className="p-4 space-y-3">
-              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">품목 추가</p>
-              <div>
-                <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value as BudgetCategory)} className={inputCls}>
-                  {CATEGORIES.map(category => <option key={category}>{category}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-1">
-                <input value={searchKeyword} onChange={e => setSearchKeyword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch(searchKeyword)}
-                  placeholder="나라장터 검색어" className={inputCls} />
-                <button onClick={() => handleSearch(searchKeyword)} disabled={isSearching}
-                  className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>
-                  {isSearching ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                </button>
-              </div>
-              {searchError && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{searchError}</p>}
-              <div className="space-y-1 max-h-44 overflow-y-auto">
-                {searchResults.map((item, idx) => (
-                  <button key={`${item.thngCd}-${idx}`} onClick={() => addSearchResult(item)}
-                    className="w-full text-left px-2 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
-                    {item.priceSource && <p className="text-[10px] text-gray-500">{item.priceSource}</p>}
-                    <p className="text-[11px] text-gray-400 truncate">{item.spec}{item.mnfctCorpNm ? ` · ${item.mnfctCorpNm}` : ''}</p>
-                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-bold">{item.unitPrice ? `${fmt(item.unitPrice)}원` : '단가 없음'}</p>
-                  </button>
-                ))}
-              </div>
-
-              <div className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2 space-y-2">
-                <div>
-                  <select value={manualCategory} onChange={e => setManualCategory(e.target.value as BudgetCategory)} className={inputCls}>
-                    {CATEGORIES.map(category => <option key={category}>{category}</option>)}
-                  </select>
-                </div>
-                <input value={manualName} onChange={e => setManualName(e.target.value)} placeholder="직접 입력 품목명" className={inputCls} />
-                <div className="grid grid-cols-2 gap-2">
-                  <input value={manualPrice} onChange={e => setManualPrice(moneyInput(e.target.value))} placeholder="단가" className={inputCls} />
-                  <input value={manualQty} onChange={e => setManualQty(e.target.value.replace(/[^0-9]/g, ''))} placeholder="수량" className={inputCls} />
-                </div>
-                <button onClick={addManualItem} disabled={!manualName.trim()} className={`${btnCls} w-full bg-emerald-600 text-white hover:bg-emerald-700`}>
-                  <Plus className="w-4 h-4 inline mr-1" />직접 추가
-                </button>
-              </div>
-            </section>
-          )}
         </aside>
 
         <main className="flex-1 flex flex-col overflow-hidden">
@@ -1080,6 +1415,9 @@ export default function BudgetPlannerScreen() {
                     <button onClick={autoBalancePlan} className={`${btnCls} bg-gray-700 text-white hover:bg-gray-800 flex items-center gap-1`}>
                       자동 비율 및 0원 맞추기
                     </button>
+                    <button onClick={() => window.electronAPI.openExternal(BUDGET_NOTEBOOK_LM_URL)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                      <ExternalLink className="w-3.5 h-3.5" />예산 질문하기
+                    </button>
                     <button onClick={handleSave} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
                       <Save className="w-3.5 h-3.5" />저장
                     </button>
@@ -1104,7 +1442,7 @@ export default function BudgetPlannerScreen() {
                 <section>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
-                    <button onClick={() => addItemToPlan(undefined, selectedCategory)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                    <button onClick={() => addItemToPlan()} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
                       <Plus className="w-3.5 h-3.5" />행 추가
                     </button>
                   </div>
@@ -1117,7 +1455,12 @@ export default function BudgetPlannerScreen() {
                     allocations={allocations}
                     usedByCategory={usedByCategory}
                     onChange={(id, patch) => updatePlanItems(updateRows(activePlan.items, id, patch))}
-                    onRemove={(id) => updatePlanItems(activePlan.items.filter(item => item.id !== id))}
+                    onAddChild={addChildItemToPlan}
+                    onRemove={(id) => {
+                      const removeIds = collectDescendantIds(activePlan.items, id);
+                      removeIds.add(id);
+                      updatePlanItems(activePlan.items.filter(item => !removeIds.has(item.id)));
+                    }}
                   />
                 </section>
               </div>
@@ -1203,6 +1546,7 @@ function EditableBudgetTable({
   allocations,
   usedByCategory,
   onChange,
+  onAddChild,
   onRemove,
 }: {
   items: BudgetItem[];
@@ -1213,6 +1557,7 @@ function EditableBudgetTable({
   allocations: Record<BudgetCategory, number>;
   usedByCategory: Record<BudgetCategory, number>;
   onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>) => void;
+  onAddChild: (id: string) => void;
   onRemove: (id: string) => void;
 }) {
   if (items.length === 0) {
@@ -1222,6 +1567,8 @@ function EditableBudgetTable({
       </div>
     );
   }
+
+  const parentIds = parentIdsWithChildren(items);
 
   return (
     <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -1243,19 +1590,41 @@ function EditableBudgetTable({
         <tbody>
           {items.map((item, idx) => {
             const categoryColor = CATEGORY_COLORS[item.budgetCategory];
+            const adjustedCellClass = item.quantityAdjusted ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-600' : '';
+            const isParent = parentIds.has(item.id);
+            const depth = getItemDepth(items, item);
+            const canAddChild = depth < MAX_BUDGET_DEPTH;
+            const depthLabel = depth === 1 ? '부모항목' : depth === 2 ? '하위항목' : '산출내역';
+            const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
+            const rowWeight = isParent ? 'font-semibold' : '';
             return (
-            <tr key={item.id} className={categoryColor.row}>
+            <tr key={item.id} className={`${categoryColor.row} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''} ${isParent ? 'bg-opacity-90' : ''}`}>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
               <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${categoryColor.cell}`}>
                 <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
-                  className={`w-full text-xs border-none rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 ${categoryColor.select}`}>
+                  disabled={depth > 1}
+                  className={`w-full text-xs border-none rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-70 ${categoryColor.select}`}>
                   {CATEGORIES.map(category => <option key={category}>{category}</option>)}
                 </select>
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <div className={indentClass}>
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-500 dark:text-blue-300">
+                  {isParent && <ChevronDown className="w-3 h-3" />}
+                  {depth > 1 && <span className="text-gray-400">└</span>}
+                  <span>{depthLabel}</span>
+                </div>
                 <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
-                  placeholder="품목명" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                  placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${rowWeight}`} />
                 {item.priceSource && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">{item.priceSource}</div>}
+                {canAddChild && (
+                  <button onClick={() => onAddChild(item.id)} className="mt-1 text-[10px] font-semibold text-blue-600 dark:text-blue-300 hover:underline">
+                    + {depth === 1 ? '하위항목' : '산출내역'} 추가
+                  </button>
+                )}
+                {isParent && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">하위항목 합계로 표시, 중복 집계 안 함</div>}
+                {!canAddChild && <div className="mt-0.5 px-1 text-[10px] text-gray-400">3단계 산출내역</div>}
+                </div>
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input value={item.spec ?? ''} onChange={e => onChange(item.id, { spec: e.target.value })}
@@ -1264,27 +1633,32 @@ function EditableBudgetTable({
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input type="number" min={0} value={item.unitPrice}
                   onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
-                  className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                  disabled={isParent}
+                  className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 disabled:text-gray-400" />
                 {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-right">고정</div>}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input type="number" min={1} value={item.minQuantity ?? ''}
                   onChange={e => onChange(item.id, { minQuantity: e.target.value ? parseInt(e.target.value, 10) || 1 : undefined })}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                  disabled={isParent}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
               </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${adjustedCellClass}`}>
                 <input type="number" min={1} value={item.quantity}
                   onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                  disabled={isParent}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
                 {item.quantityLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-center">고정</div>}
+                {item.quantityAdjusted && <div className="mt-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 text-center">자동 조정</div>}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <input type="number" min={item.minQuantity ?? 1} value={item.maxQuantity ?? ''}
                   onChange={e => onChange(item.id, { maxQuantity: e.target.value ? parseInt(e.target.value, 10) || undefined : undefined })}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                  disabled={isParent}
+                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
               </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs">
-                {fmt(item.subtotal)}
+              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs ${adjustedCellClass}`}>
+                {fmt(displaySubtotal(item, items))}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center">
                 <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600" title="행 삭제">
