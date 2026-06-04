@@ -1183,6 +1183,12 @@ export default function BudgetPlannerScreen() {
     setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory}에 추가했습니다.`);
   };
 
+  // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
+  const hasPriceLookupKey = !!apiKey.trim() || (!!naverClientId.trim() && !!naverClientSecret.trim());
+  const priceSearchTooltip = hasPriceLookupKey
+    ? '키워드로 실제 상품과 단가를 조회합니다.'
+    : '먼저 왼쪽 \'가격 조회 정보 선택 입력\'에서 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해 주세요. 키가 없으면 조회되지 않습니다.';
+
   const addChildItemToPlan = (parentId: string) => {
     if (!activePlan) return;
     const parent = activePlan.items.find(item => item.id === parentId);
@@ -1647,11 +1653,17 @@ export default function BudgetPlannerScreen() {
                       placeholder="예: 태블릿, 복사용지, 보드게임"
                       className={`${inputCls} flex-1 min-w-[160px]`}
                     />
-                    <button onClick={handlePriceSearch} disabled={priceSearchStatus === 'loading' || !priceSearchQuery.trim()} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
+                    <button onClick={handlePriceSearch} disabled={priceSearchStatus === 'loading' || !priceSearchQuery.trim()} title={priceSearchTooltip} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
                       {priceSearchStatus === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
                       조회
                     </button>
                   </div>
+                  {!hasPriceLookupKey && (
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      나라장터 키 또는 인터넷 가격조회 Client 정보를 저장하면 검색을 사용할 수 있습니다.
+                    </p>
+                  )}
                   {priceSearchMessage && (
                     <p className={`text-xs mt-2 flex items-center gap-1 ${priceSearchStatus === 'error' ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
                       {priceSearchStatus === 'error' ? <AlertCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
