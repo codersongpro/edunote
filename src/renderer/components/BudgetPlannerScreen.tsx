@@ -815,11 +815,15 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
         ? { ...matched, preferred: true }
         : { thngNm: word, thngCd: `desired-${category}-${word}`, spec: '직접 입력', unitPrice: estimateUnitPrice(category, word), preferred: true };
     });
+    const matchedCatalog = LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word)));
+    // 제목·희망물품으로 잡힌 품목이 하나라도 있으면, 제목과 무관한 일반 카탈로그 전체를 덧붙이지 않는다.
+    // (아무것도 안 잡힐 때만 일반 카탈로그를 후보로 사용한다.)
+    const hasSpecific = desiredItems.length > 0 || matchedCatalog.length > 0 || candidates[category].length > 0;
     candidates[category] = [
       ...desiredItems,
-      ...LOCAL_CATALOG[category].filter(item => words.some(word => item.thngNm.includes(word) || item.spec?.includes(word))),
+      ...matchedCatalog,
       ...candidates[category],
-      ...LOCAL_CATALOG[category],
+      ...(hasSpecific ? [] : LOCAL_CATALOG[category]),
     ];
   }
   return candidates;
@@ -1435,14 +1439,16 @@ export default function BudgetPlannerScreen() {
       'budgetCategory는 교육운영비, 일반운영비, 업무추진비 중 하나만 사용해.',
       SCHOOL_ACCOUNTING_GUIDE,
       'unitPrice와 quantity는 양의 정수로 작성해.',
+      '먼저 예산 제목에서 핵심 주제와 사업 목적을 분석해, 그 주제에 직접 어울리는 품목만 생성해.',
       '예산 제목과 구입 희망 물품의 성격을 분석해 어울리는 품목을 고르고, 과목별 배정액에 가깝게 맞춰.',
+      '후보 품목 목록(candidateItems)은 단가 참고용일 뿐이다. 예산을 채우려고 제목 주제와 무관한 후보 품목을 그대로 넣지 마.',
       '강사비, 원고비, 수수료, 임차료, 홍보물, 현수막, 사무·운영성 라이선스는 일반운영비로 분류해.',
       '학생이 직접 쓰는 교육활동 물품, 학생 간식, 학생 기념품, 체험·행사 운영 물품은 교육운영비로 분류해.',
       '업무추진비는 협의회나 사업 추진을 위한 식비와 다과비처럼 업무추진 목적이 분명할 때만 사용해.',
       '상품권, 문화상품권, 기프트카드, 모바일 쿠폰, 기프티콘은 자동 생성하지 마. 학생 보상성 항목은 간식, 기념품, 체험 물품, 학습 활동 물품으로 대체해.',
       '예산 제목에 특정 품목이나 활동명이 있으면 그 품목·활동과 직접 관련된 품목만 사용해.',
       '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
-      '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 같은 성격의 품목만 직접 제안해.',
+      '후보 품목이 있으면 후보 단가를 우선 사용하고, 예산이 남으면 주제에 맞는 품목의 수량을 늘리거나 같은 성격의 품목만 직접 제안해.',
       'unitPrice(단가)는 가능하면 10,000원(만원) 단위로 맞추고, 만원 단위로 만들기 어려운 소모성 저가 품목만 1,000원(천원) 단위를 사용해.',
       '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
       '사용자가 과목별로 입력한 구입 물품이 있으면 그 입력을 최우선으로 반영해.',

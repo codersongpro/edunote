@@ -46,6 +46,31 @@ export default function PrintFormScreen() {
           </tbody>
         </table>`;
         html = html.replaceAll('{{참가자행}}', tableHtml);
+      } else if (field.type === 'table') {
+        // 한 줄에 한 행, '/'로 칸을 나눠 columns 머리글의 표를 만든다. 빈 행은 minRows까지 채운다.
+        const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const cols = field.columns ?? [];
+        const dataRows = (values[field.key] ?? '')
+          .split('\n')
+          .map(line => line.trim())
+          .filter(Boolean)
+          .map(line => line.split('/').map(cell => cell.trim()));
+        const totalRows = Math.max(dataRows.length, field.minRows ?? 0);
+        let body = '';
+        for (let i = 0; i < totalRows; i++) {
+          const row = dataRows[i] ?? [];
+          body += '<tr>' + cols.map((_, ci) => {
+            const first = ci === 0;
+            const value = escape(row[ci] ?? '');
+            return `<td style="border:1px solid #555;padding:4pt 6pt;height:22pt;${first ? 'text-align:center;font-weight:bold;background:#f7f7f7;' : ''}">${value}</td>`;
+          }).join('') + '</tr>';
+        }
+        const head = cols.map(c => `<th style="border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">${escape(c)}</th>`).join('');
+        const tableHtml = `<table style="width:100%;border-collapse:collapse;margin-bottom:6pt;font-size:10.5pt;">
+          <thead><tr>${head}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>`;
+        html = html.replaceAll(`{{${field.key}}}`, tableHtml);
       } else {
         // 빈 값은 빈 문자열 — placeholder 텍스트 표시 안 함
         const val = (values[field.key] ?? '').replace(/\n/g, '<br>');
@@ -173,6 +198,19 @@ export default function PrintFormScreen() {
                       />
                       <p className="text-[11px] text-gray-400 mt-0.5">
                         입력한 이름 순서대로 등록부 행에 자동 배치됩니다.
+                      </p>
+                    </>
+                  ) : field.type === 'table' ? (
+                    <>
+                      <textarea
+                        className={inputClass}
+                        rows={field.rows ?? 8}
+                        placeholder={field.placeholder}
+                        value={values[field.key] ?? ''}
+                        onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                      />
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        한 줄에 한 행, 칸은 <span className="font-semibold">/</span>로 구분 · 순서: {(field.columns ?? []).join(' / ')}
                       </p>
                     </>
                   ) : field.type === 'textarea' ? (
