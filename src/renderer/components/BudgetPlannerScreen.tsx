@@ -868,94 +868,6 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
   return sortItemsByCategory(userItems);
 }
 
-function gcd(a: number, b: number): number {
-  a = Math.abs(a);
-  b = Math.abs(b);
-  while (b) {
-    const t = a % b;
-    a = b;
-    b = t;
-  }
-  return a;
-}
-
-interface BalanceVar {
-  id: string;
-  price: number;
-  lo: number;
-  hi: number;
-}
-
-const ZERO_BALANCE_DP_LIMIT = 4_000_000;
-
-// 시트의 정수계획(LinearOptimizationService) 방식과 동일하게,
-// 각 변수의 수량을 정수로 골라 Σ(단가×수량) = target 을 정확히 맞추는 해를 찾는다.
-// 정확한 해가 없으면 target 이하에서 가장 가까운 합을 찾는다(잔액이 초과되지 않도록).
-function solveQuantityBalance(vars: BalanceVar[], target: number): { quantities: Map<string, number>; exact: boolean } | null {
-  const quantities = new Map<string, number>(vars.map(v => [v.id, v.lo]));
-  const base = vars.reduce((sum, v) => sum + v.price * v.lo, 0);
-  const R = target - base;
-  if (R <= 0) {
-    // 최소 수량 합이 이미 배정 예산 이상 → 더 줄일 수 없음
-    return { quantities, exact: R === 0 };
-  }
-
-  // 단가가 비싼 변수부터 채워 수량이 한 품목에 과도하게 몰리지 않도록 한다.
-  const deltaVars = vars
-    .map(v => ({ id: v.id, price: v.price, cap: Math.max(0, v.hi - v.lo) }))
-    .filter(v => v.price > 0 && v.cap > 0)
-    .sort((a, b) => b.price - a.price);
-  if (deltaVars.length === 0) return { quantities, exact: false };
-
-  let g = 0;
-  for (const v of deltaVars) g = gcd(g, v.price);
-  if (g === 0) return { quantities, exact: false };
-
-  const exactReachable = R % g === 0;
-  const Rg = Math.floor(R / g);
-  if (Rg > ZERO_BALANCE_DP_LIMIT) return null; // 탐색 공간이 너무 크면 호출측에서 폴백
-
-  const norm = deltaVars
-    .map(v => ({ id: v.id, w: v.price / g, cap: Math.min(v.cap, Math.floor(Rg / (v.price / g))) }))
-    .filter(v => v.cap > 0);
-
-  const size = Rg + 1;
-  const reachable = new Uint8Array(size);
-  const parItem = new Int32Array(size).fill(-1);
-  const parSum = new Int32Array(size).fill(-1);
-  const used = new Int32Array(size);
-  reachable[0] = 1;
-
-  for (let i = 0; i < norm.length; i++) {
-    const { w, cap } = norm[i];
-    used.fill(0);
-    for (let s = w; s < size; s++) {
-      if (reachable[s]) continue; // 이미 도달한 합(이 변수 0개) → used 0 유지
-      const prev = s - w;
-      if (reachable[prev] && used[prev] < cap) {
-        reachable[s] = 1;
-        used[s] = used[prev] + 1;
-        parItem[s] = i;
-        parSum[s] = prev;
-      }
-    }
-  }
-
-  // target(=Rg) 이하에서 도달 가능한 최대 합을 찾는다.
-  let best = Rg;
-  while (best > 0 && !reachable[best]) best -= 1;
-
-  let cursor = best;
-  while (cursor > 0) {
-    const i = parItem[cursor];
-    if (i < 0) break;
-    quantities.set(norm[i].id, (quantities.get(norm[i].id) ?? 0) + 1);
-    cursor = parSum[cursor];
-  }
-
-  return { quantities, exact: exactReachable && best === Rg };
-}
-
 function pickFillCategory(leaves: BudgetItem[]): BudgetCategory {
   const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반운영비: 0, 업무추진비: 0 };
   for (const item of leaves) used[item.budgetCategory] += item.subtotal;
@@ -966,55 +878,84 @@ function pickFillCategory(leaves: BudgetItem[]): BudgetCategory {
   return bestCategory;
 }
 
-// '0원 맞추기' 본체. 사용자가 직접 수정/잠근 행은 그대로 두고, 나머지 행의 수량만 조정한다.
-// 전체 예산 총액 기준으로 잔액을 0원에 맞추며, 끝자리 잔액은 소액 품목으로 채운다.
-function solveZeroBalance(items: BudgetItem[], totalBudget: number): { items: BudgetItem[]; exact: boolean; remaining: number } | null {
+// '0원 맞추기' 본체.
+// - 사용자가 직접 수정/잠근 행은 그대로 고정한다.
+// - 나머지 행은 현재 수량을 최대한 유지(변경 최소화)하면서, 단가가 큰 품목 위주로 수량을 최소한만
+//   조정해 전체 예산 총액의 잔액을 0원에 가깝게 맞춘다.
+// - 품목에 최소·최대 수량이 지정돼 있으면 그 범위 안에서만 조정한다.
+// - 남는 끝자리 금액은 소액 품목으로 채워 0에 최대한 근접시킨다.
+function solveZeroBalance(items: BudgetItem[], totalBudget: number): { items: BudgetItem[]; remaining: number } {
   const working = items
     .filter(item => item.memo !== AUTO_BALANCE_MEMO) // 이전 자동 채움 항목 제거 후 다시 계산
     .map(item => ({ ...item }));
-  const parentIds = parentIdsWithChildren(working);
-  const leaves = working.filter(item => !parentIds.has(item.id));
 
-  const adjustable = leaves.filter(item => !item.quantityLocked && !item.unitPriceLocked && item.unitPrice > 0);
-  const adjustableIds = new Set(adjustable.map(item => item.id));
+  const leaves = () => {
+    const pIds = parentIdsWithChildren(working);
+    return working.filter(item => !pIds.has(item.id));
+  };
+  const usedTotal = () => leaves().reduce((sum, item) => sum + calcSubtotal(item), 0);
 
-  const vars: BalanceVar[] = adjustable.map(item => {
-    const lo = Math.max(1, item.minQuantity || 1);
-    const hi = item.maxQuantity && item.maxQuantity >= lo
-      ? item.maxQuantity
-      : Math.max(lo, lo + Math.floor(Math.max(0, totalBudget) / item.unitPrice) + 1);
-    return { id: item.id, price: item.unitPrice, lo, hi };
-  });
+  const adjustable = leaves()
+    .filter(item => !item.quantityLocked && !item.unitPriceLocked && item.unitPrice > 0)
+    .map(item => {
+      const lo = Math.max(1, item.minQuantity || 1);
+      const hi = item.maxQuantity && item.maxQuantity >= lo ? item.maxQuantity : Number.MAX_SAFE_INTEGER;
+      return { item, lo, hi };
+    });
 
-  const fixedSum = leaves
-    .filter(item => !adjustableIds.has(item.id))
-    .reduce((sum, item) => sum + calcSubtotal(item), 0);
-  const target = totalBudget - fixedSum;
+  // 단가가 큰 품목부터 조정해 바꾸는 수량(횟수)을 최소화한다.
+  const byPriceDesc = [...adjustable].sort((a, b) => b.item.unitPrice - a.item.unitPrice);
+  const setQuantity = (entry: { item: BudgetItem }, quantity: number) => {
+    entry.item.quantity = quantity;
+    entry.item.subtotal = calcSubtotal(entry.item);
+    entry.item.quantityAdjusted = true;
+  };
 
-  const solved = solveQuantityBalance(vars, target);
-  if (!solved) return null;
+  let gap = totalBudget - usedTotal(); // >0 더 써야 함, <0 예산 초과
 
-  for (const item of working) {
-    if (solved.quantities.has(item.id)) {
-      item.quantity = solved.quantities.get(item.id) ?? item.quantity;
-      item.subtotal = calcSubtotal(item);
-      item.quantityAdjusted = true;
+  // 부족분: 단가가 큰 품목부터 최대 수량 한도 내에서 추가
+  if (gap > 0) {
+    for (const entry of byPriceDesc) {
+      if (gap <= 0) break;
+      const addable = entry.hi - entry.item.quantity;
+      const add = Math.min(addable, Math.floor(gap / entry.item.unitPrice));
+      if (add <= 0) continue;
+      setQuantity(entry, entry.item.quantity + add);
+      gap -= add * entry.item.unitPrice;
     }
   }
 
-  const leafSum = (rows: BudgetItem[]) => {
-    const pIds = parentIdsWithChildren(rows);
-    return rows.filter(item => !pIds.has(item.id)).reduce((sum, item) => sum + item.subtotal, 0);
-  };
-
-  let remaining = totalBudget - leafSum(working);
-  if (remaining > 0) {
-    const fillItems = pickSmallBalanceItems(pickFillCategory(leaves), remaining);
-    if (fillItems.length > 0) working.push(...fillItems);
-    remaining = totalBudget - leafSum(working);
+  // 초과분: 단가가 큰 품목부터 최소 수량 한도 내에서 감소
+  if (gap < 0) {
+    for (const entry of byPriceDesc) {
+      if (gap >= 0) break;
+      const removable = entry.item.quantity - entry.lo;
+      const remove = Math.min(removable, Math.floor(-gap / entry.item.unitPrice));
+      if (remove <= 0) continue;
+      setQuantity(entry, entry.item.quantity - remove);
+      gap += remove * entry.item.unitPrice;
+    }
+    // 아직 미세하게 초과면, 가장 싼 품목 1개를 더 줄여 잔액을 0 이상으로 돌린 뒤 소액 품목으로 채운다.
+    if (gap < 0) {
+      const cheapest = [...adjustable]
+        .filter(entry => entry.item.quantity - entry.lo > 0)
+        .sort((a, b) => a.item.unitPrice - b.item.unitPrice)[0];
+      if (cheapest) {
+        setQuantity(cheapest, cheapest.item.quantity - 1);
+        gap += cheapest.item.unitPrice;
+      }
+    }
   }
 
-  return { items: sortItemsByCategory(working), exact: remaining === 0, remaining };
+  // 남은 부족분을 소액 품목으로 채운다.
+  let remaining = totalBudget - usedTotal();
+  if (remaining > 0) {
+    const fillItems = pickSmallBalanceItems(pickFillCategory(leaves()), remaining);
+    if (fillItems.length > 0) working.push(...fillItems);
+    remaining = totalBudget - usedTotal();
+  }
+
+  return { items: sortItemsByCategory(working), remaining };
 }
 
 export default function BudgetPlannerScreen() {
@@ -1357,25 +1298,13 @@ export default function BudgetPlannerScreen() {
     const budget = activePlan.totalBudget ?? 0;
     const solved = solveZeroBalance(activePlan.items, budget);
 
-    if (!solved) {
-      // 탐색 공간이 너무 커서 정수계획 풀이가 불가능하면 기존 휴리스틱으로 폴백한다.
-      const balancedItems = balanceItemsByCategory(activePlan.items, allocations);
-      updatePlanItems(balancedItems);
-      const gap = budget - countableItems(balancedItems).reduce((sum, item) => sum + item.subtotal, 0);
-      setRecommendationStatus('ready');
-      setRecommendationMessage(gap === 0
-        ? '사용자가 수정한 행을 유지하고 잔액을 0원으로 맞췄습니다.'
-        : `사용자가 수정한 행을 유지하고 잔액을 ${fmt(Math.abs(gap))}원까지 줄였습니다.`);
-      return;
-    }
-
     updatePlanItems(solved.items);
     setRecommendationStatus('ready');
     setRecommendationMessage(solved.remaining === 0
-      ? '사용자가 수정한 행을 유지하고 잔액을 정확히 0원으로 맞췄습니다.'
+      ? '직접 수정한 행은 그대로 두고, 나머지 수량을 최소한으로 조정해 잔액을 0원으로 맞췄습니다.'
       : solved.remaining > 0
-        ? `정확히 0원이 되는 조합이 없어 잔액을 ${fmt(solved.remaining)}원까지 줄였습니다.`
-        : `고정한 행만으로 예산을 ${fmt(Math.abs(solved.remaining))}원 초과했습니다. 일부 행의 수량·단가를 직접 조정해주세요.`);
+        ? `직접 수정한 행은 유지한 채 잔액을 ${fmt(solved.remaining)}원까지 줄였습니다. (정확히 0원이 되는 조합이 없거나 수량 한도에 도달했습니다.)`
+        : `고정한 행만으로 예산을 ${fmt(Math.abs(solved.remaining))}원 초과했습니다. 일부 행의 수량·단가나 최소 수량을 직접 조정해주세요.`);
   };
 
   const handleSave = async () => {
