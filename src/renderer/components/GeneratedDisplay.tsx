@@ -354,13 +354,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 
   const handleDownloadHtml = async () => {
     const currentHtml = getCurrentContent();
-    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Malgun Gothic','Dotum',sans-serif;line-height:1.7;color:#000;background:#fff;}table{width:100%;border-collapse:collapse;margin:10pt 0 14pt;}th,td{border:1pt solid #333;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Malgun Gothic','Dotum',sans-serif;line-height:1.7;color:#000;background:#fff;word-break:keep-all;overflow-wrap:break-word;}table{width:100%;border-collapse:collapse;margin:10pt 0 14pt;}th,td{border:1pt solid #333;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename('html'), 'html');
   };
 
   const handleDownloadWord = async () => {
     const currentHtml = getCurrentContent();
-    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Batang','Dotum',sans-serif;line-height:1.7;}table{border-collapse:collapse;width:100%;border:1px solid black;margin:10pt 0 14pt;}th,td{border:1px solid black;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
+    const fullHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Batang','Dotum',sans-serif;line-height:1.7;word-break:keep-all;overflow-wrap:break-word;}table{border-collapse:collapse;width:100%;border:1px solid black;margin:10pt 0 14pt;}th,td{border:1px solid black;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
     await window.electronAPI.saveFile(fullHtml, getFormattedFilename('doc'), 'doc');
   };
 
@@ -427,7 +427,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const fullHtml = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>${docTitle}</title><style>
 @page{size:A4;margin:18mm 16mm;}
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum','Apple SD Gothic Neo',sans-serif;font-size:11pt;color:#000;background:#fff;}
+html,body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum','Apple SD Gothic Neo',sans-serif;font-size:11pt;color:#000;background:#fff;word-break:keep-all;overflow-wrap:break-word;}
 h1{font-size:15pt;margin:0 0 10pt;}h2{font-size:13pt;margin:8pt 0 6pt;}h3{font-size:11pt;margin:6pt 0 4pt;}
 p,li{line-height:1.75;margin:0 0 8pt;}
 table{width:100%;border-collapse:collapse;page-break-inside:avoid;margin:10pt 0 14pt;}
@@ -653,7 +653,7 @@ h2,h3{page-break-after:avoid;}
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             padding: '22mm 18mm',
             fontFamily: "'Dotum', sans-serif",
-            wordBreak: 'break-word',
+            wordBreak: 'keep-all',
             overflowWrap: 'break-word',
           }}
         >
