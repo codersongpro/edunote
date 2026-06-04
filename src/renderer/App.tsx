@@ -98,6 +98,7 @@ const App: React.FC = () => {
   const [schoolLevel, setSchoolLevel] = useState<SchoolLevel>(SchoolLevel.HIGH);
   const [showSchoolLevelModal, setShowSchoolLevelModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const [showApiKeyLimitModal, setShowApiKeyLimitModal] = useState(false);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
@@ -205,6 +206,7 @@ const App: React.FC = () => {
           window.electronAPI.getVersion(),
         ]);
         setHasApiKey(hn as boolean);
+        setShowApiKeyLimitModal(!(hn as boolean));
         setAppVersion(version as string);
         if (hn) setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
@@ -240,6 +242,15 @@ const App: React.FC = () => {
 
   const handleAcceptDisclaimer = () => {
     setShowDisclaimerModal(false);
+  };
+
+  const handleGoToApiSettings = () => {
+    setShowApiKeyLimitModal(false);
+    goTo(AppMode.SETTINGS);
+  };
+
+  const handleOpenApiGuide = () => {
+    window.electronAPI.openExternal('https://aistudio.google.com');
   };
 
   const toggleDarkMode = async () => {
@@ -543,6 +554,55 @@ const App: React.FC = () => {
               >
                 EduNote 시작하기 →
               </button>
+            </div>
+          </div>
+        )}
+
+        {showApiKeyLimitModal && !showDisclaimerModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-gray-900 dark:text-white">API 키가 설정되지 않았습니다</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                    EduNote는 계속 사용할 수 있지만, 학생기록 작성, 공문 작성, 예산안 AI 생성처럼 Gemini를 사용하는 기능은 제한됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 mb-4">
+                <p className="text-sm font-bold text-amber-900 dark:text-amber-200 mb-2">무료 API 키 발급 방법</p>
+                <ol className="space-y-1.5 text-xs text-amber-800 dark:text-amber-100 leading-relaxed">
+                  <li>1. Google AI Studio에 접속합니다.</li>
+                  <li>2. Google 계정으로 로그인합니다.</li>
+                  <li>3. 왼쪽 메뉴에서 API 키 또는 Get API key를 선택합니다.</li>
+                  <li>4. API 키 만들기를 누른 뒤 생성된 키를 EduNote 설정에 붙여넣습니다.</li>
+                </ol>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleGoToApiSettings}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-colors"
+                >
+                  설정에서 API 키 입력
+                </button>
+                <button
+                  onClick={handleOpenApiGuide}
+                  className="flex-1 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100 font-bold rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  발급 페이지 열기
+                </button>
+                <button
+                  onClick={() => setShowApiKeyLimitModal(false)}
+                  className="py-2.5 px-4 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white text-sm font-semibold"
+                >
+                  나중에
+                </button>
+              </div>
             </div>
           </div>
         )}

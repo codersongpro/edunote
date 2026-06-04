@@ -4,6 +4,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Download,
   ExternalLink,
@@ -21,21 +22,27 @@ const DEFAULT_BUDGET_TITLE = '2026. 디지털선도학교 운영 예산';
 const DEFAULT_BUDGET_TOTAL = '10,000,000';
 const BUDGET_NOTEBOOK_LM_URL = 'https://notebooklm.google.com/notebook/1219f9f1-d26d-4e02-bc29-01a04feb15fb';
 
-const CATEGORY_COLORS: Record<BudgetCategory, { row: string; cell: string; select: string; footer: string }> = {
+const CATEGORY_COLORS: Record<BudgetCategory, { row: string; childRow: string; grandChildRow: string; cell: string; select: string; footer: string }> = {
   교육운영비: {
     row: 'bg-sky-50/70 dark:bg-sky-950/20 hover:bg-sky-100/80 dark:hover:bg-sky-900/30',
+    childRow: 'bg-sky-50/45 dark:bg-sky-950/14 hover:bg-sky-100/55 dark:hover:bg-sky-900/22',
+    grandChildRow: 'bg-sky-50/25 dark:bg-sky-950/10 hover:bg-sky-100/40 dark:hover:bg-sky-900/16',
     cell: 'bg-sky-100 dark:bg-sky-900/50 text-sky-900 dark:text-sky-100',
     select: 'bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-100',
     footer: 'bg-sky-50 dark:bg-sky-950/30',
   },
   일반운영비: {
     row: 'bg-emerald-50/70 dark:bg-emerald-950/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30',
+    childRow: 'bg-emerald-50/45 dark:bg-emerald-950/14 hover:bg-emerald-100/55 dark:hover:bg-emerald-900/22',
+    grandChildRow: 'bg-emerald-50/25 dark:bg-emerald-950/10 hover:bg-emerald-100/40 dark:hover:bg-emerald-900/16',
     cell: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100',
     select: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-100',
     footer: 'bg-emerald-50 dark:bg-emerald-950/30',
   },
   업무추진비: {
     row: 'bg-amber-50/70 dark:bg-amber-950/20 hover:bg-amber-100/80 dark:hover:bg-amber-900/30',
+    childRow: 'bg-amber-50/45 dark:bg-amber-950/14 hover:bg-amber-100/55 dark:hover:bg-amber-900/22',
+    grandChildRow: 'bg-amber-50/25 dark:bg-amber-950/10 hover:bg-amber-100/40 dark:hover:bg-amber-900/16',
     cell: 'bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-100',
     select: 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-100',
     footer: 'bg-amber-50 dark:bg-amber-950/30',
@@ -282,6 +289,21 @@ function collectDescendantIds(items: BudgetItem[], id: string): Set<string> {
   return result;
 }
 
+function hasCollapsedAncestor(items: BudgetItem[], item: BudgetItem, collapsedIds: Set<string>): boolean {
+  let parentId = item.parentId;
+  while (parentId) {
+    if (collapsedIds.has(parentId)) return true;
+    parentId = items.find(row => row.id === parentId)?.parentId;
+  }
+  return false;
+}
+
+function budgetRowClass(categoryColor: (typeof CATEGORY_COLORS)[BudgetCategory], depth: number): string {
+  if (depth >= 3) return categoryColor.grandChildRow;
+  if (depth === 2) return categoryColor.childRow;
+  return categoryColor.row;
+}
+
 function normalizeQuantity(value: number | undefined, minQuantity?: number, maxQuantity?: number): number {
   const min = Math.max(1, minQuantity || 1);
   const max = maxQuantity && maxQuantity >= min ? maxQuantity : undefined;
@@ -306,7 +328,7 @@ function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetIte
 }
 
 function makeBudgetItem(category: BudgetCategory, thngNm: string, spec: string, unitPrice: number, quantity: number, parentId?: string): BudgetItem {
-  const item = makeItem(category, { thngNm, spec, unitPrice, thngCd: 'example-draft', priceSource: '예시 초안' });
+  const item = makeItem(category, { thngNm, spec, unitPrice, thngCd: 'example-draft' });
   item.quantity = quantity;
   item.subtotal = calcSubtotal(item);
   item.parentId = parentId;
@@ -321,44 +343,44 @@ function buildExampleBudgetItems(): BudgetItem[] {
     return item;
   };
 
-  const edutech = add('교육운영비', '에듀테크 라이선스', '하위항목 합계');
-  const classTools = add('교육운영비', '수업 참여 도구', '하위항목 합계', 0, 1, edutech.id);
+  const edutech = add('교육운영비', '에듀테크 라이선스', '묶음');
+  const classTools = add('교육운영비', '수업 참여 도구', '묶음', 0, 1, edutech.id);
   add('교육운영비', '패들렛', '1년 구독', 1500000, 1, classTools.id);
   add('교육운영비', '젭퀴즈', '1년 구독', 1500000, 1, classTools.id);
-  const courseware = add('교육운영비', 'AI 코스웨어', '하위항목 합계', 0, 1, edutech.id);
+  const courseware = add('교육운영비', 'AI 코스웨어', '묶음', 0, 1, edutech.id);
   add('교육운영비', 'AI 코스웨어 라이선스', '1년 구독', 2000000, 1, courseware.id);
 
-  const studentSupport = add('교육운영비', '학생 지원 물품', '하위항목 합계');
-  const snacks = add('교육운영비', '학생 간식', '하위항목 합계', 0, 1, studentSupport.id);
+  const studentSupport = add('교육운영비', '학생 지원 물품', '묶음');
+  const snacks = add('교육운영비', '학생 간식', '묶음', 0, 1, studentSupport.id);
   add('교육운영비', '수업 참여 간식', '행사 및 수업 참여 간식', 5000, 120, snacks.id);
-  const souvenirs = add('교육운영비', '참여 학생 기념품', '하위항목 합계', 0, 1, studentSupport.id);
+  const souvenirs = add('교육운영비', '참여 학생 기념품', '묶음', 0, 1, studentSupport.id);
   add('교육운영비', '참여 학생 기념품', '기념품', 5000, 80, souvenirs.id);
 
-  const event = add('교육운영비', '행사 예산', '하위항목 합계');
-  const sharing = add('교육운영비', '디지털 수업 나눔 행사', '하위항목 합계', 0, 1, event.id);
+  const event = add('교육운영비', '행사 예산', '묶음');
+  const sharing = add('교육운영비', '디지털 수업 나눔 행사', '묶음', 0, 1, event.id);
   add('교육운영비', '행사 운영 물품', '1식', 800000, 1, sharing.id);
-  const report = add('교육운영비', '성과 공유회', '하위항목 합계', 0, 1, event.id);
+  const report = add('교육운영비', '성과 공유회', '묶음', 0, 1, event.id);
   add('교육운영비', '성과 공유회 운영 물품', '1식', 500000, 1, report.id);
-  const booth = add('교육운영비', '체험 부스', '하위항목 합계', 0, 1, event.id);
+  const booth = add('교육운영비', '체험 부스', '묶음', 0, 1, event.id);
   add('교육운영비', '체험 부스 운영 물품', '1식', 200000, 1, booth.id);
 
-  const aiLicense = add('일반운영비', 'AI 라이선스', '하위항목 합계');
-  const workAi = add('일반운영비', '업무 지원 AI', '하위항목 합계', 0, 1, aiLicense.id);
+  const aiLicense = add('일반운영비', 'AI 라이선스', '묶음');
+  const workAi = add('일반운영비', '업무 지원 AI', '묶음', 0, 1, aiLicense.id);
   add('일반운영비', 'AI 문서 작성 라이선스', '1년 구독', 500000, 1, workAi.id);
   add('일반운영비', 'AI 콘텐츠 제작 라이선스', '1년 구독', 400000, 1, workAi.id);
 
-  const fee = add('일반운영비', '강사 및 원고 수당', '하위항목 합계');
-  const operatingAllowance = add('일반운영비', '운영수당', '하위항목 합계', 0, 1, fee.id);
+  const fee = add('일반운영비', '강사 및 원고 수당', '묶음');
+  const operatingAllowance = add('일반운영비', '운영수당', '묶음', 0, 1, fee.id);
   add('일반운영비', '강사비', '운영수당', 180000, 3, operatingAllowance.id);
   add('일반운영비', '원고비', '운영수당', 100000, 1, operatingAllowance.id);
 
-  const promo = add('일반운영비', '홍보 및 운영 물품', '하위항목 합계');
-  const promoProduction = add('일반운영비', '홍보물 제작', '하위항목 합계', 0, 1, promo.id);
+  const promo = add('일반운영비', '홍보 및 운영 물품', '묶음');
+  const promoProduction = add('일반운영비', '홍보물 제작', '묶음', 0, 1, promo.id);
   add('일반운영비', '홍보용품', '홍보 물품', 260000, 1, promoProduction.id);
   add('일반운영비', '현수막', '홍보물', 200000, 1, promoProduction.id);
 
-  const biz = add('업무추진비', '업무추진 식비 및 다과비', '하위항목 합계');
-  const meeting = add('업무추진비', '협의회 운영', '하위항목 합계', 0, 1, biz.id);
+  const biz = add('업무추진비', '업무추진 식비 및 다과비', '묶음');
+  const meeting = add('업무추진비', '협의회 운영', '묶음', 0, 1, biz.id);
   add('업무추진비', '식비', '협의회 식비', 350000, 1, meeting.id);
   add('업무추진비', '다과비', '협의회 다과', 150000, 1, meeting.id);
 
@@ -647,8 +669,8 @@ function groupGeneratedBudgetItems(items: BudgetItem[], keywordMap: Record<Budge
     }
 
     for (const [groupName, rows] of groups) {
-      const parent = makeItem(category, { thngNm: groupName, spec: '하위항목 합계', thngCd: 'generated-parent', priceSource: '자동 구성' });
-      const detail = makeItem(category, { thngNm: `${groupName} 산출내역`, spec: '하위항목 합계', thngCd: 'generated-detail', priceSource: '자동 구성' });
+      const parent = makeItem(category, { thngNm: groupName, spec: '묶음', thngCd: 'generated-parent', priceSource: '자동 구성' });
+      const detail = makeItem(category, { thngNm: `${groupName} 세부`, spec: '묶음', thngCd: 'generated-detail', priceSource: '자동 구성' });
       detail.parentId = parent.id;
       groupedRows.push(parent, detail);
       for (const row of rows) {
@@ -885,6 +907,7 @@ export default function BudgetPlannerScreen() {
   const [showRatio, setShowRatio] = useState(true);
   const [recommendationStatus, setRecommendationStatus] = useState<RecommendationStatus>('idle');
   const [recommendationMessage, setRecommendationMessage] = useState('');
+  const [collapsedBudgetIds, setCollapsedBudgetIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
@@ -915,6 +938,9 @@ export default function BudgetPlannerScreen() {
   const countablePlanItems = useMemo(() => countableItems(activePlan?.items ?? []), [activePlan]);
   const planTotalUsed = countablePlanItems.reduce((sum, item) => sum + item.subtotal, 0);
   const planRemaining = (activePlan?.totalBudget ?? 0) - planTotalUsed;
+  const examplePreviewItems = useMemo(() => buildExampleBudgetItems(), []);
+  const examplePreviewTotal = countableItems(examplePreviewItems).reduce((sum, item) => sum + item.subtotal, 0);
+  const examplePreviewBudget = parseMoney(DEFAULT_BUDGET_TOTAL);
 
   const usedByCategory = useMemo(() => {
     const used: Record<BudgetCategory, number> = { 교육운영비: 0, 일반운영비: 0, 업무추진비: 0 };
@@ -1004,10 +1030,15 @@ export default function BudgetPlannerScreen() {
     if (!parent) return;
     const parentDepth = getItemDepth(activePlan.items, parent);
     if (parentDepth >= MAX_BUDGET_DEPTH) return;
-    const child = makeItem(parent.budgetCategory, { thngNm: '', spec: parentDepth === 1 ? '하위항목 합계' : '직접 입력' });
+    const child = makeItem(parent.budgetCategory, { thngNm: '', spec: parentDepth === 1 ? '묶음' : '직접 입력' });
     child.parentId = parentId;
-    const descendants = collectDescendantIds(activePlan.items, parentId);
-    const insertAt = activePlan.items.reduce((last, item, index) => item.id === parentId || descendants.has(item.id) ? index + 1 : last, 0);
+    const parentIndex = activePlan.items.findIndex(item => item.id === parentId);
+    const insertAt = parentIndex >= 0 ? parentIndex + 1 : activePlan.items.length;
+    setCollapsedBudgetIds(prev => {
+      const next = new Set(prev);
+      next.delete(parentId);
+      return next;
+    });
     updatePlanItems([
       ...activePlan.items.slice(0, insertAt),
       child,
@@ -1167,8 +1198,8 @@ export default function BudgetPlannerScreen() {
       setRecommendationStatus('ready');
       setActivePlan({ ...activePlan, items: grouped, updatedAt: Date.now() });
       setRecommendationMessage(source === 'ai'
-        ? `Gemini가 예산 성격을 분석해 3단계 예산안 ${grouped.length}개 행을 만들었습니다.`
-        : `Gemini 호출이 어려워 내장 후보로 3단계 예산안 ${grouped.length}개 행을 만들었습니다.`);
+        ? `Gemini가 예산안 ${grouped.length}개 행을 만들었습니다.`
+        : `Gemini 호출이 어려워 내장 후보로 예산안 ${grouped.length}개 행을 만들었습니다.`);
     } catch (e: any) {
       setRecommendationStatus('error');
       setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
@@ -1394,11 +1425,25 @@ export default function BudgetPlannerScreen() {
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {!activePlan ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <p className="text-4xl mb-3">💰</p>
-                <p className="font-bold">예산 제목과 예산을 입력한 뒤 계획을 시작하세요</p>
-              </div>
+            <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+              <section className="rounded-xl border border-blue-100 dark:border-blue-800 bg-white dark:bg-gray-800 p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-xs font-bold text-blue-600 dark:text-blue-300 mb-1">예시 예산 미리보기</p>
+                    <h2 className="text-base font-black text-gray-900 dark:text-white">{DEFAULT_BUDGET_TITLE}</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      왼쪽 입력값 그대로 계획 시작을 누르면 아래 예시가 편집 가능한 예산안으로 들어갑니다.
+                    </p>
+                  </div>
+                  <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                    <p>배정 예산</p>
+                    <p className="text-lg font-black text-gray-900 dark:text-white">{DEFAULT_BUDGET_TOTAL}원</p>
+                  </div>
+                </div>
+                <BudgetSummary total={examplePreviewBudget} used={examplePreviewTotal} remaining={examplePreviewBudget - examplePreviewTotal} />
+              </section>
+
+              <ExampleBudgetPreview items={examplePreviewItems} />
             </div>
           ) : (
             <>
@@ -1412,8 +1457,8 @@ export default function BudgetPlannerScreen() {
                     <button onClick={handleMakeRecommendations} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1`}>
                       <Wand2 className="w-3.5 h-3.5" />예산안 만들기
                     </button>
-                    <button onClick={autoBalancePlan} className={`${btnCls} bg-gray-700 text-white hover:bg-gray-800 flex items-center gap-1`}>
-                      자동 비율 및 0원 맞추기
+                    <button onClick={autoBalancePlan} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-200 dark:ring-emerald-800 shadow-sm flex items-center gap-1.5`}>
+                      <RefreshCw className="w-3.5 h-3.5" />0원 맞추기
                     </button>
                     <button onClick={() => window.electronAPI.openExternal(BUDGET_NOTEBOOK_LM_URL)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
                       <ExternalLink className="w-3.5 h-3.5" />예산 질문하기
@@ -1454,6 +1499,13 @@ export default function BudgetPlannerScreen() {
                     remaining={planRemaining}
                     allocations={allocations}
                     usedByCategory={usedByCategory}
+                    collapsedIds={collapsedBudgetIds}
+                    onToggleCollapse={(id) => setCollapsedBudgetIds(prev => {
+                      const next = new Set(prev);
+                      if (next.has(id)) next.delete(id);
+                      else next.add(id);
+                      return next;
+                    })}
                     onChange={(id, patch) => updatePlanItems(updateRows(activePlan.items, id, patch))}
                     onAddChild={addChildItemToPlan}
                     onRemove={(id) => {
@@ -1519,21 +1571,94 @@ function uniqueSearchItems(items: NaraItem[]): NaraItem[] {
 }
 
 function BudgetSummary({ total, used, remaining }: { total: number; used: number; remaining: number }) {
+  const remainingTone = remaining === 0
+    ? 'border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+    : remaining < 0
+      ? 'border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+      : 'border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300';
+  const remainingLabel = remaining === 0 ? '딱 맞음' : remaining < 0 ? '초과' : '남음';
   return (
-    <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-500">집행: {fmt(used)}원</span>
-        <span className={`font-bold ${remaining === 0 ? 'text-green-600' : remaining < 0 ? 'text-red-500' : 'text-gray-700 dark:text-gray-300'}`}>
-          {remaining === 0 ? '잔액 0원 달성' : remaining > 0 ? `잔액 ${fmt(remaining)}원` : `초과 ${fmt(Math.abs(remaining))}원`}
-        </span>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 px-4 py-3">
+        <p className="text-[11px] font-bold text-blue-600 dark:text-blue-300 mb-1">배정예산</p>
+        <p className="text-xl font-black text-blue-900 dark:text-blue-100">{fmt(total)}원</p>
       </div>
-      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all ${remaining < 0 ? 'bg-red-500' : remaining === 0 ? 'bg-green-500' : 'bg-blue-500'}`}
-          style={{ width: `${total > 0 ? Math.min(100, (used / total) * 100) : 0}%` }}
-        />
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 px-4 py-3">
+        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-300 mb-1">집행예산</p>
+        <p className="text-xl font-black text-slate-900 dark:text-white">{fmt(used)}원</p>
+      </div>
+      <div className={`rounded-xl border px-4 py-3 ${remainingTone}`}>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <p className="text-[11px] font-bold">남은예산</p>
+          <span className="text-[10px] font-black rounded-full bg-white/70 dark:bg-black/20 px-2 py-0.5">{remainingLabel}</span>
+        </div>
+        <p className="text-xl font-black">{fmt(Math.abs(remaining))}원</p>
       </div>
     </div>
+  );
+}
+
+function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
+  const parentIds = parentIdsWithChildren(items);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안 예시</h3>
+      </div>
+      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28">예산 과목</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-64">품목</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-36">규격</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">소계</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.filter(item => !hasCollapsedAncestor(items, item, collapsedIds)).map(item => {
+              const depth = getItemDepth(items, item);
+              const categoryColor = CATEGORY_COLORS[item.budgetCategory];
+              const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
+              const isParent = parentIds.has(item.id);
+              const isCollapsed = collapsedIds.has(item.id);
+              return (
+                <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
+                  <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-xs font-semibold ${categoryColor.cell}`}>
+                    {item.budgetCategory}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                    <div className={`${indentClass} ${isParent ? 'font-black text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-100'} flex items-center gap-1`}>
+                      {isParent ? (
+                        <button
+                          onClick={() => setCollapsedIds(prev => {
+                            const next = new Set(prev);
+                            if (next.has(item.id)) next.delete(item.id);
+                            else next.add(item.id);
+                            return next;
+                          })}
+                          className="p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10"
+                        >
+                          {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                        </button>
+                      ) : depth > 1 ? <span className="w-4 text-gray-400">└</span> : <span className="w-4" />}
+                      <span>{item.thngNm}</span>
+                    </div>
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-xs text-gray-500 dark:text-gray-300">
+                    {item.spec}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right text-xs font-bold text-gray-800 dark:text-gray-100">
+                    {fmt(displaySubtotal(item, items))}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -1545,6 +1670,8 @@ function EditableBudgetTable({
   remaining,
   allocations,
   usedByCategory,
+  collapsedIds,
+  onToggleCollapse,
   onChange,
   onAddChild,
   onRemove,
@@ -1556,6 +1683,8 @@ function EditableBudgetTable({
   remaining: number;
   allocations: Record<BudgetCategory, number>;
   usedByCategory: Record<BudgetCategory, number>;
+  collapsedIds: Set<string>;
+  onToggleCollapse: (id: string) => void;
   onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>) => void;
   onAddChild: (id: string) => void;
   onRemove: (id: string) => void;
@@ -1588,17 +1717,17 @@ function EditableBudgetTable({
           </tr>
         </thead>
         <tbody>
-          {items.map((item, idx) => {
+          {items.filter(item => !hasCollapsedAncestor(items, item, collapsedIds)).map((item, idx) => {
             const categoryColor = CATEGORY_COLORS[item.budgetCategory];
             const adjustedCellClass = item.quantityAdjusted ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-600' : '';
             const isParent = parentIds.has(item.id);
             const depth = getItemDepth(items, item);
-            const canAddChild = depth < MAX_BUDGET_DEPTH;
-            const depthLabel = depth === 1 ? '부모항목' : depth === 2 ? '하위항목' : '산출내역';
+            const canAddChild = depth === 1;
+            const isCollapsed = collapsedIds.has(item.id);
             const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
             const rowWeight = isParent ? 'font-semibold' : '';
             return (
-            <tr key={item.id} className={`${categoryColor.row} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''} ${isParent ? 'bg-opacity-90' : ''}`}>
+            <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
               <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${categoryColor.cell}`}>
                 <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
@@ -1609,21 +1738,25 @@ function EditableBudgetTable({
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <div className={indentClass}>
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-500 dark:text-blue-300">
-                  {isParent && <ChevronDown className="w-3 h-3" />}
-                  {depth > 1 && <span className="text-gray-400">└</span>}
-                  <span>{depthLabel}</span>
+                <div className="flex items-center gap-1">
+                  {isParent ? (
+                    <button
+                      onClick={() => onToggleCollapse(item.id)}
+                      className="p-0.5 rounded text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-300"
+                      title={isCollapsed ? '펼치기' : '접기'}
+                    >
+                      {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  ) : depth > 1 ? <span className="w-4 text-gray-400">└</span> : <span className="w-4" />}
+                  <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
+                    placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${rowWeight}`} />
                 </div>
-                <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
-                  placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${rowWeight}`} />
                 {item.priceSource && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">{item.priceSource}</div>}
                 {canAddChild && (
                   <button onClick={() => onAddChild(item.id)} className="mt-1 text-[10px] font-semibold text-blue-600 dark:text-blue-300 hover:underline">
-                    + {depth === 1 ? '하위항목' : '산출내역'} 추가
+                    + 항목 추가
                   </button>
                 )}
-                {isParent && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">하위항목 합계로 표시, 중복 집계 안 함</div>}
-                {!canAddChild && <div className="mt-0.5 px-1 text-[10px] text-gray-400">3단계 산출내역</div>}
                 </div>
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
