@@ -203,25 +203,25 @@ const SCHOOL_ACCOUNTING_GUIDE = [
 
 const SMALL_BALANCE_CATALOG: Record<BudgetCategory, NaraItem[]> = {
   교육운영비: [
-    { thngNm: '학습 스티커', thngCd: 'balance-learning-sticker', spec: '소액 보정', unitPrice: 500 },
-    { thngNm: '색종이', thngCd: 'balance-color-paper', spec: '소액 보정', unitPrice: 1000 },
-    { thngNm: '학습 파일', thngCd: 'balance-learning-file', spec: '소액 보정', unitPrice: 2000 },
-    { thngNm: '학습 노트', thngCd: 'balance-learning-note', spec: '소액 보정', unitPrice: 3000 },
-    { thngNm: '학습 준비물', thngCd: 'balance-learning-supply', spec: '소액 보정', unitPrice: 5000 },
+    { thngNm: '학습 스티커', thngCd: 'balance-learning-sticker', spec: '', unitPrice: 500 },
+    { thngNm: '색종이', thngCd: 'balance-color-paper', spec: '', unitPrice: 1000 },
+    { thngNm: '학습 파일', thngCd: 'balance-learning-file', spec: '', unitPrice: 2000 },
+    { thngNm: '학습 노트', thngCd: 'balance-learning-note', spec: '', unitPrice: 3000 },
+    { thngNm: '학습 준비물', thngCd: 'balance-learning-supply', spec: '', unitPrice: 5000 },
   ],
   일반운영비: [
-    { thngNm: '클립', thngCd: 'balance-clip', spec: '소액 보정', unitPrice: 500 },
-    { thngNm: '라벨지', thngCd: 'balance-label', spec: '소액 보정', unitPrice: 1000 },
-    { thngNm: '파일철', thngCd: 'balance-file-folder', spec: '소액 보정', unitPrice: 2000 },
-    { thngNm: '사무용품', thngCd: 'balance-office-supply', spec: '소액 보정', unitPrice: 3000 },
-    { thngNm: '정리용품', thngCd: 'balance-organizer', spec: '소액 보정', unitPrice: 5000 },
+    { thngNm: '클립', thngCd: 'balance-clip', spec: '', unitPrice: 500 },
+    { thngNm: '라벨지', thngCd: 'balance-label', spec: '', unitPrice: 1000 },
+    { thngNm: '파일철', thngCd: 'balance-file-folder', spec: '', unitPrice: 2000 },
+    { thngNm: '사무용품', thngCd: 'balance-office-supply', spec: '', unitPrice: 3000 },
+    { thngNm: '정리용품', thngCd: 'balance-organizer', spec: '', unitPrice: 5000 },
   ],
   업무추진비: [
-    { thngNm: '종이컵', thngCd: 'balance-paper-cup', spec: '소액 보정', unitPrice: 500 },
-    { thngNm: '생수', thngCd: 'balance-water', spec: '소액 보정', unitPrice: 1000 },
-    { thngNm: '다과', thngCd: 'balance-refreshment', spec: '소액 보정', unitPrice: 2000 },
-    { thngNm: '간식', thngCd: 'balance-snack', spec: '소액 보정', unitPrice: 3000 },
-    { thngNm: '회의 음료', thngCd: 'balance-meeting-drink', spec: '소액 보정', unitPrice: 5000 },
+    { thngNm: '종이컵', thngCd: 'balance-paper-cup', spec: '', unitPrice: 500 },
+    { thngNm: '생수', thngCd: 'balance-water', spec: '', unitPrice: 1000 },
+    { thngNm: '다과', thngCd: 'balance-refreshment', spec: '', unitPrice: 2000 },
+    { thngNm: '간식', thngCd: 'balance-snack', spec: '', unitPrice: 3000 },
+    { thngNm: '회의 음료', thngCd: 'balance-meeting-drink', spec: '', unitPrice: 5000 },
   ],
 };
 
@@ -322,7 +322,7 @@ function makeItem(category: BudgetCategory, item?: Partial<NaraItem>): BudgetIte
     unitPrice,
     quantity,
     subtotal: unitPrice * quantity,
-    priceSource: item?.priceSource ?? (unitPrice > 0 ? '내장 기준단가' : undefined),
+    priceSource: item?.priceSource,
     priceSourceUrl: item?.priceSourceUrl,
   };
 }
@@ -392,7 +392,6 @@ function makeSmallBalanceItem(category: BudgetCategory, candidate: NaraItem, qua
   item.quantity = Math.max(1, quantity);
   item.subtotal = calcSubtotal(item);
   item.memo = AUTO_BALANCE_MEMO;
-  item.priceSource = '소액 보정';
   item.quantityAdjusted = true;
   return item;
 }
@@ -669,8 +668,8 @@ function groupGeneratedBudgetItems(items: BudgetItem[], keywordMap: Record<Budge
     }
 
     for (const [groupName, rows] of groups) {
-      const parent = makeItem(category, { thngNm: groupName, spec: '묶음', thngCd: 'generated-parent', priceSource: '자동 구성' });
-      const detail = makeItem(category, { thngNm: `${groupName} 세부`, spec: '묶음', thngCd: 'generated-detail', priceSource: '자동 구성' });
+      const parent = makeItem(category, { thngNm: groupName, spec: '묶음', thngCd: 'generated-parent' });
+      const detail = makeItem(category, { thngNm: `${groupName} 세부`, spec: '묶음', thngCd: 'generated-detail' });
       detail.parentId = parent.id;
       groupedRows.push(parent, detail);
       for (const row of rows) {
@@ -798,47 +797,9 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
 
     const categoryItems = userItems
       .filter(item => item.budgetCategory === category && !parentIds.has(item.id) && item.unitPrice > 0 && !item.quantityLocked && !item.unitPriceLocked)
-      .sort((a, b) => b.unitPrice - a.unitPrice);
+      .sort((a, b) => a.unitPrice - b.unitPrice);
 
-    let diff = allocations[category] - used;
-    if (diff < 0) {
-      for (const item of categoryItems) {
-        const minQuantity = Math.max(1, item.minQuantity || 1);
-        const removable = Math.max(0, item.quantity - minQuantity);
-        if (removable <= 0) continue;
-        const over = used - allocations[category];
-        const removeQuantity = Math.min(removable, Math.floor(over / item.unitPrice));
-        const shouldRemoveOne = removeQuantity === 0 && Math.abs(over - item.unitPrice) < over;
-        const quantityToRemove = shouldRemoveOne ? 1 : removeQuantity;
-        if (quantityToRemove <= 0) continue;
-        item.quantity -= quantityToRemove;
-        item.subtotal = calcSubtotal(item);
-        item.quantityAdjusted = true;
-        used -= quantityToRemove * item.unitPrice;
-        if (used <= allocations[category]) break;
-      }
-    }
-
-    diff = allocations[category] - used;
-    if (diff > 0) {
-      for (const item of categoryItems) {
-        const maxExtraQuantity = item.maxQuantity && item.maxQuantity > item.quantity
-          ? item.maxQuantity - item.quantity
-          : Math.floor(diff / item.unitPrice);
-        const extraQuantity = Math.min(Math.floor(diff / item.unitPrice), maxExtraQuantity);
-        if (extraQuantity <= 0) continue;
-        item.quantity += extraQuantity;
-        item.subtotal = calcSubtotal(item);
-        item.quantityAdjusted = true;
-        used += extraQuantity * item.unitPrice;
-        diff = allocations[category] - used;
-        if (diff <= 0) break;
-      }
-    }
-
-    let improved = true;
-    while (improved) {
-      improved = false;
+    for (let step = 0; step < 200; step += 1) {
       const currentGap = Math.abs(allocations[category] - used);
       let bestItem: BudgetItem | null = null;
       let bestDelta = 0;
@@ -847,11 +808,29 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
       for (const item of categoryItems) {
         const minQuantity = Math.max(1, item.minQuantity || 1);
         const maxQuantity = item.maxQuantity && item.maxQuantity >= minQuantity ? item.maxQuantity : undefined;
-        const candidates: Array<1 | -1> = [];
-        if (!maxQuantity || item.quantity < maxQuantity) candidates.push(1);
-        if (item.quantity > minQuantity) candidates.push(-1);
+        const diff = allocations[category] - used;
+        const maxAdd = maxQuantity ? Math.max(0, maxQuantity - item.quantity) : 9999;
+        const maxRemove = Math.max(0, item.quantity - minQuantity);
+        const deltaCandidates = new Set<number>();
 
-        for (const delta of candidates) {
+        if (maxAdd > 0) {
+          deltaCandidates.add(1);
+          if (diff > 0) {
+            deltaCandidates.add(Math.min(maxAdd, Math.max(1, Math.floor(diff / item.unitPrice))));
+            deltaCandidates.add(Math.min(maxAdd, Math.max(1, Math.ceil(diff / item.unitPrice))));
+          }
+        }
+        if (maxRemove > 0) {
+          deltaCandidates.add(-1);
+          if (diff < 0) {
+            const over = Math.abs(diff);
+            deltaCandidates.add(-Math.min(maxRemove, Math.max(1, Math.floor(over / item.unitPrice))));
+            deltaCandidates.add(-Math.min(maxRemove, Math.max(1, Math.ceil(over / item.unitPrice))));
+          }
+        }
+
+        for (const delta of deltaCandidates) {
+          if (delta === 0 || delta > maxAdd || Math.abs(Math.min(0, delta)) > maxRemove) continue;
           const nextGap = Math.abs(allocations[category] - (used + delta * item.unitPrice));
           if (nextGap < bestGap) {
             bestGap = nextGap;
@@ -866,7 +845,8 @@ function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetC
         bestItem.subtotal = calcSubtotal(bestItem);
         bestItem.quantityAdjusted = true;
         used += bestDelta * bestItem.unitPrice;
-        improved = true;
+      } else {
+        break;
       }
     }
 
@@ -1163,7 +1143,6 @@ export default function BudgetPlannerScreen() {
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       subtotal: item.unitPrice * item.quantity,
-      priceSource: 'AI 추정',
     }));
     const desiredItems = filterItemsByDesiredIntent(aiItems, keywordMap);
     return Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
@@ -1211,15 +1190,18 @@ export default function BudgetPlannerScreen() {
     const balancedItems = balanceItemsByCategory(activePlan.items, allocations);
     updatePlanItems(balancedItems);
     const overCategories = CATEGORIES.filter(category => {
-      const used = countableItems(activePlan.items)
+      const used = countableItems(balancedItems)
         .filter(item => item.memo !== AUTO_BALANCE_MEMO && item.budgetCategory === category)
         .reduce((sum, item) => sum + item.subtotal, 0);
       return used > allocations[category];
     });
+    const totalGap = (activePlan.totalBudget ?? 0) - countableItems(balancedItems).reduce((sum, item) => sum + item.subtotal, 0);
     setRecommendationStatus('ready');
     setRecommendationMessage(overCategories.length > 0
       ? `사용자가 수정한 행은 유지했습니다. ${overCategories.join(', ')}는 배정액을 초과해 직접 조정이 필요합니다.`
-      : '사용자가 수정한 행을 유지하고, 부족한 금액만 자동 조정 행으로 맞췄습니다.');
+      : totalGap === 0
+        ? '사용자가 수정한 행을 유지하고 잔액을 0원으로 맞췄습니다.'
+        : `사용자가 수정한 행을 유지하고 잔액을 ${fmt(Math.abs(totalGap))}원까지 줄였습니다.`);
   };
 
   const handleSave = async () => {
@@ -1243,7 +1225,6 @@ export default function BudgetPlannerScreen() {
         String(item.unitPrice),
         String(item.quantity),
         String(displaySubtotal(item, activePlan.items)),
-        item.priceSource ?? '',
       ]),
       ['', '', '', '', '', '', '합계', '', '', String(planTotalUsed)],
       ['', '', '', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
@@ -1290,7 +1271,7 @@ export default function BudgetPlannerScreen() {
     { title: '사용 환경 입력', desc: '앱 이름은 EduNote처럼 알아보기 쉽게 입력하고, 사용 환경은 PC 프로그램 또는 웹 서비스 항목 중 제공되는 방식에 맞춰 등록합니다.' },
     { title: '키 복사', desc: '등록이 끝나면 애플리케이션 정보 화면에서 Client ID와 Client Secret을 각각 복사합니다.' },
     { title: '키 저장', desc: '아래 입력칸에 인터넷 가격 조회 Client ID와 Client Secret을 붙여넣고 저장합니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
-    { title: '단가 적용 방식', desc: '나라장터 계약단가를 우선 사용하고, 없을 때 인터넷 참고가와 AI 추정 단가를 보조로 사용합니다.' },
+    { title: '단가 적용 방식', desc: '입력된 키가 있으면 가격 조회 결과를 참고하고, 없으면 앱의 예산 생성 로직으로 단가를 추정합니다.' },
   ];
 
   return (
@@ -1367,7 +1348,7 @@ export default function BudgetPlannerScreen() {
               </p>
             )}
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-              저장 후 품목 추가에서 돋보기를 누르면 나라장터 결과와 인터넷 참고가를 함께 보여줍니다.
+              저장 후 품목 추가에서 돋보기를 누르면 가격 조회 결과를 함께 보여줍니다.
             </p>
           </div>
               </>
@@ -1378,9 +1359,6 @@ export default function BudgetPlannerScreen() {
             <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
             <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder="예산 제목" className={inputCls} />
             <input value={totalBudget} onChange={e => setTotalBudget(moneyInput(e.target.value))} placeholder="예산 (원)" className={inputCls} />
-            <button onClick={handleNewPlan} disabled={!planTitle.trim() || !totalBudget} className={`${btnCls} w-full bg-emerald-600 text-white hover:bg-emerald-700`}>
-              <Plus className="w-4 h-4 inline mr-1" />계획 시작
-            </button>
           </section>
 
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
@@ -1404,6 +1382,15 @@ export default function BudgetPlannerScreen() {
                 <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder="구입 물품을 쉼표로 구분" className={inputCls} />
               </div>
             ))}
+            {showRatio && (
+              <button
+                onClick={handleNewPlan}
+                disabled={!planTitle.trim() || !totalBudget}
+                className={`${btnCls} mt-2 w-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ring-2 ring-purple-200 dark:ring-purple-900 flex items-center justify-center gap-2`}
+              >
+                <Wand2 className="w-4 h-4" />예산안 만들기
+              </button>
+            )}
           </section>
 
           {plans.length > 0 && (
@@ -1432,7 +1419,7 @@ export default function BudgetPlannerScreen() {
                     <p className="text-xs font-bold text-blue-600 dark:text-blue-300 mb-1">예시 예산 미리보기</p>
                     <h2 className="text-base font-black text-gray-900 dark:text-white">{DEFAULT_BUDGET_TITLE}</h2>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      왼쪽 입력값 그대로 계획 시작을 누르면 아래 예시가 편집 가능한 예산안으로 들어갑니다.
+                      왼쪽 입력값 그대로 예산안 만들기를 누르면 아래 예시가 편집 가능한 예산안으로 들어갑니다.
                     </p>
                   </div>
                   <div className="text-right text-xs text-gray-500 dark:text-gray-400">
@@ -1538,7 +1525,6 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
       spec: row.itemSpec || row.prdctSpecNm || row.stdUntNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || '',
       mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.mnfctCmpyNm || '',
       unitPrice: preferPrice ? unitPrice : undefined,
-      priceSource: preferPrice && unitPrice ? '나라장터 계약단가' : '나라장터 품목목록',
     };
   });
 }
@@ -1551,10 +1537,9 @@ function normalizeNaverShoppingItems(data: any): NaraItem[] {
     return {
       thngNm: title || '(이름 없음)',
       thngCd: row.productId ? `internet-${row.productId}` : `internet-${title}`,
-      spec: row.mallName ? `인터넷 참고가 · ${row.mallName}` : '인터넷 참고가',
+      spec: row.mallName || '',
       mnfctCorpNm: row.maker || row.brand || row.mallName || '',
       unitPrice,
-      priceSource: '인터넷 참고가',
       priceSourceUrl: row.link || '',
     };
   }).filter((item: NaraItem) => item.thngNm && (item.unitPrice ?? 0) > 0);
@@ -1601,6 +1586,17 @@ function BudgetSummary({ total, used, remaining }: { total: number; used: number
 function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
   const parentIds = parentIdsWithChildren(items);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+  const previewTotal = countableItems(items).reduce((sum, item) => sum + item.subtotal, 0);
+  const previewBudget = parseMoney(DEFAULT_BUDGET_TOTAL);
+  const previewAllocations: Record<BudgetCategory, number> = {
+    교육운영비: 7500000,
+    일반운영비: 2000000,
+    업무추진비: 500000,
+  };
+  const previewUsedByCategory = CATEGORIES.reduce((acc, category) => {
+    acc[category] = countableItems(items).filter(item => item.budgetCategory === category).reduce((sum, item) => sum + item.subtotal, 0);
+    return acc;
+  }, { 교육운영비: 0, 일반운영비: 0, 업무추진비: 0 } as Record<BudgetCategory, number>);
   return (
     <section>
       <div className="flex items-center justify-between mb-2">
@@ -1608,16 +1604,22 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
       </div>
       <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
+        <thead>
+          <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center w-8">순</th>
               <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28">예산 과목</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-64">품목</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-36">규격</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">소계</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-52">품목</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-40">규격</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최소</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최대</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계</th>
+              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-10"></th>
             </tr>
           </thead>
           <tbody>
-            {items.filter(item => !hasCollapsedAncestor(items, item, collapsedIds)).map(item => {
+            {items.filter(item => !hasCollapsedAncestor(items, item, collapsedIds)).map((item, idx) => {
               const depth = getItemDepth(items, item);
               const categoryColor = CATEGORY_COLORS[item.budgetCategory];
               const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
@@ -1625,6 +1627,7 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
               const isCollapsed = collapsedIds.has(item.id);
               return (
                 <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
                   <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-xs font-semibold ${categoryColor.cell}`}>
                     {item.budgetCategory}
                   </td>
@@ -1649,13 +1652,56 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
                   <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-xs text-gray-500 dark:text-gray-300">
                     {item.spec}
                   </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right text-xs text-gray-800 dark:text-gray-100">
+                    {isParent ? '' : fmt(item.unitPrice)}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-500 dark:text-gray-300">
+                    {item.minQuantity ?? ''}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-800 dark:text-gray-100">
+                    {isParent ? '' : item.quantity}
+                  </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-500 dark:text-gray-300">
+                    {item.maxQuantity ?? ''}
+                  </td>
                   <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right text-xs font-bold text-gray-800 dark:text-gray-100">
                     {fmt(displaySubtotal(item, items))}
                   </td>
+                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5"></td>
                 </tr>
               );
             })}
           </tbody>
+          <tfoot>
+            {CATEGORIES.map(category => (
+              <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
+                <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
+                  {category} 배정 {fmt(previewAllocations[category])}원 / 집행 {fmt(previewUsedByCategory[category])}원
+                </td>
+                <td className={`border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-right font-bold ${previewAllocations[category] - previewUsedByCategory[category] < 0 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                  {fmt(previewAllocations[category] - previewUsedByCategory[category])}
+                </td>
+                <td className="border border-gray-300 dark:border-gray-600"></td>
+              </tr>
+            ))}
+            <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
+              <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
+              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(previewTotal)}</td>
+              <td className="border border-gray-300 dark:border-gray-600"></td>
+            </tr>
+            <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
+              <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
+              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(previewBudget)}</td>
+              <td className="border border-gray-300 dark:border-gray-600"></td>
+            </tr>
+            <tr className="text-sm font-black bg-green-50 dark:bg-green-900/20">
+              <td colSpan={8} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
+              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-green-700 dark:text-green-400">
+                {fmt(previewBudget - previewTotal)}
+              </td>
+              <td className="border border-gray-300 dark:border-gray-600"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </section>
@@ -1722,7 +1768,7 @@ function EditableBudgetTable({
             const adjustedCellClass = item.quantityAdjusted ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-600' : '';
             const isParent = parentIds.has(item.id);
             const depth = getItemDepth(items, item);
-            const canAddChild = depth === 1;
+            const canAddChild = depth < MAX_BUDGET_DEPTH;
             const isCollapsed = collapsedIds.has(item.id);
             const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
             const rowWeight = isParent ? 'font-semibold' : '';
@@ -1751,10 +1797,9 @@ function EditableBudgetTable({
                   <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
                     placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${rowWeight}`} />
                 </div>
-                {item.priceSource && <div className="mt-0.5 px-1 text-[10px] text-gray-500 dark:text-gray-400">{item.priceSource}</div>}
                 {canAddChild && (
-                  <button onClick={() => onAddChild(item.id)} className="mt-1 text-[10px] font-semibold text-blue-600 dark:text-blue-300 hover:underline">
-                    + 항목 추가
+                  <button onClick={() => onAddChild(item.id)} className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30" title="추가">
+                    <Plus className="w-3.5 h-3.5" />
                   </button>
                 )}
                 </div>
@@ -1764,7 +1809,7 @@ function EditableBudgetTable({
                   placeholder="규격" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-500 dark:text-gray-300 focus:ring-1 focus:ring-blue-400 rounded px-1" />
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                <input type="number" min={0} value={item.unitPrice}
+                <input type="number" min={0} step={1000} value={item.unitPrice}
                   onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
                   disabled={isParent}
                   className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 disabled:text-gray-400" />
