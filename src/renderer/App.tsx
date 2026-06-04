@@ -399,7 +399,7 @@ const App: React.FC = () => {
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '공문서 작성기' },
     { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
     { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
-    { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산사용계획' },
+    { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산안작성' },
   ];
 
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));

@@ -57,25 +57,25 @@ const CATEGORY_KEYWORDS: Record<BudgetCategory, string[]> = {
 
 const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
   교육운영비: [
-    { thngNm: '학급 문고 도서', thngCd: 'local-book', spec: '권', unitPrice: 15000 },
-    { thngNm: '학습 활동지 인쇄 세트', thngCd: 'local-worksheet', spec: '묶음', unitPrice: 12000 },
+    { thngNm: '학급 문고 도서', thngCd: 'local-book', spec: '권', unitPrice: 20000 },
+    { thngNm: '학습 활동지 인쇄 세트', thngCd: 'local-worksheet', spec: '묶음', unitPrice: 10000 },
     { thngNm: '색연필 세트', thngCd: 'local-colored-pencil', spec: '12색', unitPrice: 7000 },
     { thngNm: '수채화 물감', thngCd: 'local-paint', spec: '12색', unitPrice: 8500 },
     { thngNm: '도화지', thngCd: 'local-paper-art', spec: '100매', unitPrice: 9000 },
-    { thngNm: '과학 실험 키트', thngCd: 'local-science-kit', spec: '개', unitPrice: 18000 },
+    { thngNm: '과학 실험 키트', thngCd: 'local-science-kit', spec: '개', unitPrice: 20000 },
     { thngNm: '줄넘기', thngCd: 'local-rope', spec: '개', unitPrice: 6000 },
-    { thngNm: '학습용 보드게임', thngCd: 'local-boardgame', spec: '개', unitPrice: 22000 },
+    { thngNm: '학습용 보드게임', thngCd: 'local-boardgame', spec: '개', unitPrice: 20000 },
     { thngNm: 'USB 메모리', thngCd: 'local-usb', spec: '32GB', unitPrice: 9000 },
   ],
   일반운영비: [
-    { thngNm: '복사용지', thngCd: 'local-copy-paper', spec: 'A4 2500매', unitPrice: 25000 },
+    { thngNm: '복사용지', thngCd: 'local-copy-paper', spec: 'A4 2500매', unitPrice: 30000 },
     { thngNm: '볼펜', thngCd: 'local-pen', spec: '12개입', unitPrice: 6000 },
     { thngNm: '클리어 파일', thngCd: 'local-clear-file', spec: '20매', unitPrice: 5000 },
     { thngNm: '바인더', thngCd: 'local-binder', spec: '개', unitPrice: 4500 },
     { thngNm: '스테이플러', thngCd: 'local-stapler', spec: '개', unitPrice: 8000 },
     { thngNm: '테이프', thngCd: 'local-tape', spec: '3개입', unitPrice: 4500 },
-    { thngNm: '프린터 토너', thngCd: 'local-toner', spec: '개', unitPrice: 85000 },
-    { thngNm: '청소용품 세트', thngCd: 'local-cleaning', spec: '세트', unitPrice: 18000 },
+    { thngNm: '프린터 토너', thngCd: 'local-toner', spec: '개', unitPrice: 90000 },
+    { thngNm: '청소용품 세트', thngCd: 'local-cleaning', spec: '세트', unitPrice: 20000 },
     { thngNm: '손세정제', thngCd: 'local-sanitizer', spec: '500ml', unitPrice: 7000 },
     { thngNm: 'AI 문서 작성 라이선스', thngCd: 'local-ai-doc', spec: '1년 구독', unitPrice: 500000 },
     { thngNm: 'AI 콘텐츠 제작 라이선스', thngCd: 'local-ai-content', spec: '1년 구독', unitPrice: 400000 },
@@ -85,11 +85,11 @@ const LOCAL_CATALOG: Record<BudgetCategory, NaraItem[]> = {
     { thngNm: '현수막', thngCd: 'local-banner', spec: '홍보물', unitPrice: 200000 },
   ],
   업무추진비: [
-    { thngNm: '커피', thngCd: 'local-coffee', spec: '박스', unitPrice: 18000 },
-    { thngNm: '차 세트', thngCd: 'local-tea', spec: '박스', unitPrice: 16000 },
+    { thngNm: '커피', thngCd: 'local-coffee', spec: '박스', unitPrice: 20000 },
+    { thngNm: '차 세트', thngCd: 'local-tea', spec: '박스', unitPrice: 20000 },
     { thngNm: '생수', thngCd: 'local-water', spec: '묶음', unitPrice: 7000 },
-    { thngNm: '음료', thngCd: 'local-drink', spec: '박스', unitPrice: 15000 },
-    { thngNm: '쿠키', thngCd: 'local-cookie', spec: '상자', unitPrice: 12000 },
+    { thngNm: '음료', thngCd: 'local-drink', spec: '박스', unitPrice: 20000 },
+    { thngNm: '쿠키', thngCd: 'local-cookie', spec: '상자', unitPrice: 10000 },
     { thngNm: '과자 세트', thngCd: 'local-snack', spec: '상자', unitPrice: 10000 },
     { thngNm: '회의용 다과', thngCd: 'local-meeting-snack', spec: '세트', unitPrice: 30000 },
     { thngNm: '기념품 수건', thngCd: 'local-towel', spec: '개', unitPrice: 5000 },
@@ -133,25 +133,25 @@ const DESIRED_ITEM_HINTS: Record<string, string[]> = {
 const TITLE_DIRECT_ITEMS: Record<string, Partial<Record<BudgetCategory, NaraItem[]>>> = {
   이어폰: {
     교육운영비: [
-      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 12000, preferred: true },
-      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 25000, preferred: true },
+      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 10000, preferred: true },
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 30000, preferred: true },
     ],
   },
   헤드셋: {
     교육운영비: [
-      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 25000, preferred: true },
-      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 12000, preferred: true },
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '어학·온라인 학습용', unitPrice: 30000, preferred: true },
+      { thngNm: '이어폰', thngCd: 'title-earphone', spec: '학습용', unitPrice: 10000, preferred: true },
     ],
   },
   마이크: {
     교육운영비: [
-      { thngNm: '마이크', thngCd: 'title-mic', spec: '수업·방송용', unitPrice: 35000, preferred: true },
-      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '마이크 포함', unitPrice: 25000, preferred: true },
+      { thngNm: '마이크', thngCd: 'title-mic', spec: '수업·방송용', unitPrice: 40000, preferred: true },
+      { thngNm: '헤드셋', thngCd: 'title-headset', spec: '마이크 포함', unitPrice: 30000, preferred: true },
     ],
   },
   복사용지: {
     일반운영비: [
-      { thngNm: '복사용지', thngCd: 'title-copy-paper', spec: 'A4 2500매', unitPrice: 25000, preferred: true },
+      { thngNm: '복사용지', thngCd: 'title-copy-paper', spec: 'A4 2500매', unitPrice: 30000, preferred: true },
     ],
   },
   디지털선도학교: {
@@ -461,17 +461,17 @@ function estimateUnitPrice(category: BudgetCategory, itemName: string): number {
   if (/에듀테크|태블릿|스마트패드|스마트기기/.test(name)) return 300000;
   if (/코딩교구|로봇교구|디지털교구/.test(name)) return 80000;
   if (/교구|학습교구|수학교구|과학교구|조작교구/.test(name)) return 30000;
-  if (/식비|도시락/.test(name)) return 12000;
-  if (/다과|간식|과자|쿠키|음료/.test(name)) return 15000;
-  if (/토너|프린터|카트리지/.test(name)) return 85000;
-  if (/키트|세트|보드게임|다과/.test(name)) return 25000;
-  if (/도서|책|교재/.test(name)) return 15000;
-  if (/복사용지|용지/.test(name)) return 25000;
-  if (/커피|음료|차|과자|쿠키/.test(name)) return 15000;
+  if (/식비|도시락/.test(name)) return 10000;
+  if (/다과|간식|과자|쿠키|음료/.test(name)) return 20000;
+  if (/토너|프린터|카트리지/.test(name)) return 90000;
+  if (/키트|세트|보드게임|다과/.test(name)) return 30000;
+  if (/도서|책|교재/.test(name)) return 20000;
+  if (/복사용지|용지/.test(name)) return 30000;
+  if (/커피|음료|차|과자|쿠키/.test(name)) return 20000;
   if (/파일|테이프|볼펜|펜|수건/.test(name)) return 6000;
   if (category === '일반운영비') return 10000;
-  if (category === '업무추진비') return 15000;
-  return 12000;
+  if (category === '업무추진비') return 20000;
+  return 10000;
 }
 
 function splitDesiredItems(value: string): string[] {
@@ -906,14 +906,13 @@ export default function BudgetPlannerScreen() {
 
   const ratioTotal = (parseInt(ratioEdu) || 0) + (parseInt(ratioGeneral) || 0) + (parseInt(ratioBiz) || 0);
   const budgetForCalc = activePlan?.totalBudget ?? parseMoney(totalBudget);
-  const allocEdu = ratioTotal > 0 ? Math.round(budgetForCalc * (parseInt(ratioEdu) || 0) / ratioTotal) : 0;
-  const allocGeneral = ratioTotal > 0 ? Math.round(budgetForCalc * (parseInt(ratioGeneral) || 0) / ratioTotal) : 0;
-  const allocBiz = Math.max(0, budgetForCalc - allocEdu - allocGeneral);
-  const allocations: Record<BudgetCategory, number> = {
-    교육운영비: allocEdu,
-    일반운영비: allocGeneral,
-    업무추진비: allocBiz,
+  const computeAllocations = (budget: number): Record<BudgetCategory, number> => {
+    const edu = ratioTotal > 0 ? Math.round(budget * (parseInt(ratioEdu) || 0) / ratioTotal) : 0;
+    const general = ratioTotal > 0 ? Math.round(budget * (parseInt(ratioGeneral) || 0) / ratioTotal) : 0;
+    const biz = Math.max(0, budget - edu - general);
+    return { 교육운영비: edu, 일반운영비: general, 업무추진비: biz };
   };
+  const allocations: Record<BudgetCategory, number> = computeAllocations(budgetForCalc);
 
   const countablePlanItems = useMemo(() => countableItems(activePlan?.items ?? []), [activePlan]);
   const planTotalUsed = countablePlanItems.reduce((sum, item) => sum + item.subtotal, 0);
@@ -979,19 +978,42 @@ export default function BudgetPlannerScreen() {
     }
   };
 
-  const handleNewPlan = () => {
+  const handleNewPlan = async () => {
     const budget = parseMoney(totalBudget);
-    if (!planTitle.trim() || budget <= 0) return;
-    setActivePlan({
+    const title = planTitle.trim();
+    if (!title || budget <= 0) return;
+    const isDefaultExample = title === DEFAULT_BUDGET_TITLE && budget === parseMoney(DEFAULT_BUDGET_TOTAL);
+    const newPlan: BudgetPlan = {
       id: genId(),
-      title: planTitle.trim(),
+      title,
       totalBudget: budget,
-      items: planTitle.trim() === DEFAULT_BUDGET_TITLE && budget === parseMoney(DEFAULT_BUDGET_TOTAL) ? buildExampleBudgetItems() : [],
+      items: isDefaultExample ? buildExampleBudgetItems() : [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
-    });
-    setRecommendationStatus('idle');
+    };
+    setActivePlan(newPlan);
+
+    // 기본 예시 값 그대로면 예시 예산안을 그대로 편집하도록 두고, 그 외에는 곧바로 AI 품목 생성을 진행한다.
+    if (isDefaultExample) {
+      setRecommendationStatus('idle');
+      setRecommendationMessage('');
+      return;
+    }
+
+    setRecommendationStatus('loading');
     setRecommendationMessage('');
+    try {
+      const { items: next, source } = await makeRecommendations(title, budget, computeAllocations(budget));
+      const grouped = groupGeneratedBudgetItems(next, keywordMap);
+      setActivePlan({ ...newPlan, items: grouped, updatedAt: Date.now() });
+      setRecommendationStatus('ready');
+      setRecommendationMessage(source === 'ai'
+        ? `Gemini가 예산안 ${grouped.length}개 행을 만들었습니다.`
+        : `Gemini 호출이 어려워 내장 후보로 예산안 ${grouped.length}개 행을 만들었습니다.`);
+    } catch (e: any) {
+      setRecommendationStatus('error');
+      setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
+    }
   };
 
   const updatePlanItems = (items: BudgetItem[]) => {
@@ -1051,9 +1073,9 @@ export default function BudgetPlannerScreen() {
     return updated;
   });
 
-  const collectBudgetCandidates = async (): Promise<Record<BudgetCategory, NaraItem[]>> => {
-    const localCandidates = buildLocalCandidates(activePlan?.title ?? planTitle, keywordMap);
-    const titleKeywords = getTitleKeywords(activePlan?.title ?? planTitle);
+  const collectBudgetCandidates = async (title: string): Promise<Record<BudgetCategory, NaraItem[]>> => {
+    const localCandidates = buildLocalCandidates(title, keywordMap);
+    const titleKeywords = getTitleKeywords(title);
     const candidates: Record<BudgetCategory, NaraItem[]> = {
       교육운영비: [...localCandidates.교육운영비],
       일반운영비: [...localCandidates.일반운영비],
@@ -1091,8 +1113,8 @@ export default function BudgetPlannerScreen() {
     return candidates;
   };
 
-  const makeAiBudgetPlan = async (candidates: Record<BudgetCategory, NaraItem[]>): Promise<BudgetItem[]> => {
-    const titleKeywords = getTitleKeywords(activePlan?.title ?? planTitle);
+  const makeAiBudgetPlan = async (candidates: Record<BudgetCategory, NaraItem[]>, title: string, budget: number, alloc: Record<BudgetCategory, number>): Promise<BudgetItem[]> => {
+    const titleKeywords = getTitleKeywords(title);
     const candidateSummary = Object.fromEntries(CATEGORIES.map(category => [
       category,
       uniqueItems(candidates[category]).slice(0, 20).map(item => ({
@@ -1116,14 +1138,15 @@ export default function BudgetPlannerScreen() {
       '예산 제목에 특정 품목이나 활동명이 있으면 그 품목·활동과 직접 관련된 품목만 사용해.',
       '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
       '후보 품목이 있으면 후보 단가를 우선 사용하고, 부족하면 같은 성격의 품목만 직접 제안해.',
+      'unitPrice(단가)는 가능하면 10,000원(만원) 단위로 맞추고, 만원 단위로 만들기 어려운 소모성 저가 품목만 1,000원(천원) 단위를 사용해.',
       '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
       '사용자가 과목별로 입력한 구입 물품이 있으면 그 입력을 최우선으로 반영해.',
       '입력한 물품이 넓은 표현이면 같은 목적의 구체 품목으로만 확장해. 예: 에듀테크는 태블릿, 스마트기기, 코딩교구 / 다과와 식비는 간식, 음료, 도시락.',
       '입력한 물품과 무관한 기본 사무용품이나 다른 과목 물품을 예산 맞추기용으로 섞지 마.',
       JSON.stringify({
-        title: activePlan?.title ?? planTitle,
-        totalBudget: budgetForCalc,
-        allocations,
+        title,
+        totalBudget: budget,
+        allocations: alloc,
         titleKeywords,
         desiredItems: keywordMap,
         excludedAutoItems: EXCLUDED_AUTO_ITEM_WORDS,
@@ -1147,41 +1170,23 @@ export default function BudgetPlannerScreen() {
     const desiredItems = filterItemsByDesiredIntent(aiItems, keywordMap);
     return Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
       ? desiredItems
-      : filterItemsByTitleIntent(desiredItems, activePlan?.title ?? planTitle);
+      : filterItemsByTitleIntent(desiredItems, title);
   };
 
-  const makeRecommendations = async (): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
-    if (budgetForCalc <= 0) throw new Error('예산을 먼저 입력해주세요.');
+  const makeRecommendations = async (title: string, budget: number, alloc: Record<BudgetCategory, number>): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
+    if (budget <= 0) throw new Error('예산을 먼저 입력해주세요.');
 
-    const candidates = await collectBudgetCandidates();
+    const candidates = await collectBudgetCandidates(title);
     try {
-      const aiItems = await makeAiBudgetPlan(candidates);
-      return { items: balanceItemsByCategory(aiItems, allocations), source: 'ai' };
+      const aiItems = await makeAiBudgetPlan(candidates, title, budget, alloc);
+      return { items: balanceItemsByCategory(aiItems, alloc), source: 'ai' };
     } catch {
-      const desiredFallback = filterItemsByDesiredIntent(buildRecommendation(candidates, allocations), keywordMap);
+      const desiredFallback = filterItemsByDesiredIntent(buildRecommendation(candidates, alloc), keywordMap);
       const fallback = Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
         ? desiredFallback
-        : filterItemsByTitleIntent(desiredFallback, activePlan?.title ?? planTitle);
+        : filterItemsByTitleIntent(desiredFallback, title);
       if (fallback.length === 0) throw new Error('예산안 품목을 만들지 못했습니다. Gemini API 키, 예산 금액, 과목별 비율을 확인해주세요.');
-      return { items: balanceItemsByCategory(fallback, allocations), source: 'local' };
-    }
-  };
-
-  const handleMakeRecommendations = async () => {
-    if (!activePlan) return;
-    setRecommendationStatus('loading');
-    setRecommendationMessage('');
-    try {
-      const { items: next, source } = await makeRecommendations();
-      const grouped = groupGeneratedBudgetItems(next, keywordMap);
-      setRecommendationStatus('ready');
-      setActivePlan({ ...activePlan, items: grouped, updatedAt: Date.now() });
-      setRecommendationMessage(source === 'ai'
-        ? `Gemini가 예산안 ${grouped.length}개 행을 만들었습니다.`
-        : `Gemini 호출이 어려워 내장 후보로 예산안 ${grouped.length}개 행을 만들었습니다.`);
-    } catch (e: any) {
-      setRecommendationStatus('error');
-      setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
+      return { items: balanceItemsByCategory(fallback, alloc), source: 'local' };
     }
   };
 
@@ -1231,7 +1236,7 @@ export default function BudgetPlannerScreen() {
       ['', '', '', '', '', '', '잔액', '', '', String(planRemaining)],
     ];
     const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
-    await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산사용계획`);
+    await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산안작성`);
   };
 
   const handleImportCsv = async () => {
@@ -1277,7 +1282,7 @@ export default function BudgetPlannerScreen() {
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
       <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 flex items-center gap-3">
-        <h1 className="text-base font-black text-gray-900 dark:text-white">예산사용계획</h1>
+        <h1 className="text-base font-black text-gray-900 dark:text-white">예산안작성</h1>
         <span className="text-xs text-gray-400">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
       </div>
 
@@ -1385,10 +1390,12 @@ export default function BudgetPlannerScreen() {
             {showRatio && (
               <button
                 onClick={handleNewPlan}
-                disabled={!planTitle.trim() || !totalBudget}
+                disabled={!planTitle.trim() || !totalBudget || recommendationStatus === 'loading'}
                 className={`${btnCls} mt-2 w-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ring-2 ring-purple-200 dark:ring-purple-900 flex items-center justify-center gap-2`}
               >
-                <Wand2 className="w-4 h-4" />예산안 만들기
+                {recommendationStatus === 'loading'
+                  ? <><RefreshCw className="w-4 h-4 animate-spin" />예산안 만드는 중...</>
+                  : <><Wand2 className="w-4 h-4" />예산안 만들기</>}
               </button>
             )}
           </section>
@@ -1441,9 +1448,6 @@ export default function BudgetPlannerScreen() {
                     <p className="text-xs text-gray-500">배정 예산: {fmt(activePlan.totalBudget)}원</p>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-end">
-                    <button onClick={handleMakeRecommendations} disabled={recommendationStatus === 'loading'} className={`${btnCls} bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1`}>
-                      <Wand2 className="w-3.5 h-3.5" />예산안 만들기
-                    </button>
                     <button onClick={autoBalancePlan} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-200 dark:ring-emerald-800 shadow-sm flex items-center gap-1.5`}>
                       <RefreshCw className="w-3.5 h-3.5" />0원 맞추기
                     </button>

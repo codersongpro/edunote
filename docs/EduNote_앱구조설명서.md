@@ -28,7 +28,10 @@ EduNote
 ├─ [교무행정AI]
 │  ├─ 교무행정AI 챗봇
 │  ├─ 공문요약·업무추출
-│  └─ 공문서 작성기             ← 9종 문서 생성 (탭 전환)
+│  ├─ 공문서 작성기             ← 9종 문서 생성 (탭 전환)
+│  ├─ 공문 보관함               ← 공문 캡처·첨부 저장·검색
+│  ├─ 양식 인쇄                 ← 학교 양식 8종 A4 출력
+│  └─ 예산안작성                ← 예산 과목별 예산안 생성·0원 맞추기
 │
 ├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
@@ -205,6 +208,9 @@ edunote
 | 교무행정AI | `EDUCATION_QA` | `EducationAssistantQA` | 교육 일반 질의응답 |
 | 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
 | 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
+| 교무행정AI | `DOC_ARCHIVE` | `DocArchivePanel` | 공문 캡처 이미지·첨부 저장 및 검색 |
+| 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 8종 A4 출력·PDF 저장 |
+| 교무행정AI | `BUDGET_PLANNER` | `BudgetPlannerScreen` | 예산 과목별 예산안 작성, 단가·수량 조합, 0원 맞추기, CSV 입출력 |
 | 수업자료AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
 | 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우) |
 | 수업자료AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
@@ -279,6 +285,7 @@ edunote
 | 품의서 | 품의 유형, 근거, 예산, 산출내역 | 산출내역 텍스트화, 합쇼체 적용 | 지출품의서 |
 | 회의록 | 일시, 장소, 안건, 발언 내용 | 표 기반 회의록 구조 적용 | 회의록 HTML |
 | 업무추출 | 공문 텍스트 또는 파일 | 마감, 일시, 장소, 링크, 제출 업무 추출 | 짧은 업무 메모, 캘린더 링크 |
+| 예산안작성 | 예산 제목, 전체 예산, 과목별 비율, 구입 물품 | `예산안 만들기` 버튼 하나로 예산안 틀 생성과 품목 자동 생성(AI/내장 후보)을 한 번에 수행, 단가는 만원 단위 중심으로 제시, `0원 맞추기`로 잔액 조정 | 예산안 표, CSV |
 
 ### 9.3 수업자료 AI
 
