@@ -1,10 +1,13 @@
 export interface PrintFormField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'date' | 'select' | 'participants';
+  type: 'text' | 'textarea' | 'date' | 'select' | 'participants' | 'table';
   placeholder?: string;
   options?: string[];
   rows?: number;
+  // type === 'table' 전용: 한 줄에 한 행, '/'로 칸을 나눠 입력하면 columns 머리글의 표로 만든다.
+  columns?: string[];
+  minRows?: number;
 }
 
 export interface PrintForm {
@@ -352,6 +355,94 @@ export const PRINT_FORMS: PrintForm[] = [
   </tr>
 </table>
 {{참가자행}}
+</div></body></html>`,
+  },
+  // ── 학급 활동 (추가) ────────────────────────────────────────────────
+  {
+    id: 'class-meeting-log',
+    category: '학급 활동',
+    title: '학급 회의록',
+    fields: [
+      { key: '회의일시', label: '회의 일시', type: 'text', placeholder: '2026년 6월 3일 (수) 5교시' },
+      { key: '학년반', label: '학년/반', type: 'text', placeholder: '3학년 2반' },
+      { key: '사회', label: '사회', type: 'text', placeholder: '홍길동' },
+      { key: '서기', label: '서기', type: 'text', placeholder: '이순신' },
+      { key: '참석', label: '참석 현황', type: 'text', placeholder: '재적 25명 중 24명 참석' },
+      { key: '지난회의실천', label: '지난 회의 실천 결과', type: 'textarea', rows: 3 },
+      { key: '안건', label: '오늘의 안건', type: 'textarea', rows: 3 },
+      { key: '협의내용', label: '협의 내용', type: 'textarea', rows: 6 },
+      { key: '결정사항', label: '결정 사항', type: 'textarea', rows: 4 },
+      { key: '건의사항', label: '선생님께 드리는 건의사항', type: 'textarea', rows: 3 },
+    ],
+    htmlTemplate: `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${baseStyle}</head><body>
+<div class="page-wrap">
+<div class="title-box">학급 회의록</div>
+<table>
+  <tr>
+    <th style="width:14%;">회의 일시</th><td class="nowrap" style="width:36%;">{{회의일시}}</td>
+    <th style="width:14%;">학년/반</th><td class="nowrap">{{학년반}}</td>
+  </tr>
+  <tr>
+    <th>사회</th><td class="nowrap">{{사회}}</td>
+    <th>서기</th><td class="nowrap">{{서기}}</td>
+  </tr>
+  <tr>
+    <th>참석 현황</th><td colspan="3">{{참석}}</td>
+  </tr>
+</table>
+<h2>지난 회의 실천 결과</h2>
+<div class="grow-area" style="min-height:50pt;">{{지난회의실천}}</div>
+<h2>오늘의 안건</h2>
+<div class="grow-area" style="min-height:50pt;">{{안건}}</div>
+<h2>협의 내용</h2>
+<div class="grow-area" style="min-height:95pt;">{{협의내용}}</div>
+<h2>결정 사항</h2>
+<div class="grow-area" style="min-height:65pt;">{{결정사항}}</div>
+<h2>선생님께 드리는 건의사항</h2>
+<div class="flex-area" style="flex:1;">{{건의사항}}</div>
+</div></body></html>`,
+  },
+  {
+    id: 'class-roles-duty',
+    category: '학급 활동',
+    title: '1인 1역할·청소 당번표',
+    fields: [
+      { key: '학기', label: '학기', type: 'text', placeholder: '2026학년도 1학기' },
+      { key: '학년반', label: '학년/반', type: 'text', placeholder: '3학년 2반' },
+      { key: '작성일', label: '작성일', type: 'text', placeholder: '2026년 6월 3일' },
+      {
+        key: '역할표',
+        label: '1인 1역할 (한 줄에 "역할/담당 학생")',
+        type: 'table',
+        columns: ['역할', '담당 학생'],
+        minRows: 12,
+        placeholder: '칠판 정리/홍길동\n우유 당번/이순신\n분리수거/김유신',
+      },
+      {
+        key: '당번표',
+        label: '청소 당번표 (한 줄에 "구역/월/화/수/목/금")',
+        type: 'table',
+        columns: ['청소 구역', '월', '화', '수', '목', '금'],
+        minRows: 5,
+        placeholder: '교실 앞/홍길동/이순신/김유신/박지성/손흥민\n교실 뒤/.../.../.../.../...\n복도/.../.../.../.../...',
+      },
+    ],
+    htmlTemplate: `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${baseStyle}</head><body>
+<div class="page-wrap">
+<div class="title-box" style="font-size:14pt; letter-spacing:1px;">1인 1역할 · 청소 당번표</div>
+<table style="margin-bottom:8pt;">
+  <tr>
+    <th style="width:14%;">학기</th><td class="nowrap" style="width:36%;">{{학기}}</td>
+    <th style="width:14%;">학년/반</th><td class="nowrap">{{학년반}}</td>
+  </tr>
+  <tr>
+    <th>작성일</th><td class="nowrap" colspan="3">{{작성일}}</td>
+  </tr>
+</table>
+<h2>1인 1역할</h2>
+{{역할표}}
+<h2>청소 당번표</h2>
+{{당번표}}
 </div></body></html>`,
   },
 ];
