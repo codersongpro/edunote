@@ -187,6 +187,7 @@ interface NaraItem {
   preferred?: boolean;
   priceSource?: string;
   priceSourceUrl?: string;
+  image?: string;
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -1000,6 +1001,8 @@ export default function BudgetPlannerScreen() {
   const [priceSearchResults, setPriceSearchResults] = useState<NaraItem[]>([]);
   const [priceSearchStatus, setPriceSearchStatus] = useState<RecommendationStatus>('idle');
   const [priceSearchMessage, setPriceSearchMessage] = useState('');
+  const [previewImages, setPreviewImages] = useState<Record<string, string>>({}); // 이미지 URL → data URI 캐시
+  const [hoveredResultKey, setHoveredResultKey] = useState<string | null>(null);
 
   useEffect(() => {
     window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
@@ -1206,6 +1209,14 @@ export default function BudgetPlannerScreen() {
     updatePlanItems(next);
     revealCategory(next, priceSearchCategory);
     setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`);
+  };
+
+  // 검색 결과 위에 마우스를 올리면 상품 이미지를 data URI로 받아 미리보기로 보여준다(CSP 우회).
+  const loadPreviewImage = (url?: string) => {
+    if (!url || previewImages[url] !== undefined) return;
+    window.electronAPI.fetchImage(url)
+      .then(dataUri => setPreviewImages(prev => ({ ...prev, [url]: dataUri || '' })))
+      .catch(() => setPreviewImages(prev => ({ ...prev, [url]: '' })));
   };
 
   // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
@@ -1702,15 +1713,30 @@ export default function BudgetPlannerScreen() {
                   )}
                   {priceSearchResults.length > 0 && (
                     <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-                      {priceSearchResults.map((item, idx) => (
-                        <div key={`${item.thngCd}-${idx}`} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                      {priceSearchResults.map((item, idx) => {
+                        const preview = item.image ? previewImages[item.image] : undefined;
+                        return (
+                        <div
+                          key={`${item.thngCd}-${idx}`}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-900/40"
+                          onMouseEnter={() => loadPreviewImage(item.image)}
+                        >
+                          {item.image && (
+                            <div className="shrink-0 h-14 w-14 rounded border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center" title="마우스를 올리면 상품 이미지가 표시됩니다">
+                              {preview
+                                ? <img src={preview} alt="" className="h-full w-full object-contain" />
+                                : <span className="text-[9px] text-gray-400 text-center leading-tight px-0.5">이미지</span>}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
                             <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
                               {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
-                                <button onClick={() => window.electronAPI.openExternal(item.priceSourceUrl!)} className="ml-1 text-blue-500 hover:underline inline-flex items-center gap-0.5">
-                                  <ExternalLink className="w-3 h-3" />링크
+                                <button onClick={() => window.electronAPI.openExternal(item.priceSourceUrl!)}
+                                  onMouseEnter={() => loadPreviewImage(item.image)}
+                                  className="ml-1 text-blue-500 hover:underline inline-flex items-center gap-0.5">
+                                  <ExternalLink className="w-3 h-3" />열기
                                 </button>
                               )}
                             </p>
@@ -1720,7 +1746,8 @@ export default function BudgetPlannerScreen() {
                             <Plus className="w-3.5 h-3.5" />추가
                           </button>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </section>
@@ -1803,6 +1830,7 @@ function normalizeNaverShoppingItems(data: any): NaraItem[] {
       mnfctCorpNm: row.maker || row.brand || row.mallName || '',
       unitPrice,
       priceSourceUrl: row.link || '',
+      image: row.image || '',
     };
   }).filter((item: NaraItem) => item.thngNm && (item.unitPrice ?? 0) > 0);
 }
