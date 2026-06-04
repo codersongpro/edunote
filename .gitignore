@@ -5,3 +5,4 @@ dist-electron/
 .DS_Store
 *.local
 electron.vite.config.*.mjs
+*.tsbuildinfo
