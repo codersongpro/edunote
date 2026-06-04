@@ -985,6 +985,13 @@ export default function BudgetPlannerScreen() {
   const [recommendationMessage, setRecommendationMessage] = useState('');
   const [collapsedBudgetIds, setCollapsedBudgetIds] = useState<Set<string>>(new Set());
 
+  // 인터넷 가격 조회(품목 검색) 패널 상태
+  const [priceSearchQuery, setPriceSearchQuery] = useState('');
+  const [priceSearchCategory, setPriceSearchCategory] = useState<BudgetCategory>('교육운영비');
+  const [priceSearchResults, setPriceSearchResults] = useState<NaraItem[]>([]);
+  const [priceSearchStatus, setPriceSearchStatus] = useState<RecommendationStatus>('idle');
+  const [priceSearchMessage, setPriceSearchMessage] = useState('');
+
   useEffect(() => {
     window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
       if (typeof key === 'string') setApiKey(key);
@@ -1127,6 +1134,53 @@ export default function BudgetPlannerScreen() {
   const addItemToPlan = (item?: Partial<NaraItem>, category: BudgetCategory = '교육운영비') => {
     if (!activePlan) return;
     updatePlanItems([...activePlan.items, makeItem(category, item)]);
+  };
+
+  // 인터넷 가격 조회: 입력한 키(나라장터·네이버 쇼핑)로 실제 상품·단가를 검색한다.
+  const handlePriceSearch = async () => {
+    const query = priceSearchQuery.trim();
+    if (!query) return;
+    const hasNaraKey = !!apiKey.trim();
+    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
+    if (!hasNaraKey && !hasNaverKey) {
+      setPriceSearchStatus('error');
+      setPriceSearchMessage('먼저 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해주세요.');
+      return;
+    }
+    setPriceSearchStatus('loading');
+    setPriceSearchMessage('');
+    setPriceSearchResults([]);
+    const results: NaraItem[] = [];
+    if (hasNaraKey) {
+      try {
+        const data = await window.electronAPI.naramarketShoppingSearch(query, apiKey);
+        results.push(...normalizeApiItems(data, true)
+          .filter(item => (item.unitPrice ?? 0) > 0)
+          .map(item => ({ ...item, priceSource: '나라장터' })));
+      } catch {
+        // 한쪽 조회가 실패해도 다른 조회 결과로 계속 진행한다.
+      }
+    }
+    if (hasNaverKey) {
+      try {
+        const data = await window.electronAPI.naverShoppingSearch(query, naverClientId, naverClientSecret);
+        results.push(...normalizeNaverShoppingItems(data)
+          .map(item => ({ ...item, priceSource: item.priceSource || '인터넷 가격조회' })));
+      } catch {
+        // 위와 동일하게 무시한다.
+      }
+    }
+    const unique = uniqueSearchItems(results).slice(0, 30);
+    setPriceSearchResults(unique);
+    setPriceSearchStatus(unique.length > 0 ? 'ready' : 'error');
+    setPriceSearchMessage(unique.length > 0
+      ? `${unique.length}건을 찾았습니다. 추가할 품목을 누르세요.`
+      : '검색 결과가 없습니다. 다른 키워드로 시도해보세요.');
+  };
+
+  const addSearchItemToPlan = (item: NaraItem) => {
+    addItemToPlan(item, priceSearchCategory);
+    setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory}에 추가했습니다.`);
   };
 
   const addChildItemToPlan = (parentId: string) => {
@@ -1451,7 +1505,7 @@ export default function BudgetPlannerScreen() {
               </p>
             )}
             <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-              저장 후 품목 추가에서 돋보기를 누르면 가격 조회 결과를 함께 보여줍니다.
+              저장 후 예산안 화면 위쪽의 '인터넷 가격 조회로 품목 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
             </p>
           </div>
               </>
@@ -1573,6 +1627,61 @@ export default function BudgetPlannerScreen() {
               </header>
 
               <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
+                <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Search className="w-4 h-4 text-blue-500" />
+                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">인터넷 가격 조회로 품목 추가</h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={priceSearchCategory}
+                      onChange={e => setPriceSearchCategory(e.target.value as BudgetCategory)}
+                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                    >
+                      {CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
+                    </select>
+                    <input
+                      value={priceSearchQuery}
+                      onChange={e => setPriceSearchQuery(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handlePriceSearch(); }}
+                      placeholder="예: 태블릿, 복사용지, 보드게임"
+                      className={`${inputCls} flex-1 min-w-[160px]`}
+                    />
+                    <button onClick={handlePriceSearch} disabled={priceSearchStatus === 'loading' || !priceSearchQuery.trim()} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
+                      {priceSearchStatus === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                      조회
+                    </button>
+                  </div>
+                  {priceSearchMessage && (
+                    <p className={`text-xs mt-2 flex items-center gap-1 ${priceSearchStatus === 'error' ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                      {priceSearchStatus === 'error' ? <AlertCircle className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+                      {priceSearchMessage}
+                    </p>
+                  )}
+                  {priceSearchResults.length > 0 && (
+                    <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+                      {priceSearchResults.map((item, idx) => (
+                        <div key={`${item.thngCd}-${idx}`} className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-900/40">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                              {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
+                              {item.priceSourceUrl && (
+                                <button onClick={() => window.electronAPI.openExternal(item.priceSourceUrl!)} className="ml-1 text-blue-500 hover:underline inline-flex items-center gap-0.5">
+                                  <ExternalLink className="w-3 h-3" />링크
+                                </button>
+                              )}
+                            </p>
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{fmt(item.unitPrice ?? 0)}원</span>
+                          <button onClick={() => addSearchItemToPlan(item)} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 shrink-0`}>
+                            <Plus className="w-3.5 h-3.5" />추가
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
                 <section>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
