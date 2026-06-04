@@ -81,6 +81,36 @@ const UsageGuideScreen: React.FC = () => {
           </div>
         </Section>
 
+        <Section title="예산안작성" icon={<FileText className="w-4 h-4 text-green-600" />}>
+          <p className="text-xs text-gray-500 dark:text-gray-400">AI가 예산 제목과 희망 물품을 분석해 어울리는 품목과 단가·수량을 자동으로 생성합니다.</p>
+          <div className="space-y-3">
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">예산안 만들기</p>
+              <ol className="space-y-1.5">
+                <Step n={1}>예산 제목과 총 예산 금액을 입력합니다. 제목이 구체적일수록 주제에 맞는 품목이 생성됩니다.</Step>
+                <Step n={2}><strong>과목별(비율)</strong> 방식은 교육운영비·일반운영비·업무추진비 비율을 지정하고, <strong>일반 작성</strong> 방식은 과목 없이 품목 중심으로 예산안을 만듭니다.</Step>
+                <Step n={3}>희망 물품 칸에 원하는 품목을 입력하면 해당 품목이 우선 포함됩니다.</Step>
+                <Step n={4}><strong>예산안 만들기</strong> 버튼을 누르면 Gemini가 제목 주제를 먼저 분석해 관련 품목만 생성합니다. 단가는 천원(1,000원) 단위로 생성됩니다.</Step>
+              </ol>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">0원 맞추기</p>
+              <ol className="space-y-1.5">
+                <Step n={1}>예산안 생성 후 남은예산이 0이 아닐 때 사용합니다. <strong>0원 맞추기</strong> 버튼을 누르면 품목 수량을 자동 조절해 남은예산을 최대한 0원에 맞춥니다.</Step>
+                <Step n={2}><strong>최소수량·최대수량 지정:</strong> 각 품목 행의 최소수량·최대수량 칸을 채우면 그 범위 안에서만 수량이 조절됩니다. 수량을 직접 수정하면 해당 품목이 잠금 상태가 되어 자동 조절 대상에서 제외됩니다.</Step>
+                <Step n={3}>결과가 만족스럽지 않으면 수량을 직접 조정한 뒤 다시 눌러보세요.</Step>
+              </ol>
+              <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-xs text-green-700 dark:text-green-400">
+                최소·최대 수량을 지정하지 않으면 최소 1 ~ 상한 없음으로 처리됩니다.
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">인터넷 가격 조회로 품목 추가</p>
+              <p className="text-xs leading-relaxed">나라장터 또는 네이버 쇼핑 API 키를 설정하면 실제 상품을 검색해 품목을 바로 추가할 수 있습니다. 상품에 마우스를 올리면 이미지를 미리볼 수 있습니다.</p>
+            </div>
+          </div>
+        </Section>
+
         <Section title="교무행정AI" icon={<FileText className="w-4 h-4 text-emerald-500" />}>
           <p className="text-xs text-gray-500 dark:text-gray-400">학교 행정 업무와 공문 처리를 돕는 메뉴입니다. 메뉴 순서는 같은 카테고리 안에서 드래그 앤 드롭으로 바꿀 수 있습니다.</p>
           <div className="space-y-3">
