@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Download,
   ExternalLink,
+  Layers,
   Plus,
   RefreshCw,
   Save,
@@ -337,60 +338,42 @@ function makeBudgetItem(category: BudgetCategory, thngNm: string, spec: string, 
 
 function buildExampleBudgetItems(): BudgetItem[] {
   const rows: BudgetItem[] = [];
-  const add = (category: BudgetCategory, thngNm: string, spec: string, unitPrice = 0, quantity = 1, parentId?: string) => {
-    const item = makeBudgetItem(category, thngNm, spec, unitPrice, quantity, parentId);
+  const roots: Record<BudgetCategory, BudgetItem> = {
+    교육운영비: makeCategoryRow('교육운영비'),
+    일반운영비: makeCategoryRow('일반운영비'),
+    업무추진비: makeCategoryRow('업무추진비'),
+  };
+  for (const category of CATEGORIES) rows.push(roots[category]);
+
+  const add = (category: BudgetCategory, thngNm: string, spec: string, unitPrice: number, quantity: number) => {
+    const item = makeBudgetItem(category, thngNm, spec, unitPrice, quantity, roots[category].id);
     rows.push(item);
     return item;
   };
 
-  const edutech = add('교육운영비', '에듀테크 라이선스', '묶음');
-  const classTools = add('교육운영비', '수업 참여 도구', '묶음', 0, 1, edutech.id);
-  add('교육운영비', '패들렛', '1년 구독', 1500000, 1, classTools.id);
-  add('교육운영비', '젭퀴즈', '1년 구독', 1500000, 1, classTools.id);
-  const courseware = add('교육운영비', 'AI 코스웨어', '묶음', 0, 1, edutech.id);
-  add('교육운영비', 'AI 코스웨어 라이선스', '1년 구독', 2000000, 1, courseware.id);
+  // 교육운영비 (카테고리 > 품목, 2단계)
+  add('교육운영비', '패들렛', '1년 구독', 1500000, 1);
+  add('교육운영비', '젭퀴즈', '1년 구독', 1500000, 1);
+  add('교육운영비', 'AI 코스웨어 라이선스', '1년 구독', 2000000, 1);
+  add('교육운영비', '수업 참여 간식', '행사 및 수업 참여 간식', 5000, 120);
+  add('교육운영비', '참여 학생 기념품', '기념품', 5000, 80);
+  add('교육운영비', '디지털 수업 나눔 행사 운영', '1식', 800000, 1);
+  add('교육운영비', '성과 공유회 운영', '1식', 500000, 1);
+  add('교육운영비', '체험 부스 운영', '1식', 200000, 1);
 
-  const studentSupport = add('교육운영비', '학생 지원 물품', '묶음');
-  const snacks = add('교육운영비', '학생 간식', '묶음', 0, 1, studentSupport.id);
-  add('교육운영비', '수업 참여 간식', '행사 및 수업 참여 간식', 5000, 120, snacks.id);
-  const souvenirs = add('교육운영비', '참여 학생 기념품', '묶음', 0, 1, studentSupport.id);
-  add('교육운영비', '참여 학생 기념품', '기념품', 5000, 80, souvenirs.id);
+  // 일반운영비
+  add('일반운영비', 'AI 문서 작성 라이선스', '1년 구독', 500000, 1);
+  add('일반운영비', 'AI 콘텐츠 제작 라이선스', '1년 구독', 400000, 1);
+  add('일반운영비', '강사비', '운영수당', 180000, 3);
+  add('일반운영비', '원고비', '운영수당', 100000, 1);
+  add('일반운영비', '홍보용품', '홍보 물품', 260000, 1);
+  add('일반운영비', '현수막', '홍보물', 200000, 1);
 
-  const event = add('교육운영비', '행사 예산', '묶음');
-  const sharing = add('교육운영비', '디지털 수업 나눔 행사', '묶음', 0, 1, event.id);
-  add('교육운영비', '행사 운영 물품', '1식', 800000, 1, sharing.id);
-  const report = add('교육운영비', '성과 공유회', '묶음', 0, 1, event.id);
-  add('교육운영비', '성과 공유회 운영 물품', '1식', 500000, 1, report.id);
-  const booth = add('교육운영비', '체험 부스', '묶음', 0, 1, event.id);
-  add('교육운영비', '체험 부스 운영 물품', '1식', 200000, 1, booth.id);
+  // 업무추진비
+  add('업무추진비', '식비', '협의회 식비', 350000, 1);
+  add('업무추진비', '다과비', '협의회 다과', 150000, 1);
 
-  const aiLicense = add('일반운영비', 'AI 라이선스', '묶음');
-  const workAi = add('일반운영비', '업무 지원 AI', '묶음', 0, 1, aiLicense.id);
-  add('일반운영비', 'AI 문서 작성 라이선스', '1년 구독', 500000, 1, workAi.id);
-  add('일반운영비', 'AI 콘텐츠 제작 라이선스', '1년 구독', 400000, 1, workAi.id);
-
-  const fee = add('일반운영비', '강사 및 원고 수당', '묶음');
-  const operatingAllowance = add('일반운영비', '운영수당', '묶음', 0, 1, fee.id);
-  add('일반운영비', '강사비', '운영수당', 180000, 3, operatingAllowance.id);
-  add('일반운영비', '원고비', '운영수당', 100000, 1, operatingAllowance.id);
-
-  const promo = add('일반운영비', '홍보 및 운영 물품', '묶음');
-  const promoProduction = add('일반운영비', '홍보물 제작', '묶음', 0, 1, promo.id);
-  add('일반운영비', '홍보용품', '홍보 물품', 260000, 1, promoProduction.id);
-  add('일반운영비', '현수막', '홍보물', 200000, 1, promoProduction.id);
-
-  const biz = add('업무추진비', '업무추진 식비 및 다과비', '묶음');
-  const meeting = add('업무추진비', '협의회 운영', '묶음', 0, 1, biz.id);
-  add('업무추진비', '식비', '협의회 식비', 350000, 1, meeting.id);
-  add('업무추진비', '다과비', '협의회 다과', 150000, 1, meeting.id);
-
-  // 하위 항목을 가진 부모(묶음) 행은 규격을 표시하지 않는다.
-  const exampleParentIds = parentIdsWithChildren(rows);
-  for (const row of rows) {
-    if (exampleParentIds.has(row.id)) row.spec = '';
-  }
-
-  return rows;
+  return normalizeToCategoryTree(rows);
 }
 
 function makeSmallBalanceItem(category: BudgetCategory, candidate: NaraItem, quantity: number): BudgetItem {
@@ -558,78 +541,139 @@ function parseCsvRows(text: string): string[][] {
 function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudget: number | null } {
   const rows = parseCsvRows(text);
   const headerIndex = rows.findIndex(row => row.includes('예산 과목') && row.includes('품목'));
-  if (headerIndex < 0) throw new Error('예산사용계획 CSV 형식이 아닙니다.');
+  if (headerIndex < 0) throw new Error('예산안작성 CSV 형식이 아닙니다.');
   const header = rows[headerIndex].map(value => value.trim());
   const idx = (name: string) => header.indexOf(name);
   const categoryIdx = idx('예산 과목');
   const nameIdx = idx('품목');
-  const codeIdx = idx('품목코드');
   const specIdx = idx('규격');
   const priceIdx = idx('단가(원)');
   const qtyIdx = idx('수량');
   const subtotalIdx = idx('소계(원)');
-  const depthIdx = idx('단계');
-  const parentIdx = idx('상위항목');
   const items: BudgetItem[] = [];
-  const latestByDepth = new Map<number, string>();
+  const lastByDepth = new Map<number, string>();
+  const summaryLabels = ['합계', '배정 예산', '잔액', '집행 합계'];
   let totalBudget: number | null = null;
 
   for (const row of rows.slice(headerIndex + 1)) {
-    const label = row[specIdx]?.trim();
+    const rawName = row[nameIdx] ?? '';
+    const name = rawName.trim();
     const amount = parseInt((row[subtotalIdx] ?? '').replace(/[^0-9-]/g, ''), 10) || 0;
-    if (label === '배정 예산') totalBudget = amount;
+    if (name === '배정 예산') { totalBudget = amount; continue; }
+    if (!name || summaryLabels.includes(name)) continue;
 
     const category = normalizeBudgetCategory(row[categoryIdx]?.trim());
-    const thngNm = row[nameIdx]?.trim();
-    if (!category || !thngNm) continue;
+    if (!category) continue;
+
+    // 들여쓰기(앞 공백 3칸 = 1단계)로 트리 깊이를 복원한다.
+    const leading = rawName.length - rawName.replace(/^\s+/, '').length;
+    const depth = Math.min(MAX_BUDGET_DEPTH, Math.floor(leading / 3) + 1);
+
+    // 카테고리 루트 행(1단계이며 품목명이 과목명과 같음)은 건너뛰고 정규화 단계에서 다시 만든다.
+    if (depth <= 1 && name === category) { lastByDepth.clear(); continue; }
 
     const unitPrice = parseInt((row[priceIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 0;
     const quantity = Math.max(1, parseInt((row[qtyIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1);
-    const depth = Math.min(MAX_BUDGET_DEPTH, Math.max(1, parseInt((row[depthIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1));
-    const parentName = row[parentIdx]?.trim();
-    const parentId = depth > 1
-      ? (parentName ? [...items].reverse().find(item => item.thngNm === parentName)?.id : latestByDepth.get(depth - 1))
-      : undefined;
-    const item = {
+    // 2단계는 과목 루트(정규화 시 연결), 3단계는 바로 위 품목을 부모로 둔다.
+    const parentId = depth > 2 ? lastByDepth.get(depth - 1) : undefined;
+    const item: BudgetItem = {
       id: genId(),
       budgetCategory: category,
-      thngNm,
-      thngCd: row[codeIdx]?.trim() || '',
+      thngNm: name,
+      thngCd: '',
       spec: row[specIdx]?.trim() || '',
       unitPrice,
       quantity,
-      subtotal: amount > 0 ? amount : unitPrice * quantity,
+      subtotal: unitPrice * quantity,
       parentId,
     };
     items.push(item);
-    latestByDepth.set(depth, item.id);
-    for (const key of Array.from(latestByDepth.keys())) {
-      if (key > depth) latestByDepth.delete(key);
+    lastByDepth.set(depth, item.id);
+    for (const key of Array.from(lastByDepth.keys())) {
+      if (key > depth) lastByDepth.delete(key);
     }
   }
 
   if (items.length === 0) throw new Error('불러올 품목 행이 없습니다.');
-  return { items, totalBudget };
+  return { items: normalizeToCategoryTree(items), totalBudget };
+}
+
+const CATEGORY_ROOT_CODE = 'category-root';
+
+function isCategoryRow(item: BudgetItem): boolean {
+  return item.thngCd === CATEGORY_ROOT_CODE || (!item.parentId && CATEGORIES.includes(item.thngNm as BudgetCategory));
+}
+
+function makeCategoryRow(category: BudgetCategory): BudgetItem {
+  return {
+    id: genId(),
+    budgetCategory: category,
+    thngNm: category,
+    thngCd: CATEGORY_ROOT_CODE,
+    spec: '',
+    unitPrice: 0,
+    quantity: 1,
+    subtotal: 0,
+  };
+}
+
+// 항상 교육운영비·일반운영비·업무추진비 3개 카테고리 행을 1단계 루트로 두고,
+// 나머지 품목을 해당 과목 루트 아래(2단계, 필요 시 3단계)로 정리한다.
+function normalizeToCategoryTree(items: BudgetItem[]): BudgetItem[] {
+  const roots = new Map<BudgetCategory, BudgetItem>();
+  const others: BudgetItem[] = [];
+  for (const item of items) {
+    if (isCategoryRow(item)) {
+      if (!roots.has(item.budgetCategory)) {
+        roots.set(item.budgetCategory, { ...item, thngNm: item.budgetCategory, thngCd: CATEGORY_ROOT_CODE, parentId: undefined, spec: '', unitPrice: 0, subtotal: 0 });
+      }
+    } else {
+      others.push({ ...item });
+    }
+  }
+  for (const category of CATEGORIES) {
+    if (!roots.has(category)) roots.set(category, makeCategoryRow(category));
+  }
+  const otherIds = new Set(others.map(item => item.id));
+
+  // 부모가 다른 품목이면 그대로(3단계), 아니면 해당 과목 루트의 자식(2단계)으로 붙인다.
+  for (const item of others) {
+    const underItem = !!item.parentId && otherIds.has(item.parentId);
+    if (!underItem) item.parentId = roots.get(item.budgetCategory)!.id;
+  }
+
+  const childrenByParent = new Map<string, BudgetItem[]>();
+  for (const item of others) {
+    const list = childrenByParent.get(item.parentId!) ?? [];
+    list.push(item);
+    childrenByParent.set(item.parentId!, list);
+  }
+  // 자동 채움(0원 맞추기) 품목은 같은 부모 안에서 뒤로 보낸다.
+  for (const list of childrenByParent.values()) {
+    list.sort((a, b) => (a.memo === AUTO_BALANCE_MEMO ? 1 : 0) - (b.memo === AUTO_BALANCE_MEMO ? 1 : 0));
+  }
+
+  const result: BudgetItem[] = [];
+  for (const category of CATEGORIES) {
+    const root = roots.get(category)!;
+    root.budgetCategory = category;
+    root.subtotal = 0;
+    result.push(root);
+    const walk = (parentId: string) => {
+      for (const child of childrenByParent.get(parentId) ?? []) {
+        child.budgetCategory = category;
+        child.subtotal = childrenByParent.has(child.id) ? 0 : calcSubtotal(child);
+        result.push(child);
+        walk(child.id);
+      }
+    };
+    walk(root.id);
+  }
+  return result;
 }
 
 function sortItemsByCategory(items: BudgetItem[]): BudgetItem[] {
-  const childrenByParent = new Map<string, BudgetItem[]>();
-  for (const item of items) {
-    if (!item.parentId) continue;
-    childrenByParent.set(item.parentId, [...(childrenByParent.get(item.parentId) ?? []), item]);
-  }
-  const roots = items.filter(item => !item.parentId).sort((a, b) => {
-    const categoryDiff = CATEGORIES.indexOf(a.budgetCategory) - CATEGORIES.indexOf(b.budgetCategory);
-    if (categoryDiff !== 0) return categoryDiff;
-    if (a.memo === AUTO_BALANCE_MEMO && b.memo !== AUTO_BALANCE_MEMO) return 1;
-    if (a.memo !== AUTO_BALANCE_MEMO && b.memo === AUTO_BALANCE_MEMO) return -1;
-    return 0;
-  });
-  const append = (item: BudgetItem): BudgetItem[] => [
-    item,
-    ...(childrenByParent.get(item.id) ?? []).flatMap(child => append(child)),
-  ];
-  return roots.flatMap(item => append(item));
+  return normalizeToCategoryTree(items);
 }
 
 function normalizeBudgetItem(item: BudgetItem): BudgetItem | null {
@@ -653,44 +697,9 @@ function normalizeBudgetPlan(plan: BudgetPlan): BudgetPlan {
   };
 }
 
-function groupGeneratedBudgetItems(items: BudgetItem[], keywordMap: Record<BudgetCategory, string>): BudgetItem[] {
-  if (parentIdsWithChildren(items).size > 0) return sortItemsByCategory(items);
-  const groupedRows: BudgetItem[] = [];
-
-  for (const category of CATEGORIES) {
-    const categoryItems = items.filter(item => item.budgetCategory === category);
-    if (categoryItems.length === 0) continue;
-    const desiredGroups = splitDesiredItems(keywordMap[category]).filter(word => !isExcludedAutoItemName(word));
-    const fallbackGroup = category === '교육운영비' ? '교육활동 운영' : category === '일반운영비' ? '학교 운영 지원' : '업무추진 운영';
-    const groups = new Map<string, BudgetItem[]>();
-
-    for (const item of categoryItems) {
-      const text = `${item.thngNm} ${item.spec ?? ''}`.replace(/\s/g, '');
-      const groupName = desiredGroups.find(word => {
-        const normalized = word.replace(/\s/g, '');
-        return text.includes(normalized) || normalized.includes(text);
-      }) ?? desiredGroups[0] ?? fallbackGroup;
-      groups.set(groupName, [...(groups.get(groupName) ?? []), item]);
-    }
-
-    for (const [groupName, rows] of groups) {
-      const parent = makeItem(category, { thngNm: groupName, spec: '', thngCd: 'generated-parent' });
-      const detail = makeItem(category, { thngNm: `${groupName} 세부`, spec: '', thngCd: 'generated-detail' });
-      detail.parentId = parent.id;
-      groupedRows.push(parent, detail);
-      for (const row of rows) {
-        groupedRows.push({
-          ...row,
-          id: genId(),
-          parentId: detail.id,
-          budgetCategory: category,
-          subtotal: calcSubtotal(row),
-        });
-      }
-    }
-  }
-
-  return groupedRows;
+// 생성된 품목들을 과목별 카테고리 루트 아래(2단계)로 정리한다. (별도 '세부' 단계 없음)
+function groupGeneratedBudgetItems(items: BudgetItem[]): BudgetItem[] {
+  return normalizeToCategoryTree(items);
 }
 
 function filterItemsByTitleIntent(items: BudgetItem[], title: string): BudgetItem[] {
@@ -1097,7 +1106,7 @@ export default function BudgetPlannerScreen() {
       id: genId(),
       title,
       totalBudget: budget,
-      items: isDefaultExample ? buildExampleBudgetItems() : [],
+      items: isDefaultExample ? buildExampleBudgetItems() : normalizeToCategoryTree([]),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -1114,7 +1123,7 @@ export default function BudgetPlannerScreen() {
     setRecommendationMessage('');
     try {
       const { items: next, source } = await makeRecommendations(title, budget, computeAllocations(budget));
-      const grouped = groupGeneratedBudgetItems(next, keywordMap);
+      const grouped = groupGeneratedBudgetItems(next);
       setActivePlan({ ...newPlan, items: grouped, updatedAt: Date.now() });
       setRecommendationStatus('ready');
       setRecommendationMessage(source === 'ai'
@@ -1131,9 +1140,21 @@ export default function BudgetPlannerScreen() {
     setActivePlan({ ...activePlan, items, updatedAt: Date.now() });
   };
 
-  const addItemToPlan = (item?: Partial<NaraItem>, category: BudgetCategory = '교육운영비') => {
+  const revealCategory = (items: BudgetItem[], category: BudgetCategory) => {
+    const rootId = items.find(item => isCategoryRow(item) && item.budgetCategory === category)?.id;
+    if (rootId) setCollapsedBudgetIds(prev => { const next = new Set(prev); next.delete(rootId); return next; });
+  };
+
+  // 같은 과목끼리 묶어 카테고리 트리로 다시 정렬한다.
+  const handleSortByCategory = () => {
     if (!activePlan) return;
-    updatePlanItems([...activePlan.items, makeItem(category, item)]);
+    updatePlanItems(normalizeToCategoryTree(activePlan.items));
+  };
+
+  // 트리를 모두 접거나(과목 3줄만) 모두 펼친다.
+  const toggleCollapseAll = () => {
+    if (!activePlan) return;
+    setCollapsedBudgetIds(prev => (prev.size > 0 ? new Set() : parentIdsWithChildren(activePlan.items)));
   };
 
   // 인터넷 가격 조회: 입력한 키(나라장터·네이버 쇼핑)로 실제 상품·단가를 검색한다.
@@ -1179,8 +1200,12 @@ export default function BudgetPlannerScreen() {
   };
 
   const addSearchItemToPlan = (item: NaraItem) => {
-    addItemToPlan(item, priceSearchCategory);
-    setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory}에 추가했습니다.`);
+    if (!activePlan) return;
+    // 검색으로 추가한 품목은 해당 과목의 맨 위에 들어가도록 배열 앞쪽에 넣어 정규화한다.
+    const next = normalizeToCategoryTree([makeItem(priceSearchCategory, item), ...activePlan.items]);
+    updatePlanItems(next);
+    revealCategory(next, priceSearchCategory);
+    setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`);
   };
 
   // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
@@ -1375,24 +1400,29 @@ export default function BudgetPlannerScreen() {
 
   const handleExportCsv = async () => {
     if (!activePlan) return;
-    const rows = [
-      ['순', '단계', '상위항목', '예산 과목', '품목', '품목코드', '규격', '단가(원)', '수량', '소계(원)'],
-      ...activePlan.items.map((item, idx) => [
+    const items = activePlan.items;
+    const parentIds = parentIdsWithChildren(items);
+    const rows: string[][] = [['순', '예산 과목', '품목', '규격', '단가(원)', '수량', '소계(원)']];
+    items.forEach((item, idx) => {
+      const depth = getItemDepth(items, item);
+      const blank = isCategoryRow(item) || parentIds.has(item.id); // 상위 행은 규격·단가·수량 빈칸
+      const indent = '   '.repeat(Math.max(0, depth - 1));
+      rows.push([
         String(idx + 1),
-        String(getItemDepth(activePlan.items, item)),
-        item.parentId ? activePlan.items.find(parent => parent.id === item.parentId)?.thngNm ?? '' : '',
         item.budgetCategory,
-        item.thngNm,
-        item.thngCd ?? '',
-        item.spec ?? '',
-        String(item.unitPrice),
-        String(item.quantity),
-        String(displaySubtotal(item, activePlan.items)),
-      ]),
-      ['', '', '', '', '', '', '합계', '', '', String(planTotalUsed)],
-      ['', '', '', '', '', '', '배정 예산', '', '', String(activePlan.totalBudget)],
-      ['', '', '', '', '', '', '잔액', '', '', String(planRemaining)],
-    ];
+        `${indent}${item.thngNm}`,
+        blank ? '' : (item.spec ?? ''),
+        blank ? '' : String(item.unitPrice),
+        blank ? '' : String(item.quantity),
+        String(displaySubtotal(item, items)),
+      ]);
+    });
+    for (const category of CATEGORIES) {
+      rows.push(['', category, '집행 합계', '', '', '', String(usedByCategory[category])]);
+    }
+    rows.push(['', '', '합계', '', '', '', String(planTotalUsed)]);
+    rows.push(['', '', '배정 예산', '', '', '', String(activePlan.totalBudget)]);
+    rows.push(['', '', '잔액', '', '', '', String(planRemaining)]);
     const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
     await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산안작성`);
   };
@@ -1697,9 +1727,14 @@ export default function BudgetPlannerScreen() {
                 <section>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
-                    <button onClick={() => addItemToPlan()} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
-                      <Plus className="w-3.5 h-3.5" />행 추가
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={toggleCollapseAll} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                        {collapsedBudgetIds.size > 0 ? <><ChevronDown className="w-3.5 h-3.5" />모두 펼치기</> : <><ChevronRight className="w-3.5 h-3.5" />모두 접기</>}
+                      </button>
+                      <button onClick={handleSortByCategory} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                        <Layers className="w-3.5 h-3.5" />과목별 정렬
+                      </button>
+                    </div>
                   </div>
                   <EditableBudgetTable
                     items={activePlan.items}
@@ -1716,7 +1751,11 @@ export default function BudgetPlannerScreen() {
                       else next.add(id);
                       return next;
                     })}
-                    onChange={(id, patch) => updatePlanItems(updateRows(activePlan.items, id, patch))}
+                    onChange={(id, patch) => {
+                      const updated = updateRows(activePlan.items, id, patch);
+                      // 과목을 바꾼 경우 해당 품목을 새 과목 루트 아래로 다시 정렬한다.
+                      updatePlanItems(patch.budgetCategory ? normalizeToCategoryTree(updated) : updated);
+                    }}
                     onAddChild={addChildItemToPlan}
                     onRemove={(id) => {
                       const removeIds = collectDescendantIds(activePlan.items, id);
@@ -1989,26 +2028,32 @@ function EditableBudgetTable({
           {items.filter(item => !hasCollapsedAncestor(items, item, collapsedIds)).map((item, idx) => {
             const categoryColor = CATEGORY_COLORS[item.budgetCategory];
             const adjustedCellClass = item.quantityAdjusted ? 'bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300 dark:ring-amber-600' : '';
+            const isCategory = isCategoryRow(item);
             const isParent = parentIds.has(item.id);
             const depth = getItemDepth(items, item);
             const canAddChild = depth < MAX_BUDGET_DEPTH;
             const isCollapsed = collapsedIds.has(item.id);
             const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
-            const rowWeight = isParent ? 'font-semibold' : '';
+            const blankInputs = isCategory || isParent; // 상위(부모) 행은 규격·단가·수량을 비운다
+            const blankCell = <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5"></td>;
             return (
             <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
               <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${categoryColor.cell}`}>
-                <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
-                  disabled={depth > 1}
-                  className={`w-full text-xs border-none rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-70 ${categoryColor.select}`}>
-                  {CATEGORIES.map(category => <option key={category}>{category}</option>)}
-                </select>
+                {isCategory ? (
+                  <span className="block text-xs font-black px-1 py-0.5">{item.budgetCategory}</span>
+                ) : (
+                  <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
+                    disabled={depth >= 3}
+                    className={`w-full text-xs border-none rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-70 ${categoryColor.select}`}>
+                    {CATEGORIES.map(category => <option key={category}>{category}</option>)}
+                  </select>
+                )}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
                 <div className={indentClass}>
                 <div className="flex items-center gap-1">
-                  {isParent ? (
+                  {(isCategory || isParent) ? (
                     <button
                       onClick={() => onToggleCollapse(item.id)}
                       className="p-0.5 rounded text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-300"
@@ -2017,54 +2062,71 @@ function EditableBudgetTable({
                       {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
                   ) : depth > 1 ? <span className="w-4 text-gray-400">└</span> : <span className="w-4" />}
-                  <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
-                    placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${rowWeight}`} />
+                  {isCategory ? (
+                    <span className="text-xs font-black text-gray-900 dark:text-white px-1">{item.budgetCategory}</span>
+                  ) : (
+                    <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
+                      placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${isParent ? 'font-semibold' : ''}`} />
+                  )}
+                  {isCategory && (
+                    <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30" title="이 과목에 품목 추가">
+                      <Plus className="w-3 h-3" />품목
+                    </button>
+                  )}
+                  {!isCategory && canAddChild && (
+                    <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" title="세부 항목 추가">
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
-                {canAddChild && (
-                  <button onClick={() => onAddChild(item.id)} className="mt-1 inline-flex h-6 w-6 items-center justify-center rounded-full text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30" title="추가">
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                )}
                 </div>
               </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                <input value={item.spec ?? ''} onChange={e => onChange(item.id, { spec: e.target.value })}
-                  placeholder="규격" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-500 dark:text-gray-300 focus:ring-1 focus:ring-blue-400 rounded px-1" />
-              </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                <input type="number" min={0} step={1000} value={item.unitPrice}
-                  onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
-                  disabled={isParent}
-                  className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 disabled:text-gray-400" />
-                {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-right">고정</div>}
-              </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                <input type="number" min={1} value={item.minQuantity ?? ''}
-                  onChange={e => onChange(item.id, { minQuantity: e.target.value ? parseInt(e.target.value, 10) || 1 : undefined })}
-                  disabled={isParent}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
-              </td>
-              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${adjustedCellClass}`}>
-                <input type="number" min={1} value={item.quantity}
-                  onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                  disabled={isParent}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
-                {item.quantityLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-center">고정</div>}
-                {item.quantityAdjusted && <div className="mt-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 text-center">자동 조정</div>}
-              </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                <input type="number" min={item.minQuantity ?? 1} value={item.maxQuantity ?? ''}
-                  onChange={e => onChange(item.id, { maxQuantity: e.target.value ? parseInt(e.target.value, 10) || undefined : undefined })}
-                  disabled={isParent}
-                  className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100 disabled:text-gray-400" />
-              </td>
+              {blankInputs ? blankCell : (
+                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                  <input value={item.spec ?? ''} onChange={e => onChange(item.id, { spec: e.target.value })}
+                    placeholder="규격" className="w-full text-xs bg-transparent border-none focus:outline-none text-gray-500 dark:text-gray-300 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                </td>
+              )}
+              {blankInputs ? blankCell : (
+                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                  <input type="number" min={0} step={1000} value={item.unitPrice}
+                    onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
+                    className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                  {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-right">고정</div>}
+                </td>
+              )}
+              {blankInputs ? blankCell : (
+                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                  <input type="number" min={1} value={item.minQuantity ?? ''}
+                    onChange={e => onChange(item.id, { minQuantity: e.target.value ? parseInt(e.target.value, 10) || 1 : undefined })}
+                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                </td>
+              )}
+              {blankInputs ? blankCell : (
+                <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${adjustedCellClass}`}>
+                  <input type="number" min={1} value={item.quantity}
+                    onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
+                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                  {item.quantityLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-center">고정</div>}
+                  {item.quantityAdjusted && <div className="mt-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 text-center">자동 조정</div>}
+                </td>
+              )}
+              {blankInputs ? blankCell : (
+                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                  <input type="number" min={item.minQuantity ?? 1} value={item.maxQuantity ?? ''}
+                    onChange={e => onChange(item.id, { maxQuantity: e.target.value ? parseInt(e.target.value, 10) || undefined : undefined })}
+                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                </td>
+              )}
               <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs ${adjustedCellClass}`}>
                 {fmt(displaySubtotal(item, items))}
               </td>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center">
-                <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600" title="행 삭제">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {!isCategory && (
+                  <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600" title="행 삭제">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </td>
             </tr>
           );
