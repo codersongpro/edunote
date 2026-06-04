@@ -1,7 +1,7 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
 작성 기준: 2026년 6월 2일
-대상 버전: EduNote v1.10.5
+대상 버전: EduNote v1.12.1
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
 
 ---
@@ -30,8 +30,8 @@ EduNote
 │  ├─ 공문요약·업무추출
 │  ├─ 공문서 작성기             ← 9종 문서 생성 (탭 전환)
 │  ├─ 공문 보관함               ← 공문 캡처·첨부 저장·검색
-│  ├─ 양식 인쇄                 ← 학교 양식 8종 A4 출력
-│  └─ 예산안작성                ← 예산 과목별 예산안 생성·0원 맞추기
+│  ├─ 양식 인쇄                 ← 학교 양식 10종 A4 출력
+│  └─ 예산안작성                ← 제목 주제 분석 기반 예산안 생성·0원 맞추기
 │
 ├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
@@ -183,7 +183,10 @@ edunote
 | `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장 |
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |
 | `src/renderer/components/MyToolsScreen.tsx` | 내 스킬 메인 화면 — 스킬 목록·카드·공유 모달, 마켓 탭·CSV 파싱 |
-| `src/renderer/components/HtmlAppCreator.tsx` | HTML 앱 만들기 화면 — 앱 설명·기능 목록 입력, AI 생성, 미리보기, 내 스킬 저장 |
+| `src/renderer/components/HtmlAppCreator.tsx` | HTML 앱 만들기 화면 — 앱 설명·기능 목록 입력, AI 생성, 미리보기, 내 스킬 저장 (어휘 플래시카드 예시는 단어/뜻 쌍이 미리 채워짐) |
+| `src/renderer/components/PrintFormScreen.tsx` | 양식 인쇄 화면 — 양식 선택, 입력 필드 렌더링(텍스트·표·명단), `{{key}}` 치환과 명단/표 행 생성, A4 미리보기·PDF 저장 |
+| `src/renderer/data/printForms.ts` | 학교 양식 10종 정의 — 필드 구성과 A4 HTML 템플릿, 줄 단위 입력을 표로 만드는 `table` 필드 타입 |
+| `src/renderer/components/BudgetPlannerScreen.tsx` | 예산안작성 화면 — 작성 방식 선택, 제목 주제 분석 기반 AI 품목 생성, 과목 트리 편집, 0원 맞추기, 인터넷 가격 조회, CSV 입출력 |
 | `src/renderer/components/MyToolEditor.tsx` | 도구 만들기 3단계 위저드 — 기본정보·입력필드·프롬프트 작성, AI 도움받기 |
 | `src/renderer/components/MyToolRunner.tsx` | 도구 실행 화면 — 동적 폼, 파일 업로드, 배치 처리, 취소 버튼 |
 | `src/renderer/components/MyToolChatCreator.tsx` | 대화형 도구 만들기 — AI 4단계 질문으로 도구 초안 자동 생성 |
@@ -209,7 +212,7 @@ edunote
 | 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
 | 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
 | 교무행정AI | `DOC_ARCHIVE` | `DocArchivePanel` | 공문 캡처 이미지·첨부 저장 및 검색 |
-| 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 8종 A4 출력·PDF 저장 |
+| 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 10종 A4 출력·PDF 저장 |
 | 교무행정AI | `BUDGET_PLANNER` | `BudgetPlannerScreen` | 과목별 비율 방식 또는 일반 작성 방식의 예산안 작성, 단가·수량 조합, 0원 맞추기, CSV 입출력 |
 | 수업자료AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
 | 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우) |
@@ -285,7 +288,8 @@ edunote
 | 품의서 | 품의 유형, 근거, 예산, 산출내역 | 산출내역 텍스트화, 합쇼체 적용 | 지출품의서 |
 | 회의록 | 일시, 장소, 안건, 발언 내용 | 표 기반 회의록 구조 적용 | 회의록 HTML |
 | 업무추출 | 공문 텍스트 또는 파일 | 마감, 일시, 장소, 링크, 제출 업무 추출 | 짧은 업무 메모, 캘린더 링크 |
-| 예산안작성 | 예산 제목, 전체 예산, 작성 방식(과목별 비율 또는 일반 작성), 구입 물품 | `예산안 만들기` 버튼 하나로 예산안 틀 생성과 품목 자동 생성(AI/내장 후보)을 한 번에 수행, 일반 작성은 예산 과목 없이 품목 중심으로 표시, 단가는 만원 단위 중심으로 제시, `0원 맞추기`로 잔액 조정 | 예산안 표, CSV |
+| 양식 인쇄 | 양식 선택(글쓰기·학급 활동·교무 행정), 각 양식 입력 필드 | `{{key}}` 치환과 명단/표 행 생성으로 A4 HTML 구성, 실시간 미리보기 | 학교 양식 10종 PDF |
+| 예산안작성 | 예산 제목, 전체 예산, 작성 방식(과목별 비율 또는 일반 작성), 구입 물품 | `예산안 만들기` 버튼 하나로 예산안 틀 생성과 품목 자동 생성(AI/내장 후보)을 한 번에 수행, 예산 제목의 주제·목적을 먼저 분석해 어울리는 품목만 생성하고 무관한 일반 품목은 후보에서 제외, 과목별 비율 방식에서도 세 과목 모두 주제 연관 품목 배치, 일반 작성은 예산 과목 없이 품목 중심으로 표시, 단가는 만원 단위 중심으로 제시, `0원 맞추기`로 잔액 조정 | 예산안 표, CSV |
 
 ### 9.3 수업자료 AI
 
