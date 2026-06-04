@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails, AppMode } from '../types';
 import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
@@ -39,6 +40,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
+  const [studentPanelCollapsed, setStudentPanelCollapsed] = useState(false);
 
   // NEIS Upload States
   const [showNeisModal, setShowNeisModal] = useState(false);
@@ -1373,6 +1375,18 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* Sidebar List */}
+                    {studentPanelCollapsed && (
+                        <div className="w-11 shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex justify-center py-3">
+                            <button
+                                onClick={() => setStudentPanelCollapsed(false)}
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                title="학생 목록 펼치기"
+                            >
+                                <PanelLeftOpen className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+                    {!studentPanelCollapsed && (
                     <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                         <div className="p-4 border-b border-slate-100 dark:border-slate-800">
                             <button
@@ -1391,15 +1405,24 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         <div className="p-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">학생 목록</h3>
-                                <label className="flex items-center space-x-1 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={subjectState.activeStudents.length > 0 && subjectState.activeStudents.every(s => s.selected)}
-                                        onChange={(e) => toggleAllSelection(e.target.checked)}
-                                        className="w-3 h-3 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                                    />
-                                    <span className="text-[10px] text-slate-500">전체</span>
-                                </label>
+                                <div className="flex items-center gap-2">
+                                    <label className="flex items-center space-x-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={subjectState.activeStudents.length > 0 && subjectState.activeStudents.every(s => s.selected)}
+                                            onChange={(e) => toggleAllSelection(e.target.checked)}
+                                            className="w-3 h-3 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                        />
+                                        <span className="text-[10px] text-slate-500">전체</span>
+                                    </label>
+                                    <button
+                                        onClick={() => setStudentPanelCollapsed(true)}
+                                        className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                        title="학생 목록 접기"
+                                    >
+                                        <PanelLeftClose className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                             </div>
                             <div className="space-y-1">
                                 {subjectState.activeStudents.map((student, idx) => (
@@ -1428,6 +1451,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
                         </div>
                     </div>
+                    )}
 
                     <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
                         {/* ... The content of the main area remains unchanged ... */}

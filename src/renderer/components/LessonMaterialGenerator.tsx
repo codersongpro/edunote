@@ -3,7 +3,7 @@ import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
   Play, X, ChevronLeft, Image as ImageIcon, PenLine, Code, ExternalLink,
-  BookMarked, Trash2, FolderOpen,
+  BookMarked, Trash2, FolderOpen, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
@@ -159,6 +159,7 @@ const LessonMaterialGenerator: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
 
   useEffect(() => {
     const handler = () => setIsGenerating(false);
@@ -477,12 +478,33 @@ li{margin-bottom:5pt;line-height:1.6;}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
 
         {/* Left: input panel */}
+        {inputPanelCollapsed && (
+          <div className="w-11 shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm flex justify-center py-3">
+            <button
+              onClick={() => setInputPanelCollapsed(false)}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="입력 패널 펼치기"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {!inputPanelCollapsed && (
         <div className="w-[360px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm flex flex-col overflow-hidden">
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-amber-500" />
-              수업 정보 입력
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-amber-500" />
+                수업 정보 입력
+              </h3>
+              <button
+                onClick={() => setInputPanelCollapsed(true)}
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="입력 패널 접기"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -740,6 +762,7 @@ li{margin-bottom:5pt;line-height:1.6;}
             </button>
           </div>
         </div>
+        )}
 
         {/* Right: output panel */}
         <div className="flex-1 flex flex-col overflow-hidden">

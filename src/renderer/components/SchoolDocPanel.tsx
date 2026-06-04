@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon } from 'lucide-react';
+import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
@@ -71,6 +71,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
   const currentSchoolYear = (() => { const now = new Date(); return String(now.getMonth() < 2 ? now.getFullYear() - 1 : now.getFullYear()); })();
   const [schoolYear, setSchoolYear] = useState(currentSchoolYear);
   const [pageCount, setPageCount] = useState(2);
@@ -461,13 +462,34 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left: input panel */}
+        {inputPanelCollapsed && (
+          <div className="w-11 shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex justify-center py-3">
+            <button
+              onClick={() => setInputPanelCollapsed(false)}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="입력 패널 펼치기"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {!inputPanelCollapsed && (
         <div className="w-[420px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
           <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-100 flex items-center gap-2">
-              <PenTool className="w-4 h-4 text-blue-500" />
-              입력 정보
-            </h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-100 flex items-center gap-2">
+                <PenTool className="w-4 h-4 text-blue-500" />
+                입력 정보
+              </h3>
+              <button
+                onClick={() => setInputPanelCollapsed(true)}
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="입력 패널 접기"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Scrollable form area */}
@@ -1074,6 +1096,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             </button>
           </div>
         </div>
+        )}
 
         {/* Right: output panel */}
         <div className="flex-1 flex flex-col overflow-hidden">

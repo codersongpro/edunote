@@ -1,15 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
+import { playSuccessSound } from '../lib/soundEffect';
 import {
   AlertCircle,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   ChevronUp,
   Download,
   ExternalLink,
   Layers,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   RefreshCw,
   Save,
@@ -23,6 +25,7 @@ import {
 const CATEGORIES: BudgetCategory[] = ['교육운영비', '일반운영비', '업무추진비'];
 const DEFAULT_BUDGET_TITLE = '2026. 디지털선도학교 운영 예산';
 const DEFAULT_BUDGET_TOTAL = '10,000,000';
+const BUDGET_PLANNER_STATE_KEY = 'budget-planner-state';
 const BUDGET_NOTEBOOK_LM_URL = 'https://notebooklm.google.com/notebook/1219f9f1-d26d-4e02-bc29-01a04feb15fb';
 
 const CATEGORY_COLORS: Record<BudgetCategory, { row: string; childRow: string; grandChildRow: string; cell: string; select: string; footer: string }> = {
@@ -193,6 +196,20 @@ interface NaraItem {
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
+
+type BudgetPlannerState = {
+  activePlanId?: string;
+  totalBudget?: string;
+  planTitle?: string;
+  useCategoryRatio?: boolean;
+  ratioEdu?: string;
+  ratioGeneral?: string;
+  ratioBiz?: string;
+  keywordEdu?: string;
+  keywordGeneral?: string;
+  keywordBiz?: string;
+  keywordFree?: string;
+};
 
 const AUTO_BALANCE_MEMO = 'auto-balance-adjustment';
 const SMALL_BALANCE_LIMIT = 50000;
@@ -700,6 +717,17 @@ function normalizeBudgetPlan(plan: BudgetPlan): BudgetPlan {
   };
 }
 
+function formatSavedAt(value?: number): string {
+  if (!value) return '';
+  return new Date(value).toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 // 생성된 품목들을 과목별 카테고리 루트 아래(2단계)로 정리한다. (별도 '세부' 단계 없음)
 function groupGeneratedBudgetItems(items: BudgetItem[]): BudgetItem[] {
   return normalizeToCategoryTree(items);
@@ -973,8 +1001,8 @@ function solveZeroBalance(items: BudgetItem[], totalBudget: number): { items: Bu
 export default function BudgetPlannerScreen() {
   const [plans, setPlans] = useState<BudgetPlan[]>([]);
   const [activePlan, setActivePlan] = useState<BudgetPlan | null>(null);
-  const [totalBudget, setTotalBudget] = useState(DEFAULT_BUDGET_TOTAL);
-  const [planTitle, setPlanTitle] = useState(DEFAULT_BUDGET_TITLE);
+  const [totalBudget, setTotalBudget] = useState('');
+  const [planTitle, setPlanTitle] = useState('');
 
   const [apiKey, setApiKey] = useState('');
   const [naverClientId, setNaverClientId] = useState('');
@@ -988,10 +1016,12 @@ export default function BudgetPlannerScreen() {
   const [ratioEdu, setRatioEdu] = useState('75');
   const [ratioGeneral, setRatioGeneral] = useState('20');
   const [ratioBiz, setRatioBiz] = useState('5');
-  const [keywordEdu, setKeywordEdu] = useState(CATEGORY_KEYWORDS.교육운영비.join(', '));
-  const [keywordGeneral, setKeywordGeneral] = useState(CATEGORY_KEYWORDS.일반운영비.join(', '));
-  const [keywordBiz, setKeywordBiz] = useState(CATEGORY_KEYWORDS.업무추진비.join(', '));
+  const [keywordEdu, setKeywordEdu] = useState('');
+  const [keywordGeneral, setKeywordGeneral] = useState('');
+  const [keywordBiz, setKeywordBiz] = useState('');
+  const [keywordFree, setKeywordFree] = useState('');
 
+  const [useCategoryRatio, setUseCategoryRatio] = useState(true);
   const [showRatio, setShowRatio] = useState(true);
   const [recommendationStatus, setRecommendationStatus] = useState<RecommendationStatus>('idle');
   const [recommendationMessage, setRecommendationMessage] = useState('');
@@ -1018,14 +1048,34 @@ export default function BudgetPlannerScreen() {
     window.electronAPI.getConfig('naverShoppingClientSecret').then((key: unknown) => {
       if (typeof key === 'string') setNaverClientSecret(key);
     }).catch(() => {});
-    window.electronAPI.readJsonData('budget-plans').then((data: unknown) => {
-      if (Array.isArray(data)) setPlans((data as BudgetPlan[]).map(normalizeBudgetPlan));
+    Promise.all([
+      window.electronAPI.readJsonData('budget-plans').catch(() => []),
+      window.electronAPI.readJsonData(BUDGET_PLANNER_STATE_KEY).catch(() => null),
+    ]).then(([planData, savedState]) => {
+      if (!Array.isArray(planData)) return;
+      const normalizedPlans = (planData as BudgetPlan[]).map(normalizeBudgetPlan);
+      setPlans(normalizedPlans);
+      const state = (savedState && typeof savedState === 'object') ? savedState as BudgetPlannerState : null;
+      const savedActivePlan = normalizedPlans.find(plan => plan.id === state?.activePlanId)
+        ?? [...normalizedPlans].sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))[0];
+      if (savedActivePlan) setActivePlan(savedActivePlan);
+      if (state?.planTitle || savedActivePlan) setPlanTitle(state?.planTitle ?? savedActivePlan.title);
+      if (state?.totalBudget || savedActivePlan) setTotalBudget(state?.totalBudget ?? fmt(savedActivePlan.totalBudget));
+      if (typeof state?.useCategoryRatio === 'boolean') setUseCategoryRatio(state.useCategoryRatio);
+      if (state?.ratioEdu) setRatioEdu(state.ratioEdu);
+      if (state?.ratioGeneral) setRatioGeneral(state.ratioGeneral);
+      if (state?.ratioBiz) setRatioBiz(state.ratioBiz);
+      if (state?.keywordEdu) setKeywordEdu(state.keywordEdu);
+      if (state?.keywordGeneral) setKeywordGeneral(state.keywordGeneral);
+      if (state?.keywordBiz) setKeywordBiz(state.keywordBiz);
+      if (state?.keywordFree) setKeywordFree(state.keywordFree);
     }).catch(() => {});
   }, []);
 
   const ratioTotal = (parseInt(ratioEdu) || 0) + (parseInt(ratioGeneral) || 0) + (parseInt(ratioBiz) || 0);
   const budgetForCalc = activePlan?.totalBudget ?? parseMoney(totalBudget);
   const computeAllocations = (budget: number): Record<BudgetCategory, number> => {
+    if (!useCategoryRatio) return { 교육운영비: budget, 일반운영비: 0, 업무추진비: 0 };
     // 비율을 입력하지 않았을 때는 업무추진비를 총 예산의 3%로 두고, 나머지를 교육운영비·일반운영비에 배분한다.
     if (ratioTotal <= 0) {
       const biz = Math.round(budget * 0.03);
@@ -1054,9 +1104,9 @@ export default function BudgetPlannerScreen() {
   }, [activePlan]);
 
   const keywordMap: Record<BudgetCategory, string> = {
-    교육운영비: keywordEdu,
-    일반운영비: keywordGeneral,
-    업무추진비: keywordBiz,
+    교육운영비: useCategoryRatio ? keywordEdu : keywordFree,
+    일반운영비: useCategoryRatio ? keywordGeneral : '',
+    업무추진비: useCategoryRatio ? keywordBiz : '',
   };
 
   const setKeywordMap: Record<BudgetCategory, React.Dispatch<React.SetStateAction<string>>> = {
@@ -1068,6 +1118,23 @@ export default function BudgetPlannerScreen() {
   const savePlans = async (updated: BudgetPlan[]) => {
     setPlans(updated);
     await window.electronAPI.writeJsonData('budget-plans', updated);
+  };
+
+  const savePlannerState = async (activePlanId?: string) => {
+    const state: BudgetPlannerState = {
+      activePlanId,
+      totalBudget,
+      planTitle,
+      useCategoryRatio,
+      ratioEdu,
+      ratioGeneral,
+      ratioBiz,
+      keywordEdu,
+      keywordGeneral,
+      keywordBiz,
+      keywordFree,
+    };
+    await window.electronAPI.writeJsonData(BUDGET_PLANNER_STATE_KEY, state);
   };
 
   const saveApiKey = async () => {
@@ -1108,7 +1175,9 @@ export default function BudgetPlannerScreen() {
     const budget = parseMoney(totalBudget);
     const title = planTitle.trim();
     if (!title || budget <= 0) return;
-    const isDefaultExample = title === DEFAULT_BUDGET_TITLE && budget === parseMoney(DEFAULT_BUDGET_TOTAL);
+    const desiredItems = { ...keywordMap };
+    const alloc = computeAllocations(budget);
+    const isDefaultExample = useCategoryRatio && title === DEFAULT_BUDGET_TITLE && budget === parseMoney(DEFAULT_BUDGET_TOTAL);
     const newPlan: BudgetPlan = {
       id: genId(),
       title,
@@ -1129,13 +1198,14 @@ export default function BudgetPlannerScreen() {
     setRecommendationStatus('loading');
     setRecommendationMessage('');
     try {
-      const { items: next, source } = await makeRecommendations(title, budget, computeAllocations(budget));
-      const grouped = groupGeneratedBudgetItems(next);
+      const { items: next, source } = await makeRecommendations(title, budget, alloc, desiredItems);
+      const grouped = useCategoryRatio ? groupGeneratedBudgetItems(next) : next.map(item => ({ ...item, parentId: undefined }));
       setActivePlan({ ...newPlan, items: grouped, updatedAt: Date.now() });
       setRecommendationStatus('ready');
       setRecommendationMessage(source === 'ai'
         ? `Gemini가 예산안 ${grouped.length}개 행을 만들었습니다.`
         : `Gemini 호출이 어려워 내장 후보로 예산안 ${grouped.length}개 행을 만들었습니다.`);
+      playSuccessSound();
     } catch (e: any) {
       setRecommendationStatus('error');
       setRecommendationMessage(e?.message ?? '예산안을 만들지 못했습니다.');
@@ -1228,10 +1298,14 @@ export default function BudgetPlannerScreen() {
   const addSearchItemToPlan = (item: NaraItem) => {
     if (!activePlan) return;
     // 검색으로 추가한 품목은 해당 과목의 맨 위에 들어가도록 배열 앞쪽에 넣어 정규화한다.
-    const next = normalizeToCategoryTree([makeItem(priceSearchCategory, item), ...activePlan.items]);
+    const next = useCategoryRatio
+      ? normalizeToCategoryTree([makeItem(priceSearchCategory, item), ...activePlan.items])
+      : [makeItem('교육운영비', item), ...activePlan.items.filter(row => !isCategoryRow(row))];
     updatePlanItems(next);
-    revealCategory(next, priceSearchCategory);
-    setPriceSearchMessage(`'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`);
+    if (useCategoryRatio) revealCategory(next, priceSearchCategory);
+    setPriceSearchMessage(useCategoryRatio
+      ? `'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`
+      : `'${item.thngNm}'을(를) 맨 위에 추가했습니다.`);
   };
 
   // 검색 결과 위에 마우스를 올리면 상품 이미지를 data URI로 받아 미리보기로 보여준다(CSP 우회).
@@ -1295,8 +1369,11 @@ export default function BudgetPlannerScreen() {
     return updated;
   });
 
-  const collectBudgetCandidates = async (title: string): Promise<Record<BudgetCategory, NaraItem[]>> => {
-    const localCandidates = buildLocalCandidates(title, keywordMap);
+  const collectBudgetCandidates = async (
+    title: string,
+    desiredItems: Record<BudgetCategory, string>,
+  ): Promise<Record<BudgetCategory, NaraItem[]>> => {
+    const localCandidates = buildLocalCandidates(title, desiredItems);
     const titleKeywords = getTitleKeywords(title);
     const candidates: Record<BudgetCategory, NaraItem[]> = {
       교육운영비: [...localCandidates.교육운영비],
@@ -1308,7 +1385,7 @@ export default function BudgetPlannerScreen() {
     const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
     if (!hasNaraKey && !hasNaverKey) return candidates;
     for (const category of CATEGORIES) {
-      const explicitWords = splitDesiredItems(keywordMap[category]);
+      const explicitWords = splitDesiredItems(desiredItems[category]);
       const keywords = Array.from(new Set([
         ...expandDesiredWords(explicitWords),
         ...(explicitWords.length > 0 ? [] : (titleKeywords[category] ?? [])),
@@ -1335,7 +1412,13 @@ export default function BudgetPlannerScreen() {
     return candidates;
   };
 
-  const makeAiBudgetPlan = async (candidates: Record<BudgetCategory, NaraItem[]>, title: string, budget: number, alloc: Record<BudgetCategory, number>): Promise<BudgetItem[]> => {
+  const makeAiBudgetPlan = async (
+    candidates: Record<BudgetCategory, NaraItem[]>,
+    title: string,
+    budget: number,
+    alloc: Record<BudgetCategory, number>,
+    desiredItems: Record<BudgetCategory, string>,
+  ): Promise<BudgetItem[]> => {
     const titleKeywords = getTitleKeywords(title);
     const candidateSummary = Object.fromEntries(CATEGORIES.map(category => [
       category,
@@ -1370,7 +1453,7 @@ export default function BudgetPlannerScreen() {
         totalBudget: budget,
         allocations: alloc,
         titleKeywords,
-        desiredItems: keywordMap,
+        desiredItems,
         excludedAutoItems: EXCLUDED_AUTO_ITEM_WORDS,
         candidateItems: candidateSummary,
       }, null, 2),
@@ -1389,22 +1472,27 @@ export default function BudgetPlannerScreen() {
       quantity: item.quantity,
       subtotal: item.unitPrice * item.quantity,
     }));
-    const desiredItems = filterItemsByDesiredIntent(aiItems, keywordMap);
-    return Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
-      ? desiredItems
-      : filterItemsByTitleIntent(desiredItems, title);
+    const desiredFilteredItems = filterItemsByDesiredIntent(aiItems, desiredItems);
+    return Object.values(desiredItems).some(value => splitDesiredItems(value).length > 0)
+      ? desiredFilteredItems
+      : filterItemsByTitleIntent(desiredFilteredItems, title);
   };
 
-  const makeRecommendations = async (title: string, budget: number, alloc: Record<BudgetCategory, number>): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
+  const makeRecommendations = async (
+    title: string,
+    budget: number,
+    alloc: Record<BudgetCategory, number>,
+    desiredItems: Record<BudgetCategory, string>,
+  ): Promise<{ items: BudgetItem[]; source: 'ai' | 'local' }> => {
     if (budget <= 0) throw new Error('예산을 먼저 입력해주세요.');
 
-    const candidates = await collectBudgetCandidates(title);
+    const candidates = await collectBudgetCandidates(title, desiredItems);
     try {
-      const aiItems = await makeAiBudgetPlan(candidates, title, budget, alloc);
+      const aiItems = await makeAiBudgetPlan(candidates, title, budget, alloc, desiredItems);
       return { items: balanceItemsByCategory(aiItems, alloc), source: 'ai' };
     } catch {
-      const desiredFallback = filterItemsByDesiredIntent(buildRecommendation(candidates, alloc), keywordMap);
-      const fallback = Object.values(keywordMap).some(value => splitDesiredItems(value).length > 0)
+      const desiredFallback = filterItemsByDesiredIntent(buildRecommendation(candidates, alloc), desiredItems);
+      const fallback = Object.values(desiredItems).some(value => splitDesiredItems(value).length > 0)
         ? desiredFallback
         : filterItemsByTitleIntent(desiredFallback, title);
       if (fallback.length === 0) throw new Error('예산안 품목을 만들지 못했습니다. Gemini API 키, 예산 금액, 과목별 비율을 확인해주세요.');
@@ -1428,8 +1516,13 @@ export default function BudgetPlannerScreen() {
 
   const handleSave = async () => {
     if (!activePlan) return;
-    const exists = plans.some(plan => plan.id === activePlan.id);
-    await savePlans(exists ? plans.map(plan => plan.id === activePlan.id ? activePlan : plan) : [...plans, activePlan]);
+    const savedPlan = { ...activePlan, updatedAt: Date.now() };
+    setActivePlan(savedPlan);
+    const exists = plans.some(plan => plan.id === savedPlan.id);
+    await savePlans(exists ? plans.map(plan => plan.id === savedPlan.id ? savedPlan : plan) : [...plans, savedPlan]);
+    await savePlannerState(savedPlan.id);
+    setRecommendationStatus('ready');
+    setRecommendationMessage('예산안을 저장했습니다.');
   };
 
   const handleExportCsv = async () => {
@@ -1508,7 +1601,7 @@ export default function BudgetPlannerScreen() {
           className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
           title={inputSidebarCollapsed ? '입력 패널 펼치기' : '입력 패널 접기'}
         >
-          {inputSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {inputSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
         <h1 className="text-base font-black text-gray-900 dark:text-white">예산안작성</h1>
         <span className="text-xs text-gray-400">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
@@ -1590,16 +1683,34 @@ export default function BudgetPlannerScreen() {
 
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-2">
             <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
-            <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder="예산 제목" className={inputCls} />
-            <input value={totalBudget} onChange={e => setTotalBudget(moneyInput(e.target.value))} placeholder="예산 (원)" className={inputCls} />
+            <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder={`예: ${DEFAULT_BUDGET_TITLE}`} className={inputCls} />
+            <input value={totalBudget} onChange={e => setTotalBudget(moneyInput(e.target.value))} placeholder={`예: ${DEFAULT_BUDGET_TOTAL}원`} className={inputCls} />
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button
+                onClick={() => setUseCategoryRatio(true)}
+                className={`${btnCls} justify-center border ${useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                과목별 비율
+              </button>
+              <button
+                onClick={() => setUseCategoryRatio(false)}
+                className={`${btnCls} justify-center border ${!useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+              >
+                일반 작성
+              </button>
+            </div>
           </section>
 
           <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
-            <button onClick={() => setShowRatio(v => !v)} className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
-              {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              2. 과목별 비율과 구입하고자 하는 물품
-            </button>
-            {showRatio && CATEGORIES.map(category => (
+            {useCategoryRatio ? (
+              <button onClick={() => setShowRatio(v => !v)} className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                2. 과목별 비율과 구입하고자 하는 물품
+              </button>
+            ) : (
+              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">2. 구입하고자 하는 물품</p>
+            )}
+            {useCategoryRatio && showRatio && CATEGORIES.map(category => (
               <div key={category} className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-20 text-xs font-bold text-gray-700 dark:text-gray-300">{category}</span>
@@ -1612,20 +1723,26 @@ export default function BudgetPlannerScreen() {
                   />
                   <span className="text-xs text-gray-500">% · {fmt(allocations[category])}원</span>
                 </div>
-                <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder="구입 물품을 쉼표로 구분" className={inputCls} />
+                <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder={`예: ${CATEGORY_KEYWORDS[category].join(', ')}`} className={inputCls} />
               </div>
             ))}
-            {showRatio && (
-              <button
-                onClick={handleNewPlan}
-                disabled={!planTitle.trim() || !totalBudget || recommendationStatus === 'loading'}
-                className={`${btnCls} mt-2 w-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ring-2 ring-purple-200 dark:ring-purple-900 flex items-center justify-center gap-2`}
-              >
-                {recommendationStatus === 'loading'
-                  ? <><RefreshCw className="w-4 h-4 animate-spin" />예산안 만드는 중...</>
-                  : <><Wand2 className="w-4 h-4" />예산안 만들기</>}
-              </button>
+            {!useCategoryRatio && (
+              <input
+                value={keywordFree}
+                onChange={e => setKeywordFree(e.target.value)}
+                placeholder="예: 에듀테크 라이선스, 강사비, 홍보용품, 식비"
+                className={inputCls}
+              />
             )}
+            <button
+              onClick={handleNewPlan}
+              disabled={!planTitle.trim() || !totalBudget || recommendationStatus === 'loading'}
+              className={`${btnCls} mt-2 w-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ring-2 ring-purple-200 dark:ring-purple-900 flex items-center justify-center gap-2`}
+            >
+              {recommendationStatus === 'loading'
+                ? <><RefreshCw className="w-4 h-4 animate-spin" />예산안 만드는 중...</>
+                : <><Wand2 className="w-4 h-4" />예산안 만들기</>}
+            </button>
           </section>
 
           {plans.length > 0 && (
@@ -1633,10 +1750,11 @@ export default function BudgetPlannerScreen() {
               <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">저장된 계획</p>
               <div className="space-y-1">
                 {plans.map(plan => (
-                  <button key={plan.id} onClick={() => { const normalized = normalizeBudgetPlan(plan); setActivePlan(normalized); setTotalBudget(fmt(normalized.totalBudget)); }}
+                  <button key={plan.id} onClick={() => { const normalized = normalizeBudgetPlan(plan); setActivePlan(normalized); setPlanTitle(normalized.title); setTotalBudget(fmt(normalized.totalBudget)); }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs ${activePlan?.id === plan.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
                     <p className="font-semibold truncate">{plan.title}</p>
                     <p className="text-gray-400">{fmt(plan.totalBudget)}원</p>
+                    <p className="text-[10px] text-gray-400">저장 {formatSavedAt(plan.updatedAt || plan.createdAt)}</p>
                   </button>
                 ))}
               </div>
@@ -1718,13 +1836,15 @@ export default function BudgetPlannerScreen() {
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={priceSearchCategory}
-                      onChange={e => setPriceSearchCategory(e.target.value as BudgetCategory)}
-                      className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
-                    >
-                      {CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
-                    </select>
+                    {useCategoryRatio && (
+                      <select
+                        value={priceSearchCategory}
+                        onChange={e => setPriceSearchCategory(e.target.value as BudgetCategory)}
+                        className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                      >
+                        {CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
+                      </select>
+                    )}
                     <input
                       value={priceSearchQuery}
                       onChange={e => setPriceSearchQuery(e.target.value)}
@@ -1800,24 +1920,32 @@ export default function BudgetPlannerScreen() {
                 </section>
                 <section>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
+                    <div>
+                      <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
+                      <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                        최소·최대 수량은 필요한 경우에만 입력하세요.
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button onClick={toggleCollapseAll} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
                         {collapsedBudgetIds.size > 0 ? <><ChevronDown className="w-3.5 h-3.5" />모두 펼치기</> : <><ChevronRight className="w-3.5 h-3.5" />모두 접기</>}
                       </button>
-                      <button onClick={handleSortByCategory} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
-                        <Layers className="w-3.5 h-3.5" />과목별 정렬
-                      </button>
+                      {useCategoryRatio && (
+                        <button onClick={handleSortByCategory} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                          <Layers className="w-3.5 h-3.5" />과목별 정렬
+                        </button>
+                      )}
                     </div>
                   </div>
                   <EditableBudgetTable
-                    items={activePlan.items}
+                    items={useCategoryRatio ? activePlan.items : activePlan.items.filter(item => !isCategoryRow(item))}
                     emptyText="예산안 만들기를 누르거나 왼쪽에서 품목을 추가하세요"
                     totalBudget={activePlan.totalBudget}
                     usedTotal={planTotalUsed}
                     remaining={planRemaining}
                     allocations={allocations}
                     usedByCategory={usedByCategory}
+                    showCategoryRatio={useCategoryRatio}
                     collapsedIds={collapsedBudgetIds}
                     onToggleCollapse={(id) => setCollapsedBudgetIds(prev => {
                       const next = new Set(prev);
@@ -2049,6 +2177,7 @@ function EditableBudgetTable({
   remaining,
   allocations,
   usedByCategory,
+  showCategoryRatio,
   collapsedIds,
   onToggleCollapse,
   onChange,
@@ -2062,6 +2191,7 @@ function EditableBudgetTable({
   remaining: number;
   allocations: Record<BudgetCategory, number>;
   usedByCategory: Record<BudgetCategory, number>;
+  showCategoryRatio: boolean;
   collapsedIds: Set<string>;
   onToggleCollapse: (id: string) => void;
   onChange: (id: string, patch: Partial<Pick<BudgetItem, 'budgetCategory' | 'thngNm' | 'unitPrice' | 'quantity' | 'minQuantity' | 'maxQuantity' | 'spec'>>) => void;
@@ -2109,8 +2239,10 @@ function EditableBudgetTable({
             return (
             <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
               <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
-              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${categoryColor.cell}`}>
-                {isCategory ? (
+              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${showCategoryRatio ? categoryColor.cell : ''}`}>
+                {!showCategoryRatio ? (
+                  <span className="block h-5"></span>
+                ) : isCategory ? (
                   <span className="block text-xs font-black px-1 py-0.5">{item.budgetCategory}</span>
                 ) : (
                   <select value={item.budgetCategory} onChange={e => onChange(item.id, { budgetCategory: e.target.value as BudgetCategory })}
@@ -2197,7 +2329,7 @@ function EditableBudgetTable({
           })}
         </tbody>
         <tfoot>
-          {CATEGORIES.map(category => (
+          {showCategoryRatio && CATEGORIES.map(category => (
             <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
               <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
                 {category} 배정 {fmt(allocations[category])}원 / 집행 {fmt(usedByCategory[category])}원

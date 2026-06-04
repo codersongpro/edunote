@@ -175,7 +175,7 @@ edunote
 | `src/main/store.ts` | electron-store 인스턴스 관리 |
 | `src/preload/index.ts` | preload (화면과 앱 본체를 안전하게 연결하는 중간 다리)가 renderer에 노출하는 `window.electronAPI` 정의 |
 | `src/preload/types.d.ts` | `window.electronAPI` 타입 정의 |
-| `src/renderer/App.tsx` | 전체 화면 라우팅, 사이드바 메뉴, 메뉴 드래그 재정렬, 전역 상태, 다크모드, 생성 중단, 토스트 처리 |
+| `src/renderer/App.tsx` | 전체 화면 라우팅, 사이드바 메뉴, 메뉴 드래그 재정렬, 전역 상태, 다크모드, 생성 중단, 토스트 처리, 메인 사이드바 접기 |
 | `src/renderer/types.ts` | AppMode, DocType, 학생 데이터, 생성 요청, 파일 데이터 등 핵심 타입 정의 |
 | `src/renderer/constants.ts` | 공통 상수, 공문서 시스템 지침, 로딩 문구, 학생기록 예시 등 |
 | `src/renderer/services/geminiService.ts` | renderer 쪽 AI 프롬프트 생성, 메뉴별 생성 함수, 결과 후처리 |
@@ -210,7 +210,7 @@ edunote
 | 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
 | 교무행정AI | `DOC_ARCHIVE` | `DocArchivePanel` | 공문 캡처 이미지·첨부 저장 및 검색 |
 | 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 8종 A4 출력·PDF 저장 |
-| 교무행정AI | `BUDGET_PLANNER` | `BudgetPlannerScreen` | 예산 과목별 예산안 작성, 단가·수량 조합, 0원 맞추기, CSV 입출력 |
+| 교무행정AI | `BUDGET_PLANNER` | `BudgetPlannerScreen` | 과목별 비율 방식 또는 일반 작성 방식의 예산안 작성, 단가·수량 조합, 0원 맞추기, CSV 입출력 |
 | 수업자료AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
 | 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우) |
 | 수업자료AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
@@ -285,7 +285,7 @@ edunote
 | 품의서 | 품의 유형, 근거, 예산, 산출내역 | 산출내역 텍스트화, 합쇼체 적용 | 지출품의서 |
 | 회의록 | 일시, 장소, 안건, 발언 내용 | 표 기반 회의록 구조 적용 | 회의록 HTML |
 | 업무추출 | 공문 텍스트 또는 파일 | 마감, 일시, 장소, 링크, 제출 업무 추출 | 짧은 업무 메모, 캘린더 링크 |
-| 예산안작성 | 예산 제목, 전체 예산, 과목별 비율, 구입 물품 | `예산안 만들기` 버튼 하나로 예산안 틀 생성과 품목 자동 생성(AI/내장 후보)을 한 번에 수행, 단가는 만원 단위 중심으로 제시, `0원 맞추기`로 잔액 조정 | 예산안 표, CSV |
+| 예산안작성 | 예산 제목, 전체 예산, 작성 방식(과목별 비율 또는 일반 작성), 구입 물품 | `예산안 만들기` 버튼 하나로 예산안 틀 생성과 품목 자동 생성(AI/내장 후보)을 한 번에 수행, 일반 작성은 예산 과목 없이 품목 중심으로 표시, 단가는 만원 단위 중심으로 제시, `0원 맞추기`로 잔액 조정 | 예산안 표, CSV |
 
 ### 9.3 수업자료 AI
 
@@ -347,7 +347,20 @@ edunote
 3. 변경된 순서는 `localStorage` (앱을 닫아도 유지되는 브라우저 내부 저장소)에 `edunote_menu_order_${section}_v1` 키로 저장된다.
 4. 앱을 재시작해도 저장된 순서가 유지된다.
 
-### 10.3 AI 생성 메커니즘
+### 10.3 사이드 패널 접기 메커니즘
+
+메인 사이드바와 각 기능 화면의 하위 사이드 패널은 같은 모양의 패널 토글 버튼을 사용한다. 패널을 접으면 얇은 바와 펼치기 버튼만 남고, 본문 또는 결과 영역이 더 넓게 보인다.
+
+적용된 하위 패널:
+- 예산안작성 입력 패널
+- 공문 요약 / 업무 추출 입력 패널
+- 공문서 작성기 입력 패널
+- 양식 인쇄 입력 패널
+- 수업자료 생성 입력 패널
+- 내 도구 실행 입력 패널
+- 행동발달, 스포츠클럽, 교과 세특, 창체 화면의 학생 목록 패널
+
+### 10.4 AI 생성 메커니즘
 
 AI 생성은 보안상의 이유로 renderer (화면)에서 Gemini API를 직접 호출하지 않는다. 대신 preload가 제공하는 안전한 통로를 통해 main process가 대신 호출한다.
 
@@ -373,7 +386,7 @@ Gemini API (구글 AI 서버)
 후처리 및 화면 표시
 ```
 
-### 10.4 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 메커니즘
+### 10.5 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 메커니즘
 
 IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로 소통하는 방식이다. 직접 연결 대신 미리 정해진 통로만 사용함으로써 보안을 유지한다.
 
@@ -387,7 +400,7 @@ IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로
 
 이 구조는 `nodeIntegration: false`, `contextIsolation: true` (화면이 직접 컴퓨터 파일에 접근하지 못하도록 격리) 환경에서 renderer의 직접 Node 접근을 막고, 필요한 기능만 제한적으로 제공하기 위한 구조이다.
 
-### 10.5 네트워크 요청 메커니즘
+### 10.6 네트워크 요청 메커니즘
 
 앱 내부에서 인터넷 데이터를 가져올 때는 Node.js 기본 모듈 대신 `electron.net.fetch`를 사용한다. 이 방식은 Electron이 직접 관리하는 네트워크 스택을 경유하므로, 프록시 설정과 인증서 처리가 더 안정적으로 동작한다.
 
@@ -396,7 +409,7 @@ IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로
 - 나만의 자료실 썸네일 가져오기
 - URL 메타정보(제목, 설명 등) 가져오기
 
-### 10.6 로컬 데이터 저장 메커니즘
+### 10.7 로컬 데이터 저장 메커니즘
 
 모든 데이터는 사용자 컴퓨터에만 저장된다. 외부 서버에는 전송하지 않는다.
 
@@ -407,12 +420,13 @@ IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로
 | 학생 명단 | electron-store 및 JSON | `config:get`, `data:write-json` |
 | 자료실 | JSON 파일 | `data:read-json`, `data:write-json` |
 | 학생 메모 | JSON 파일 | `data:read-json`, `data:write-json` |
+| 예산안 | JSON 파일 | `budget-plans`, `budget-planner-state` |
 | 메뉴 순서 | localStorage | 키: `edunote_menu_order_${section}_v1` |
 | 백업 파일 | JSON 내보내기 | `data:export-backup`, `data:import-backup` |
 
 API 키는 백업 파일에 포함하지 않는 방향으로 설계되어 있다.
 
-### 10.7 문서 생성 메커니즘
+### 10.8 문서 생성 메커니즘
 
 1. 사용자가 문서 유형과 요청 내용을 입력한다.
 2. `SchoolDocPanel`이 입력값을 문서 유형별 context (맥락 정보)로 정리한다.
@@ -421,7 +435,7 @@ API 키는 백업 파일에 포함하지 않는 방향으로 설계되어 있다
 5. Gemini 응답을 HTML 형태로 받아 `GeneratedDisplay`에 표시한다.
 6. 사용자는 결과를 편집, 복사, PDF 저장, Word 저장, HWPX 저장 실험 기능으로 내보낼 수 있다.
 
-### 10.8 PDF 저장 메커니즘
+### 10.9 PDF 저장 메커니즘
 
 사용자가 보이지 않는 별도 창을 통해 PDF를 생성하는 방식이다.
 
@@ -430,7 +444,7 @@ API 키는 백업 파일에 포함하지 않는 방향으로 설계되어 있다
 3. HTML을 로드한 뒤 Electron `printToPDF`를 실행한다.
 4. 사용자가 지정한 경로 또는 기본 저장 위치에 PDF를 저장한다.
 
-### 10.9 공문 업무추출과 캘린더 연동 메커니즘
+### 10.10 공문 업무추출과 캘린더 연동 메커니즘
 
 공문에서 업무와 일정을 자동으로 뽑아 구글 캘린더 등록까지 이어주는 기능이다.
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Printer, ChevronLeft, RotateCcw } from 'lucide-react';
+import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
@@ -12,6 +12,7 @@ export default function PrintFormScreen() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>(CATEGORIES[0]);
+  const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
 
   const formsInCategory = PRINT_FORMS.filter(f => f.category === activeCategory);
 
@@ -135,8 +136,29 @@ export default function PrintFormScreen() {
         {/* 본문 */}
         <div className="flex flex-1 overflow-hidden">
           {/* 입력 패널 */}
-          {!preview && (
+          {!preview && inputPanelCollapsed && (
+            <div className="w-11 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-center py-3">
+              <button
+                onClick={() => setInputPanelCollapsed(false)}
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                title="입력 패널 펼치기"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {!preview && !inputPanelCollapsed && (
             <div className="w-72 shrink-0 overflow-y-auto p-4 space-y-3 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">입력 패널</p>
+                <button
+                  onClick={() => setInputPanelCollapsed(true)}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="입력 패널 접기"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
               {selectedForm.fields.map(field => (
                 <div key={field.key}>
                   <label className={labelClass}>{field.label}</label>

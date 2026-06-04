@@ -3,7 +3,7 @@ import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { runCustomTool } from '../services/geminiService';
-import { ChevronLeft, Zap, AlertTriangle, Pencil, X } from 'lucide-react';
+import { ChevronLeft, Zap, AlertTriangle, Pencil, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useGlobalState } from '../GlobalStateContext';
 
 interface MyToolRunnerProps {
@@ -21,6 +21,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState('');
+  const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const [teacherVars, setTeacherVars] = useState<Record<string, string>>({});
 
@@ -93,6 +94,18 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   return (
     <div className="flex h-full overflow-hidden">
       {/* 좌측 폼 패널 */}
+      {inputPanelCollapsed && (
+        <div className="w-11 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-center py-3">
+          <button
+            onClick={() => setInputPanelCollapsed(false)}
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            title="입력 패널 펼치기"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {!inputPanelCollapsed && (
       <div className="w-[360px] shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto">
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-center justify-between mb-3">
@@ -112,6 +125,13 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
                 수정
               </button>
             )}
+            <button
+              onClick={() => setInputPanelCollapsed(true)}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              title="입력 패널 접기"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
           </div>
           <div className="flex items-start gap-2">
             <div>
@@ -223,6 +243,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
           )}
         </div>
       </div>
+      )}
 
       {/* 우측 결과 패널 */}
       <div className="flex-1 overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarPlus, ClipboardList, Copy, FileText, Loader2, Save } from 'lucide-react';
+import { CalendarPlus, ClipboardList, Copy, FileText, Loader2, PanelLeftClose, PanelLeftOpen, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AppMode, FileData } from '../types';
 import { analyzeOfficialDocument } from '../services/geminiService';
@@ -15,6 +15,7 @@ const OfficialDocAnalyzer: React.FC = () => {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
 
   useEffect(() => {
     const handler = () => setIsLoading(false);
@@ -151,16 +152,35 @@ const OfficialDocAnalyzer: React.FC = () => {
 
   return (
     <div className="flex h-full bg-slate-50 dark:bg-gray-900">
+      {inputPanelCollapsed && (
+        <div className="w-11 shrink-0 border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-center py-3">
+          <button
+            onClick={() => setInputPanelCollapsed(false)}
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-gray-600 text-slate-500 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+            title="입력 패널 펼치기"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {!inputPanelCollapsed && (
       <div className="w-[390px] shrink-0 border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-gray-700">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">공문 요약 / 업무 추출</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">핵심 업무와 마감만 짧게 정리합니다.</p>
             </div>
+            <button
+              onClick={() => setInputPanelCollapsed(true)}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-gray-600 text-slate-500 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+              title="입력 패널 접기"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -210,6 +230,7 @@ const OfficialDocAnalyzer: React.FC = () => {
           </button>
         </div>
       </div>
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
         <div className="px-5 py-3 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">

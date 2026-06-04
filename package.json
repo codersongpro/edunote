@@ -1,6 +1,6 @@
 {
   "name": "edunote",
-  "version": "1.11.5",
+  "version": "1.12.0",
   "description": "EduNote - 교사를 위한 AI 도우미 (학생기록 AI + 교무 AI + AI 스킬즈 마켓 버그수정)",
   "main": "out/main/index.js",
   "scripts": {
