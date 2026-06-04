@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
@@ -187,20 +187,48 @@ export default function PrintFormScreen() {
               {selectedForm.fields.map(field => (
                 <div key={field.key}>
                   <label className={labelClass}>{field.label}</label>
-                  {field.type === 'participants' ? (
-                    <>
-                      <textarea
-                        className={inputClass}
-                        rows={field.rows ?? 8}
-                        placeholder={'홍길동\n이순신\n김유신\n(한 줄에 한 명 입력)'}
-                        value={values[field.key] ?? ''}
-                        onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                      />
-                      <p className="text-[11px] text-gray-400 mt-0.5">
-                        입력한 이름 순서대로 등록부 행에 자동 배치됩니다.
-                      </p>
-                    </>
-                  ) : field.type === 'table' ? (
+                  {field.type === 'participants' ? (() => {
+                    const lines = (values[field.key] ?? '').split('\n');
+                    const list = lines.length > 0 ? lines : [''];
+                    const setList = (next: string[]) =>
+                      setValues(v => ({ ...v, [field.key]: (next.length > 0 ? next : ['']).join('\n') }));
+                    return (
+                      <>
+                        <div className="space-y-1.5">
+                          {list.map((name, i) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className="w-5 shrink-0 text-right text-[11px] text-gray-400">{i + 1}</span>
+                              <input
+                                type="text"
+                                className={inputClass}
+                                placeholder="이름"
+                                value={name}
+                                onChange={e => { const next = [...list]; next[i] = e.target.value; setList(next); }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setList(list.filter((_, idx) => idx !== i))}
+                                className="shrink-0 h-7 w-7 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors"
+                                title="삭제"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setList([...list, ''])}
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> 명단 추가
+                        </button>
+                        <p className="text-[11px] text-gray-400 mt-1">
+                          번호 순서대로 등록부에 배치됩니다. 20명을 넘어도 계속 추가할 수 있고, 명단이 길면 다음 장으로 이어집니다.
+                        </p>
+                      </>
+                    );
+                  })() : field.type === 'table' ? (
                     <>
                       <textarea
                         className={inputClass}

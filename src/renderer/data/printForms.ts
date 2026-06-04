@@ -335,15 +335,16 @@ export const PRINT_FORMS: PrintForm[] = [
       { key: '연수명', label: '연수명', type: 'text', placeholder: '2026년 1학기 직무연수' },
       { key: '연수장소', label: '연수 장소', type: 'text' },
       { key: '일시', label: '일시', type: 'text', placeholder: '2026.06.10. 09:00~17:00' },
-      { key: '참가자목록', label: '참가자 명단 (한 줄에 한 명)', type: 'participants', rows: 10, placeholder: '홍길동\n이순신\n김유신' },
+      { key: '참가자목록', label: '참가자 명단', type: 'participants', rows: 10, placeholder: '홍길동\n이순신\n김유신' },
     ],
     htmlTemplate: `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${baseStyle}
 <style>
 .reg-table th { font-size:10pt; }
 .reg-table td { height:22pt; }
+.reg-table tr { page-break-inside: avoid; }
 </style>
 </head><body>
-<div class="page-wrap">
+<div class="page-wrap" style="height:auto; min-height:0; overflow:visible; page-break-inside:auto;">
 <div class="title-box">연수 등록부</div>
 <table style="margin-bottom:10pt;">
   <tr>
