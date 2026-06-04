@@ -104,6 +104,7 @@ const App: React.FC = () => {
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
+  const [showBudgetTip, setShowBudgetTip] = useState(false);
   const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
   const [classToolsSubOpen, setClassToolsSubOpen] = useState(false);
   const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
@@ -1077,6 +1078,32 @@ const App: React.FC = () => {
                 ⚠ API 키를 설정해 주세요
               </button>
             )}
+            <div className="mt-1 mb-0.5 rounded-md border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-xs overflow-hidden">
+              <button
+                onClick={() => setShowBudgetTip(v => !v)}
+                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              >
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <Wallet className="w-3.5 h-3.5 shrink-0" />예산안 0원 맞추기 팁
+                </span>
+                {showBudgetTip ? <ChevronDown className="w-3 h-3 shrink-0" /> : <ChevronRight className="w-3 h-3 shrink-0" />}
+              </button>
+              {showBudgetTip && (
+                <div className="px-2.5 pb-2 space-y-1.5 text-[11px] text-emerald-800 dark:text-emerald-300 border-t border-emerald-200 dark:border-emerald-700">
+                  <p className="pt-1.5">예산안 생성 후 남은예산이 0이 아닐 때 사용합니다.</p>
+                  <ul className="space-y-1 ml-1">
+                    <li>• 품목 행에서 <strong>최소수량·최대수량</strong>을 설정하면 그 범위 안에서만 수량이 조절됩니다.</li>
+                    <li>• 수량을 직접 수정한 품목은 자동 조절 대상에서 제외됩니다.</li>
+                  </ul>
+                  <button
+                    onClick={() => { goTo(AppMode.BUDGET_PLANNER); setAdminSectionOpen(true); setShowBudgetTip(false); }}
+                    className="mt-1 w-full py-1 rounded bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition-colors"
+                  >
+                    예산안작성 바로가기
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => goTo(AppMode.USAGE_GUIDE)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${

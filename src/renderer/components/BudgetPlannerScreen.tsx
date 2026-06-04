@@ -9,6 +9,7 @@ import {
   ChevronUp,
   Download,
   ExternalLink,
+  HelpCircle,
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
@@ -1013,6 +1014,7 @@ export default function BudgetPlannerScreen() {
   const [naverClientSecret, setNaverClientSecret] = useState('');
   const [showPriceSettings, setShowPriceSettings] = useState(false);
   const [showApiGuide, setShowApiGuide] = useState(false);
+  const [showBalanceHelp, setShowBalanceHelp] = useState(false);
   const [apiGuideStep, setApiGuideStep] = useState(1);
   const [internetPriceTestMessage, setInternetPriceTestMessage] = useState('');
   const [isTestingInternetPrice, setIsTestingInternetPrice] = useState(false);
@@ -1450,7 +1452,7 @@ export default function BudgetPlannerScreen() {
       '예산 제목에 특정 품목이나 활동명이 있으면 그 품목·활동과 직접 관련된 품목만 사용해.',
       '예산 제목과 직접 관련 없는 기본 사무용품, 다과, 청소용품, 도서 등을 끼워 넣지 마.',
       '후보 품목이 있으면 후보 단가를 우선 사용하고, 예산이 남으면 주제에 맞는 품목의 수량을 늘리거나 같은 성격의 품목만 직접 제안해.',
-      'unitPrice(단가)는 가능하면 10,000원(만원) 단위로 맞추고, 만원 단위로 만들기 어려운 소모성 저가 품목만 1,000원(천원) 단위를 사용해.',
+      'unitPrice(단가)는 반드시 1,000원(천원) 단위로 맞춰. 예: 10,000원, 15,000원, 22,000원처럼 1,000원 배수여야 하며, 1,234원·3,500원처럼 천원 단위가 아닌 값은 절대 쓰지 마.',
       '전체 예산과 과목별 배정액을 초과하지 않는 방향으로 6~18개 행을 만들어.',
       '사용자가 과목별로 입력한 구입 물품이 있으면 그 입력을 최우선으로 반영해.',
       '입력한 물품이 넓은 표현이면 같은 목적의 구체 품목으로만 확장해. 예: 에듀테크는 태블릿, 스마트기기, 코딩교구 / 다과와 식비는 간식, 음료, 도시락.',
@@ -1801,9 +1803,33 @@ export default function BudgetPlannerScreen() {
                     <p className="text-xs text-gray-500">배정 예산: {fmt(activePlan.totalBudget)}원</p>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-end">
-                    <button onClick={autoBalancePlan} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-200 dark:ring-emerald-800 shadow-sm flex items-center gap-1.5`}>
-                      <RefreshCw className="w-3.5 h-3.5" />0원 맞추기
-                    </button>
+                    <div className="relative flex items-center gap-1">
+                      <button onClick={autoBalancePlan} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 ring-2 ring-emerald-200 dark:ring-emerald-800 shadow-sm flex items-center gap-1.5`}>
+                        <RefreshCw className="w-3.5 h-3.5" />0원 맞추기
+                      </button>
+                      <button
+                        onClick={() => setShowBalanceHelp(v => !v)}
+                        className="p-1 rounded-full text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        title="사용법 보기"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                      {showBalanceHelp && (
+                        <div className="absolute right-0 top-full mt-1 z-50 w-72 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 shadow-lg p-3 text-xs text-gray-700 dark:text-gray-200 space-y-2">
+                          <button onClick={() => setShowBalanceHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                          <p className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">0원 맞추기 사용법</p>
+                          <ol className="space-y-1.5 ml-1">
+                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">1</span><span>예산안을 AI로 생성한 뒤 남은예산이 0이 아닐 때 사용합니다.</span></li>
+                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">2</span><span>버튼을 누르면 품목 수량을 자동 조절해 남은예산을 최대한 0원에 맞춥니다.</span></li>
+                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">3</span><span><strong>수량 조절 범위 지정:</strong> 각 품목 행의 <strong>최소수량</strong>·<strong>최대수량</strong> 칸을 채우면 그 범위 안에서만 수량을 조절합니다. 특정 품목의 수량을 고정하려면 수량을 직접 수정하면 잠금(고정) 상태가 됩니다.</span></li>
+                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">4</span><span>결과가 만족스럽지 않으면 수량을 직접 조정한 뒤 다시 눌러보세요.</span></li>
+                          </ol>
+                          <p className="text-[10px] text-gray-400 mt-1">💡 최소·최대 수량을 설정하지 않으면 최소 1 ~ 최대 제한 없음으로 처리됩니다.</p>
+                        </div>
+                      )}
+                    </div>
                     <button onClick={() => window.electronAPI.openExternal(BUDGET_NOTEBOOK_LM_URL)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
                       <ExternalLink className="w-3.5 h-3.5" />예산 질문하기
                     </button>
