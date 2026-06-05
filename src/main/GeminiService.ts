@@ -2,14 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 
 export type ApiTier = 'free' | 'paid';
 
-// 티어별 모델 폴백 체인 — 앞 모델이 쿼터/권한으로 막히면 다음 모델로 자동 폴백한다.
-// (모델별 차단 상태는 isBlocked/quotaBlockedModels가 관리하므로 목록만 늘리면 폴백된다.)
-const FREE_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
-const PAID_MODELS = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-
-// 단일 모델이 필요한 곳(키 검증 등)에서 쓰는 대표 모델
-const FREE_MODEL = FREE_MODELS[0];
-const PAID_MODEL = PAID_MODELS[0];
+const FREE_MODEL = 'gemini-2.5-flash-lite';
+const PAID_MODEL = 'gemini-2.5-pro';
 
 // 권한 거부/모델 미지원으로 차단된 모델 → 차단 해제 시각(unix ms)
 // 1시간 후 자동 해제 → 상위 모델을 주기적으로 재시도하여 계정 상황 변화에 대응
@@ -103,9 +97,9 @@ export async function generateContent(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  const models = options?.apiTier === 'paid' ? PAID_MODELS : FREE_MODELS;
-  for (const model of models) {
-    if (isBlocked(model)) continue; // 차단된 모델 건너뜀
+  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
+  for (let i = 0; i < 1; i++) {
+    if (isBlocked(model)) continue;
 
     try {
       const config: Record<string, unknown> = {};
@@ -117,21 +111,18 @@ export async function generateContent(
     } catch (error: unknown) {
       lastError = error;
 
-      // 쿼터 초과 → 60초 임시 차단 후 다음 모델로
       if (isQuotaError(error)) {
         quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
         continue;
       }
 
-      // 권한 거부/모델 미지원 → 영구 차단 후 다음 모델로
       if (isPermanentBlockError(error)) {
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 임시 차단, 다음 모델로 폴백`);
+        console.warn(`[${model}] 접근 불가 → 임시 차단`);
         continue;
       }
 
-      // 그 외 에러는 즉시 전파 (네트워크 오류 등 — 모델을 바꿔도 동일하게 실패)
       throw error;
     }
   }
@@ -153,8 +144,8 @@ export async function generateContentMultipart(
   const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
-  const models = options?.apiTier === 'paid' ? PAID_MODELS : FREE_MODELS;
-  for (const model of models) {
+  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
+  for (let i = 0; i < 1; i++) {
     if (isBlocked(model)) continue;
 
     try {
@@ -169,13 +160,13 @@ export async function generateContentMultipart(
 
       if (isQuotaError(error)) {
         quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운, 다음 모델로 폴백`);
+        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
         continue;
       }
 
       if (isPermanentBlockError(error)) {
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 임시 차단, 다음 모델로 폴백`);
+        console.warn(`[${model}] 접근 불가 → 임시 차단`);
         continue;
       }
 
