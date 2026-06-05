@@ -97,7 +97,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
   const featureInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const description = buildDescription(appType, features, extra);
-  const canGenerate = appType.trim().length > 0 && !isGenerating;
+  const canGenerate = appType.trim().length > 0 && !isGenerating && apiKeyAvailability !== 'wait';
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -111,7 +111,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
       setHtmlContent(html);
       if (!name) setName(appType.trim().slice(0, 24));
     } catch (e: any) {
-      if (!e?.message?.includes('취소')) setError('HTML 앱 생성에 실패했습니다. 다시 시도해 주세요.');
+      if (!e?.message?.includes('취소')) setError(e?.message || 'HTML 앱 생성에 실패했습니다. 다시 시도해 주세요.');
     } finally {
       setIsGenerating(false);
     }

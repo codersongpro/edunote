@@ -77,6 +77,21 @@ export interface CustomTool {
   pinnedAt?: number;
 }
 
+// ─── Prompt Coach ─────────────────────────────────────────────────
+export interface PromptCoachIssue {
+  severity: 'high' | 'medium' | 'low';
+  title: string;
+  detail: string;
+  suggestion: string;
+}
+
+export interface PromptCoachResult {
+  score: number;            // 0~100
+  summary: string;          // 한 줄 총평
+  issues: PromptCoachIssue[];
+  improvedPrompt?: string;  // 선택: 개선된 전체 프롬프트
+}
+
 // ─── Chat ─────────────────────────────────────────────────────────
 export interface ChatMessage {
   role: 'user' | 'model';

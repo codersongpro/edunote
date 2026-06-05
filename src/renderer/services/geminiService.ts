@@ -15,6 +15,7 @@ import {
   NeisAnalyzedData,
   CustomTool,
   CustomToolInput,
+  PromptCoachResult,
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
@@ -1897,6 +1898,52 @@ category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-up
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
     return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+};
+
+export const coachToolPrompt = async (
+  description: string,
+  inputs: CustomToolInput[],
+  promptTemplate: string,
+): Promise<PromptCoachResult | null> => {
+  const fieldList = inputs
+    .map(i => `- {{${i.id}}} : ${i.label} (${i.type === 'file-upload' ? '파일 첨부' : i.type === 'textarea' ? '여러 줄 텍스트' : '한 줄 텍스트'})`)
+    .join('\n') || '(없음)';
+
+  const prompt = `너는 교사가 작성한 AI 도구 프롬프트를 검토하는 프롬프트 코치다.
+아래 프롬프트의 약점을 진단하고, 교사가 "왜" 고쳐야 하는지 이해할 수 있도록 구체적으로 피드백해줘.
+
+도구 설명: ${description || '(없음)'}
+사용 가능한 변수:
+${fieldList}
+
+검토할 프롬프트:
+${promptTemplate}
+
+진단 기준:
+- 지시가 모호하거나 구체적이지 않은 부분
+- 출력 형식(표/항목/길이 등)이 명시되지 않은 부분
+- 정의된 변수({{변수명}})가 프롬프트에서 사용되지 않았거나, 정의되지 않은 변수를 쓴 부분
+- 교육 현장 어조/맥락이 부족한 부분
+
+아래 JSON 형식으로만 출력해 (JSON만, 설명 없이). 모든 텍스트는 한국어로:
+{
+  "score": 0,
+  "summary": "프롬프트 전반에 대한 한 줄 총평",
+  "issues": [
+    { "severity": "high", "title": "문제 제목", "detail": "왜 문제인지", "suggestion": "구체적 개선 방법" }
+  ],
+  "improvedPrompt": "정의된 변수를 유지한 개선된 전체 프롬프트"
+}
+score는 0~100 정수, severity는 high/medium/low 중 하나. 문제가 없으면 issues는 빈 배열로.`;
+
+  try {
+    const raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    return JSON.parse(match[0]) as PromptCoachResult;
   } catch {
     return null;
   }
