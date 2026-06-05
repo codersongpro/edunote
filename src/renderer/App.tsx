@@ -22,6 +22,7 @@ import HomeScreen from './components/HomeScreen';
 import UsageGuideScreen from './components/UsageGuideScreen';
 import AboutScreen from './components/AboutScreen';
 import { initAudioUnlock } from './lib/soundEffect';
+import { useEscapeKey } from './hooks/useEscapeKey';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
@@ -240,6 +241,11 @@ const App: React.FC = () => {
     window.addEventListener('edunote-goto-settings', handler);
     return () => window.removeEventListener('edunote-goto-settings', handler);
   }, []);
+
+  // 닫기 동작이 있는 모달은 Esc로 닫을 수 있게 한다.
+  // (면책 모달은 동의 체크가 필요해 닫기 동작이 없으므로 Esc를 적용하지 않는다.)
+  useEscapeKey(showApiKeyLimitModal && !showDisclaimerModal, () => setShowApiKeyLimitModal(false));
+  useEscapeKey(showSchoolLevelModal, () => setShowSchoolLevelModal(false));
 
   const handleAcceptDisclaimer = () => {
     setShowDisclaimerModal(false);
@@ -506,14 +512,14 @@ const App: React.FC = () => {
 
         {/* Disclaimer Modal */}
         {showDisclaimerModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="disclaimer-modal-title">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
               {/* Icon */}
               <div className="flex flex-col items-center mb-5">
                 <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-3">
                   <AlertTriangle className="w-8 h-8 text-orange-500" />
                 </div>
-                <h2 className="text-lg font-black text-gray-900 dark:text-white">AI 활용 시 유의사항</h2>
+                <h2 id="disclaimer-modal-title" className="text-lg font-black text-gray-900 dark:text-white">AI 활용 시 유의사항</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">사용 전 반드시 확인해주세요</p>
               </div>
 
@@ -561,14 +567,14 @@ const App: React.FC = () => {
         )}
 
         {showApiKeyLimitModal && !showDisclaimerModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="apikey-modal-title">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-6 h-6 text-amber-500" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-gray-900 dark:text-white">API 키가 설정되지 않았습니다</h2>
+                  <h2 id="apikey-modal-title" className="text-lg font-black text-gray-900 dark:text-white">API 키가 설정되지 않았습니다</h2>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
                     EduNote는 계속 사용할 수 있지만, 학생기록 작성, 공문 작성, 예산안 AI 생성처럼 Gemini를 사용하는 기능은 제한됩니다.
                   </p>
@@ -639,11 +645,11 @@ const App: React.FC = () => {
 
         {/* School Level Modal */}
         {showSchoolLevelModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="schoollevel-modal-title">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
               <div className="flex items-center gap-2 mb-2">
                 <School className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">학교급 선택</h2>
+                <h2 id="schoollevel-modal-title" className="text-lg font-bold text-gray-900 dark:text-white">학교급 선택</h2>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">학생기록 AI는 학교급에 따라 다른 결과를 생성합니다.</p>
               <div className="space-y-2">
@@ -668,6 +674,7 @@ const App: React.FC = () => {
               onClick={() => setSidebarCollapsed(false)}
               className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title="메뉴 펼치기"
+              aria-label="메뉴 펼치기"
             >
               <PanelLeftOpen className="w-4 h-4" />
             </button>
@@ -675,6 +682,7 @@ const App: React.FC = () => {
               onClick={() => setMode(AppMode.HOME)}
               className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title="홈"
+              aria-label="홈"
             >
               <Home className="w-4 h-4" />
             </button>
@@ -697,6 +705,7 @@ const App: React.FC = () => {
                 onClick={toggleDarkMode}
                 className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-amber-500 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                aria-label={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
               >
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-slate-500" />}
               </button>
@@ -704,6 +713,7 @@ const App: React.FC = () => {
                 onClick={() => setSidebarCollapsed(true)}
                 className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="메뉴 접기"
+                aria-label="메뉴 접기"
               >
                 <PanelLeftClose className="w-4 h-4" />
               </button>
