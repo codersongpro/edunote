@@ -199,9 +199,21 @@ const SettingsScreen: React.FC = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
   };
 
+  // 렌더러 localStorage 전체를 {키:값} 형태로 수집합니다. (공문 히스토리·메뉴 순서·즐겨찾기 등)
+  const collectLocalStorage = (): Record<string, string> => {
+    const dump: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key === null) continue;
+      const value = localStorage.getItem(key);
+      if (value !== null) dump[key] = value;
+    }
+    return dump;
+  };
+
   const handleExportBackup = async () => {
     try {
-      const savedPath = await window.electronAPI.exportBackup();
+      const savedPath = await window.electronAPI.exportBackup(collectLocalStorage());
       if (savedPath) {
         const backupTime = new Date().toISOString();
         await window.electronAPI.setConfig({ lastBackupAt: backupTime });
@@ -216,9 +228,20 @@ const SettingsScreen: React.FC = () => {
   const handleImportBackup = async () => {
     if (!window.confirm('백업 파일을 불러오면 현재 설정과 앱 자료가 백업 내용으로 덮어써집니다. 계속할까요?')) return;
     try {
-      const loadedPath = await window.electronAPI.importBackup();
-      if (loadedPath) {
-        setBackupStatus('백업 자료를 불러왔습니다. 앱을 다시 실행하면 모든 화면에 반영됩니다.');
+      const loaded = await window.electronAPI.importBackup();
+      if (loaded) {
+        // 구버전 백업은 localStorage가 비어 있으므로 키가 있을 때만 덮어씁니다.
+        const restored = loaded.localStorage;
+        if (restored && Object.keys(restored).length > 0) {
+          localStorage.clear();
+          for (const [key, value] of Object.entries(restored)) {
+            localStorage.setItem(key, value);
+          }
+          setBackupStatus('백업 자료를 불러왔습니다. 잠시 후 화면을 새로고침합니다.');
+          setTimeout(() => window.location.reload(), 1200);
+        } else {
+          setBackupStatus('백업 자료를 불러왔습니다. 앱을 다시 실행하면 모든 화면에 반영됩니다.');
+        }
       }
     } catch (error) {
       setBackupStatus(error instanceof Error ? error.message : '백업 불러오기 중 오류가 발생했습니다.');

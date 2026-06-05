@@ -30,8 +30,8 @@ export interface ElectronAPI {
   readJsonData(name: string): Promise<unknown>;
   writeJsonData(name: string, data: unknown): Promise<string>;
   getJsonDataPath(name: string): Promise<string>;
-  exportBackup(): Promise<string | null>;
-  importBackup(): Promise<string | null>;
+  exportBackup(localStorageDump?: Record<string, string>): Promise<string | null>;
+  importBackup(): Promise<{ filePath: string; localStorage: Record<string, string> } | null>;
 
   selectFolder(): Promise<string | null>;
   fetchUrlMeta(url: string): Promise<{ title: string; description: string; image: string; domain: string }>;

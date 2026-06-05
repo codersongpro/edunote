@@ -52,7 +52,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readJsonData: (name: string) => ipcRenderer.invoke('data:read-json', name),
   writeJsonData: (name: string, data: unknown) => ipcRenderer.invoke('data:write-json', name, data),
   getJsonDataPath: (name: string) => ipcRenderer.invoke('data:get-file-path', name),
-  exportBackup: () => ipcRenderer.invoke('data:export-backup'),
+  exportBackup: (localStorageDump?: Record<string, string>) => ipcRenderer.invoke('data:export-backup', localStorageDump),
   importBackup: () => ipcRenderer.invoke('data:import-backup'),
 
   // Dialog

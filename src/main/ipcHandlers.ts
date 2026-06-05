@@ -262,7 +262,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('data:get-file-path', (_e, name: string) => safeDataFile(name));
 
-  ipcMain.handle('data:export-backup', async () => {
+  ipcMain.handle('data:export-backup', async (_e, localStorageDump?: Record<string, string>) => {
     const saveDir = store.get('saveDir');
     const now = new Date();
     const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -285,12 +285,16 @@ export function registerIpcHandlers(): void {
       }
     }
 
+    // 렌더러 localStorage(공문 히스토리·메뉴 순서·즐겨찾기 등)도 함께 백업합니다.
+    const localStorageData = (localStorageDump && typeof localStorageDump === 'object') ? localStorageDump : {};
+
     const payload = {
       app: 'EduNote',
-      schemaVersion: 1,
+      schemaVersion: 2,
       exportedAt: now.toISOString(),
       settings: safeSettings,
       dataFiles,
+      localStorage: localStorageData,
     };
     fs.writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
     return result.filePath;
@@ -331,7 +335,16 @@ export function registerIpcHandlers(): void {
       if (!safeName) continue;
       fs.writeFileSync(safeDataFile(safeName), JSON.stringify(data, null, 2), 'utf-8');
     }
-    return result.filePaths[0];
+
+    // 구버전(schemaVersion 1) 백업에는 localStorage가 없으므로 빈 객체로 처리합니다.
+    // 문자열 값만 추려 렌더러가 localStorage에 그대로 복원합니다.
+    const rawLocalStorage = (backup.localStorage && typeof backup.localStorage === 'object') ? backup.localStorage : {};
+    const localStorageData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(rawLocalStorage as Record<string, unknown>)) {
+      if (typeof value === 'string') localStorageData[key] = value;
+    }
+
+    return { filePath: result.filePaths[0], localStorage: localStorageData };
   });
 
   // ── Dialog ────────────────────────────────────────────────────────
