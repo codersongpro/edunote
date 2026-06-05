@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw } from 'lucide-react';
+import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { markdownOrHtmlToHtml } from '../lib/generatedContent';
 
 export interface HwpxTemplateData {
@@ -420,6 +420,14 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     setSelectedVersionId('');
   };
 
+  const handleDeleteVersion = () => {
+    if (!selectedVersion) return;
+    const next = savedVersions.filter(v => v.id !== selectedVersion.id);
+    localStorage.setItem(getHistoryKey(), JSON.stringify(next));
+    setSavedVersions(next);
+    setSelectedVersionId('');
+  };
+
   const handleSavePdf = async () => {
     const currentHtml = getCurrentContent();
     const docTitle = getDocumentTitle();
@@ -610,6 +618,14 @@ h2,h3{page-break-after:avoid;}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                         {'\uC774 \uBB38\uC11C\uB85C \uB418\uB3CC\uB9AC\uAE30'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDeleteVersion}
+                        className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-600 text-xs font-bold text-white hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {'\uC774 \uBC84\uC804 \uC0AD\uC81C'}
                       </button>
                       <span className="text-xs text-slate-500 dark:text-slate-400">
                         {'\uC120\uD0DD\uD55C \uC774\uC804 \uBC84\uC804\uC740 \uC544\uB798\uC5D0 \uBBF8\uB9AC\uBCF4\uAE30\uB85C\uB9CC \uD45C\uC2DC\uB429\uB2C8\uB2E4.'}

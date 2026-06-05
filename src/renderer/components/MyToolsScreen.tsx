@@ -636,15 +636,6 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                 동료 선생님이 공유한 도구를 가져올 수 있습니다.
               </p>
               <div className="flex gap-2">
-                {MARKET_FORM_URL && (
-                  <button
-                    onClick={() => window.electronAPI.openExternal(MARKET_FORM_URL)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-700 rounded-lg hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    내 스킬 공유하기
-                  </button>
-                )}
                 <button
                   onClick={loadMarket}
                   disabled={marketLoading}
