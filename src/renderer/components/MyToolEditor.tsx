@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { CustomTool, CustomToolInput, FileData } from '../types';
-import { generateToolPrompt } from '../services/geminiService';
+import { CustomTool, CustomToolInput, FileData, PromptCoachResult } from '../types';
+import { generateToolPrompt, coachToolPrompt, runCustomTool } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
-import { Plus, Trash2, Sparkles, ChevronLeft, ChevronRight, Save, X } from 'lucide-react';
+import { GeneratedDisplay } from './GeneratedDisplay';
+import { Plus, Trash2, Sparkles, ChevronLeft, ChevronRight, Save, X, Stethoscope, AlertTriangle, Zap } from 'lucide-react';
 
 interface MyToolEditorProps {
   initial?: CustomTool;
@@ -37,6 +38,17 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [templateFiles, setTemplateFiles] = useState<FileData[]>([]);
   const promptRef = useRef<HTMLTextAreaElement>(null);
+
+  // 코치(C)
+  const [isCoaching, setIsCoaching] = useState(false);
+  const [coachResult, setCoachResult] = useState<PromptCoachResult | null>(null);
+
+  // 테스트 실행(B)
+  const [testValues, setTestValues] = useState<Record<string, string>>({});
+  const [testFiles, setTestFiles] = useState<Record<string, FileData[]>>({});
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState('');
+  const [testError, setTestError] = useState('');
 
   const addInput = () => {
     const id = `field_${inputs.length}`;
@@ -78,6 +90,58 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
     }
   };
 
+  const handleCoach = async () => {
+    if (!promptTemplate.trim()) {
+      alert('진단할 프롬프트를 먼저 작성하세요.');
+      return;
+    }
+    setIsCoaching(true);
+    setCoachResult(null);
+    try {
+      const result = await coachToolPrompt(description, inputs, promptTemplate);
+      if (!result) {
+        alert('프롬프트 진단에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+      setCoachResult(result);
+    } catch (e: any) {
+      alert('프롬프트 진단에 실패했습니다: ' + (e?.message ?? ''));
+    } finally {
+      setIsCoaching(false);
+    }
+  };
+
+  const applyImprovedPrompt = () => {
+    if (!coachResult?.improvedPrompt) return;
+    setPromptTemplate(coachResult.improvedPrompt);
+    setCoachResult(null);
+  };
+
+  const handleTestRun = async () => {
+    setIsTesting(true);
+    setTestError('');
+    setTestResult('');
+    try {
+      const tempTool: CustomTool = {
+        id: 'preview',
+        name: name.trim() || '미리보기',
+        description,
+        category,
+        toolType: 'prompt',
+        inputs,
+        promptTemplate,
+        createdAt: '',
+        updatedAt: '',
+      };
+      const output = await runCustomTool(tempTool, testValues, testFiles);
+      setTestResult(output);
+    } catch (e: any) {
+      setTestError(e?.message || '실행 중 오류가 발생했습니다.');
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const previewPrompt = () => {
     let preview = promptTemplate;
     for (const inp of inputs) {
@@ -108,7 +172,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
         </h2>
         {/* 단계 표시 */}
         <div className="flex items-center gap-2">
-          {[1, 2, 3].map(n => (
+          {[1, 2, 3, 4].map(n => (
             <div
               key={n}
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
@@ -289,24 +353,98 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">AI 프롬프트</label>
-                <button
-                  onClick={handleAiHelp}
-                  disabled={isGeneratingPrompt}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors disabled:opacity-50"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  {isGeneratingPrompt ? '작성 중...' : templateFiles.length > 0 ? 'AI 도움받기 (양식 반영)' : 'AI 도움받기'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCoach}
+                    disabled={isCoaching || !promptTemplate.trim()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-800/60 transition-colors disabled:opacity-50"
+                  >
+                    <Stethoscope className="w-3.5 h-3.5" />
+                    {isCoaching ? '진단 중...' : '프롬프트 진단'}
+                  </button>
+                  <button
+                    onClick={handleAiHelp}
+                    disabled={isGeneratingPrompt}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition-colors disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {isGeneratingPrompt ? '작성 중...' : templateFiles.length > 0 ? 'AI 도움받기 (양식 반영)' : 'AI 도움받기'}
+                  </button>
+                </div>
               </div>
               <textarea
                 ref={promptRef}
                 value={promptTemplate}
-                onChange={e => setPromptTemplate(e.target.value)}
+                onChange={e => {
+                  setPromptTemplate(e.target.value);
+                  if (coachResult) setCoachResult(null);
+                }}
                 placeholder="AI에게 어떤 결과를 만들어달라고 할지 작성하세요. 위 '삽입 가능한 항목'을 클릭하거나 직접 {{변수명}}을 입력할 수 있습니다."
                 rows={10}
                 className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none font-mono"
               />
             </div>
+
+            {coachResult && (
+              <div className="border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 space-y-3 bg-emerald-50/50 dark:bg-emerald-900/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-emerald-700 dark:text-emerald-300">프롬프트 진단 결과</span>
+                    <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+                      {coachResult.score}점
+                    </span>
+                  </div>
+                  <button onClick={() => setCoachResult(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{coachResult.summary}</p>
+
+                {coachResult.issues.length === 0 ? (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">특별히 고칠 점이 발견되지 않았습니다.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {coachResult.issues.map((issue, idx) => {
+                      const tone =
+                        issue.severity === 'high'
+                          ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+                          : issue.severity === 'medium'
+                          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+                          : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800';
+                      const iconTone =
+                        issue.severity === 'high'
+                          ? 'text-red-500'
+                          : issue.severity === 'medium'
+                          ? 'text-amber-500'
+                          : 'text-gray-400';
+                      return (
+                        <div key={idx} className={`border rounded-lg p-3 ${tone}`}>
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <AlertTriangle className={`w-3.5 h-3.5 shrink-0 ${iconTone}`} />
+                            <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{issue.title}</span>
+                          </div>
+                          <p className="text-xs leading-relaxed mb-1.5 text-gray-600 dark:text-gray-400">{issue.detail}</p>
+                          <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+                            <span className="font-semibold">개선 제안: </span>{issue.suggestion}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {coachResult.improvedPrompt && (
+                  <button
+                    onClick={applyImprovedPrompt}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    개선안 적용
+                  </button>
+                )}
+              </div>
+            )}
 
             {inputs.some(i => i.type === 'file-upload') && (
               <div className="px-3 py-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg text-xs text-blue-700 dark:text-blue-300">
@@ -324,6 +462,75 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
             )}
           </div>
         )}
+
+        {/* ── Step 4: 테스트 실행 ── */}
+        {step === 4 && (
+          <div className="space-y-4 max-w-2xl">
+            <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">4단계 · 테스트 실행</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">저장하기 전에 샘플 값을 넣고 직접 실행해 결과를 확인해 보세요. 교사 이름 등 전역 변수는 실제 실행 시 자동으로 채워집니다.</p>
+
+            {inputs.length === 0 ? (
+              <p className="text-xs text-gray-500 dark:text-gray-400">입력 필드가 없습니다. 바로 테스트 실행을 눌러 결과를 확인하세요.</p>
+            ) : (
+              <div className="space-y-4">
+                {inputs.map(input => (
+                  <div key={input.id}>
+                    {input.type !== 'file-upload' && (
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">{input.label}</label>
+                    )}
+                    {input.type === 'file-upload' ? (
+                      <FileUpload
+                        label={input.label}
+                        files={testFiles[input.id] ?? []}
+                        onFilesChange={files => setTestFiles(prev => ({ ...prev, [input.id]: files }))}
+                        multiple={true}
+                      />
+                    ) : input.type === 'textarea' ? (
+                      <textarea
+                        value={testValues[input.id] ?? ''}
+                        onChange={e => setTestValues(prev => ({ ...prev, [input.id]: e.target.value }))}
+                        placeholder={input.placeholder}
+                        rows={4}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={testValues[input.id] ?? ''}
+                        onChange={e => setTestValues(prev => ({ ...prev, [input.id]: e.target.value }))}
+                        placeholder={input.placeholder}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={handleTestRun}
+              disabled={isTesting || !promptTemplate.trim()}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 text-white font-bold rounded-lg text-sm transition-colors"
+            >
+              <Zap className={`w-4 h-4 ${isTesting ? 'animate-pulse' : ''}`} />
+              {isTesting ? 'AI 생성 중...' : '테스트 실행'}
+            </button>
+
+            {!promptTemplate.trim() && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">3단계에서 프롬프트를 먼저 작성해야 테스트할 수 있습니다.</p>
+            )}
+
+            {testError && (
+              <p className="text-xs text-red-600 dark:text-red-400">{testError}</p>
+            )}
+
+            {testResult && (
+              <div className="h-[420px]">
+                <GeneratedDisplay content={testResult} title={name.trim() || '미리보기'} />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 하단 버튼 */}
@@ -335,7 +542,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
           <ChevronLeft className="w-4 h-4" />
           {step === 1 ? '취소' : '이전'}
         </button>
-        {step < 3 ? (
+        {step < 4 ? (
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!canGoNext()}
