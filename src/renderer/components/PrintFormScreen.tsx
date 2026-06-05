@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-react';
+import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 
 const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
@@ -21,20 +21,12 @@ export default function PrintFormScreen() {
     let html = selectedForm.htmlTemplate;
     for (const field of selectedForm.fields) {
       if (field.type === 'participants') {
-        // 참가자 목록 → 테이블 행 생성
+        // 참가자 목록 → 20명 단위로 표를 나눠 페이지가 자동으로 넘어가게 한다.
+        const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const names = (values[field.key] ?? '').split('\n').map(n => n.trim()).filter(Boolean);
         const perPage = 20;
-        let rows = '';
-        if (names.length === 0) {
-          rows = Array.from({ length: perPage }, (_, i) =>
-            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td></td><td></td></tr>`
-          ).join('');
-        } else {
-          rows = names.map((name, i) =>
-            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td>${name}</td><td></td></tr>`
-          ).join('');
-        }
-        const tableHtml = `<table class="reg-table" style="width:100%;border-collapse:collapse;">
+        // 한 페이지 분량의 행을 받아 표 한 개를 만든다. pageBreak가 true면 표 앞에서 페이지를 넘긴다.
+        const makeTable = (rowsHtml: string, pageBreak: boolean) => `<table class="reg-table" style="width:100%;border-collapse:collapse;${pageBreak ? 'break-before:page;page-break-before:always;margin-top:12pt;' : ''}">
           <thead><tr>
             <th style="width:10%;border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">번호</th>
             <th style="border:1px solid #555;padding:4pt 6pt;background:#f0f0f0;text-align:center;">성명</th>
@@ -42,9 +34,31 @@ export default function PrintFormScreen() {
           </tr></thead>
           <tbody style="font-size:10pt;">
             <style>.reg-row td{border:1px solid #555;padding:4pt 6pt;height:22pt;}</style>
-            ${rows}
+            ${rowsHtml}
           </tbody>
         </table>`;
+
+        let tableHtml = '';
+        if (names.length === 0) {
+          // 빈 양식: 번호만 있는 20줄짜리 빈 표 한 장
+          const rows = Array.from({ length: perPage }, (_, i) =>
+            `<tr class="reg-row"><td style="text-align:center;">${i + 1}</td><td></td><td></td></tr>`
+          ).join('');
+          tableHtml = makeTable(rows, false);
+        } else {
+          // 20명 단위로 페이지를 나눈다. 두 번째 장부터는 표 앞에서 강제로 페이지를 넘긴다.
+          const pageCount = Math.ceil(names.length / perPage);
+          const pages: string[] = [];
+          for (let p = 0; p < pageCount; p++) {
+            const slice = names.slice(p * perPage, (p + 1) * perPage);
+            const rows = slice.map((name, idx) => {
+              const no = p * perPage + idx + 1;
+              return `<tr class="reg-row"><td style="text-align:center;">${no}</td><td>${escape(name)}</td><td></td></tr>`;
+            }).join('');
+            pages.push(makeTable(rows, p > 0));
+          }
+          tableHtml = pages.join('');
+        }
         html = html.replaceAll('{{참가자행}}', tableHtml);
       } else if (field.type === 'table') {
         // 한 줄에 한 행, '/'로 칸을 나눠 columns 머리글의 표를 만든다. 빈 행은 minRows까지 채운다.
@@ -187,48 +201,20 @@ export default function PrintFormScreen() {
               {selectedForm.fields.map(field => (
                 <div key={field.key}>
                   <label className={labelClass}>{field.label}</label>
-                  {field.type === 'participants' ? (() => {
-                    const lines = (values[field.key] ?? '').split('\n');
-                    const list = lines.length > 0 ? lines : [''];
-                    const setList = (next: string[]) =>
-                      setValues(v => ({ ...v, [field.key]: (next.length > 0 ? next : ['']).join('\n') }));
-                    return (
-                      <>
-                        <div className="space-y-1.5">
-                          {list.map((name, i) => (
-                            <div key={i} className="flex items-center gap-1.5">
-                              <span className="w-5 shrink-0 text-right text-[11px] text-gray-400">{i + 1}</span>
-                              <input
-                                type="text"
-                                className={inputClass}
-                                placeholder="이름"
-                                value={name}
-                                onChange={e => { const next = [...list]; next[i] = e.target.value; setList(next); }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setList(list.filter((_, idx) => idx !== i))}
-                                className="shrink-0 h-7 w-7 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-red-500 hover:border-red-300 transition-colors"
-                                title="삭제"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setList([...list, ''])}
-                          className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> 명단 추가
-                        </button>
-                        <p className="text-[11px] text-gray-400 mt-1">
-                          번호 순서대로 등록부에 배치됩니다. 20명을 넘어도 계속 추가할 수 있고, 명단이 길면 다음 장으로 이어집니다.
-                        </p>
-                      </>
-                    );
-                  })() : field.type === 'table' ? (
+                  {field.type === 'participants' ? (
+                    <>
+                      <textarea
+                        className={inputClass}
+                        rows={field.rows ?? 10}
+                        placeholder={field.placeholder}
+                        value={values[field.key] ?? ''}
+                        onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1">
+                        한 줄에 한 명씩 입력하세요. 입력한 순서대로 번호가 매겨지며, 20명을 넘으면 자동으로 다음 장으로 이어집니다.
+                      </p>
+                    </>
+                  ) : field.type === 'table' ? (
                     <>
                       <textarea
                         className={inputClass}

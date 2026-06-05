@@ -104,7 +104,6 @@ const App: React.FC = () => {
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const [showBudgetTip, setShowBudgetTip] = useState(false);
   const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
   const [classToolsSubOpen, setClassToolsSubOpen] = useState(false);
   const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
@@ -737,6 +736,39 @@ const App: React.FC = () => {
               <span className="truncate">설정</span>
             </button>
 
+            {apiKeyAvailability === 'usable' ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
+              >
+                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">API 사용 가능!</span>
+              </button>
+            ) : apiKeyAvailability === 'wait' ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                title="API 키는 저장되어 있지만 현재 요청 제한, 토큰 소모, 잦은 요청, 모델 일시 제한 등으로 결과물을 생성하지 못한 상태입니다. 다른 키를 넣거나 잠시 기다린 뒤 다시 시도해 주세요."
+                className="w-full px-2 py-1.5 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-500 rounded-md text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-left flex items-center gap-1.5 animate-pulse ring-2 ring-amber-300/70 dark:ring-amber-500/40 shadow-sm"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>API 일시 제한 · 키 변경/잠시 후 재시도</span>
+              </button>
+            ) : hasApiKey ? (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-left"
+              >
+                API 키 저장됨 · 사용 확인 필요
+              </button>
+            ) : (
+              <button
+                onClick={() => goTo(AppMode.SETTINGS)}
+                className="w-full px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
+              >
+                ⚠ API 키를 설정해 주세요
+              </button>
+            )}
+
             <button
               onClick={() => setShowSchoolLevelModal(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/40 text-slate-600 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700/70 transition-all shadow-sm"
@@ -1046,64 +1078,6 @@ const App: React.FC = () => {
           </nav>
 
           <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
-            {apiKeyAvailability === 'usable' ? (
-              <button
-                onClick={() => goTo(AppMode.SETTINGS)}
-                className="w-full mb-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-md text-xs text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors text-left flex items-center gap-1.5"
-              >
-                <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate">API 사용 가능!</span>
-              </button>
-            ) : apiKeyAvailability === 'wait' ? (
-              <button
-                onClick={() => goTo(AppMode.SETTINGS)}
-                title="API 키는 저장되어 있지만 현재 요청 제한, 토큰 소모, 잦은 요청, 모델 일시 제한 등으로 결과물을 생성하지 못한 상태입니다. 다른 키를 넣거나 잠시 기다린 뒤 다시 시도해 주세요."
-                className="w-full mb-1.5 px-2 py-1.5 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-500 rounded-md text-xs text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors text-left flex items-center gap-1.5 animate-pulse ring-2 ring-amber-300/70 dark:ring-amber-500/40 shadow-sm"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span>API 일시 제한 · 키 변경/잠시 후 재시도</span>
-              </button>
-            ) : hasApiKey ? (
-              <button
-                onClick={() => goTo(AppMode.SETTINGS)}
-                className="w-full mb-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-left"
-              >
-                API 키 저장됨 · 사용 확인 필요
-              </button>
-            ) : (
-              <button
-                onClick={() => goTo(AppMode.SETTINGS)}
-                className="w-full mb-1.5 px-2 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md text-xs text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors text-left"
-              >
-                ⚠ API 키를 설정해 주세요
-              </button>
-            )}
-            <div className="mt-1 mb-0.5 rounded-md border border-emerald-200 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-xs overflow-hidden">
-              <button
-                onClick={() => setShowBudgetTip(v => !v)}
-                className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-              >
-                <span className="flex items-center gap-1.5 font-semibold">
-                  <Wallet className="w-3.5 h-3.5 shrink-0" />예산안 0원 맞추기 팁
-                </span>
-                {showBudgetTip ? <ChevronDown className="w-3 h-3 shrink-0" /> : <ChevronRight className="w-3 h-3 shrink-0" />}
-              </button>
-              {showBudgetTip && (
-                <div className="px-2.5 pb-2 space-y-1.5 text-[11px] text-emerald-800 dark:text-emerald-300 border-t border-emerald-200 dark:border-emerald-700">
-                  <p className="pt-1.5">예산안 생성 후 남은예산이 0이 아닐 때 사용합니다.</p>
-                  <ul className="space-y-1 ml-1">
-                    <li>• 품목 행에서 <strong>최소수량·최대수량</strong>을 설정하면 그 범위 안에서만 수량이 조절됩니다.</li>
-                    <li>• 수량을 직접 수정한 품목은 자동 조절 대상에서 제외됩니다.</li>
-                  </ul>
-                  <button
-                    onClick={() => { goTo(AppMode.BUDGET_PLANNER); setAdminSectionOpen(true); setShowBudgetTip(false); }}
-                    className="mt-1 w-full py-1 rounded bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-700 transition-colors"
-                  >
-                    예산안작성 바로가기
-                  </button>
-                </div>
-              )}
-            </div>
             <button
               onClick={() => goTo(AppMode.USAGE_GUIDE)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
