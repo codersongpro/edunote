@@ -1,5 +1,6 @@
 {
   "include": ["src/renderer/**/*"],
+  "exclude": ["src/renderer/lib/__tests__"],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
