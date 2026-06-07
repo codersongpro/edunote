@@ -271,8 +271,8 @@ const LuckyDraw: React.FC = () => {
   const hasNames = genderMode ? (maleNamesText || femaleNamesText) : namesText;
   const isSessionActive = sessionPool !== null || sessionMalePool !== null || sessionFemalePool !== null;
 
-  const inputCls = 'w-full bg-white rounded-lg border border-gray-300 text-gray-800 text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none p-2.5 transition-all';
-  const labelCls = 'block text-xs font-bold text-gray-600 mb-1 uppercase tracking-wide';
+  const inputCls = 'w-full bg-white rounded-lg border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none p-2.5 transition-all';
+  const labelCls = 'block text-xs font-bold text-[#78716C] mb-1 uppercase tracking-wide';
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] overflow-hidden relative">
@@ -289,13 +289,13 @@ const LuckyDraw: React.FC = () => {
         <div className="w-64 shrink-0 flex flex-col gap-3 overflow-y-auto">
 
           {/* Names */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 space-y-2.5">
+          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-3 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-orange-500 flex items-center justify-center">
                   <Users className="w-3.5 h-3.5 text-white" />
                 </div>
-                <span className="font-bold text-gray-800 text-sm">학생 이름</span>
+                <span className="font-bold text-[#1C1917] text-sm">학생 이름</span>
               </div>
               <button
                 onClick={async () => {
@@ -345,11 +345,11 @@ const LuckyDraw: React.FC = () => {
                 role="switch"
                 aria-checked={genderMode}
                 onClick={() => setGenderMode(g => !g)}
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${genderMode ? 'bg-orange-500' : 'bg-gray-300'}`}
+                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none ${genderMode ? 'bg-orange-500' : 'bg-[#E7E5E4]'}`}
               >
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${genderMode ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
               </button>
-              <span className="text-xs text-gray-600 font-medium">남/녀 구분</span>
+              <span className="text-xs text-[#78716C] font-medium">남/녀 구분</span>
             </label>
 
             {genderMode ? (
@@ -384,8 +384,8 @@ const LuckyDraw: React.FC = () => {
           </div>
 
           {/* Settings */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-3 space-y-3">
-            <span className="font-bold text-gray-800 text-sm">선정 설정</span>
+          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-3 space-y-3">
+            <span className="font-bold text-[#1C1917] text-sm">선정 설정</span>
 
             <div>
               <label className={labelCls}>주제 (선택)</label>
@@ -415,14 +415,14 @@ const LuckyDraw: React.FC = () => {
                 type="checkbox"
                 checked={excludeDrawn}
                 onChange={e => setExcludeDrawn(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-300"
+                className="w-4 h-4 rounded border-[#E7E5E4] text-orange-500 focus:ring-orange-300"
               />
-              <span className="text-sm text-gray-600">선정된 학생 이후 제외</span>
+              <span className="text-sm text-[#78716C]">선정된 학생 이후 제외</span>
             </label>
 
             {isSessionActive && (
               <div className="flex items-center justify-between text-xs bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
-                <span className="text-gray-600">남은 학생: <strong className="text-orange-600">{remainingCount}명</strong></span>
+                <span className="text-[#78716C]">남은 학생: <strong className="text-orange-600">{remainingCount}명</strong></span>
                 <button onClick={resetSession} className="flex items-center gap-1 text-orange-600 hover:text-orange-700 font-bold">
                   <RotateCcw className="w-3 h-3" />초기화
                 </button>
@@ -435,13 +435,13 @@ const LuckyDraw: React.FC = () => {
         <div className="flex-1 flex flex-col gap-3 min-w-0">
 
           {/* Main draw area */}
-          <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center gap-5 p-6 relative overflow-hidden">
+          <div className="flex-1 bg-white rounded-xl border border-[#EDE8E1] shadow-sm flex flex-col items-center justify-center gap-5 p-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-orange-50/50 to-amber-50/30 pointer-events-none" />
 
             {phase === 'idle' ? (
               <div className="flex flex-col items-center gap-3 text-center z-10">
                 <div className="text-8xl select-none">🎲</div>
-                <p className="text-gray-400 text-sm leading-relaxed">이름과 주제를 입력하고<br />오늘의 주인공을 선정하세요!</p>
+                <p className="text-[#A8A29E] text-sm leading-relaxed">이름과 주제를 입력하고<br />오늘의 주인공을 선정하세요!</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5 z-10 w-full">
@@ -498,7 +498,7 @@ const LuckyDraw: React.FC = () => {
               disabled={phase === 'spinning' || !hasNames}
               className={`z-10 px-12 py-4 rounded-2xl text-lg font-black tracking-wider shadow-lg transition-all active:scale-95 ${
                 phase === 'spinning'
-                  ? 'bg-gray-300 text-gray-400 cursor-not-allowed'
+                  ? 'bg-[#E7E5E4] text-[#A8A29E] cursor-not-allowed'
                   : 'bg-orange-500 hover:bg-orange-600 text-white hover:shadow-orange-300/60 hover:shadow-xl'
               }`}
             >
@@ -509,33 +509,33 @@ const LuckyDraw: React.FC = () => {
           {/* History section */}
           <button
             onClick={() => setShowHistory(s => !s)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-gray-200 shadow-sm text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-[#EDE8E1] shadow-sm text-sm font-semibold text-[#78716C] hover:bg-[#FAF9F7] transition-colors"
           >
-            <History className="w-4 h-4 text-gray-400" />
+            <History className="w-4 h-4 text-[#A8A29E]" />
             <span>선정 기록</span>
-            <span className="text-xs bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 ml-1">{history.length}</span>
-            <span className="ml-auto text-gray-400 text-xs">{showHistory ? '▲' : '▼'}</span>
+            <span className="text-xs bg-[#EDE8E1] text-[#78716C] rounded-full px-2 py-0.5 ml-1">{history.length}</span>
+            <span className="ml-auto text-[#A8A29E] text-xs">{showHistory ? '▲' : '▼'}</span>
           </button>
 
           {showHistory && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden max-h-56 flex flex-col">
-              <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-100 shrink-0">
-                <span className="text-sm font-bold text-gray-700">선정 기록</span>
+            <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm overflow-hidden max-h-56 flex flex-col">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-[#FAF9F7] border-b border-[#EDE8E1] shrink-0">
+                <span className="text-sm font-bold text-[#44403C]">선정 기록</span>
                 <button onClick={clearHistory} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-semibold">
                   <Trash2 className="w-3 h-3" />전체 삭제
                 </button>
               </div>
               <div className="overflow-y-auto">
                 {history.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">기록이 없습니다.</p>
+                  <p className="text-sm text-[#A8A29E] text-center py-8">기록이 없습니다.</p>
                 ) : (
                   history.map(r => (
-                    <div key={r.id} className="flex items-start gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50">
+                    <div key={r.id} className="flex items-start gap-3 px-4 py-2.5 border-b border-[#FAF9F7] last:border-0 hover:bg-[#FAF9F7]">
                       <Trophy className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <span className="text-xs font-bold text-gray-700">{r.topic}</span>
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-xs font-bold text-[#44403C]">{r.topic}</span>
+                          <span className="text-[10px] text-[#A8A29E]">
                             {new Date(r.drawnAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
