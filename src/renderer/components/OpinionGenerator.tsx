@@ -420,9 +420,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 h-full flex flex-col transition-colors relative">
+    <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
       {/* Header with Steps */}
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 border-b border-slate-100 dark:border-slate-700 sticky top-0 z-10">
+      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mr-3 shadow-sm">
@@ -431,8 +431,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
               </svg>
             </div>
             <div>
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 text-lg">행동특성 및 종합의견 생성</h2>
-              <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:flex">
+              <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-lg">행동특성 및 종합의견 생성</h2>
+              <div className="flex items-center space-x-2 text-xs text-[#78716C] dark:text-[#9C8F87] font-medium hidden sm:flex">
                  <span className={opState.step === 'SETUP' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}>1. 인원 설정</span>
                  <span>&gt;</span>
                  <span className={opState.step === 'CONFIG' ? 'text-emerald-600 dark:text-emerald-400 font-bold' : ''}>2. 특성 선택</span>
@@ -445,7 +445,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
               <button 
                 onClick={() => updateOpState({ step: 'CONFIG' })} 
                 disabled={isGlobalGenerating}
-                className={`text-sm text-slate-500 underline hover:text-emerald-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-sm text-[#78716C] underline hover:text-emerald-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                   수정하기
               </button>
@@ -458,33 +458,33 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     <div>
-                        <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-4">
+                        <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
                             생성할 학생 수는 몇 명인가요?
                         </label>
-                        <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 justify-center">
+                        <div className="flex items-center space-x-4 bg-[#FAF9F7] dark:bg-[#221E1B] p-6 rounded-2xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] justify-center">
                             <button 
                                 onClick={() => updateOpState({ studentCount: Math.max(1, opState.studentCount - 1) })}
-                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                             >-</button>
                             <input
                                 type="number"
                                 value={opState.studentCount}
                                 onChange={handleCountChange}
-                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-white"
+                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-[#1C1917] dark:text-[#F0EBE6]"
                             />
                             <button 
                                 onClick={() => updateOpState({ studentCount: opState.studentCount + 1 })}
-                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                             >+</button>
                         </div>
                     </div>
                     
                     <div>
                         <div className="mb-4">
-                             <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">
+                             <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">
                                 학생 이름을 입력해주세요
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">
                                 학생 이름을 쉼표(,)로 구분하거나, <strong>엑셀/스프레드시트에서 이름 열을 복사해 붙여넣기</strong>할 수 있습니다. <br/>
                                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">(예: 김철수, 이영희, 박민수)</span>
                             </p>
@@ -505,7 +505,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             value={opState.nameInput}
                             onChange={handleNameInput}
                             placeholder="학생 1, 학생 2, 학생 3..."
-                            className="w-full h-32 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none shadow-inner"
+                            className="w-full h-32 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none shadow-inner"
                         />
                     </div>
 
@@ -523,10 +523,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar List */}
                 {studentPanelCollapsed && (
-                    <div className="w-11 shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex justify-center py-3">
+                    <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
                         <button
                             onClick={() => setStudentPanelCollapsed(false)}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
                             title="학생 목록 펼치기"
                         >
                             <PanelLeftOpen className="w-4 h-4" />
@@ -534,23 +534,23 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                 )}
                 {!studentPanelCollapsed && (
-                <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className={`w-1/4 min-w-[150px] bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">학생 목록</h3>
+                            <h3 className="text-xs font-bold text-[#A8A29E] uppercase tracking-wider">학생 목록</h3>
                             <div className="flex items-center gap-2">
                                 <label className="flex items-center space-x-1 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={opState.students.length > 0 && opState.students.every(s => s.selected)}
                                         onChange={(e) => toggleAllSelection(e.target.checked)}
-                                        className="w-3 h-3 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                                        className="w-3 h-3 text-emerald-600 rounded border-[#E7E5E4] focus:ring-emerald-500"
                                     />
-                                    <span className="text-[10px] text-slate-500">전체</span>
+                                    <span className="text-[10px] text-[#78716C]">전체</span>
                                 </label>
                                 <button
                                     onClick={() => setStudentPanelCollapsed(true)}
-                                    className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
                                     title="학생 목록 접기"
                                 >
                                     <PanelLeftClose className="w-3.5 h-3.5" />
@@ -564,14 +564,14 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         type="checkbox" 
                                         checked={student.selected || false}
                                         onChange={() => toggleSelection(idx)}
-                                        className="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                                        className="w-4 h-4 text-emerald-600 rounded border-[#E7E5E4] focus:ring-emerald-500"
                                     />
                                     <button
                                         onClick={() => updateOpState({ currentStudentIndex: idx })}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                             opState.currentStudentIndex === idx
-                                            ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800'
+                                            ? 'bg-white dark:bg-[#221E1B] text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-[#E7E5E4] dark:ring-[#2E2822]'
+                                            : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1]/50 dark:hover:bg-[#2E2822]'
                                         }`}
                                     >
                                         <div className="flex justify-between items-center">
@@ -587,23 +587,23 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 )}
 
                 {/* Configuration Area */}
-                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
+                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#221E1B]">
                     <div className="max-w-4xl mx-auto space-y-8">
                         
-                        <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-slate-700">
-                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        <div className="flex justify-between items-center pb-2 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+                            <h3 className="text-xl font-bold text-[#1C1917] dark:text-[#F0EBE6]">
                                 <span className="text-emerald-600 dark:text-emerald-400">{currentStudent.name}</span> 학생 특성 선택
                             </h3>
-                            <div className="text-sm text-slate-500">{opState.currentStudentIndex + 1} / {opState.students.length}</div>
+                            <div className="text-sm text-[#78716C]">{opState.currentStudentIndex + 1} / {opState.students.length}</div>
                         </div>
 
                         {/* Positive Tags */}
                         <div>
-                            <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                            <h4 className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-3 flex items-center">
                                 <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
                                 긍정적 특성 (Positive)
                             </h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 max-h-64 overflow-y-auto">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-4 rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] max-h-64 overflow-y-auto">
                                 {POSITIVE_TAGS.map(tag => (
                                     <button
                                         key={tag.id}
@@ -612,7 +612,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all text-left truncate disabled:cursor-not-allowed ${
                                             currentStudent.positiveTags.includes(tag.label)
                                             ? 'bg-emerald-100 dark:bg-emerald-900/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500 dark:ring-emerald-400'
-                                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'
+                                            : 'bg-white dark:bg-[#2E2822] border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'
                                         }`}
                                     >
                                         {tag.label}
@@ -623,11 +623,11 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
                         {/* Negative Tags */}
                         <div>
-                            <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center">
+                            <h4 className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-3 flex items-center">
                                 <span className="w-2 h-2 bg-rose-400 rounded-full mr-2"></span>
                                 보완할 점 (To Improve)
                             </h4>
-                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700 max-h-48 overflow-y-auto">
+                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-4 rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] max-h-48 overflow-y-auto">
                                 {NEGATIVE_TAGS.map(tag => (
                                     <button
                                         key={tag.id}
@@ -636,7 +636,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all text-left truncate disabled:cursor-not-allowed ${
                                             currentStudent.negativeTags.includes(tag.label)
                                             ? 'bg-rose-100 dark:bg-rose-900/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 ring-1 ring-rose-500 dark:ring-rose-400'
-                                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600'
+                                            : 'bg-white dark:bg-[#2E2822] border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'
                                         }`}
                                     >
                                         {tag.label}
@@ -647,20 +647,20 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
                         {/* Additional Context */}
                         <div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">추가 관찰 내용</label>
+                            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">추가 관찰 내용</label>
                             <textarea
                                 value={currentStudent.additionalContext}
                                 onChange={(e) => handleContextChange(e.target.value)}
                                 disabled={isGlobalGenerating}
                                 placeholder="구체적인 에피소드나 강조하고 싶은 내용을 자유롭게 입력하세요."
-                                className="w-full h-24 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50 dark:bg-slate-700 resize-none text-sm disabled:opacity-50"
+                                className="w-full h-24 px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none text-sm disabled:opacity-50"
                             />
                         </div>
 
                         {/* Length Settings */}
-                        <div className={`p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-600 ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className={`p-4 bg-[#FAF9F7] dark:bg-[#2E2822]/30 rounded-xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <label className="text-sm font-bold text-slate-600 dark:text-slate-300">생성 길이 설정 (전체 적용)</label>
+                                <label className="text-sm font-bold text-[#78716C] dark:text-[#C4B8B0]">생성 길이 설정 (전체 적용)</label>
                                 <div className="flex items-center gap-4">
                                     <div className="flex space-x-3">
                                         {(['200', '300', '400', '500', 'custom'] as LengthOption[]).map((opt) => (
@@ -671,9 +671,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                     value={opt} 
                                                     checked={opState.lengthOption === opt} 
                                                     onChange={() => updateOpState({ lengthOption: opt })}
-                                                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                                                    className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-[#E7E5E4]"
                                                 />
-                                                <span className="ml-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                                <span className="ml-1.5 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                                     {opt === 'custom' ? '직접' : opt}
                                                 </span>
                                             </label>
@@ -684,12 +684,12 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             type="number"
                                             value={opState.customLength}
                                             onChange={(e) => updateOpState({ customLength: Number(e.target.value) })}
-                                            className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-slate-600 dark:text-white"
+                                            className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-[#2E2822] dark:text-[#F0EBE6]"
                                         />
                                     )}
-                                    <div className="flex bg-white dark:bg-slate-600 rounded-lg p-0.5 border border-slate-200 dark:border-slate-500">
-                                         <button onClick={() => updateOpState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${opState.lengthUnit === '자' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500'}`}>자</button>
-                                         <button onClick={() => updateOpState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${opState.lengthUnit === 'byte' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500'}`}>byte</button>
+                                    <div className="flex bg-white dark:bg-[#2E2822] rounded-lg p-0.5 border border-[#E7E5E4] dark:border-[#6B5E57]">
+                                         <button onClick={() => updateOpState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${opState.lengthUnit === '자' ? 'bg-emerald-100 text-emerald-700' : 'text-[#78716C]'}`}>자</button>
+                                         <button onClick={() => updateOpState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${opState.lengthUnit === 'byte' ? 'bg-emerald-100 text-emerald-700' : 'text-[#78716C]'}`}>byte</button>
                                     </div>
                                 </div>
                              </div>
@@ -700,7 +700,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 <button 
                                     onClick={() => updateOpState({ step: 'SETUP' })}
                                     disabled={isGlobalGenerating}
-                                    className="flex-none w-20 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                    className="flex-none w-20 py-4 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D] transition-colors"
                                 >
                                     이전
                                 </button>
@@ -731,8 +731,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
         {opState.step === 'RESULT' && (
              <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">생성 결과</h3>
+                <div className="p-4 bg-white dark:bg-[#221E1B] border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center flex-wrap gap-2">
+                    <h3 className="font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                     <div className="flex items-center gap-2">
                          <button
                             onClick={handleCopyAll}
@@ -740,7 +740,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center shadow-md ${
                                 copiedId === '__ALL__'
                                 ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-400'
-                                : 'bg-slate-600 text-white hover:bg-slate-700'
+                                : 'bg-[#78716C] text-white hover:bg-[#44403C]'
                             } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -773,9 +773,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {opState.students.map((student, idx) => (
-                        <div key={student.id} className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div key={student.id} className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-6 rounded-2xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
                              <div className="flex justify-between mb-4">
-                                <h4 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center">
+                                <h4 className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6] flex items-center">
                                     <span className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mr-3 text-sm">
                                         {idx + 1}
                                     </span>
@@ -788,7 +788,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         className={`text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors border ${
                                             copiedId === student.id
                                             ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-400'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
+                                            : 'bg-white border-[#E7E5E4] text-[#78716C] hover:bg-[#FAF9F7] dark:bg-[#2E2822] dark:border-[#2E2822] dark:text-[#C4B8B0] dark:hover:bg-[#3A332D]'
                                         } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {copiedId === student.id ? (
@@ -816,7 +816,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             next.has(student.id) ? next.delete(student.id) : next.add(student.id);
                                             return next;
                                           })}
-                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                                         >
                                           이전 기록 ({hist.length})
                                         </button>
@@ -850,9 +850,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <textarea
                                     value={student.generatedContent || ''}
                                     onChange={(e) => handleResultChange(idx, e.target.value)}
-                                    className="w-full min-h-[120px] p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-y text-sm leading-relaxed"
+                                    className="w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-y text-sm leading-relaxed"
                                  />
-                                 <div className="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">
+                                 <div className="absolute bottom-3 right-3 text-xs text-[#A8A29E] pointer-events-none">
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
@@ -860,11 +860,11 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                const hist: HistoryEntry[] = getHistory('opinion', student.name);
                                return hist.length > 0 ? (
                                  <div className="mt-3 space-y-2">
-                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">이전 생성 기록</p>
                                    {hist.map((entry, hi) => (
-                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                     <div key={hi} className="rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210]/40 p-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                        <div className="flex justify-between items-center mb-1">
-                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <span className="text-xs text-[#A8A29E]">{new Date(entry.date).toLocaleString('ko-KR')}</span>
                                          <button
                                            onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
                                            className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
@@ -885,9 +885,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
         {/* Duplicate Check Modal */}
         {showDuplicateModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                        <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center">
+                <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                    <div className="p-6 border-b border-[#EDE8E1] dark:border-[#2E2822] flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center">
                             <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mr-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
@@ -895,7 +895,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </span>
                             중복 표현 검사 결과
                         </h3>
-                        <button onClick={() => setShowDuplicateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <button onClick={() => setShowDuplicateModal(false)} className="text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0]">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -903,24 +903,24 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                     <div className="p-6 overflow-y-auto flex-1">
                         {duplicateResults.length === 0 ? (
-                            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                            <div className="text-center py-8 text-[#78716C] dark:text-[#9C8F87]">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 mx-auto mb-4 text-emerald-500">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <p className="text-lg font-bold text-slate-700 dark:text-slate-200">중복된 표현이 발견되지 않았습니다!</p>
+                                <p className="text-lg font-bold text-[#44403C] dark:text-[#C4B8B0]">중복된 표현이 발견되지 않았습니다!</p>
                                 <p className="text-sm mt-1">모든 학생의 내용이 다양하게 작성되었습니다.</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                                <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-4">
                                     다음 문장들이 2명 이상의 학생에게서 발견되었습니다. 내용을 수정하여 다양성을 높여주세요.
                                 </p>
                                 {duplicateResults.map((result, idx) => (
                                     <div key={idx} className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800/30">
-                                        <p className="font-bold text-slate-800 dark:text-slate-200 mb-2">"{result.sentence}"</p>
+                                        <p className="font-bold text-[#1C1917] dark:text-[#C4B8B0] mb-2">"{result.sentence}"</p>
                                         <div className="flex flex-wrap gap-2">
                                             {result.students.map(name => (
-                                                <span key={name} className="px-2 py-1 bg-white dark:bg-slate-700 text-xs rounded border border-amber-200 dark:border-amber-800 text-slate-600 dark:text-slate-300">
+                                                <span key={name} className="px-2 py-1 bg-white dark:bg-[#2E2822] text-xs rounded border border-amber-200 dark:border-amber-800 text-[#78716C] dark:text-[#C4B8B0]">
                                                     {name}
                                                 </span>
                                             ))}
@@ -930,10 +930,10 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
                         )}
                     </div>
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl flex justify-end">
+                    <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#221E1B]/50 rounded-b-2xl flex justify-end">
                         <button
                             onClick={() => setShowDuplicateModal(false)}
-                            className="px-6 py-2 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-900 dark:hover:bg-slate-600 transition-colors"
+                            className="px-6 py-2 bg-[#1C1917] dark:bg-[#2E2822] text-white font-bold rounded-lg hover:bg-[#171210] dark:hover:bg-[#3A332D] transition-colors"
                         >
                             확인
                         </button>
