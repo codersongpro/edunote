@@ -950,7 +950,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         className={`px-4 py-2 pr-8 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${
                             subjectState.currentSubject === subj
                                 ? 'bg-purple-600 text-white border-purple-600 shadow-md'
-                                : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
+                                : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D]'
                         } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={isGlobalGenerating ? "생성 중에는 전환할 수 없습니다." : subj}
                     >
@@ -960,7 +960,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     <button
                         onClick={(e) => deleteSubject(e, subj)}
                         disabled={isGlobalGenerating}
-                        className={`absolute right-1 top-1/2 transform -translate-y-1/2 p-1 rounded-full text-slate-400 hover:text-white hover:bg-red-500/50 transition-colors ${isGlobalGenerating ? 'hidden' : ''}`}
+                        className={`absolute right-1 top-1/2 transform -translate-y-1/2 p-1 rounded-full text-[#A8A29E] hover:text-white hover:bg-red-500/50 transition-colors ${isGlobalGenerating ? 'hidden' : ''}`}
                         title="과목 삭제"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
@@ -991,7 +991,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     });
                 }}
                 disabled={isGlobalGenerating}
-                className={`px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-3 py-2 rounded-lg bg-[#EDE8E1] dark:bg-[#221E1B] text-[#78716C] dark:text-[#9C8F87] border border-dashed border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors flex items-center ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title="새 교과목 추가"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 mr-1">
@@ -1004,8 +1004,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 h-full flex flex-col transition-colors relative">
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 border-b border-slate-100 dark:border-slate-700 sticky top-0 z-10">
+    <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
+      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
         <div className="flex justify-between items-center">
             <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 mr-3 shadow-sm">
@@ -1014,8 +1014,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </svg>
                 </div>
                 <div>
-                    <h2 className="font-bold text-slate-800 dark:text-slate-100 text-lg">교과학습발달상황(세특) 생성</h2>
-                    <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 font-medium hidden sm:flex">
+                    <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-lg">교과학습발달상황(세특) 생성</h2>
+                    <div className="flex items-center space-x-2 text-xs text-[#78716C] dark:text-[#9C8F87] font-medium hidden sm:flex">
                         <span className={subjectState.step === 'STUDENT_SETUP' ? 'text-purple-600 dark:text-purple-400 font-bold' : ''}>1. 인원 설정</span>
                         <span>&gt;</span>
                         <span className={subjectState.step === 'GLOBAL_SETUP' ? 'text-purple-600 dark:text-purple-400 font-bold' : ''}>2. 과제 설정</span>
@@ -1030,7 +1030,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
               <button 
                 onClick={() => updateSubjectState({ step: 'INDIVIDUAL_CONTEXT' })} 
                 disabled={isGlobalGenerating}
-                className={`text-sm text-slate-500 underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-sm text-[#78716C] underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                   수정하기
               </button>
@@ -1062,33 +1062,33 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
 
                     <div className="relative flex py-2 items-center">
-                        <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
-                        <span className="flex-shrink-0 mx-4 text-slate-400 text-sm">또는 직접 입력하기</span>
-                        <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                        <div className="flex-grow border-t border-[#E7E5E4] dark:border-[#2E2822]"></div>
+                        <span className="flex-shrink-0 mx-4 text-[#A8A29E] text-sm">또는 직접 입력하기</span>
+                        <div className="flex-grow border-t border-[#E7E5E4] dark:border-[#2E2822]"></div>
                     </div>
 
                     <div>
-                        <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-4">
+                        <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
                             생성할 전체 학생 수는 몇 명인가요?
                         </label>
-                        <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 justify-center">
-                            <button onClick={() => updateSubjectState({ studentCount: Math.max(1, subjectState.studentCount - 1) })} className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl">-</button>
+                        <div className="flex items-center space-x-4 bg-[#FAF9F7] dark:bg-[#221E1B] p-6 rounded-2xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] justify-center">
+                            <button onClick={() => updateSubjectState({ studentCount: Math.max(1, subjectState.studentCount - 1) })} className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl">-</button>
                             <input
                                 type="number"
                                 value={subjectState.studentCount}
                                 onChange={handleCountChange}
-                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 dark:text-white"
+                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-purple-500 text-[#1C1917] dark:text-[#F0EBE6]"
                             />
-                            <button onClick={() => updateSubjectState({ studentCount: subjectState.studentCount + 1 })} className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl">+</button>
+                            <button onClick={() => updateSubjectState({ studentCount: subjectState.studentCount + 1 })} className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl">+</button>
                         </div>
                     </div>
                     
                     <div>
                         <div className="mb-4">
-                             <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">
+                             <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">
                                 학생 이름을 입력해주세요 (공통 적용)
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">
                                 학생 이름을 쉼표(,)로 구분하거나, <strong>엑셀/스프레드시트에서 복사해 붙여넣기</strong>할 수 있습니다. (모든 교과목 공통 적용) <br/>
                                 <span className="text-purple-600 dark:text-purple-400 font-medium">(예: 김철수, 이영희, 박민수)</span>
                             </p>
@@ -1109,7 +1109,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             value={subjectState.nameInput}
                             onChange={handleNameInput}
                             placeholder="학생 1, 학생 2, 학생 3..."
-                            className="w-full h-32 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none shadow-inner"
+                            className="w-full h-32 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none shadow-inner"
                         />
                     </div>
 
@@ -1123,8 +1123,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
          {/* NEIS Upload Modal */}
          {showNeisModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/20">
+                <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+                    <div className="p-6 border-b border-[#EDE8E1] dark:border-[#2E2822] flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/20">
                         <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-200 flex items-center">
                             <span className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-800 flex items-center justify-center mr-2 text-emerald-600 dark:text-emerald-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -1133,7 +1133,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </span>
                             나이스(NEIS) 성적 자료 업로드
                         </h3>
-                        <button onClick={() => setShowNeisModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <button onClick={() => setShowNeisModal(false)} className="text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0]">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -1141,9 +1141,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                     
                     <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                        <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl text-sm space-y-2 border border-slate-200 dark:border-slate-600">
-                            <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2">📢 나이스 파일 다운로드 방법</h4>
-                            <ol className="list-decimal pl-5 space-y-1 text-slate-600 dark:text-slate-300">
+                        <div className="bg-[#FAF9F7] dark:bg-[#2E2822]/30 p-4 rounded-xl text-sm space-y-2 border border-[#E7E5E4] dark:border-[#2E2822]">
+                            <h4 className="font-bold text-[#1C1917] dark:text-[#C4B8B0] mb-2">📢 나이스 파일 다운로드 방법</h4>
+                            <ol className="list-decimal pl-5 space-y-1 text-[#78716C] dark:text-[#C4B8B0]">
                                 <li>나이스 접속 &gt; <strong>[성적]</strong> 메뉴 클릭</li>
                                 <li><strong>[개인별 성적조회]</strong> 메뉴 선택</li>
                                 <li>조회할 학기 선택 (1학기/2학기)</li>
@@ -1154,8 +1154,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-emerald-500 transition-colors">
-                                <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">1학기 성적 파일</p>
+                            <div className="border-2 border-dashed border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-6 text-center hover:border-emerald-500 transition-colors">
+                                <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">1학기 성적 파일</p>
                                 <input 
                                     type="file" 
                                     id="neis-file-1"
@@ -1169,15 +1169,15 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             ✅ {neisFile1.name}
                                         </div>
                                     ) : (
-                                        <div className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg text-sm inline-block">
+                                        <div className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] rounded-lg text-sm inline-block">
                                             파일 선택
                                         </div>
                                     )}
                                 </label>
                             </div>
 
-                            <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 text-center hover:border-emerald-500 transition-colors">
-                                <p className="font-bold text-slate-700 dark:text-slate-300 mb-2">2학기 성적 파일</p>
+                            <div className="border-2 border-dashed border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-6 text-center hover:border-emerald-500 transition-colors">
+                                <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">2학기 성적 파일</p>
                                 <input 
                                     type="file" 
                                     id="neis-file-2"
@@ -1191,7 +1191,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             ✅ {neisFile2.name}
                                         </div>
                                     ) : (
-                                        <div className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg text-sm inline-block">
+                                        <div className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] rounded-lg text-sm inline-block">
                                             파일 선택
                                         </div>
                                     )}
@@ -1199,17 +1199,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
                         </div>
                         
-                        <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                        <div className="text-xs text-[#78716C] dark:text-[#9C8F87] text-center">
                             ※ 업로드된 파일은 AI 분석에만 사용되며 서버에 저장되지 않습니다. <br/>
                             ※ 상(◎), 중(○), 하(△) 평가 결과를 자동으로 분석합니다. <br/>
                             ※ 반드시 실제 자료와 일치하는지 확인하시고 다음 단계로 진행하세요.
                         </div>
                     </div>
 
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl flex justify-end gap-3">
+                    <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#221E1B]/50 rounded-b-2xl flex justify-end gap-3">
                         <button
                             onClick={() => setShowNeisModal(false)}
-                            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                            className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] font-bold rounded-lg hover:bg-[#E7E5E4] dark:hover:bg-[#3A332D] transition-colors"
                         >
                             취소
                         </button>
@@ -1240,14 +1240,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                      {/* Tab Navigation Area */}
                      {Object.keys(subjectState.dataStore).length > 0 && (
                          <div className="mb-4">
-                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">작업 중인 교과목</label>
+                             <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">작업 중인 교과목</label>
                              {renderSubjectTabs()}
                          </div>
                      )}
 
                      <div className="p-6 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
                          <div className="flex justify-between items-center mb-4">
-                             <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">평가 과제(Assignments) 설정</h3>
+                             <h3 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-lg">평가 과제(Assignments) 설정</h3>
                              <div className="flex gap-2">
                                 <input 
                                     type="file" 
@@ -1259,7 +1259,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 <button 
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={isParsingFile}
-                                    className="px-4 py-2 bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-300 rounded-lg text-sm font-bold shadow-sm border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center"
+                                    className="px-4 py-2 bg-white dark:bg-[#2E2822] text-purple-600 dark:text-purple-300 rounded-lg text-sm font-bold shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] flex items-center"
                                 >
                                     {isParsingFile ? (
                                       <>
@@ -1282,7 +1282,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                          
                          <div className="mb-4">
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">교과목</label>
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">교과목</label>
                                 <div className="flex gap-2">
                                     {subjectState.isDirectInput ? (
                                         <>
@@ -1291,12 +1291,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                 value={subjectState.currentSubject}
                                                 onChange={(e) => updateSubjectState({ currentSubject: e.target.value })}
                                                 placeholder="교과목 직접 입력 (예: 심화수학I)"
-                                                className="flex-1 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"
+                                                className="flex-1 px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] shadow-sm"
                                                 autoFocus
                                             />
                                             <button
                                                 onClick={() => updateSubjectState({ isDirectInput: false, currentSubject: '' })}
-                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors whitespace-nowrap"
+                                                className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] rounded-xl font-bold hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D] transition-colors whitespace-nowrap"
                                             >
                                                 목록 선택
                                             </button>
@@ -1311,7 +1311,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                     handleSubjectChange(e.target.value, false);
                                                 }
                                             }}
-                                            className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm appearance-none cursor-pointer"
+                                            className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] shadow-sm appearance-none cursor-pointer"
                                         >
                                             <option value="" disabled>교과목 선택</option>
                                             {currentSubjectList.map((subj) => (
@@ -1326,11 +1326,11 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
                          <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">평가 과제 목록 (자동 저장)</label>
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">평가 과제 목록 (자동 저장)</label>
                                 <button onClick={addTask} className="text-xs font-bold text-purple-600 hover:bg-purple-100 px-2 py-1 rounded">+ 과제 추가</button>
                             </div>
                              {subjectState.activeTasks.map((item, index) => (
-                                <div key={item.id} className="flex flex-col md:flex-row gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm items-center">
+                                <div key={item.id} className="flex flex-col md:flex-row gap-3 p-3 bg-white dark:bg-[#221E1B] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm items-center">
                                     <div className="flex-1 w-full">
                                         <input
                                             type="text"
@@ -1340,9 +1340,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             className="w-full px-3 py-2 border-none focus:ring-0 bg-transparent text-sm"
                                         />
                                     </div>
-                                    <div className="flex items-center gap-2 border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-700 pt-2 md:pt-0 md:pl-3">
+                                    <div className="flex items-center gap-2 border-t md:border-t-0 md:border-l border-[#EDE8E1] dark:border-[#2E2822] pt-2 md:pt-0 md:pl-3">
                                         {subjectState.activeTasks.length > 1 && (
-                                            <button onClick={() => removeTask(index)} className="text-slate-400 hover:text-red-500 p-2">
+                                            <button onClick={() => removeTask(index)} className="text-[#A8A29E] hover:text-red-500 p-2">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                                                 </svg>
@@ -1352,11 +1352,11 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 </div>
                              ))}
                          </div>
-                         <p className="text-xs text-slate-400 mt-2">💡 교과목을 변경하면 해당 교과목의 과제 목록이 자동으로 불러와집니다.</p>
+                         <p className="text-xs text-[#A8A29E] mt-2">💡 교과목을 변경하면 해당 교과목의 과제 목록이 자동으로 불러와집니다.</p>
                      </div>
                      
                      <div className="flex gap-4">
-                        <button onClick={() => updateSubjectState({ step: 'STUDENT_SETUP' })} className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold rounded-xl">이전 (학생 설정)</button>
+                        <button onClick={() => updateSubjectState({ step: 'STUDENT_SETUP' })} className="flex-1 py-4 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] font-bold rounded-xl">이전 (학생 설정)</button>
                         <button onClick={nextStep} className="flex-[2] py-4 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 transition-all">
                             다음: 개별 평가 입력
                         </button>
@@ -1368,18 +1368,18 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
          {subjectState.step === 'INDIVIDUAL_CONTEXT' && (
              <div className="flex-1 flex overflow-hidden flex-col">
                 {/* Subject Tabs */}
-                <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-3 pb-0">
-                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">교과목 전환 (자동 저장됨)</label>
+                <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#E7E5E4] dark:border-[#2E2822] px-4 pt-3 pb-0">
+                    <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">교과목 전환 (자동 저장됨)</label>
                     {renderSubjectTabs()}
                 </div>
 
                 <div className="flex-1 flex overflow-hidden">
                     {/* Sidebar List */}
                     {studentPanelCollapsed && (
-                        <div className="w-11 shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex justify-center py-3">
+                        <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
                             <button
                                 onClick={() => setStudentPanelCollapsed(false)}
-                                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
                                 title="학생 목록 펼치기"
                             >
                                 <PanelLeftOpen className="w-4 h-4" />
@@ -1387,8 +1387,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         </div>
                     )}
                     {!studentPanelCollapsed && (
-                    <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <div className="p-4 border-b border-slate-100 dark:border-slate-800">
+                    <div className={`w-1/4 min-w-[150px] bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className="p-4 border-b border-[#EDE8E1] dark:border-[#221E1B]">
                             <button
                                 onClick={syncStudentsWithCommon}
                                 disabled={isGlobalGenerating}
@@ -1404,20 +1404,20 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         
                         <div className="p-4">
                             <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">학생 목록</h3>
+                                <h3 className="text-xs font-bold text-[#A8A29E] uppercase tracking-wider">학생 목록</h3>
                                 <div className="flex items-center gap-2">
                                     <label className="flex items-center space-x-1 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={subjectState.activeStudents.length > 0 && subjectState.activeStudents.every(s => s.selected)}
                                             onChange={(e) => toggleAllSelection(e.target.checked)}
-                                            className="w-3 h-3 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                            className="w-3 h-3 text-purple-600 rounded border-[#E7E5E4] focus:ring-purple-500"
                                         />
-                                        <span className="text-[10px] text-slate-500">전체</span>
+                                        <span className="text-[10px] text-[#78716C]">전체</span>
                                     </label>
                                     <button
                                         onClick={() => setStudentPanelCollapsed(true)}
-                                        className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                        className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
                                         title="학생 목록 접기"
                                     >
                                         <PanelLeftClose className="w-3.5 h-3.5" />
@@ -1431,14 +1431,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             type="checkbox" 
                                             checked={student.selected || false}
                                             onChange={() => toggleSelection(idx)}
-                                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                            className="w-4 h-4 text-purple-600 rounded border-[#E7E5E4] focus:ring-purple-500"
                                         />
                                         <button
                                             onClick={() => updateSubjectState({ currentStudentIndex: idx })}
                                             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                                 subjectState.currentStudentIndex === idx
-                                                ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700'
-                                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800'
+                                                ? 'bg-white dark:bg-[#221E1B] text-purple-600 dark:text-purple-400 shadow-sm ring-1 ring-[#E7E5E4] dark:ring-[#2E2822]'
+                                                : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1]/50 dark:hover:bg-[#221E1B]'
                                             }`}
                                         >
                                             <div className="flex justify-between items-center">
@@ -1453,23 +1453,23 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
+                    <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#221E1B]">
                         {/* ... The content of the main area remains unchanged ... */}
                         <div className="max-w-4xl mx-auto">
-                            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-700">
-                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                            <div className="flex justify-between items-center mb-6 pb-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+                                <h3 className="text-xl font-bold text-[#1C1917] dark:text-[#F0EBE6]">
                                     <span className="text-purple-600 dark:text-purple-400">{subjectState.activeStudents[subjectState.currentStudentIndex].name}</span> 평가 및 관찰
                                 </h3>
-                                <div className="text-sm text-slate-500">{subjectState.currentStudentIndex + 1} / {subjectState.activeStudents.length}</div>
+                                <div className="text-sm text-[#78716C]">{subjectState.currentStudentIndex + 1} / {subjectState.activeStudents.length}</div>
                             </div>
                             
                             {/* Evaluation Levels */}
                             <div className="mb-6">
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">과제별 수행 수준 ({subjectState.currentSubject})</label>
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">과제별 수행 수준 ({subjectState.currentSubject})</label>
                                 <div className="space-y-3">
                                     {subjectState.activeTasks.map((task) => (
-                                        <div key={task.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600">
-                                            <p className="text-sm text-slate-700 dark:text-slate-300 mb-2 font-medium">{task.task || '(내용 없음)'}</p>
+                                        <div key={task.id} className="p-3 bg-[#FAF9F7] dark:bg-[#2E2822]/50 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822]">
+                                            <p className="text-sm text-[#44403C] dark:text-[#C4B8B0] mb-2 font-medium">{task.task || '(내용 없음)'}</p>
                                             <div className="flex gap-2">
                                                 {(['상', '중', '하'] as const).map(lvl => {
                                                     const currentLevel = getStudentLevel(task.id);
@@ -1481,7 +1481,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                             className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                                                                 currentLevel === lvl 
                                                                 ? 'bg-purple-600 text-white shadow-md' 
-                                                                : 'bg-white dark:bg-slate-600 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-500 hover:bg-slate-100 dark:hover:bg-slate-500'
+                                                                : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#6B5E57] hover:bg-[#EDE8E1] dark:hover:bg-[#6B5E57]'
                                                             }`}
                                                         >
                                                             {lvl}
@@ -1495,8 +1495,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
 
                             <div className="mb-6">
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">
-                                    추가 관찰 내용 <span className="text-xs font-normal text-slate-400 ml-1">(선택 사항)</span>
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-3">
+                                    추가 관찰 내용 <span className="text-xs font-normal text-[#A8A29E] ml-1">(선택 사항)</span>
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -1506,7 +1506,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             onChange={(e) => handleDetailChange('process', e.target.value)}
                                             disabled={isGlobalGenerating}
                                             placeholder="어떤 문제를 어떻게 해결하려고 노력했는지 서술"
-                                            className="w-full h-28 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50 text-sm"
+                                            className="w-full h-28 px-3 py-2 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                     <div>
@@ -1516,7 +1516,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             onChange={(e) => handleDetailChange('attitude', e.target.value)}
                                             disabled={isGlobalGenerating}
                                             placeholder="수업 중 보인 흥미, 집중도, 협력 태도 등"
-                                            className="w-full h-28 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50 text-sm"
+                                            className="w-full h-28 px-3 py-2 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                     <div>
@@ -1526,7 +1526,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             onChange={(e) => handleDetailChange('skill', e.target.value)}
                                             disabled={isGlobalGenerating}
                                             placeholder="교과 관련 기능이 어떻게 향상되었는지 기술"
-                                            className="w-full h-28 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50 text-sm"
+                                            className="w-full h-28 px-3 py-2 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                     <div>
@@ -1536,17 +1536,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             onChange={(e) => handleDetailChange('example', e.target.value)}
                                             disabled={isGlobalGenerating}
                                             placeholder="학생의 역량이 드러난 결정적인 장면이나 결과물"
-                                            className="w-full h-28 px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50 text-sm"
+                                            className="w-full h-28 px-3 py-2 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none disabled:opacity-50 text-sm"
                                         />
                                     </div>
                                 </div>
-                                <p className="text-xs text-slate-400 mt-2 text-right">※ 입력된 4가지 내용은 자동으로 합쳐져서 AI에게 전달됩니다.</p>
+                                <p className="text-xs text-[#A8A29E] mt-2 text-right">※ 입력된 4가지 내용은 자동으로 합쳐져서 AI에게 전달됩니다.</p>
                             </div>
 
                             {/* Length Settings Reuse */}
-                            <div className={`p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-600 mb-8 ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <div className={`p-4 bg-[#FAF9F7] dark:bg-[#2E2822]/30 rounded-xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] mb-8 ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <label className="text-sm font-bold text-slate-600 dark:text-slate-300">생성 길이 설정 (전체 적용)</label>
+                                    <label className="text-sm font-bold text-[#78716C] dark:text-[#C4B8B0]">생성 길이 설정 (전체 적용)</label>
                                     <div className="flex items-center gap-4">
                                         <div className="flex space-x-3">
                                             {(['200', '300', '400', '500', 'custom'] as LengthOption[]).map((opt) => (
@@ -1557,9 +1557,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                         value={opt} 
                                                         checked={subjectState.lengthOption === opt} 
                                                         onChange={() => updateSubjectState({ lengthOption: opt })}
-                                                        className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                                                        className="w-4 h-4 text-purple-600 focus:ring-purple-500 border-[#E7E5E4]"
                                                     />
-                                                    <span className="ml-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                                    <span className="ml-1.5 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                                         {opt === 'custom' ? '직접' : opt}
                                                     </span>
                                                 </label>
@@ -1570,12 +1570,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                 type="number"
                                                 value={subjectState.customLength}
                                                 onChange={(e) => updateSubjectState({ customLength: Number(e.target.value) })}
-                                                className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-slate-600 dark:text-white"
+                                                className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-[#2E2822] dark:text-white"
                                             />
                                         )}
-                                        <div className="flex bg-white dark:bg-slate-600 rounded-lg p-0.5 border border-slate-200 dark:border-slate-500">
-                                            <button onClick={() => updateSubjectState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${subjectState.lengthUnit === '자' ? 'bg-purple-100 text-purple-700' : 'text-slate-500'}`}>자</button>
-                                            <button onClick={() => updateSubjectState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${subjectState.lengthUnit === 'byte' ? 'bg-purple-100 text-purple-700' : 'text-slate-500'}`}>byte</button>
+                                        <div className="flex bg-white dark:bg-[#2E2822] rounded-lg p-0.5 border border-[#E7E5E4] dark:border-[#6B5E57]">
+                                            <button onClick={() => updateSubjectState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${subjectState.lengthUnit === '자' ? 'bg-purple-100 text-purple-700' : 'text-[#78716C]'}`}>자</button>
+                                            <button onClick={() => updateSubjectState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${subjectState.lengthUnit === 'byte' ? 'bg-purple-100 text-purple-700' : 'text-[#78716C]'}`}>byte</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1584,11 +1584,11 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             <div className="flex flex-col gap-3">
                                 {isGlobalGenerating && (
                                     <div className="w-full">
-                                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                                        <div className="flex justify-between text-xs text-[#78716C] mb-1">
                                             <span>진행률</span>
                                             <span>{globalProgress}%</span>
                                         </div>
-                                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                        <div className="w-full bg-[#EDE8E1] dark:bg-[#2E2822] rounded-full h-2.5 overflow-hidden">
                                             <div 
                                                 className="bg-purple-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
                                                 style={{ width: `${globalProgress}%` }}
@@ -1600,7 +1600,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     <button 
                                         onClick={() => updateSubjectState({ step: 'GLOBAL_SETUP' })} 
                                         disabled={isGlobalGenerating}
-                                        className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 py-4 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                     >이전 (과제 설정)</button>
                                     <button
                                         onClick={handleGenerateSelected}
@@ -1631,13 +1631,13 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
          {/* ... (Rest of file content) ... */}
          {subjectState.step === 'RESULT' && (
              <div className="flex-1 overflow-hidden flex flex-col">
-                 <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 pt-3 pb-0">
-                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">교과목 전환 (결과 화면)</label>
+                 <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#E7E5E4] dark:border-[#2E2822] px-4 pt-3 pb-0">
+                    <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">교과목 전환 (결과 화면)</label>
                     {renderSubjectTabs()}
                 </div>
 
-                <div className="p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">
+                <div className="p-4 bg-white dark:bg-[#221E1B] border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center flex-wrap gap-2">
+                    <h3 className="font-bold text-[#44403C] dark:text-[#C4B8B0]">
                         <span className="text-purple-600 dark:text-purple-400">[{subjectState.currentSubject}]</span> 생성 결과
                     </h3>
                     <div className="flex items-center gap-2">
@@ -1647,7 +1647,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center shadow-md ${
                                 copiedId === '__ALL__'
                                 ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-400'
-                                : 'bg-slate-600 text-white hover:bg-slate-700'
+                                : 'bg-[#78716C] text-white hover:bg-[#44403C]'
                             } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -1669,7 +1669,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         <button
                             onClick={downloadCurrentSubjectExcel}
                             disabled={isGlobalGenerating}
-                            className={`px-4 py-2 bg-slate-600 text-white text-sm font-bold rounded-lg hover:bg-slate-700 transition-colors flex items-center shadow-md ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`px-4 py-2 bg-[#78716C] text-white text-sm font-bold rounded-lg hover:bg-[#44403C] transition-colors flex items-center shadow-md ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title="현재 보고 있는 교과목의 데이터만 엑셀 파일로 다운로드합니다."
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -1692,9 +1692,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {subjectState.activeStudents.map((student, idx) => (
-                        <div key={student.id} className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div key={student.id} className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-6 rounded-2xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
                              <div className="flex justify-between mb-4">
-                                <h4 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center">
+                                <h4 className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6] flex items-center">
                                     <span className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center mr-3 text-sm">
                                         {idx + 1}
                                     </span>
@@ -1707,7 +1707,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         className={`text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors border ${
                                             copiedId === student.id
                                             ? 'bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/30 dark:border-purple-700 dark:text-purple-400'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
+                                            : 'bg-white border-[#E7E5E4] text-[#78716C] hover:bg-[#FAF9F7] dark:bg-[#2E2822] dark:border-[#2E2822] dark:text-[#C4B8B0] dark:hover:bg-[#3A332D]'
                                         } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {copiedId === student.id ? (
@@ -1735,7 +1735,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             next.has(student.id) ? next.delete(student.id) : next.add(student.id);
                                             return next;
                                           })}
-                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                                         >
                                           이전 기록 ({hist.length})
                                         </button>
@@ -1769,9 +1769,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <textarea
                                     value={student.generatedContent || ''}
                                     onChange={(e) => handleResultChange(idx, e.target.value)}
-                                    className="w-full min-h-[120px] p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y text-sm leading-relaxed"
+                                    className="w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y text-sm leading-relaxed"
                                  />
-                                 <div className="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">
+                                 <div className="absolute bottom-3 right-3 text-xs text-[#A8A29E] pointer-events-none">
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
@@ -1779,11 +1779,11 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                const hist: HistoryEntry[] = getHistory('subject', student.name);
                                return hist.length > 0 ? (
                                  <div className="mt-3 space-y-2">
-                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">이전 생성 기록</p>
                                    {hist.map((entry, hi) => (
-                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                     <div key={hi} className="rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210]/40 p-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                        <div className="flex justify-between items-center mb-1">
-                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <span className="text-xs text-[#A8A29E]">{new Date(entry.date).toLocaleString('ko-KR')}</span>
                                          <button
                                            onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
                                            className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
@@ -1805,10 +1805,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       {/* Duplicate Check Modal */}
       {showDuplicateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">중복 문장 검사 결과</h3>
-                    <button onClick={() => setShowDuplicateModal(false)} className="text-slate-400 hover:text-slate-600">
+            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                <div className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6]">중복 문장 검사 결과</h3>
+                    <button onClick={() => setShowDuplicateModal(false)} className="text-[#A8A29E] hover:text-[#78716C]">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -1816,7 +1816,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 </div>
                 <div className="p-4 overflow-y-auto flex-1">
                     {duplicateResults.length === 0 ? (
-                        <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                        <div className="text-center py-8 text-[#78716C] dark:text-[#9C8F87]">
                             <p className="text-lg">✅ 발견된 중복 문장이 없습니다.</p>
                             <p className="text-sm">모든 학생의 세특 내용이 고유하게 작성되었습니다.</p>
                         </div>
@@ -1826,8 +1826,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 ⚠️ 총 {duplicateResults.length}개의 중복 문장이 발견되었습니다. 내용을 수정해주세요.
                             </div>
                             {duplicateResults.map((result, idx) => (
-                                <div key={idx} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                    <p className="text-slate-800 dark:text-slate-100 font-medium mb-2 text-sm">"{result.sentence}"</p>
+                                <div key={idx} className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822]">
+                                    <p className="text-[#1C1917] dark:text-[#F0EBE6] font-medium mb-2 text-sm">"{result.sentence}"</p>
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         {result.students.map((studentName, i) => (
                                             <span key={i} className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-md font-bold">
@@ -1840,10 +1840,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         </div>
                     )}
                 </div>
-                <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] flex justify-end">
                     <button
                         onClick={() => setShowDuplicateModal(false)}
-                        className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                        className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] font-bold rounded-lg hover:bg-[#E7E5E4] dark:hover:bg-[#3A332D] transition-colors"
                     >
                         닫기
                     </button>
