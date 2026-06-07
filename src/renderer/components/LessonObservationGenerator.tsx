@@ -95,25 +95,25 @@ const LessonObservationGenerator: React.FC = () => {
     await window.electronAPI.saveTxt(result, `수업관찰기록_${subject}_${date || new Date().toISOString().slice(0, 10)}.txt`);
   };
 
-  const inputClass = 'w-full bg-white rounded-md border border-gray-300 text-gray-800 text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
-  const labelClass = 'block text-sm font-bold text-gray-700 mb-1.5';
+  const inputClass = 'w-full bg-white rounded-md border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
+  const labelClass = 'block text-sm font-bold text-[#44403C] mb-1.5';
 
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA] overflow-y-auto">
       <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
         {/* Header */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="bg-blue-100 p-1.5 rounded-lg">
               <ClipboardList className="w-4 h-4 text-blue-600" />
             </div>
-            <h2 className="font-bold text-gray-800">수업관찰기록 생성</h2>
+            <h2 className="font-bold text-[#1C1917]">수업관찰기록 생성</h2>
           </div>
-          <p className="text-xs text-gray-500">수업 관찰 내용을 입력하면 정형화된 수업관찰기록을 생성합니다.</p>
+          <p className="text-xs text-[#78716C]">수업 관찰 내용을 입력하면 정형화된 수업관찰기록을 생성합니다.</p>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-4">
+        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>교과 <span className="text-red-500">*</span></label>
@@ -159,7 +159,7 @@ const LessonObservationGenerator: React.FC = () => {
             onClick={handleGenerate}
             disabled={isLoading}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white font-bold text-sm transition-all ${
-              isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#1E88E5] hover:bg-[#1565C0]'
+              isLoading ? 'bg-[#A8A29E] cursor-not-allowed' : 'bg-[#1E88E5] hover:bg-[#1565C0]'
             }`}
           >
             {isLoading ? (
@@ -173,10 +173,10 @@ const LessonObservationGenerator: React.FC = () => {
 
         {/* Result */}
         {result && (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+          <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-gray-800 text-sm">생성 결과</h3>
+                <h3 className="font-bold text-[#1C1917] text-sm">생성 결과</h3>
                 {result === EXAMPLE_RESULT && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
                 )}
@@ -184,7 +184,7 @@ const LessonObservationGenerator: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 border border-gray-200 rounded px-3 py-1.5 hover:bg-gray-50"
+                  className="flex items-center gap-1 text-xs text-[#78716C] hover:text-[#1C1917] border border-[#EDE8E1] rounded px-3 py-1.5 hover:bg-[#FAF9F7]"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {copied ? '복사됨!' : '복사'}
@@ -198,7 +198,7 @@ const LessonObservationGenerator: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-gray-600' : 'bg-gray-50 border-gray-200 text-gray-800'}`}>
+            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-[#78716C]' : 'bg-[#FAF9F7] border-[#EDE8E1] text-[#1C1917]'}`}>
               {result}
             </div>
           </div>

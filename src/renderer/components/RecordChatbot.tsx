@@ -92,21 +92,21 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-800">
+    <div className="flex flex-col h-full bg-white dark:bg-[#221E1B]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-gray-800 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-indigo-100 p-1.5 rounded-lg">
             <Bot className="w-4 h-4 text-indigo-600" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">AI 챗봇 도우미</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">2026 기재요령 기반 · {schoolLevel}</p>
+            <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">AI 챗봇 도우미</h2>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">2026 기재요령 기반 · {schoolLevel}</p>
           </div>
         </div>
         <button
           onClick={handleClear}
-          className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
         >
           <Trash2 className="w-3 h-3" />
           초기화
@@ -117,7 +117,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length <= 1 && (
           <div className="pt-2">
-            <p className="text-xs text-slate-400 dark:text-slate-500 text-center mb-3">자주 묻는 질문</p>
+            <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] text-center mb-3">자주 묻는 질문</p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((q, i) => (
                 <button
@@ -139,7 +139,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
               msg.role === 'user'
                 ? 'bg-indigo-600 text-white rounded-br-none'
-                : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200 dark:border-slate-600'
+                : 'bg-[#EDE8E1] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] rounded-bl-none border border-[#E7E5E4] dark:border-[#2E2822]'
             }`}>
               {msg.role === 'model' ? (
                 <div className="prose prose-sm max-w-none">
@@ -154,10 +154,10 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-slate-100 dark:bg-slate-700 rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-1.5">
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="bg-[#EDE8E1] dark:bg-[#2E2822] rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-1.5">
+              <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
           </div>
         )}
@@ -165,20 +165,20 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-gray-800 shrink-0">
+      <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="기재요령 관련 질문을 자유롭게 입력하세요..."
-            className="flex-1 px-4 py-3 bg-slate-50 dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-gray-100 text-sm dark:placeholder-gray-400"
+            className="flex-1 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-600 text-white font-bold rounded-xl transition-colors shadow-sm disabled:shadow-none"
+            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white font-bold rounded-xl transition-colors shadow-sm disabled:shadow-none"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />

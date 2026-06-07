@@ -167,21 +167,21 @@ const StudentMemoBoard: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-[#F5F7FA]">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between shrink-0">
+      <div className="bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-yellow-100 p-1.5 rounded-lg">
             <StickyNote className="w-4 h-4 text-yellow-600" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">학생 메모 보드</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">메모 {memos.length}개 · {dataPath ? '지정 폴더에 자동 저장됨' : '앱 재시작 후에도 유지됩니다'}</p>
+            <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">학생 메모 보드</h2>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">메모 {memos.length}개 · {dataPath ? '지정 폴더에 자동 저장됨' : '앱 재시작 후에도 유지됩니다'}</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleExportCSV}
             disabled={memos.length === 0}
-            className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 text-xs text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] border border-[#EDE8E1] dark:border-[#2E2822] rounded-md px-3 py-1.5 hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-3.5 h-3.5" />
             CSV 내보내기
@@ -197,22 +197,22 @@ const StudentMemoBoard: React.FC = () => {
       </div>
 
       {/* Search */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-2 shrink-0">
+      <div className="bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2 shrink-0">
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A8A29E]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="제목, 학생 이름, 내용으로 검색..."
-              className="w-full pl-8 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5] dark:placeholder-gray-400"
+              className="w-full pl-8 pr-4 py-2 text-sm bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] dark:text-[#F0EBE6] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5] dark:placeholder-[#6B5E57]"
             />
           </div>
           <select
             value={studentFilter}
             onChange={e => setStudentFilter(e.target.value)}
-            className="w-40 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+            className="w-40 px-3 py-2 text-sm bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] dark:text-[#F0EBE6] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
           >
             <option value="전체">전체 학생</option>
             {allStudentOptions.map(name => <option key={name} value={name}>{name}</option>)}
@@ -230,11 +230,11 @@ const StudentMemoBoard: React.FC = () => {
             className="flex flex-col items-center justify-center h-full text-center"
             onDoubleClick={handleAdd}
           >
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-full shadow-sm mb-4">
-              <StickyNote className="w-10 h-10 text-gray-300" />
+            <div className="bg-white dark:bg-[#221E1B] p-6 rounded-full shadow-sm mb-4">
+              <StickyNote className="w-10 h-10 text-[#EDE8E1]" />
             </div>
-            <h3 className="text-gray-500 dark:text-gray-400 font-medium mb-1">메모가 없습니다</h3>
-            <p className="text-sm text-gray-400 dark:text-gray-500">빈 공간을 더블클릭하면 바로 메모를 추가할 수 있습니다.</p>
+            <h3 className="text-[#78716C] dark:text-[#9C8F87] font-medium mb-1">메모가 없습니다</h3>
+            <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57]">빈 공간을 더블클릭하면 바로 메모를 추가할 수 있습니다.</p>
           </div>
         ) : (
           <div
@@ -244,7 +244,7 @@ const StudentMemoBoard: React.FC = () => {
             {filtered.map(memo => (
               <div
                 key={memo.id}
-                className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 flex flex-col min-h-[160px] cursor-pointer hover:shadow-md transition-shadow"
+                className="rounded-lg shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] flex flex-col min-h-[160px] cursor-pointer hover:shadow-md transition-shadow"
                 style={{ backgroundColor: memo.color }}
                 onClick={() => editingId !== memo.id && handleEdit(memo)}
               >
@@ -255,12 +255,12 @@ const StudentMemoBoard: React.FC = () => {
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
                       placeholder="제목"
-                      className="w-full text-sm font-bold bg-white/75 border border-white/80 rounded px-2 py-1 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+                      className="w-full text-sm font-bold bg-white/75 border border-white/80 rounded px-2 py-1 text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
                       autoFocus
                     />
                     {classStudentNames.length > 0 ? (
                       <div className="max-h-20 overflow-y-auto bg-white/60 border border-white/80 rounded px-2 py-1">
-                        <p className="text-[10px] font-bold text-gray-500 mb-1">우리반 학생 이름</p>
+                        <p className="text-[10px] font-bold text-[#78716C] mb-1">우리반 학생 이름</p>
                         <div className="flex flex-wrap gap-1">
                           {classStudentNames.map(name => {
                             const selected = editStudentNames.includes(name);
@@ -272,7 +272,7 @@ const StudentMemoBoard: React.FC = () => {
                                   setEditStudentNames(prev => selected ? prev.filter(n => n !== name) : [...prev, name]);
                                   setEditName('');
                                 }}
-                                className={`text-[11px] rounded-full px-2 py-0.5 border ${selected ? 'bg-[#1E88E5] text-white border-[#1E88E5]' : 'bg-white/80 text-gray-700 border-white'}`}
+                                className={`text-[11px] rounded-full px-2 py-0.5 border ${selected ? 'bg-[#1E88E5] text-white border-[#1E88E5]' : 'bg-white/80 text-[#44403C] border-white'}`}
                               >
                                 {name}
                               </button>
@@ -286,14 +286,14 @@ const StudentMemoBoard: React.FC = () => {
                         value={editName}
                         onChange={e => { setEditName(e.target.value); setEditStudentNames(parseNames(e.target.value)); }}
                         placeholder="학생 이름 (쉼표로 여러 명 입력)"
-                        className="w-full text-xs bg-white/75 border border-white/80 rounded px-2 py-1 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
+                        className="w-full text-xs bg-white/75 border border-white/80 rounded px-2 py-1 text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:ring-1 focus:ring-[#1E88E5]"
                       />
                     )}
                     <textarea
                       value={editContent}
                       onChange={e => setEditContent(e.target.value)}
                       placeholder="내용..."
-                      className="flex-1 text-xs bg-white/75 border border-white/80 rounded px-2 py-1 resize-none text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1E88E5] min-h-[70px]"
+                      className="flex-1 text-xs bg-white/75 border border-white/80 rounded px-2 py-1 resize-none text-[#1C1917] placeholder-[#78716C] focus:outline-none focus:ring-1 focus:ring-[#1E88E5] min-h-[70px]"
                     />
                     <div className="flex gap-1">
                       <button
@@ -314,20 +314,20 @@ const StudentMemoBoard: React.FC = () => {
                   <div className="p-3 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-1.5">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-gray-900 truncate">{memo.title || '제목 없음'}</p>
-                        <p className="text-[11px] text-gray-600 truncate">{joinStudents(getMemoStudents(memo)) || '학생 미선택'}</p>
+                        <p className="text-sm font-bold text-[#1C1917] truncate">{memo.title || '제목 없음'}</p>
+                        <p className="text-[11px] text-[#78716C] truncate">{joinStudents(getMemoStudents(memo)) || '학생 미선택'}</p>
                       </div>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(memo.id); }}
-                        className="text-gray-400 hover:text-red-500 ml-1 shrink-0"
+                        className="text-[#A8A29E] hover:text-red-500 ml-1 shrink-0"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
-                    <p className="text-xs text-gray-800 flex-1 whitespace-pre-wrap break-words">
-                      {memo.content || <span className="text-gray-400 italic">메모 없음</span>}
+                    <p className="text-xs text-[#1C1917] flex-1 whitespace-pre-wrap break-words">
+                      {memo.content || <span className="text-[#A8A29E] italic">메모 없음</span>}
                     </p>
-                    <p className="text-[10px] text-gray-500 mt-2">{formatDate(memo.updatedAt)}</p>
+                    <p className="text-[10px] text-[#78716C] mt-2">{formatDate(memo.updatedAt)}</p>
                   </div>
                 )}
               </div>

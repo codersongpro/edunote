@@ -98,8 +98,8 @@ const ClassManagementLogGenerator: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-800 transition-colors">
-      <div className="px-6 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
+    <div className="flex flex-col h-full bg-white dark:bg-[#221E1B] transition-colors">
+      <div className="px-6 pt-5 pb-3 border-b border-[#EDE8E1] dark:border-[#2E2822]">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mr-3 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
@@ -107,8 +107,8 @@ const ClassManagementLogGenerator: React.FC = () => {
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">학급경영일지 생성</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">주간 활동 내용을 입력하면 학급경영일지를 생성합니다</p>
+            <h2 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6]">학급경영일지 생성</h2>
+            <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">주간 활동 내용을 입력하면 학급경영일지를 생성합니다</p>
           </div>
         </div>
       </div>
@@ -117,7 +117,7 @@ const ClassManagementLogGenerator: React.FC = () => {
         <div className="max-w-2xl mx-auto space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
                 주차 <span className="text-red-500">*</span>
               </label>
               <input
@@ -125,11 +125,11 @@ const ClassManagementLogGenerator: React.FC = () => {
                 value={week}
                 onChange={(e) => setWeek(e.target.value)}
                 placeholder="예: 3월 2주"
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+              <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
                 날짜 범위 <span className="text-red-500">*</span>
               </label>
               <input
@@ -137,13 +137,13 @@ const ClassManagementLogGenerator: React.FC = () => {
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
                 placeholder={`예: ${new Date().getFullYear()}. 3. 10.(화) ~ 3. 14.(토)`}
-                className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full px-4 py-2.5 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
               학년/반 <span className="text-red-500">*</span>
             </label>
             <input
@@ -151,43 +151,43 @@ const ClassManagementLogGenerator: React.FC = () => {
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
               placeholder="예: 5학년 2반"
-              className="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full px-4 py-2.5 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
+            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
               주요 활동 <span className="text-red-500">*</span>
             </label>
             <textarea
               value={keyActivities}
               onChange={(e) => setKeyActivities(e.target.value)}
               placeholder="이번 주 주요 수업 활동, 행사, 특별 프로그램 등을 입력하세요.&#10;예: 과학 실험, 체험학습 준비, 학부모 상담"
-              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[150px]"
+              className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[150px]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-              학생 특이사항 <span className="text-xs font-normal text-slate-400">(선택)</span>
+            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
+              학생 특이사항 <span className="text-xs font-normal text-[#A8A29E]">(선택)</span>
             </label>
             <textarea
               value={studentIssues}
               onChange={(e) => setStudentIssues(e.target.value)}
               placeholder="이번 주 특이 사항이 있었던 학생 관련 내용을 입력하세요. (선택 사항)"
-              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[80px]"
+              className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[80px]"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-600 dark:text-slate-300 mb-1.5">
-              담임 소감/메모 <span className="text-xs font-normal text-slate-400">(선택)</span>
+            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
+              담임 소감/메모 <span className="text-xs font-normal text-[#A8A29E]">(선택)</span>
             </label>
             <textarea
               value={teacherNotes}
               onChange={(e) => setTeacherNotes(e.target.value)}
               placeholder="이번 주를 마치며 담임 교사의 소감이나 메모를 자유롭게 입력하세요. (선택 사항)"
-              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[80px]"
+              className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[80px]"
             />
           </div>
 
@@ -200,7 +200,7 @@ const ClassManagementLogGenerator: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={isLoading}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -217,7 +217,7 @@ const ClassManagementLogGenerator: React.FC = () => {
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">생성 결과</h3>
+                  <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                   {result === EXAMPLE_RESULT && (
                     <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
                   )}
@@ -225,7 +225,7 @@ const ClassManagementLogGenerator: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopy}
-                    className="px-3 py-1.5 text-xs font-bold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs font-bold bg-[#EDE8E1] dark:bg-[#2E2822] hover:bg-[#E7E5E4] dark:hover:bg-[#3A332D] text-[#44403C] dark:text-[#C4B8B0] rounded-lg transition-colors flex items-center gap-1"
                   >
                     {copied ? (
                       <>
@@ -254,7 +254,7 @@ const ClassManagementLogGenerator: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <div className={`rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto shadow-inner ${result === EXAMPLE_RESULT ? 'bg-amber-50 border border-amber-200 text-slate-600' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'}`}>
+              <div className={`rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto shadow-inner ${result === EXAMPLE_RESULT ? 'bg-amber-50 border border-amber-200 text-[#78716C]' : 'bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6]'}`}>
                 {result}
               </div>
             </div>
