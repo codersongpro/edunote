@@ -30,7 +30,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   admin: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   lesson: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   student: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  other: 'bg-[#EDE8E1] text-[#44403C] dark:bg-[#2E2822] dark:text-[#C4B8B0]',
 };
 
 // 구글 폼 응답 시트 컬럼명 (폼 질문 제목과 일치해야 함)
@@ -464,17 +464,17 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">AI스킬즈</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
+            <h1 className="text-lg font-extrabold text-[#1C1917] dark:text-[#F0EBE6]">AI스킬즈</h1>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
           </div>
           {tab === 'my' && (
             <div className="flex gap-2">
               <button
                 onClick={handleImport}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
               >
                 <Upload className="w-3.5 h-3.5" />
                 파일에서 가져오기
@@ -505,7 +505,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-4 border-b border-gray-100 dark:border-gray-800 -mb-px">
+        <div className="flex gap-4 border-b border-[#EDE8E1] dark:border-[#2E2822] -mb-px">
           {([['my', '내 스킬'], ['market', '스킬마켓']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
@@ -513,7 +513,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               className={`flex items-center gap-1.5 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                 tab === t
                   ? 'border-amber-500 text-amber-600 dark:text-amber-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0]'
               }`}
             >
               {t === 'market' && <Share2 className="w-4 h-4" />}
@@ -525,17 +525,17 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       </div>
 
       {/* 검색 + 카테고리 필터 */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-2.5 flex items-center gap-3 flex-wrap">
+      <div className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-2.5 flex items-center gap-3 flex-wrap">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A8A29E] pointer-events-none" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="스킬 이름, 설명 검색..."
-            className="pl-8 pr-7 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
+            className="pl-8 pr-7 py-1.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-[#FAF9F7] dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 w-52"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#78716C]">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -548,7 +548,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${
                 categoryFilter === cat
                   ? 'bg-amber-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  : 'bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#E7E5E4] dark:hover:bg-[#3A332D]'
               }`}
             >
               {cat === 'all' ? '전체' : CATEGORY_LABELS[cat]}
@@ -558,7 +558,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
         {(search || categoryFilter !== 'all') && (
           <button
             onClick={() => { setSearch(''); setCategoryFilter('all'); }}
-            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 underline ml-auto"
+            className="text-xs text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0] underline ml-auto"
           >
             필터 초기화
           </button>
@@ -578,8 +578,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                 <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
                   <Plus className="w-8 h-8 text-amber-500" />
                 </div>
-                <p className="text-base font-bold text-gray-700 dark:text-gray-200 mb-1">아직 만든 스킬이 없어요</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">자주 쓰는 AI 작업을 스킬로 만들어 보세요!</p>
+                <p className="text-base font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">아직 만든 스킬이 없어요</p>
+                <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-5">자주 쓰는 AI 작업을 스킬로 만들어 보세요!</p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setView('create-chat')}
@@ -598,7 +598,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                 </div>
               </div>
             ) : filteredTools.length === 0 ? (
-              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
+              <div className="text-center py-16 text-[#A8A29E] dark:text-[#2E2822]">
                 <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm font-semibold">검색 결과가 없습니다</p>
                 <button onClick={() => { setSearch(''); setCategoryFilter('all'); }} className="text-xs text-amber-500 underline mt-1">필터 초기화</button>
@@ -608,7 +608,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
                 {filteredTools.map((tool, idx) => (
                   <React.Fragment key={tool.id}>
                     {idx > 0 && tool.pinned === false && filteredTools[idx - 1].pinned && (
-                      <div className="col-span-full border-t border-dashed border-gray-200 dark:border-gray-700 my-1" />
+                      <div className="col-span-full border-t border-dashed border-[#EDE8E1] dark:border-[#2E2822] my-1" />
                     )}
                     <ToolCard
                       tool={tool}
@@ -632,14 +632,14 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
           <div className="space-y-5">
             {/* 안내 + 버튼 */}
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">
                 동료 선생님이 공유한 도구를 가져올 수 있습니다.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={loadMarket}
                   disabled={marketLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${marketLoading ? 'animate-spin' : ''}`} />
                   새로고침
@@ -652,14 +652,14 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-800 rounded-xl p-6 text-center space-y-3">
                 <Share2 className="w-10 h-10 text-pink-300 dark:text-pink-600 mx-auto" />
                 <p className="text-sm font-semibold text-pink-700 dark:text-pink-300">공유 마켓 준비 중</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
                   곧 오픈됩니다.<br />
                   지금은 아래 방법으로 도구를 주고받을 수 있어요.
                 </p>
-                <div className="text-left bg-white dark:bg-gray-800 rounded-lg p-4 text-xs text-gray-600 dark:text-gray-300 space-y-2 mt-2">
-                  <p className="font-semibold text-gray-700 dark:text-gray-200">📤 도구 보내기</p>
+                <div className="text-left bg-white dark:bg-[#221E1B] rounded-lg p-4 text-xs text-[#78716C] dark:text-[#C4B8B0] space-y-2 mt-2">
+                  <p className="font-semibold text-[#44403C] dark:text-[#C4B8B0]">📤 도구 보내기</p>
                   <p>도구 만들기 탭 → 도구 카드의 <Download className="w-3 h-3 inline" /> 버튼 → JSON 파일 저장 → 카카오톡·이메일로 전송</p>
-                  <p className="font-semibold text-gray-700 dark:text-gray-200 pt-1">📥 도구 받기</p>
+                  <p className="font-semibold text-[#44403C] dark:text-[#C4B8B0] pt-1">📥 도구 받기</p>
                   <p>아래 버튼으로 받은 JSON 파일을 열면 내 도구에 바로 추가됩니다.</p>
                 </div>
                 <button
@@ -684,13 +684,13 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
             {!marketError && marketLoading && (
               <div className="text-center py-16">
                 <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">목록을 불러오는 중...</p>
+                <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">목록을 불러오는 중...</p>
               </div>
             )}
 
             {/* 목록 */}
             {!marketError && !marketLoading && marketEntries.length > 0 && filteredMarket.length === 0 && (
-              <div className="text-center py-16 text-gray-400 dark:text-gray-600">
+              <div className="text-center py-16 text-[#A8A29E] dark:text-[#2E2822]">
                 <Search className="w-8 h-8 mx-auto mb-2 opacity-40" />
                 <p className="text-sm font-semibold">검색 결과가 없습니다</p>
                 <button onClick={() => { setSearch(''); setCategoryFilter('all'); }} className="text-xs text-amber-500 underline mt-1">필터 초기화</button>
@@ -713,7 +713,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
 
             {/* 빈 목록 */}
             {!marketError && !marketLoading && marketEntries.length === 0 && MARKET_SHEET_ID && (
-              <div className="text-center py-12 text-gray-400 dark:text-gray-600 space-y-2">
+              <div className="text-center py-12 text-[#A8A29E] dark:text-[#2E2822] space-y-2">
                 <p className="text-sm font-semibold">아직 공유된 도구가 없습니다.</p>
                 <p className="text-xs">첫 번째로 도구를 공유해 보세요!</p>
                 {marketDebug && marketDebug.totalRows > 0 && marketEntries.length === 0 && (
@@ -756,7 +756,7 @@ const ToolCard: React.FC<{
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-900 rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow border-t-2 border ${
+    <div className={`bg-white dark:bg-[#171210] rounded-xl p-4 flex flex-col gap-3 hover:shadow-md transition-shadow border-t-2 border ${
       isHtmlApp
         ? 'border-violet-200 dark:border-violet-800/60 border-t-violet-400 dark:border-t-violet-500'
         : 'border-amber-200 dark:border-amber-800/60 border-t-amber-400 dark:border-t-amber-500'
@@ -766,10 +766,10 @@ const ToolCard: React.FC<{
           <div className="flex items-center gap-1.5">
             {tool.pinned && <Pin className="w-3 h-3 text-amber-500 shrink-0" />}
             {isHtmlApp && <Monitor className="w-3.5 h-3.5 text-violet-500 shrink-0" />}
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</h3>
+            <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] truncate">{tool.name}</h3>
           </div>
           {tool.description && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
           )}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
@@ -786,7 +786,7 @@ const ToolCard: React.FC<{
         </div>
       </div>
 
-      <div className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+      <div className="text-xs text-[#A8A29E] dark:text-[#6B5E57] flex items-center gap-1">
         {isHtmlApp
           ? <><Monitor className="w-3 h-3 text-violet-400" /> HTML 앱</>
           : `입력 필드 ${tool.inputs.length}개`
@@ -805,7 +805,7 @@ const ToolCard: React.FC<{
           </button>
           <button
             onClick={isHtmlApp ? onEditHtml : onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
           >
             <Pencil className="w-3.5 h-3.5" />
             수정
@@ -813,19 +813,19 @@ const ToolCard: React.FC<{
         </div>
         {/* 2행: 아이콘 버튼들 */}
         <div className="flex items-center justify-around">
-          <button onClick={onTogglePin} className={`p-1.5 rounded transition-colors ${tool.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'}`} title={tool.pinned ? '고정 해제' : '상단 고정'}>
+          <button onClick={onTogglePin} className={`p-1.5 rounded transition-colors ${tool.pinned ? 'text-amber-500 hover:text-amber-600' : 'text-[#A8A29E] hover:text-amber-500'}`} title={tool.pinned ? '고정 해제' : '상단 고정'}>
             {tool.pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
           </button>
-          <button onClick={onDuplicate} className="p-1.5 text-gray-400 hover:text-blue-500 transition-colors rounded" title="복제">
+          <button onClick={onDuplicate} className="p-1.5 text-[#A8A29E] hover:text-blue-500 transition-colors rounded" title="복제">
             <Copy className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onShare} className="p-1.5 text-gray-400 hover:text-pink-500 transition-colors rounded" title="공유하기">
+          <button onClick={onShare} className="p-1.5 text-[#A8A29E] hover:text-pink-500 transition-colors rounded" title="공유하기">
             <Share2 className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onExport} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded" title="JSON 내보내기">
+          <button onClick={onExport} className="p-1.5 text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0] transition-colors rounded" title="JSON 내보내기">
             <Download className="w-3.5 h-3.5" />
           </button>
-          <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded" title="삭제">
+          <button onClick={onDelete} className="p-1.5 text-[#A8A29E] hover:text-red-500 transition-colors rounded" title="삭제">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -840,16 +840,16 @@ const MarketToolCard: React.FC<{
   isAdded: boolean;
   onImport: () => void;
 }> = ({ entry, importing, isAdded, onImport }) => (
-  <div className={`bg-white dark:bg-gray-900 rounded-xl p-4 flex flex-col gap-3 border-t-2 border ${
+  <div className={`bg-white dark:bg-[#171210] rounded-xl p-4 flex flex-col gap-3 border-t-2 border ${
     entry.toolType === 'html-app'
       ? 'border-violet-200 dark:border-violet-800/60 border-t-violet-400 dark:border-t-violet-500'
       : 'border-amber-200 dark:border-amber-800/60 border-t-amber-400 dark:border-t-amber-500'
   }`}>
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">{entry.name}</h3>
+        <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] truncate">{entry.name}</h3>
         {entry.description && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{entry.description}</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 line-clamp-2 leading-relaxed">{entry.description}</p>
         )}
         {(entry.author || entry.authorSchool) && (
           <div className="flex items-center gap-1 mt-1.5 flex-wrap">
@@ -860,7 +860,7 @@ const MarketToolCard: React.FC<{
           </div>
         )}
         {entry.message && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 italic mt-1 leading-relaxed line-clamp-2">
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] italic mt-1 leading-relaxed line-clamp-2">
             "{entry.message}"
           </p>
         )}
@@ -945,24 +945,24 @@ const ShareModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col gap-5 p-6">
+      <div className="bg-white dark:bg-[#171210] rounded-2xl shadow-2xl w-full max-w-md mx-4 flex flex-col gap-5 p-6">
         {/* 헤더 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Share2 className="w-4 h-4 text-pink-500" />
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">도구 공유하기</h2>
+            <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">도구 공유하기</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] text-[#A8A29E] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* 도구 미리보기 */}
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3 flex items-start justify-between gap-2">
+        <div className="bg-[#FAF9F7] dark:bg-[#221E1B] rounded-xl p-3 flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{tool.name}</p>
+            <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] truncate">{tool.name}</p>
             {tool.description && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 line-clamp-2 leading-relaxed">{tool.description}</p>
             )}
           </div>
           <span className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${CATEGORY_COLORS[tool.category]}`}>
@@ -974,41 +974,41 @@ const ShareModal: React.FC<{
         <div className="space-y-3">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+              <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">
                 이름 <span className="text-red-500">*</span>
               </label>
               <input
                 value={authorName}
                 onChange={e => setAuthorName(e.target.value)}
                 placeholder="예: 김선생"
-                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-pink-400"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">소속 학교</label>
+              <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">소속 학교</label>
               <input
                 value={authorSchool}
                 onChange={e => setAuthorSchool(e.target.value)}
                 placeholder="예: OO초등학교"
-                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-pink-400"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">선생님들께 한 마디</label>
+            <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">선생님들께 한 마디</label>
             <textarea
               value={message}
               onChange={e => setMessage(e.target.value)}
               placeholder="도구를 만든 계기나 활용 팁을 알려주세요!"
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
+              className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
             />
           </div>
         </div>
 
         {/* 공유 단계 */}
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">공유 방법 (2단계)</p>
+          <p className="text-xs font-semibold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">공유 방법 (2단계)</p>
 
           {/* 1단계: 파일 저장 */}
           <button
@@ -1045,7 +1045,7 @@ const ShareModal: React.FC<{
           </button>
 
           {!jsonSaved && (
-            <p className="text-xs text-gray-400 dark:text-gray-600 text-center">① 먼저 JSON 파일을 저장해주세요</p>
+            <p className="text-xs text-[#A8A29E] dark:text-[#2E2822] text-center">① 먼저 JSON 파일을 저장해주세요</p>
           )}
           {jsonSaved && !authorName.trim() && (
             <p className="text-xs text-red-400 text-center">이름을 입력해주세요</p>
