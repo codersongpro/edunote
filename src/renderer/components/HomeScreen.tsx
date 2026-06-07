@@ -87,8 +87,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden">
 
       {/* 상단: 앱 상태 1행 4열 */}
-      <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-2">
-        <div className="grid grid-cols-4 gap-3 text-xs">
+      <div className="shrink-0 h-14 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 flex items-center">
+        <div className="grid grid-cols-4 gap-3 text-xs w-full">
           {[
             {
               label: 'API 키',

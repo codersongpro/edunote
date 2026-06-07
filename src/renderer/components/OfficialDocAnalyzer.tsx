@@ -169,7 +169,7 @@ const OfficialDocAnalyzer: React.FC = () => {
       )}
       {!inputPanelCollapsed && (
       <div className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col">
-        <div className="px-5 py-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+        <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
@@ -237,7 +237,7 @@ const OfficialDocAnalyzer: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-5 py-3 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between">
+        <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
             <span className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">분석 결과</span>

@@ -99,7 +99,7 @@ const ClassManagementLogGenerator: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#221E1B] transition-colors">
-      <div className="px-6 pt-5 pb-3 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+      <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center">
         <div className="flex items-center">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mr-3 shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">

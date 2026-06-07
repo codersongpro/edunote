@@ -1290,7 +1290,7 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-hidden flex flex-col">
           <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
           {topNavItems.length > 0 && (
-            <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] px-5 overflow-x-auto">
+            <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] pr-5 overflow-x-auto">
               <div className="flex items-center gap-1 min-w-max">
                 {topNavItems.map(item => {
                   const Icon = item.icon;
