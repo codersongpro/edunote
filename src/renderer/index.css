@@ -1,3 +1,10 @@
+@import '@fontsource/pretendard/latin-400.css';
+@import '@fontsource/pretendard/latin-500.css';
+@import '@fontsource/pretendard/latin-600.css';
+@import '@fontsource/pretendard/latin-700.css';
+@import '@fontsource/pretendard/latin-800.css';
+@import '@fontsource/pretendard/latin-900.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -22,11 +29,17 @@ html, body, #root {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #D6CFC7;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #A8A29E;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #3A332D;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6B5E57;
 }
 
 /* Prose markdown styles for chatbot */

@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource/pretendard": "^5.2.5",
     "@google/genai": "^1.30.0",
     "@xmldom/xmldom": "^0.9.7",
     "electron-store": "^8.2.0",

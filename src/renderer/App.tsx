@@ -343,49 +343,49 @@ const App: React.FC = () => {
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
   const studentSubNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
         ? 'bg-indigo-500 text-white font-semibold'
-        : 'text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
   const teacherRecordSubNavClass = (tab: 'observation' | 'counseling' | 'class') =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === tab
         ? 'bg-indigo-500 text-white font-semibold'
-        : 'text-gray-500 dark:text-gray-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
   const adminNavClass = (m: AppMode, isDocParent = false) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
       (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
         ? 'bg-emerald-600 text-white font-semibold shadow-sm'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
   const docSubNavClass = (dt: DocType) =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === AppMode.SCHOOL_DOC && activeDocType === dt
         ? 'bg-emerald-500 text-white font-semibold'
-        : 'text-gray-500 dark:text-gray-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
   const lessonNavClass = (m: AppMode, isParent = false) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
       (isParent && mode === AppMode.CLASS_TOOLS) || (!isParent && mode === m)
         ? 'bg-amber-500 text-white font-semibold shadow-sm'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
 
   const classToolsSubNavClass = (tab: 'qr' | 'lucky') =>
     `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
       mode === AppMode.CLASS_TOOLS && classToolsInitialTab === tab
         ? 'bg-amber-500 text-white font-semibold'
-        : 'text-gray-500 dark:text-gray-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
 
   const defaultStudentMenuItems: SidebarMenuItem[] = [
@@ -487,7 +487,7 @@ const App: React.FC = () => {
   if (isDemoWindow) {
     return (
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh' }}>
-        <div className="h-screen bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="h-screen bg-white dark:bg-[#171210] overflow-hidden">
           <DemoSamplesScreen />
         </div>
       </div>
@@ -496,10 +496,10 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-white dark:bg-gray-900">
+      <div className="flex items-center justify-center h-screen bg-white dark:bg-[#171210]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-500 text-sm">EduNote 불러오는 중...</p>
+          <p className="text-[#78716C] text-sm">EduNote 불러오는 중...</p>
         </div>
       </div>
     );
@@ -508,19 +508,19 @@ const App: React.FC = () => {
   return (
     <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div className="flex h-screen bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden font-sans">
+      <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
 
         {/* Disclaimer Modal */}
         {showDisclaimerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="disclaimer-modal-title">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
+            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
               {/* Icon */}
               <div className="flex flex-col items-center mb-5">
                 <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-3">
                   <AlertTriangle className="w-8 h-8 text-orange-500" />
                 </div>
-                <h2 id="disclaimer-modal-title" className="text-lg font-black text-gray-900 dark:text-white">AI 활용 시 유의사항</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">사용 전 반드시 확인해주세요</p>
+                <h2 id="disclaimer-modal-title" className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">AI 활용 시 유의사항</h2>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">사용 전 반드시 확인해주세요</p>
               </div>
 
               {/* Numbered items */}
@@ -531,17 +531,17 @@ const App: React.FC = () => {
                   { n: '03', title: '법적 책임', desc: '최종 문서에 대한 모든 책임은 사용자 본인에게 있습니다.' },
                 ].map(({ n, title, desc }) => (
                   <div key={n} className="flex gap-3">
-                    <span className="text-xs font-black text-gray-400 dark:text-gray-500 w-5 shrink-0 mt-0.5">{n}</span>
+                    <span className="text-xs font-black text-[#A8A29E] dark:text-[#6B5E57] w-5 shrink-0 mt-0.5">{n}</span>
                     <div>
-                      <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">{desc}</p>
+                      <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">{title}</p>
+                      <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed mt-0.5">{desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gray-100 dark:bg-gray-700 mb-4" />
+              <div className="h-px bg-[#EDE8E1] dark:bg-[#2E2822] mb-4" />
 
               {/* Checkbox */}
               <label className="flex items-center gap-2.5 cursor-pointer mb-5 select-none">
@@ -549,16 +549,16 @@ const App: React.FC = () => {
                   type="checkbox"
                   checked={disclaimerChecked}
                   onChange={e => setDisclaimerChecked(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+                  className="w-4 h-4 rounded border-[#E7E5E4] accent-blue-600 cursor-pointer"
                 />
-                <span className="text-sm text-gray-700 dark:text-gray-200">위 내용을 모두 확인하고 동의합니다.</span>
+                <span className="text-sm text-[#44403C] dark:text-[#C4B8B0]">위 내용을 모두 확인하고 동의합니다.</span>
               </label>
 
               {/* Button */}
               <button
                 onClick={handleAcceptDisclaimer}
                 disabled={!disclaimerChecked}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] disabled:text-[#A8A29E] dark:disabled:text-[#6B5E57] disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
               >
                 EduNote 시작하기 →
               </button>
@@ -568,14 +568,14 @@ const App: React.FC = () => {
 
         {showApiKeyLimitModal && !showDisclaimerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="apikey-modal-title">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
               <div className="flex items-start gap-3 mb-4">
                 <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-6 h-6 text-amber-500" />
                 </div>
                 <div>
-                  <h2 id="apikey-modal-title" className="text-lg font-black text-gray-900 dark:text-white">API 키가 설정되지 않았습니다</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                  <h2 id="apikey-modal-title" className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">API 키가 설정되지 않았습니다</h2>
+                  <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
                     EduNote는 계속 사용할 수 있지만, 학생기록 작성, 공문 작성, 예산안 AI 생성처럼 Gemini를 사용하는 기능은 제한됩니다.
                   </p>
                 </div>
@@ -600,13 +600,13 @@ const App: React.FC = () => {
                 </button>
                 <button
                   onClick={handleOpenApiGuide}
-                  className="flex-1 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-100 font-bold rounded-xl text-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="flex-1 py-2.5 bg-white dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] font-bold rounded-xl text-sm hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
                 >
                   발급 페이지 열기
                 </button>
                 <button
                   onClick={() => setShowApiKeyLimitModal(false)}
-                  className="py-2.5 px-4 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white text-sm font-semibold"
+                  className="py-2.5 px-4 text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#F0EBE6] text-sm font-semibold"
                 >
                   나중에
                 </button>
@@ -618,13 +618,13 @@ const App: React.FC = () => {
         {/* Concurrent generation notice */}
         {showConcurrentNotice && (
           <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-full max-w-md px-4">
-            <div className="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-700 rounded-xl shadow-lg p-4 flex gap-3 items-start">
+            <div className="bg-white dark:bg-[#221E1B] border border-blue-200 dark:border-blue-700 rounded-xl shadow-lg p-4 flex gap-3 items-start">
               <div className="p-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg shrink-0">
                 <Info className="w-4 h-4 text-blue-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-0.5">동시 생성 안내</p>
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] mb-0.5">동시 생성 안내</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
                   다른 메뉴에서 생성 중에도 이 화면을 계속 사용할 수 있습니다.
                   무료 API는 <strong>분당 15회 요청 제한</strong>이 있어 <strong>3~4개 동시 생성</strong>이 현실적인 안전선입니다.
                 </p>
@@ -636,7 +636,7 @@ const App: React.FC = () => {
                 >확인</button>
                 <button
                   onClick={() => setShowConcurrentNotice(false)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg transition-colors"
+                  className="p-1.5 text-[#A8A29E] hover:text-[#44403C] dark:hover:text-[#C4B8B0] rounded-lg transition-colors"
                 ><X className="w-3.5 h-3.5" /></button>
               </div>
             </div>
@@ -646,18 +646,18 @@ const App: React.FC = () => {
         {/* School Level Modal */}
         {showSchoolLevelModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" role="dialog" aria-modal="true" aria-labelledby="schoollevel-modal-title">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
+            <div className="bg-white dark:bg-[#221E1B] rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
               <div className="flex items-center gap-2 mb-2">
                 <School className="w-5 h-5 text-blue-500" />
-                <h2 id="schoollevel-modal-title" className="text-lg font-bold text-gray-900 dark:text-white">학교급 선택</h2>
+                <h2 id="schoollevel-modal-title" className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6]">학교급 선택</h2>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">학생기록 AI는 학교급에 따라 다른 결과를 생성합니다.</p>
+              <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-5">학생기록 AI는 학교급에 따라 다른 결과를 생성합니다.</p>
               <div className="space-y-2">
                 {[SchoolLevel.ELEMENTARY, SchoolLevel.MIDDLE, SchoolLevel.HIGH].map(level => (
                   <button
                     key={level}
                     onClick={() => handleSchoolLevelSelect(level)}
-                    className="w-full py-3 text-sm font-bold rounded-lg border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:text-gray-200 transition-all"
+                    className="w-full py-3 text-sm font-bold rounded-lg border-2 border-[#EDE8E1] dark:border-[#2E2822] hover:border-blue-500 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:text-[#C4B8B0] transition-all"
                   >
                     {level}
                   </button>
@@ -669,10 +669,10 @@ const App: React.FC = () => {
 
         {/* 사이드바가 접혀 있을 때: 펼치기 버튼만 있는 얇은 바 */}
         {sidebarCollapsed && (
-          <div className="w-11 shrink-0 bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col items-center py-3 gap-2">
+          <div className="w-11 shrink-0 bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex flex-col items-center py-3 gap-2">
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
               title="메뉴 펼치기"
               aria-label="메뉴 펼치기"
             >
@@ -680,7 +680,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => setMode(AppMode.HOME)}
-              className="p-1.5 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
               title="홈"
               aria-label="홈"
             >
@@ -690,20 +690,20 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? 'hidden' : 'flex'} min-w-[240px] w-[19%] max-w-[280px] bg-[#FAFBFC] dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col shrink-0 overflow-hidden`}>
+        <aside className={`${sidebarCollapsed ? 'hidden' : 'flex'} min-w-[240px] w-[19%] max-w-[280px] bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex-col shrink-0 overflow-hidden`}>
 
-          <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
+          <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
             <button
               onClick={() => setMode(AppMode.HOME)}
-              className="flex items-baseline gap-1.5 text-lg font-extrabold text-gray-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
+              className="flex items-baseline gap-1.5 text-lg font-extrabold text-[#1C1917] dark:text-[#F0EBE6] tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
             >
               <span>EduNote</span>
-              {appVersion && <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">v{appVersion}</span>}
+              {appVersion && <span className="text-[10px] font-bold text-[#A8A29E] dark:text-[#6B5E57]">v{appVersion}</span>}
             </button>
             <div className="flex items-center gap-1">
               <button
                 onClick={toggleDarkMode}
-                className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-amber-500 dark:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-amber-500 dark:text-amber-400 hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
                 title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
                 aria-label={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
               >
@@ -711,7 +711,7 @@ const App: React.FC = () => {
               </button>
               <button
                 onClick={() => setSidebarCollapsed(true)}
-                className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
                 title="메뉴 접기"
                 aria-label="메뉴 접기"
               >
@@ -726,8 +726,8 @@ const App: React.FC = () => {
               onClick={() => setMode(AppMode.HOME)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.HOME
-                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-[#1C1917] dark:bg-[#2A2420] text-white dark:text-[#F0EBE6] font-semibold'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
               }`}
             >
               <Home className="w-4 h-4 shrink-0" />
@@ -738,8 +738,8 @@ const App: React.FC = () => {
               onClick={() => goTo(AppMode.SETTINGS)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
                 mode === AppMode.SETTINGS
-                  ? 'bg-gray-800 dark:bg-gray-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? 'bg-[#1C1917] dark:bg-[#2A2420] text-white dark:text-[#F0EBE6] font-semibold'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
               }`}
             >
               <Settings className="w-4 h-4 shrink-0" />
@@ -788,7 +788,7 @@ const App: React.FC = () => {
               <span className="text-[10px] bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-500 px-1.5 py-0.5 rounded-full font-semibold">{schoolLevel}</span>
             </button>
 
-            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+            <div className="h-px bg-[#EDE8E1] dark:bg-[#2E2822] my-1" />
 
             {/* ── 교무행정AI ── */}
             <div className="rounded-xl overflow-hidden border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20">
@@ -1065,7 +1065,7 @@ const App: React.FC = () => {
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'my'
                         ? 'bg-pink-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
+                        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
                     }`}
                   >
                     <Wrench className="w-4 h-4 shrink-0" />
@@ -1076,7 +1076,7 @@ const App: React.FC = () => {
                     className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
                       mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'market'
                         ? 'bg-pink-500 text-white font-semibold shadow-sm'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
+                        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
                     }`}
                   >
                     <Download className="w-4 h-4 shrink-0" />
@@ -1087,13 +1087,13 @@ const App: React.FC = () => {
             </div>
           </nav>
 
-          <div className="border-t border-gray-100 dark:border-gray-700 p-2 shrink-0 space-y-0.5">
+          <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] p-2 shrink-0 space-y-0.5">
             <button
               onClick={() => goTo(AppMode.USAGE_GUIDE)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.USAGE_GUIDE
                   ? 'bg-purple-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 dark:hover:text-purple-300'
               }`}
             >
               <BookMarked className="w-4 h-4 shrink-0" />
@@ -1104,7 +1104,7 @@ const App: React.FC = () => {
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.ABOUT
                   ? 'bg-indigo-600 text-white font-semibold'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
               }`}
             >
               <HelpCircle className="w-4 h-4 shrink-0" />
@@ -1112,7 +1112,7 @@ const App: React.FC = () => {
             </button>
             <button
               onClick={() => window.electronAPI.openDemoWindow()}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
             >
               <ClipboardList className="w-4 h-4 shrink-0" />
               <span className="truncate">Demo</span>
@@ -1131,18 +1131,18 @@ const App: React.FC = () => {
               ? 'from-emerald-400 to-emerald-600'
               : LESSON_AI_MODES.includes(mode)
               ? 'from-amber-400 to-amber-600'
-              : 'from-gray-400 to-gray-500';
+              : 'from-[#A8A29E] to-[#78716C]';
             const colorBg = STUDENT_RECORD_MODES.includes(mode)
               ? 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-100 dark:border-indigo-900 text-indigo-700 dark:text-indigo-300'
               : ADMIN_MODES.includes(mode)
               ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300'
               : LESSON_AI_MODES.includes(mode)
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900 text-amber-700 dark:text-amber-300'
-              : 'bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-600';
+              : 'bg-[#FAF9F7] dark:bg-[#221E1B] border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87]';
             const cancelled = isCancelled(mode);
             return (
               <div className={`shrink-0 flex items-center gap-3 px-4 py-1.5 border-b ${colorBg}`}>
-                <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                <div className="flex-1 bg-[#EDE8E1] dark:bg-[#2E2822] rounded-full h-1.5 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r ${colorBar} ${pct === -1 ? 'w-full animate-pulse' : ''}`}
                     style={pct !== -1 ? { width: `${pct}%` } : undefined}
