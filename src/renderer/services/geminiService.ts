@@ -656,6 +656,24 @@ export const generateDocument = async (
       ? OFFICIAL_HAPSHO_STYLE_INSTRUCTION
       : REPORT_STYLE_ENDING_INSTRUCTION;
 
+  const sampleFormatInstruction = `
+[예시 문서 형식 준수]
+EduNote의 예시 문서처럼 실제 학교에서 바로 붙여 넣어 사용할 수 있는 완성 문서만 출력하세요.
+- 공문서: 수신, 경유, 제목, 1. 관련, 2. 시행문, 가./나./다. 세부 항목, 붙임, 끝. 순서를 지키세요.
+- 계획서: 큰 제목을 가운데 굵게 표시하고, 1. 추진배경, 2. 목적, 3. 운영방침, 4. 세부추진계획, 5. 소요예산, 6. 기대효과 순서로 작성하세요.
+- 보고서: 큰 제목을 가운데 굵게 표시하고, 1. 추진 개요, 2. 추진 실적, 3. 세부 운영 결과, 4. 만족도 조사 결과, 5. 예산 정산, 6. 운영 성과 및 제언 순서로 작성하세요.
+- 품의서: 1. 관련, 2. 본문 시행문, 가. 내역, 나. 용도, 다. 소요예산, 라. 산출내역, 붙임 순서로 간결하게 작성하세요. 산출내역은 표로 만들지 마세요.
+- 회의록: 제목, 일시, 장소, 참석위원, 회의안건, 회의내용, 발언자/발언내용 표 형식으로 작성하세요.
+- 보도자료: 제목, 도입, 주요 내용, 관계자 발언, 기대 효과 순서로 작성하고, 마지막에 SNS 홍보용 요약을 붙이세요.
+- 가정통신문: 제목, 학부모 인사말, 안내 내용, 협조 사항, 맺음말, 날짜, 학교장 순서로 작성하세요.
+- 메세지: 선택된 문자 유형에 맞게 바로 발송 가능한 본문만 출력하세요.
+- 공고문: 공고 제목, 공고번호, 공고일, 모집/공고 내용, 접수 기간 및 방법, 제출 서류, 문의처, 날짜, 학교장 순서로 작성하세요.
+[출력 품질]
+- "예시", "초안", "요청하신", "AI가" 같은 설명 문구를 붙이지 마세요.
+- 제목은 본문보다 크게, 표는 border="1"과 border-collapse:collapse를 사용해 실제 문서처럼 보이게 하세요.
+- 항목 번호는 1. 2. 3. 다음에 가. 나. 다., 그 아래에 1) 2) 3), 그 아래에 가) 나) 다) 순서만 사용하세요.
+- 입력 정보가 부족해도 임의로 과장하지 말고, 학교 현장에서 자연스러운 기본값으로 문서 형식을 완성하세요.`;
+
   let specificInstruction = '';
 
   switch (docType) {
@@ -893,7 +911,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${sampleFormatInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {

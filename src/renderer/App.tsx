@@ -567,23 +567,25 @@ const App: React.FC = () => {
                   <h2 id="onboarding-modal-title" className="text-lg font-black">EduNote 시작하기</h2>
                   <span className="text-xs font-bold text-white/75">단계 {onboardingStep} / 3</span>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="flex items-start">
                   {[
-                    { n: 1, label: '유의사항' },
-                    { n: 2, label: 'API 키 설정' },
-                    { n: 3, label: '기본 정보' },
-                  ].map(step => (
-                    <div key={step.n} className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
-                        onboardingStep > step.n ? 'bg-emerald-100 text-emerald-600' :
-                        onboardingStep === step.n ? 'bg-white text-indigo-600' :
-                        'bg-white/20 text-white/70'
-                      }`}>
-                        {onboardingStep > step.n ? <CheckCircle className="w-4 h-4" /> : step.n}
+                    { n: 1, label: '사용동의' },
+                    { n: 2, label: 'API 키 입력' },
+                    { n: 3, label: '사용자설정 입력' },
+                  ].map((step, index, steps) => (
+                    <React.Fragment key={step.n}>
+                      <div className="flex flex-col items-center gap-2 min-w-[96px]">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                          onboardingStep > step.n ? 'bg-emerald-100 text-emerald-600' :
+                          onboardingStep === step.n ? 'bg-white text-indigo-600' :
+                          'bg-white/20 text-white/70'
+                        }`}>
+                          {onboardingStep > step.n ? <CheckCircle className="w-4 h-4" /> : step.n}
+                        </div>
+                        <span className={`text-xs font-bold text-center ${onboardingStep === step.n ? 'text-white' : 'text-white/65'}`}>{step.label}</span>
                       </div>
-                      <div className="h-px flex-1 bg-white/25" />
-                      <span className={`text-xs font-bold truncate ${onboardingStep === step.n ? 'text-white' : 'text-white/65'}`}>{step.label}</span>
-                    </div>
+                      {index < steps.length - 1 && <div className="h-px flex-1 bg-white/30 mt-4" />}
+                    </React.Fragment>
                   ))}
                 </div>
               </div>

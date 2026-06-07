@@ -21,6 +21,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [storageInfo, setStorageInfo] = useState({ appDataDir: '', saveDir: '', lastBackupAt: '' });
   const [hasUserInfo, setHasUserInfo] = useState(false);
   const [hasStudentInfo, setHasStudentInfo] = useState(false);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupStatus, setBackupStatus] = useState('');
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
@@ -50,6 +52,36 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       window.removeEventListener('edunote:backup-done', handleBackupDone);
     };
   }, []);
+
+  const collectLocalStorage = (): Record<string, string> => {
+    const dump: Record<string, string> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key === null) continue;
+      const value = localStorage.getItem(key);
+      if (value !== null) dump[key] = value;
+    }
+    return dump;
+  };
+
+  const handleExportBackup = async () => {
+    setBackupStatus('');
+    setIsBackingUp(true);
+    try {
+      const savedPath = await window.electronAPI.exportBackup(collectLocalStorage());
+      if (savedPath) {
+        const backupTime = new Date().toISOString();
+        await window.electronAPI.setConfig({ lastBackupAt: backupTime });
+        setStorageInfo(prev => ({ ...prev, lastBackupAt: backupTime }));
+        window.dispatchEvent(new CustomEvent('edunote:backup-done', { detail: { lastBackupAt: backupTime } }));
+        setBackupStatus('자료 백업 완료');
+      }
+    } catch (error) {
+      setBackupStatus(error instanceof Error ? error.message : '백업 중 오류가 발생했습니다.');
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden">
@@ -83,6 +115,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                 : '기록 없음',
               icon: null,
               color: 'text-[#44403C] dark:text-[#C4B8B0]',
+              action: handleExportBackup,
             },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-2 py-1">
@@ -91,9 +124,20 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                 {item.icon}
                 {item.value}
               </span>
+              {'action' in item && item.action && (
+                <button
+                  type="button"
+                  onClick={item.action}
+                  disabled={isBackingUp}
+                  className="ml-auto shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                >
+                  {isBackingUp ? '백업 중' : '자료 백업하기'}
+                </button>
+              )}
             </div>
           ))}
         </div>
+        {backupStatus && <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">{backupStatus}</p>}
       </div>
 
       {/* 메인 콘텐츠 */}
