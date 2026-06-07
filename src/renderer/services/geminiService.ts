@@ -101,6 +101,21 @@ const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 - 과장, 단정, 감정적 표현, 사적인 평가, 지나치게 친근한 말투를 쓰지 마세요.
 - 생활기록부와 학교 기록에 적합한 객관적 표현을 사용하세요.`;
 
+const STUDENT_RECORD_ENDING_INSTRUCTION = `
+[학생 서술 종결 규칙]
+- 모든 문장은 완성된 명사형 종결과 온점으로 끝내세요.
+- '노력.', '성장.', '참여.', '향상.', '발전.', '개선.'처럼 어간이나 명사만 남긴 종결은 금지합니다.
+- 반드시 '노력함.', '성장함.', '참여함.', '향상됨.', '발전함.', '개선됨.', '보임.', '나타냄.'처럼 서술어가 완성된 형태로 작성하세요.`;
+
+const normalizeStudentRecordEndings = (text: string): string =>
+  text
+    .replace(/노력\./g, '노력함.')
+    .replace(/성장\./g, '성장함.')
+    .replace(/참여\./g, '참여함.')
+    .replace(/향상\./g, '향상됨.')
+    .replace(/발전\./g, '발전함.')
+    .replace(/개선\./g, '개선됨.');
+
 const REPORT_STYLE_ENDING_INSTRUCTION = `
 [보고서체 종결 규칙]
 - 계획서, 보고서, 회의록, 홍보자료, 공고문 본문은 설명문 말투가 아니라 학교 업무 보고서체로 작성하세요.
@@ -231,6 +246,7 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
+${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [2026 행동특성 평가 기준]
 - 낮은 평가(피해야 할 표현): "성격이 원만함", "친구들과 잘 어울림", "성실하게 생활함", "밝고 긍정적임"
@@ -270,6 +286,7 @@ ${EVALUATION_FRAMEWORK_2026}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
+${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [입시 우수 기재 사례 분석]
 ${GENERATION_EXAMPLES.SUBJECT[schoolLevel]}
@@ -292,6 +309,7 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
+${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [2026 스포츠클럽 평가 기준 — 공동체역량 중심]
 - 낮은 평가: "열심히 참여함", "팀워크가 좋음", "기술이 향상됨"
@@ -323,6 +341,7 @@ ${EVALUATION_FRAMEWORK_2026}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
+${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [기재요령 참고 우수 예시]
 ${GENERATION_EXAMPLES.CREATIVE[schoolLevel]}
@@ -418,7 +437,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
     });
-    return privacy.restore(result);
+    return normalizeStudentRecordEndings(privacy.restore(result));
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
@@ -462,7 +481,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return privacy.restore(result);
+    return normalizeStudentRecordEndings(privacy.restore(result));
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -501,7 +520,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return privacy.restore(result);
+    return normalizeStudentRecordEndings(privacy.restore(result));
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -561,7 +580,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return privacy.restore(result);
+    return normalizeStudentRecordEndings(privacy.restore(result));
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
