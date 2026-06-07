@@ -9,7 +9,7 @@ import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
 
 function validatePath(p: string): string {
   const resolved = path.resolve(p);

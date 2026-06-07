@@ -29,7 +29,7 @@ import {
   FileText, Eye, StickyNote, GraduationCap, MessageCircle, CalendarDays,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical, ClipboardList, Wrench, Download, Wallet, Archive, Printer,
+  GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
   PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
@@ -103,6 +103,7 @@ const App: React.FC = () => {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [showApiKeyLimitModal, setShowApiKeyLimitModal] = useState(false);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
+  const [onboardingDontShowAgain, setOnboardingDontShowAgain] = useState(false);
   const [onboardingApiKey, setOnboardingApiKey] = useState('');
   const [onboardingApiTier, setOnboardingApiTier] = useState<'free' | 'paid'>('free');
   const [onboardingApiStatus, setOnboardingApiStatus] = useState<'idle' | 'testing' | 'saved' | 'error'>('idle');
@@ -112,7 +113,7 @@ const App: React.FC = () => {
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
+  const classToolsInitialTab: 'qr' | 'lucky' = 'qr';
   const [teacherRecordInitialTab, setTeacherRecordInitialTab] = useState<'observation' | 'counseling' | 'class'>('observation');
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -202,20 +203,33 @@ const App: React.FC = () => {
     initAudioUnlock();
     const init = async () => {
       try {
-        const [hn, sl, dm, lastUsable, version] = await Promise.all([
+        const [hn, sl, dm, lastUsable, version, apiTier, teacherName, institution, gradeClass, onboardingDismissed] = await Promise.all([
           window.electronAPI.hasApiKey(),
           window.electronAPI.getConfig('schoolLevel'),
           window.electronAPI.getConfig('darkMode'),
           window.electronAPI.getConfig('apiKeyLastUsable'),
           window.electronAPI.getVersion(),
+          window.electronAPI.getConfig('apiTier'),
+          window.electronAPI.getConfig('teacherName'),
+          window.electronAPI.getConfig('institution'),
+          window.electronAPI.getConfig('gradeClass'),
+          window.electronAPI.getConfig('onboardingDismissed'),
         ]);
         setHasApiKey(hn as boolean);
         setShowApiKeyLimitModal(!(hn as boolean));
         setAppVersion(version as string);
-        if (hn) setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
+        setOnboardingApiTier((apiTier as 'free' | 'paid') || 'free');
+        setOnboardingTeacherName(String(teacherName || ''));
+        setOnboardingInstitution(String(institution || ''));
+        setOnboardingGradeClass(String(gradeClass || ''));
+        setOnboardingDontShowAgain(!!onboardingDismissed);
+        if (hn) {
+          setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
+          setOnboardingApiStatus('saved');
+        }
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(dm == null ? true : !!(dm as boolean));
-        setShowDisclaimerModal(true);
+        setShowDisclaimerModal(!onboardingDismissed);
         setMode(AppMode.HOME);
       } catch {
         setMode(AppMode.HOME);
@@ -298,6 +312,19 @@ const App: React.FC = () => {
     showToast({ type: 'success', title: '기본 정보 저장 완료' });
   };
 
+  const handleFinishOnboarding = async () => {
+    await window.electronAPI.setConfig({
+      teacherName: onboardingTeacherName,
+      institution: onboardingInstitution,
+      schoolLevel,
+      gradeClass: onboardingGradeClass,
+      onboardingDismissed: onboardingDontShowAgain,
+    });
+    setHasEnteredStudentSection(true);
+    setShowApiKeyLimitModal(false);
+    handleAcceptDisclaimer();
+  };
+
   const handleOpenApiGuide = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
   };
@@ -336,11 +363,6 @@ const App: React.FC = () => {
 
   const handleSchoolDocParent = () => {
     goTo(AppMode.SCHOOL_DOC);
-  };
-
-  const handleClassToolsNav = (tab: 'qr' | 'lucky') => {
-    setClassToolsInitialTab(tab);
-    goTo(AppMode.CLASS_TOOLS);
   };
 
   const handleClassToolsParent = () => {
@@ -464,18 +486,6 @@ const App: React.FC = () => {
         { key: 'counseling', label: '상담일지', icon: MessageCircle, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'counseling', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('counseling') },
         { key: 'class', label: '학급경영일지', icon: CalendarDays, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'class', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('class') },
         { key: AppMode.STUDENT_MEMO, label: '학생 메모 보드', icon: StickyNote, active: mode === AppMode.STUDENT_MEMO, progress: getProgressFor(AppMode.STUDENT_MEMO), onClick: () => goTo(AppMode.STUDENT_MEMO) },
-      ];
-    }
-    if (mode === AppMode.CLASS_TOOLS) {
-      return [
-        { key: 'qr', label: 'QR 메이커', icon: QrCode, active: classToolsInitialTab === 'qr', progress: getProgressFor(AppMode.CLASS_TOOLS), onClick: () => handleClassToolsNav('qr') },
-        { key: 'lucky', label: '럭키드로우', icon: StickyNote, active: classToolsInitialTab === 'lucky', progress: getProgressFor(AppMode.CLASS_TOOLS), onClick: () => handleClassToolsNav('lucky') },
-      ];
-    }
-    if (mode === AppMode.MY_AI_TOOLS) {
-      return [
-        { key: 'my', label: '내 스킬', icon: Wrench, active: myToolsActiveTab === 'my', progress: getProgressFor(AppMode.MY_AI_TOOLS), onClick: () => setMyToolsActiveTab('my') },
-        { key: 'market', label: '스킬마켓', icon: Download, active: myToolsActiveTab === 'market', progress: getProgressFor(AppMode.MY_AI_TOOLS), onClick: () => setMyToolsActiveTab('market') },
       ];
     }
     return [];
@@ -644,7 +654,7 @@ const App: React.FC = () => {
                         value={onboardingApiKey}
                         onChange={e => { setOnboardingApiKey(e.target.value); setOnboardingApiStatus('idle'); }}
                         className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="개인 Gmail 무료 API 키를 붙여넣으세요"
+                        placeholder={hasApiKey ? '이미 저장된 API 키가 있습니다' : '개인 Gmail 무료 API 키를 붙여넣으세요'}
                       />
                       <button
                         onClick={handleSaveOnboardingApiKey}
@@ -734,6 +744,15 @@ const App: React.FC = () => {
                     >
                       기본 정보 저장
                     </button>
+                    <label className="mt-5 flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={onboardingDontShowAgain}
+                        onChange={e => setOnboardingDontShowAgain(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#E7E5E4] accent-indigo-600 cursor-pointer"
+                      />
+                      <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">다음부터 온보딩 창을 열지 않기</span>
+                    </label>
                   </div>
                 )}
               </div>
@@ -760,7 +779,7 @@ const App: React.FC = () => {
                   </button>
                 ) : (
                   <button
-                    onClick={() => { setShowApiKeyLimitModal(false); handleAcceptDisclaimer(); }}
+                    onClick={handleFinishOnboarding}
                     className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
                   >
                     EduNote 시작하기 →
