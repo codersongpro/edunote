@@ -248,43 +248,43 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const inputClass = 'w-full bg-white dark:bg-gray-700 rounded-md border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
-  const labelClass = 'block text-sm font-bold text-gray-700 dark:text-gray-200 mb-1.5';
+  const inputClass = 'w-full bg-white dark:bg-[#171210] rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
+  const labelClass = 'block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5';
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto">
       <div className="max-w-xl mx-auto w-full p-4 space-y-4">
 
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
           <div className="flex items-center gap-2 mb-1">
-            <div className="bg-gray-100 dark:bg-gray-700 p-1.5 rounded-lg">
-              <Settings className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            <div className="bg-[#EDE8E1] dark:bg-[#2E2822] p-1.5 rounded-lg">
+              <Settings className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
             </div>
-            <h2 className="font-bold text-gray-800 dark:text-gray-100">EduNote 설정</h2>
+            <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">EduNote 설정</h2>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Gemini API 키와 기본 정보를 설정합니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">Gemini API 키와 기본 정보를 설정합니다.</p>
         </div>
 
         {/* API Key Guide */}
-        <div className={`rounded-lg border shadow-sm ${!hasKey ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'}`}>
+        <div className={`rounded-lg border shadow-sm ${!hasKey ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700' : 'border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]'}`}>
           <button
             onClick={() => setGuideExpanded(!guideExpanded)}
             className="w-full px-4 py-3 flex items-center justify-between text-left"
           >
             <div className="flex items-center gap-2">
-              <ExternalLink className={`w-4 h-4 ${!hasKey ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
-              <span className={`text-sm font-bold ${!hasKey ? 'text-blue-800 dark:text-blue-300' : 'text-gray-700 dark:text-gray-200'}`}>
+              <ExternalLink className={`w-4 h-4 ${!hasKey ? 'text-blue-600 dark:text-blue-400' : 'text-[#78716C] dark:text-[#9C8F87]'}`} />
+              <span className={`text-sm font-bold ${!hasKey ? 'text-blue-800 dark:text-blue-300' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}>
                 Gemini API 키 무료 발급 방법
               </span>
               {!hasKey && <span className="text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full font-medium">필수</span>}
             </div>
-            {guideExpanded ? <ChevronUp className="w-4 h-4 text-gray-400 dark:text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-400 dark:text-gray-500" />}
+            {guideExpanded ? <ChevronUp className="w-4 h-4 text-[#A8A29E] dark:text-[#6B5E57]" /> : <ChevronDown className="w-4 h-4 text-[#A8A29E] dark:text-[#6B5E57]" />}
           </button>
           {guideExpanded && (
             <div className="px-4 pb-4">
-              <div className="bg-white dark:bg-gray-800 rounded-md border border-blue-100 dark:border-blue-800 p-4 space-y-3">
-                <ol className="space-y-2.5 text-sm text-gray-700 dark:text-gray-200">
+              <div className="bg-white dark:bg-[#221E1B] rounded-md border border-blue-100 dark:border-blue-800 p-4 space-y-3">
+                <ol className="space-y-2.5 text-sm text-[#44403C] dark:text-[#C4B8B0]">
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">1</span>
                     <span>크롬 브라우저에서{' '}
@@ -299,23 +299,23 @@ const SettingsScreen: React.FC = () => {
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">2</span>
-                    <span>구글 계정으로 로그인 <span className="text-gray-500 dark:text-gray-400">(무료 Google 계정으로 충분)</span></span>
+                    <span>구글 계정으로 로그인 <span className="text-[#78716C] dark:text-[#9C8F87]">(무료 Google 계정으로 충분)</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">3</span>
-                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-gray-500 dark:text-gray-400">(영문 메뉴인 경우 "Get API key")</span></span>
+                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-[#78716C] dark:text-[#9C8F87]">(영문 메뉴인 경우 "Get API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">4</span>
-                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-gray-500 dark:text-gray-400">(영문: "Create API key")</span></span>
+                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-[#78716C] dark:text-[#9C8F87]">(영문: "Create API key")</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">5</span>
-                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-gray-500 dark:text-gray-400">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
+                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-[#78716C] dark:text-[#9C8F87]">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
                   </li>
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">6</span>
-                    <span>생성된 키 <span className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
+                    <span>생성된 키 <span className="bg-[#EDE8E1] dark:bg-[#2E2822] px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
                   </li>
                 </ol>
 
@@ -335,8 +335,8 @@ const SettingsScreen: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
+                  <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                     참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
                   </p>
                 </div>
@@ -346,10 +346,10 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* API Key Input */}
-        <div className={`rounded-lg border shadow-sm p-4 space-y-3 transition-all ${!hasKey ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-600 animate-pulse' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+        <div className={`rounded-lg border shadow-sm p-4 space-y-3 transition-all ${!hasKey ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-400 dark:border-amber-600 animate-pulse' : 'bg-white dark:bg-[#221E1B] border-[#EDE8E1] dark:border-[#2E2822]'}`}>
           <div className="flex items-center gap-2 mb-2">
-            <Key className={`w-4 h-4 ${!hasKey ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'}`} />
-            <h3 className={`text-sm font-bold ${!hasKey ? 'text-amber-800 dark:text-amber-300' : 'text-gray-700 dark:text-gray-200'}`}>API 키 설정</h3>
+            <Key className={`w-4 h-4 ${!hasKey ? 'text-amber-600 dark:text-amber-400' : 'text-[#78716C] dark:text-[#9C8F87]'}`} />
+            <h3 className={`text-sm font-bold ${!hasKey ? 'text-amber-800 dark:text-amber-300' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}>API 키 설정</h3>
             {!hasKey && (
               <span className="flex items-center gap-1 text-xs bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full font-bold">
                 ⚠ 미입력
@@ -375,13 +375,13 @@ const SettingsScreen: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => { setApiTier('free'); window.electronAPI.setConfig({ apiTier: 'free' }); setTestStatus('idle'); }}
-                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'free' ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
+                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'free' ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'border-[#E7E5E4] text-[#78716C] dark:border-[#2E2822] dark:text-[#9C8F87]'}`}
               >
                 <span className="block font-bold">무료 Gmail 기본</span>
               </button>
               <button
                 onClick={() => { setApiTier('paid'); window.electronAPI.setConfig({ apiTier: 'paid' }); setTestStatus('idle'); }}
-                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'paid' ? 'border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' : 'border-gray-300 text-gray-600 dark:border-gray-600 dark:text-gray-300'}`}
+                className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'paid' ? 'border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' : 'border-[#E7E5E4] text-[#78716C] dark:border-[#2E2822] dark:text-[#9C8F87]'}`}
               >
                 <span className="block font-bold">유료 API</span>
               </button>
@@ -438,7 +438,7 @@ const SettingsScreen: React.FC = () => {
             <button
               onClick={handleTestKey}
               disabled={(!( apiTier === 'paid' ? paidApiKey : apiKey).trim() && !hasKey) || testStatus === 'testing'}
-              className="flex-1 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 py-2.5 rounded-md text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {testStatus === 'testing' ? '테스트 중...' : '키 테스트'}
             </button>
@@ -470,10 +470,10 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* General Settings */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">기본 정보</h3>
+            <User className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">기본 정보</h3>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
             💡 소속기관은 필요한 공문서 맥락에만 참고되고, 이름·담당 학년/반·학생 명단은 수업자료와 학생기록에서 활용됩니다.
@@ -499,7 +499,7 @@ const SettingsScreen: React.FC = () => {
                   className={`flex-1 py-2 text-sm rounded-md border font-medium transition-all ${
                     schoolLevel === level
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-[#1E88E5] text-[#1E88E5]'
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      : 'bg-white dark:bg-[#221E1B] border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
                   }`}
                 >
                   {level}
@@ -522,10 +522,10 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Student Roster */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <Users className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">우리반 학생 명단</h3>
+            <Users className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">우리반 학생 명단</h3>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
             💡 학생 명단을 입력하면 <strong>수업자료·오늘의 주인공</strong> 등에서 "우리반 자동 입력" 버튼으로 바로 불러올 수 있습니다.
@@ -534,7 +534,7 @@ const SettingsScreen: React.FC = () => {
           {/* 번호+이름 통합 명단 */}
           <div>
             <label className={labelClass}>번호 + 이름 통합 명단</label>
-            <p className="text-xs text-gray-400 mb-1.5">
+            <p className="text-xs text-[#A8A29E] mb-1.5">
               한 줄에 한 명씩 입력. 앞에 번호를 붙이면 수업자료에 번호가 반영됩니다.
             </p>
             <textarea
@@ -548,7 +548,7 @@ const SettingsScreen: React.FC = () => {
 
           {/* 성별 구분 명단 */}
           <div>
-            <label className={labelClass}>성별 구분 명단 <span className="text-xs font-normal text-gray-400">(오늘의 주인공 남/녀 모드용)</span></label>
+            <label className={labelClass}>성별 구분 명단 <span className="text-xs font-normal text-[#A8A29E]">(오늘의 주인공 남/녀 모드용)</span></label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -589,7 +589,7 @@ const SettingsScreen: React.FC = () => {
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]"
           >
             <Save className="w-4 h-4" />
             학생 명단 저장
@@ -597,12 +597,12 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* App Data Folder */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Folder className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">앱 데이터 저장 폴더</h3>
+            <Folder className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">앱 데이터 저장 폴더</h3>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
             나만의 자료실, 학생 메모처럼 앱 안에서 계속 불러올 데이터가 이 폴더의 JSON 파일로 저장됩니다.
           </p>
           <div className="flex gap-2 items-center">
@@ -610,11 +610,11 @@ const SettingsScreen: React.FC = () => {
               type="text"
               readOnly
               value={appDataDir || '기본 앱 데이터 폴더'}
-              className="flex-1 bg-gray-50 dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-200 text-sm p-2.5 cursor-not-allowed"
+              className="flex-1 bg-[#FAF9F7] dark:bg-[#2E2822] rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectAppDataFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap"
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] whitespace-nowrap"
             >
               폴더 선택
             </button>
@@ -622,12 +622,12 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Safety Options */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-amber-500" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">생성 안전 옵션</h3>
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 안전 옵션</h3>
           </div>
-          <label className="flex items-start gap-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer">
+          <label className="flex items-start gap-3 p-3 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] cursor-pointer">
             <input
               type="checkbox"
               checked={privacyModeEnabled}
@@ -635,11 +635,11 @@ const SettingsScreen: React.FC = () => {
               className="mt-1"
             />
             <span>
-              <span className="block text-sm font-bold text-gray-700 dark:text-gray-200">개인정보 보호 모드</span>
-              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">학생 이름을 임시 토큰으로 바꿔 AI 요청을 보낸 뒤 결과에서 원래 이름으로 복원합니다.</span>
+              <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">개인정보 보호 모드</span>
+              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">학생 이름을 임시 토큰으로 바꿔 AI 요청을 보낸 뒤 결과에서 원래 이름으로 복원합니다.</span>
             </span>
           </label>
-          <label className="flex items-start gap-3 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-pointer">
+          <label className="flex items-start gap-3 p-3 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] cursor-pointer">
             <input
               type="checkbox"
               checked={reviewChecklistEnabled}
@@ -647,8 +647,8 @@ const SettingsScreen: React.FC = () => {
               className="mt-1"
             />
             <span>
-              <span className="block text-sm font-bold text-gray-700 dark:text-gray-200">생성 결과 검토 체크리스트</span>
-              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">생성 결과 화면에서 개인정보, 과장 표현, 최신 지침 확인 항목을 함께 표시합니다.</span>
+              <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과 검토 체크리스트</span>
+              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">생성 결과 화면에서 개인정보, 과장 표현, 최신 지침 확인 항목을 함께 표시합니다.</span>
             </span>
           </label>
           <div>
@@ -659,7 +659,7 @@ const SettingsScreen: React.FC = () => {
               value={cautionTerms}
               onChange={e => setCautionTerms(e.target.value)}
             />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">
               한 줄에 하나씩 입력하면 생성 결과 화면에서 포함 여부를 알려줍니다.
             </p>
           </div>
@@ -669,7 +669,7 @@ const SettingsScreen: React.FC = () => {
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}
-            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
           >
             <Save className="w-4 h-4" />
             안전 옵션 저장
@@ -677,25 +677,25 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Backup */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm p-4 space-y-3">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Folder className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200">전체 자료 백업</h3>
+            <Folder className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">전체 자료 백업</h3>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
             기본 정보, 학생 명단, 나만의 자료실, 학생 메모 등 앱 자료를 하나의 JSON 파일로 저장하고 다른 컴퓨터에서 불러올 수 있습니다. API 키는 보안상 포함하지 않습니다.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleExportBackup}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold bg-gray-800 text-white hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600"
+              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold bg-[#1C1917] dark:bg-[#2E2822] text-white dark:text-[#F0EBE6] hover:bg-[#0F0D0B] dark:hover:bg-[#3A332D]"
             >
               <Download className="w-4 h-4" />
               전체 자료 백업
             </button>
             <button
               onClick={handleImportBackup}
-              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
             >
               <Upload className="w-4 h-4" />
               백업 불러오기
@@ -705,30 +705,30 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Save Folder */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 space-y-3">
+        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Folder className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-bold text-gray-700">파일 저장 폴더</h3>
+            <Folder className="w-4 h-4 text-[#78716C]" />
+            <h3 className="text-sm font-bold text-[#44403C]">파일 저장 폴더</h3>
           </div>
           <div className="flex gap-2 items-center">
             <input
               type="text"
               readOnly
               value={saveDir || '기본 다운로드 폴더'}
-              className="flex-1 bg-gray-50 rounded-md border border-gray-200 text-gray-600 text-sm p-2.5 cursor-not-allowed"
+              className="flex-1 bg-[#FAF9F7] rounded-md border border-[#EDE8E1] text-[#78716C] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 whitespace-nowrap"
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] rounded-md text-[#44403C] hover:bg-[#FAF9F7] whitespace-nowrap"
             >
               폴더 선택
             </button>
           </div>
-          <p className="text-xs text-gray-400">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+          <p className="text-xs text-[#A8A29E]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
         </div>
 
         {/* Version */}
-        <div className="text-center text-xs text-gray-400 pb-4">
+        <div className="text-center text-xs text-[#A8A29E] pb-4">
           EduNote — Developed by Dustin
         </div>
       </div>

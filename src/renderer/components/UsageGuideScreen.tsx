@@ -23,19 +23,19 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]/50 transition-colors"
       >
         <div className="flex items-center gap-2.5">
           {icon}
-          <span className="font-bold text-gray-800 dark:text-gray-100 text-sm">{title}</span>
+          <span className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">{title}</span>
         </div>
-        {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+        {open ? <ChevronUp className="w-4 h-4 text-[#A8A29E]" /> : <ChevronDown className="w-4 h-4 text-[#A8A29E]" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 pt-1 text-sm text-gray-600 dark:text-gray-300 space-y-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="px-5 pb-5 pt-1 text-sm text-[#78716C] dark:text-[#9C8F87] space-y-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
           {children}
         </div>
       )}
@@ -56,11 +56,11 @@ const UsageGuideScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto">
       <div className="max-w-2xl mx-auto w-full px-6 py-8 space-y-4">
         <div className="flex items-center gap-2 mb-2">
           <BookOpen className="w-5 h-5 text-purple-500" />
-          <h2 className="text-lg font-black text-gray-900 dark:text-white">사용 방법</h2>
+          <h2 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">사용 방법</h2>
         </div>
 
         <Section title="시작 전 준비 - Gemini API 키 발급" icon={<Key className="w-4 h-4 text-blue-500" />} defaultOpen>
@@ -74,7 +74,7 @@ const UsageGuideScreen: React.FC = () => {
             <Step n={2}>개인 Google 계정으로 로그인합니다. 무료 Gmail 계정으로도 사용할 수 있습니다.</Step>
             <Step n={3}>왼쪽 메뉴에서 <strong>API 키</strong> 또는 <strong>Get API key</strong>를 선택합니다.</Step>
             <Step n={4}><strong>API 키 만들기</strong>를 눌러 키를 생성합니다.</Step>
-            <Step n={5}>생성된 <span className="font-mono text-xs bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">AIza...</span> 키를 EduNote <strong>설정</strong> 화면에 붙여넣고 테스트 후 저장합니다.</Step>
+            <Step n={5}>생성된 <span className="font-mono text-xs bg-[#EDE8E1] dark:bg-[#2E2822] px-1.5 py-0.5 rounded">AIza...</span> 키를 EduNote <strong>설정</strong> 화면에 붙여넣고 테스트 후 저장합니다.</Step>
           </ol>
           <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-xs text-amber-700 dark:text-amber-400">
             무료 API는 요청 제한이 있습니다. 토큰 소모나 잦은 요청으로 대기가 필요하면 앱이 안내합니다.
@@ -82,10 +82,10 @@ const UsageGuideScreen: React.FC = () => {
         </Section>
 
         <Section title="예산안작성" icon={<FileText className="w-4 h-4 text-green-600" />}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">AI가 예산 제목과 희망 물품을 분석해 어울리는 품목과 단가·수량을 자동으로 생성합니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">AI가 예산 제목과 희망 물품을 분석해 어울리는 품목과 단가·수량을 자동으로 생성합니다.</p>
           <div className="space-y-3">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">예산안 만들기</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">예산안 만들기</p>
               <ol className="space-y-1.5">
                 <Step n={1}>예산 제목과 총 예산 금액을 입력합니다. 제목이 구체적일수록 주제에 맞는 품목이 생성됩니다.</Step>
                 <Step n={2}><strong>과목별(비율)</strong> 방식은 교육운영비·일반운영비·업무추진비 비율을 지정하고, <strong>일반 작성</strong> 방식은 과목 없이 품목 중심으로 예산안을 만듭니다.</Step>
@@ -94,7 +94,7 @@ const UsageGuideScreen: React.FC = () => {
               </ol>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">0원 맞추기</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">0원 맞추기</p>
               <ol className="space-y-1.5">
                 <Step n={1}>예산안 생성 후 남은예산이 0이 아닐 때 사용합니다. <strong>0원 맞추기</strong> 버튼을 누르면 품목 수량을 자동 조절해 남은예산을 최대한 0원에 맞춥니다.</Step>
                 <Step n={2}><strong>최소수량·최대수량 지정:</strong> 각 품목 행의 최소수량·최대수량 칸을 채우면 그 범위 안에서만 수량이 조절됩니다. 수량을 직접 수정하면 해당 품목이 잠금 상태가 되어 자동 조절 대상에서 제외됩니다.</Step>
@@ -105,39 +105,39 @@ const UsageGuideScreen: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">인터넷 가격 조회로 품목 추가</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">인터넷 가격 조회로 품목 추가</p>
               <p className="text-xs leading-relaxed">나라장터 또는 네이버 쇼핑 API 키를 설정하면 실제 상품을 검색해 품목을 바로 추가할 수 있습니다. 상품에 마우스를 올리면 이미지를 미리볼 수 있습니다.</p>
             </div>
           </div>
         </Section>
 
         <Section title="교무행정AI" icon={<FileText className="w-4 h-4 text-emerald-500" />}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">학교 행정 업무와 공문 처리를 돕는 메뉴입니다. 메뉴 순서는 같은 카테고리 안에서 드래그 앤 드롭으로 바꿀 수 있습니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">학교 행정 업무와 공문 처리를 돕는 메뉴입니다. 메뉴 순서는 같은 카테고리 안에서 드래그 앤 드롭으로 바꿀 수 있습니다.</p>
           <div className="space-y-3">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">교무행정AI 챗봇</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">교무행정AI 챗봇</p>
               <p className="text-xs leading-relaxed">교육 행정, 학교 업무, 수업 운영, 교육 정책 관련 질문을 자유롭게 할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">공문요약·업무추출</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">공문요약·업무추출</p>
               <p className="text-xs leading-relaxed">공문 내용이나 파일, 스크린샷을 넣으면 핵심 요약, 해야 할 일, 마감/제출 정보, 발신/담당 정보를 정리합니다. 결과 화면에서 Google Calendar 일정 작성 화면을 바로 열거나 .ics 파일로 저장할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">공문서 작성기</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">공문서 작성기</p>
               <p className="text-xs leading-relaxed">공문서, 계획서, 보고서, 품의서, 회의록, 홍보자료, 가정통신문, 문자&소통메시지, 공고문을 생성합니다. 필요한 경우 참고 자료 파일이나 스크린샷도 함께 넣을 수 있습니다.</p>
             </div>
           </div>
         </Section>
 
         <Section title="수업자료AI" icon={<Presentation className="w-4 h-4 text-amber-500" />}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">수업 준비와 교실 활동을 돕는 메뉴입니다. 메뉴 순서는 같은 카테고리 안에서 드래그 앤 드롭으로 바꿀 수 있습니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">수업 준비와 교실 활동을 돕는 메뉴입니다. 메뉴 순서는 같은 카테고리 안에서 드래그 앤 드롭으로 바꿀 수 있습니다.</p>
           <div className="space-y-3">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">수업자료 생성</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">수업자료 생성</p>
               <p className="text-xs leading-relaxed">학년, 교과, 성취기준, 단원, 주제를 입력해 슬라이드, 워크시트, 퀴즈 앱, 수업 계획서, 교육용 게임 HTML을 생성합니다. 퀴즈와 게임은 시작 버튼이 포함된 단일 HTML 파일로 저장할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">수업 도구</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">수업 도구</p>
               <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
               <ul className="text-xs mt-1 space-y-1 ml-3">
                 <li>• <strong>QR 메이커</strong> — 수업 링크, 안내 자료, 활동 페이지 주소를 QR 코드로 만들어 저장하거나 복사합니다.</li>
@@ -145,21 +145,21 @@ const UsageGuideScreen: React.FC = () => {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">나만의 자료실</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">나만의 자료실</p>
               <p className="text-xs leading-relaxed">링크와 YouTube 자료를 보관합니다. YouTube 링크는 가능한 경우 제목과 썸네일을 자동으로 불러옵니다.</p>
             </div>
           </div>
         </Section>
 
         <Section title="학생기록AI" icon={<Bot className="w-4 h-4 text-indigo-500" />}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">생활기록부와 학생 기록을 돕는 메뉴입니다. 처음 사용할 때 학교급을 선택하며, 홈 바로 아래의 학교급 변경 버튼에서 언제든 바꿀 수 있습니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">생활기록부와 학생 기록을 돕는 메뉴입니다. 처음 사용할 때 학교급을 선택하며, 홈 바로 아래의 학교급 변경 버튼에서 언제든 바꿀 수 있습니다.</p>
           <div className="space-y-3">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">학생기록AI 챗봇</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">학생기록AI 챗봇</p>
               <p className="text-xs leading-relaxed">학생 기록 작성 기준, 기재 가능/불가 표현, 문장 개선 방향을 질문할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">생기부도우미</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">생기부도우미</p>
               <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
               <ul className="text-xs mt-1 space-y-1 ml-3">
                 <li>• <strong>행발생성</strong> — 학생 관찰 내용과 특성을 바탕으로 행동특성 및 종합의견 초안을 생성합니다.</li>
@@ -169,7 +169,7 @@ const UsageGuideScreen: React.FC = () => {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">우리반기록</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">우리반기록</p>
               <p className="text-xs leading-relaxed">클릭하면 서브메뉴가 펼쳐집니다.</p>
               <ul className="text-xs mt-1 space-y-1 ml-3">
                 <li>• <strong>수업관찰기록</strong> — 수업 관찰 내용과 교사 메모를 입력해 수업 관찰 기록 문서를 생성합니다.</li>
@@ -183,10 +183,10 @@ const UsageGuideScreen: React.FC = () => {
         </Section>
 
         <Section title="내 스킬" icon={<Wrench className="w-4 h-4 text-violet-500" />}>
-          <p className="text-xs text-gray-500 dark:text-gray-400">자주 쓰는 AI 작업 패턴을 나만의 스킬로 만들어 저장하고, 동료 선생님과 공유할 수 있습니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">자주 쓰는 AI 작업 패턴을 나만의 스킬로 만들어 저장하고, 동료 선생님과 공유할 수 있습니다.</p>
           <div className="space-y-3">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">스킬 만들기</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">스킬 만들기</p>
               <ul className="text-xs space-y-1.5 ml-3">
                 <li>• <strong>대화로 만들기</strong> — AI와 4단계 대화를 통해 스킬을 자동으로 생성합니다. 어떤 작업을 자동화할지, 어떤 입력이 필요한지, 결과 형식은 어떻게 할지 답하면 스킬 초안이 만들어집니다.</li>
                 <li>• <strong>직접 만들기</strong> — 3단계 위저드로 스킬을 직접 설정합니다. ① 기본 정보(이름·설명·카테고리) → ② 입력 필드 구성(텍스트·여러 줄·파일 첨부) → ③ 프롬프트 작성. 프롬프트 단계에서 <strong>AI가 대신 써줘</strong> 버튼으로 초안을 자동 생성할 수 있습니다.</li>
@@ -194,11 +194,11 @@ const UsageGuideScreen: React.FC = () => {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">스킬 실행</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">스킬 실행</p>
               <p className="text-xs leading-relaxed">스킬 카드의 <strong>실행</strong> 버튼을 누르면 입력 폼이 나타납니다. 입력값을 채우고 <strong>생성</strong>을 누르면 AI가 결과를 만들어 줍니다. 파일 첨부 필드는 PDF·이미지·HWPX를 지원하며, 최대 20개까지 한 번에 올릴 수 있습니다. 생성 중에는 <strong>취소</strong> 버튼으로 멈출 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">스킬 관리</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">스킬 관리</p>
               <ul className="text-xs space-y-1 ml-3">
                 <li>• <strong>수정</strong> — 스킬 이름·필드·프롬프트를 언제든 수정할 수 있습니다.</li>
                 <li>• <strong>내보내기(<span className="font-mono">↓</span>)</strong> — 스킬을 JSON 파일로 저장합니다. 카카오톡·이메일로 공유하면 상대방이 내 스킬에 추가할 수 있습니다.</li>
@@ -206,7 +206,7 @@ const UsageGuideScreen: React.FC = () => {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">스킬마켓 탭</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">스킬마켓 탭</p>
               <p className="text-xs leading-relaxed">동료 선생님이 공유한 스킬 목록을 볼 수 있습니다. <strong>내 스킬에 추가</strong> 버튼으로 원하는 스킬을 바로 가져올 수 있으며, 이미 추가된 스킬은 초록색으로 표시됩니다.</p>
               <p className="text-xs leading-relaxed mt-1">내 스킬을 목록에 올리려면 스킬 카드의 <strong>공유(<span className="font-mono">↗</span>)</strong> 버튼을 눌러 이름·소속·한 마디를 입력하고 2단계 안내에 따라 등록하세요.</p>
             </div>
@@ -240,8 +240,8 @@ const UsageGuideScreen: React.FC = () => {
           </ul>
         </Section>
 
-        <Section title="설정에서 미리 입력하면 좋은 정보" icon={<Settings className="w-4 h-4 text-gray-500" />}>
-          <ul className="text-xs space-y-1.5 ml-4 text-gray-600 dark:text-gray-400">
+        <Section title="설정에서 미리 입력하면 좋은 정보" icon={<Settings className="w-4 h-4 text-[#78716C]" />}>
+          <ul className="text-xs space-y-1.5 ml-4 text-[#78716C] dark:text-[#9C8F87]">
             <li>• <strong>이름:</strong> 교사명 자동 입력에 사용됩니다.</li>
             <li>• <strong>소속기관:</strong> 공문서와 일부 생성 결과에 반영됩니다.</li>
             <li>• <strong>학교급과 담당 학년/반:</strong> 학생기록과 수업 관련 결과의 기준으로 사용됩니다.</li>
@@ -253,19 +253,19 @@ const UsageGuideScreen: React.FC = () => {
         <Section title="자주 묻는 질문" icon={<AlertTriangle className="w-4 h-4 text-amber-500" />}>
           <div className="space-y-4">
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. API 키가 있는데 홈 화면에서 키를 입력하라고 나옵니다.</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. API 키가 있는데 홈 화면에서 키를 입력하라고 나옵니다.</p>
               <p className="text-xs leading-relaxed">무료/유료 API 선택 상태가 다를 때 생길 수 있어 수정했습니다. 그래도 반복되면 설정에서 현재 사용 방식과 저장된 키를 확인해 주세요.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. AI 생성 결과를 그대로 사용해도 되나요?</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. AI 생성 결과를 그대로 사용해도 되나요?</p>
               <p className="text-xs leading-relaxed">아니요. AI 결과는 초안입니다. 사실관계, 학생 개인정보, 학교 상황에 맞는 표현을 반드시 검토·수정해야 합니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. 여러 메뉴에서 동시에 생성할 수 있나요?</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. 여러 메뉴에서 동시에 생성할 수 있나요?</p>
               <p className="text-xs leading-relaxed">가능합니다. 다만 무료 API는 요청 제한이 있으므로 3~4개 이하의 동시 생성이 현실적인 안전선입니다.</p>
             </div>
             <div>
-              <p className="font-bold text-gray-700 dark:text-gray-200 mb-1">Q. Demo 버튼은 무엇인가요?</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. Demo 버튼은 무엇인가요?</p>
               <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열립니다. 교무행정AI·수업자료AI·학생기록AI·내 스킬 등 주요 기능의 샘플 입력값이 카테고리별로 정리되어 있으며, 복사 버튼으로 바로 붙여넣을 수 있습니다. 공문서 작성기는 내부결재 공문·계획서·보고서·품의서·협의록·보도자료·메세지·공고문·가정통신문 9종 샘플이 모두 포함되어 있습니다.</p>
             </div>
           </div>

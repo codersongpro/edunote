@@ -23,18 +23,18 @@ const AboutScreen: React.FC = () => {
   const openLink = (url: string) => window.electronAPI.openExternal(url);
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto">
       <div className="max-w-xl mx-auto w-full px-6 py-10 space-y-6">
 
         {/* App identity */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-8 text-center shadow-sm">
+        <div className="bg-white dark:bg-[#221E1B] rounded-2xl border border-[#EDE8E1] dark:border-[#2E2822] p-8 text-center shadow-sm">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
             <img src={iconPng} alt="EduNote" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white mb-1">EduNote</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">EduNote — 교직원을 위한 AI 도우미</p>
+          <h1 className="text-3xl font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">EduNote</h1>
+          <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-3">EduNote — 교직원을 위한 AI 도우미</p>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">v{version}</span>
+            <span className="text-sm font-semibold text-[#44403C] dark:text-[#9C8F87]">v{version}</span>
             {updateInfo && !updateInfo.hasUpdate && (
               <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
                 최신 버전 ✓
@@ -52,8 +52,8 @@ const AboutScreen: React.FC = () => {
         </div>
 
         {/* Feature list */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm space-y-4">
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        <div className="bg-white dark:bg-[#221E1B] rounded-2xl border border-[#EDE8E1] dark:border-[#2E2822] p-6 shadow-sm space-y-4">
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
             주요 기능
           </h2>
@@ -63,8 +63,8 @@ const AboutScreen: React.FC = () => {
                 <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100">교무행정AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">공문서(9종) · 공문요약·업무추출 · 교무행정AI 챗봇</p>
+                <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">교무행정AI</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">공문서(9종) · 공문요약·업무추출 · 교무행정AI 챗봇</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -72,8 +72,8 @@ const AboutScreen: React.FC = () => {
                 <Presentation className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100">수업자료AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">슬라이드 · 학습지 · 퀴즈 · 수업계획서 자동 생성 · QR 메이커 · 럭키드로우 · 나만의 자료실</p>
+                <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">수업자료AI</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">슬라이드 · 학습지 · 퀴즈 · 수업계획서 자동 생성 · QR 메이커 · 럭키드로우 · 나만의 자료실</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -81,8 +81,8 @@ const AboutScreen: React.FC = () => {
                 <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100">학생기록AI</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">생기부도우미(행발·세특·스포츠클럽·창체) · 우리반기록(수업관찰·상담일지·학급경영일지·학생 메모) · AI 챗봇</p>
+                <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">학생기록AI</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">생기부도우미(행발·세특·스포츠클럽·창체) · 우리반기록(수업관찰·상담일지·학급경영일지·학생 메모) · AI 챗봇</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -90,8 +90,8 @@ const AboutScreen: React.FC = () => {
                 <Wrench className="w-4 h-4 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-100">내 스킬</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">나만의 AI 스킬 만들기(위저드·대화형·HTML 앱) · 스킬 실행·수정·공유 · 스킬마켓</p>
+                <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">내 스킬</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">나만의 AI 스킬 만들기(위저드·대화형·HTML 앱) · 스킬 실행·수정·공유 · 스킬마켓</p>
               </div>
             </div>
           </div>
@@ -105,21 +105,21 @@ const AboutScreen: React.FC = () => {
         </div>
 
         {/* Developer */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 mb-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-2xl border border-[#EDE8E1] dark:border-[#2E2822] p-6 shadow-sm">
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2 mb-4">
             <Heart className="w-4 h-4 text-red-400" />
             제작자 정보
           </h2>
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-gray-700 dark:text-gray-200">개발자</span>
-              <span className="text-sm text-gray-600 dark:text-gray-300">Dustin</span>
+              <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">개발자</span>
+              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">Dustin</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 dark:text-gray-300">Teacher · Data Analytics · App Developer</span>
+              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">Teacher · Data Analytics · App Developer</span>
             </div>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
+          <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
           <button
             onClick={() => openLink('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
             className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 border border-violet-200 dark:border-violet-700 rounded-xl text-sm font-semibold text-violet-700 dark:text-violet-300 transition-colors"
@@ -155,7 +155,7 @@ const AboutScreen: React.FC = () => {
         </div>
 
         {/* License */}
-        <div className="text-center text-xs text-gray-400 dark:text-gray-500 pb-4 space-y-1">
+        <div className="text-center text-xs text-[#A8A29E] dark:text-[#6B5E57] pb-4 space-y-1">
           <p>Copyright © {new Date().getFullYear()} Dustin. All rights reserved.</p>
         </div>
 

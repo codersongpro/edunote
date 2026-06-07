@@ -52,10 +52,10 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-hidden">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden">
 
       {/* 상단: 앱 상태 1행 4열 */}
-      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-2">
+      <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-2">
         <div className="grid grid-cols-4 gap-3 text-xs">
           {[
             {
@@ -82,11 +82,11 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                 ? new Date(storageInfo.lastBackupAt).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
                 : '기록 없음',
               icon: null,
-              color: 'text-gray-700 dark:text-gray-200',
+              color: 'text-[#44403C] dark:text-[#C4B8B0]',
             },
           ].map(item => (
             <div key={item.label} className="flex items-center gap-2 py-1">
-              <span className="text-gray-400 dark:text-gray-500 shrink-0">{item.label}</span>
+              <span className="text-[#A8A29E] dark:text-[#6B5E57] shrink-0">{item.label}</span>
               <span className={`font-bold flex items-center gap-0.5 truncate ${item.color}`}>
                 {item.icon}
                 {item.value}
@@ -125,15 +125,15 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">EduNote</h1>
-                <span className="text-sm text-gray-500 dark:text-gray-400">v{version}</span>
+                <h1 className="text-2xl font-black text-[#1C1917] dark:text-[#F0EBE6] tracking-tight">EduNote</h1>
+                <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">v{version}</span>
                 {updateInfo && !updateInfo.hasUpdate && (
                   <span className="text-[11px] px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
                     최신 버전
                   </span>
                 )}
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mt-1">
                 교무 행정 · 수업 준비 · 학생 기록을 AI가 도와드립니다.
               </p>
             </div>
@@ -165,34 +165,34 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => onNavigate('settings')}
-              className={`group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border-2 transition-all text-left hover:shadow-md ${
+              className={`group flex items-center gap-3 p-4 bg-white dark:bg-[#221E1B] rounded-xl border-2 transition-all text-left hover:shadow-md ${
                 hasKey === false
                   ? 'border-amber-400 dark:border-amber-500 animate-pulse hover:border-amber-500'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
+                  : 'border-[#EDE8E1] dark:border-[#2E2822] hover:border-[#A8A29E] dark:hover:border-[#6B5E57]'
               }`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                <Settings className={`w-4 h-4 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'}`} />
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${hasKey === false ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-[#EDE8E1] dark:bg-[#2E2822]'}`}>
+                <Settings className={`w-4 h-4 ${hasKey === false ? 'text-amber-600 dark:text-amber-400' : 'text-[#78716C] dark:text-[#9C8F87]'}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">
+                <p className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">
                   설정{hasKey === false && <span className="ml-1 text-amber-500">키 미설정</span>}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">API 키 · 교사/학생 정보</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 truncate">API 키 · 교사/학생 정보</p>
               </div>
-              <ChevronRight className={`w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-gray-400'}`} />
+              <ChevronRight className={`w-4 h-4 shrink-0 group-hover:translate-x-1 transition-transform ${hasKey === false ? 'text-amber-400' : 'text-[#A8A29E]'}`} />
             </button>
 
             <button
               onClick={() => onNavigate('guide')}
-              className="group flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left"
+              className="group flex items-center gap-3 p-4 bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-md transition-all text-left"
             >
               <div className="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center shrink-0">
                 <BookOpen className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-gray-800 dark:text-gray-100 text-sm">사용 방법</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">API 키 발급 · 기능 소개</p>
+                <p className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">사용 방법</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 truncate">API 키 발급 · 기능 소개</p>
               </div>
               <ChevronRight className="w-4 h-4 text-purple-400 shrink-0 group-hover:translate-x-1 transition-transform" />
             </button>

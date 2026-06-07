@@ -507,11 +507,11 @@ h2,h3{page-break-after:avoid;}
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-300 dark:border-gray-700 flex flex-col h-full overflow-hidden">
-      <div className="bg-[#F8F9FA] dark:bg-gray-900 px-4 py-3 border-b border-gray-300 dark:border-gray-700 flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+    <div className="bg-white dark:bg-[#221E1B] rounded-lg shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] flex flex-col h-full overflow-hidden">
+      <div className="bg-[#F8F9FA] dark:bg-[#171210] px-4 py-3 border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-2 mr-4">
           <FileText className="w-5 h-5 text-blue-600 shrink-0" />
-          <h2 className="font-bold text-gray-800 dark:text-gray-100 text-base">미리보기 및 편집</h2>
+          <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-base">미리보기 및 편집</h2>
           <span className="text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
             <PenLine className="w-3 h-3" />
             수정 가능
@@ -520,7 +520,7 @@ h2,h3{page-break-after:avoid;}
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={handlePrint}
-            className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            className="p-1.5 text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#F0EBE6] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] rounded transition-colors"
             title="인쇄"
           >
             <Printer className="w-4 h-4" />
@@ -536,7 +536,7 @@ h2,h3{page-break-after:avoid;}
               {hwpxDownloading ? '저장 중' : 'HWPX 양식 저장'}
             </button>
           )}
-          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white p-1 shadow-sm">
+          <div className="flex items-center gap-1 rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-white p-1 shadow-sm">
             <select
               value={saveFormat}
               onChange={e => setSaveFormat(e.target.value as typeof saveFormat)}
@@ -556,7 +556,7 @@ h2,h3{page-break-after:avoid;}
               저장
             </button>
           </div>
-          <div className="flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white p-1 shadow-sm">
+          <div className="flex items-center gap-1 rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-white p-1 shadow-sm">
             <select
               value={copyFormat}
               onChange={e => setCopyFormat(e.target.value as typeof copyFormat)}
@@ -578,14 +578,14 @@ h2,h3{page-break-after:avoid;}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-gray-950 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-[#13100E] scrollbar-thin scrollbar-thumb-[#D6CFC7] dark:scrollbar-thumb-[#3A332D] scrollbar-track-transparent">
         {content && (
           <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+            <div className="bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-slate-500" />
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{'\uC0DD\uC131 \uACB0\uACFC \uD788\uC2A4\uD1A0\uB9AC'}</span>
+                  <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">{'\uC0DD\uC131 \uACB0\uACFC \uD788\uC2A4\uD1A0\uB9AC'}</span>
                 </div>
                 <button
                   onClick={handleSaveCurrentVersion}
@@ -599,7 +599,7 @@ h2,h3{page-break-after:avoid;}
                   <select
                     value={selectedVersionId}
                     onChange={e => setSelectedVersionId(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900"
+                    className="w-full rounded-md border border-[#E7E5E4] bg-white px-2 py-1.5 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900"
                     style={{ colorScheme: 'light' }}
                   >
                     <option className={optionClassName} value="">{'\uC774\uC804 \uBC84\uC804 \uBBF8\uB9AC\uBCF4\uAE30 \uC120\uD0DD'}</option>
@@ -634,7 +634,7 @@ h2,h3{page-break-after:avoid;}
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">{'\uD604\uC7AC \uACB0\uACFC\uB97C \uC800\uC7A5\uD558\uBA74 \uB2E4\uC74C \uC0DD\uC131 \uACB0\uACFC\uC640 \uBE44\uAD50\uD558\uAC70\uB098 \uB418\uB3CC\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">{'\uD604\uC7AC \uACB0\uACFC\uB97C \uC800\uC7A5\uD558\uBA74 \uB2E4\uC74C \uC0DD\uC131 \uACB0\uACFC\uC640 \uBE44\uAD50\uD558\uAC70\uB098 \uB418\uB3CC\uB9B4 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}</p>
               )}
             </div>
 
@@ -692,7 +692,7 @@ h2,h3{page-break-after:avoid;}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 border-t border-gray-300 dark:border-gray-700 px-4 py-1 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+      <div className="bg-white dark:bg-[#171210] border-t border-[#E7E5E4] dark:border-[#2E2822] px-4 py-1 flex justify-between items-center text-xs text-[#78716C] dark:text-[#9C8F87]">
         <span className="flex items-center gap-1">
           <PenLine className="w-3 h-3" />
           {'\uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD074\uB9AD\uD558\uC5EC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}
