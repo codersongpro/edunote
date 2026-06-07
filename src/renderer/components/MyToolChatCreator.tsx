@@ -130,22 +130,22 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
   const isDone = turnCount >= TOTAL_TURNS;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-white dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <button onClick={onCancel} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#E7E5E4] dark:border-[#2E2822]">
+        <button onClick={onCancel} className="text-sm text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0] transition-colors">
           취소
         </button>
         <div className="flex-1">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">대화로 도구 만들기</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">AI가 4가지 질문으로 도구를 자동 생성합니다</p>
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">대화로 도구 만들기</h2>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">AI가 4가지 질문으로 도구를 자동 생성합니다</p>
         </div>
         <div className="flex items-center gap-1">
           {Array.from({ length: TOTAL_TURNS }).map((_, i) => (
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-colors ${
-                turnCount > i ? 'bg-amber-500' : turnCount === i ? 'bg-amber-300' : 'bg-gray-200 dark:bg-gray-600'
+                turnCount > i ? 'bg-amber-500' : turnCount === i ? 'bg-amber-300' : 'bg-[#EDE8E1] dark:bg-[#2E2822]'
               }`}
             />
           ))}
@@ -164,7 +164,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
             <div
               className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'ai'
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-tl-sm'
+                  ? 'bg-[#EDE8E1] dark:bg-[#221E1B] text-[#1C1917] dark:text-[#C4B8B0] rounded-tl-sm'
                   : 'bg-amber-500 text-white rounded-tr-sm'
               }`}
             >
@@ -178,11 +178,11 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
             <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
               <Bot className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             </div>
-            <div className="px-3.5 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-tl-sm">
+            <div className="px-3.5 py-2.5 bg-[#EDE8E1] dark:bg-[#221E1B] rounded-2xl rounded-tl-sm">
               <div className="flex gap-1 items-center h-5">
-                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                <div className="w-1.5 h-1.5 bg-[#A8A29E] rounded-full animate-bounce [animation-delay:0ms]" />
+                <div className="w-1.5 h-1.5 bg-[#A8A29E] rounded-full animate-bounce [animation-delay:150ms]" />
+                <div className="w-1.5 h-1.5 bg-[#A8A29E] rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           </div>
@@ -193,7 +193,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
 
       {/* 파일 업로드 턴 (Q4) */}
       {isFileUploadTurn && !isGenerating && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+        <div className="p-4 border-t border-[#E7E5E4] dark:border-[#2E2822] space-y-3">
           {templateFiles.length === 0 ? (
             <FileUpload
               label="양식 파일 첨부 (PDF, 이미지, HWP 등)"
@@ -216,7 +216,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
           )}
           <button
             onClick={() => handleFileStepDone(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-semibold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-sm font-semibold text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
           >
             <SkipForward className="w-4 h-4" />
             건너뛰기 (참고 양식 없이 진행)
@@ -226,7 +226,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
 
       {/* 일반 텍스트 입력 (Q1~Q3) */}
       {!isFileUploadTurn && !isDone && !isGenerating && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-[#E7E5E4] dark:border-[#2E2822]">
           <div className="flex gap-2 items-end">
             <textarea
               ref={inputRef}
@@ -236,12 +236,12 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
               disabled={isLoading}
               placeholder="답변을 입력하세요... (Enter로 전송)"
               rows={2}
-              className="flex-1 px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+              className="flex-1 px-3 py-2.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="p-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white rounded-xl transition-colors"
+              className="p-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] text-white rounded-xl transition-colors"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -250,10 +250,10 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
       )}
 
       {isDone && !isGenerating && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-[#E7E5E4] dark:border-[#2E2822]">
           <button
             onClick={onCancel}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-sm font-semibold text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
           >
             닫기
           </button>
