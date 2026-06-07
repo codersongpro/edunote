@@ -249,7 +249,7 @@ const SMALL_BALANCE_CATALOG: Record<BudgetCategory, NaraItem[]> = {
 
 const fmt = (n: number) => n.toLocaleString('ko-KR');
 const genId = () => crypto.randomUUID();
-const inputCls = 'w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500';
+const inputCls = 'w-full px-3 py-1.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500';
 const btnCls = 'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors disabled:opacity-40';
 
 function parseMoney(value: string): number {
@@ -1604,29 +1604,29 @@ export default function BudgetPlannerScreen() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
-      <div className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 flex items-center gap-3">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
+      <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-3 flex items-center gap-3">
         <button
           onClick={() => setInputSidebarCollapsed(v => !v)}
-          className="p-1.5 rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+          className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors shrink-0"
           title={inputSidebarCollapsed ? '입력 패널 펼치기' : '입력 패널 접기'}
         >
           {inputSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
-        <h1 className="text-base font-black text-gray-900 dark:text-white">예산안작성</h1>
-        <span className="text-xs text-gray-400">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
+        <h1 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안작성</h1>
+        <span className="text-xs text-[#A8A29E]">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className={`${inputSidebarCollapsed ? 'hidden' : 'block'} w-80 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-y-auto`}>
-          <section className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <aside className={`${inputSidebarCollapsed ? 'hidden' : 'block'} w-80 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] overflow-y-auto`}>
+          <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">가격 조회 정보 선택 입력</span>
+              <span className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide">가격 조회 정보 선택 입력</span>
               <button onClick={() => setShowPriceSettings(v => !v)} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
                 {showPriceSettings ? '닫기' : '열기'} {showPriceSettings ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
               선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
             </p>
             {showPriceSettings && (
@@ -1639,7 +1639,7 @@ export default function BudgetPlannerScreen() {
                 <div className="flex gap-1 mb-2">
                   {PRICE_API_GUIDE_STEPS.map((_, i) => (
                     <button key={i} onClick={() => setApiGuideStep(i + 1)}
-                      className={`w-6 h-6 rounded-full text-[10px] font-bold ${apiGuideStep === i + 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                      className={`w-6 h-6 rounded-full text-[10px] font-bold ${apiGuideStep === i + 1 ? 'bg-blue-600 text-white' : 'bg-[#EDE8E1] dark:bg-[#2E2822] text-[#44403C] dark:text-[#C4B8B0]'}`}>
                       {i + 1}
                     </button>
                   ))}
@@ -1659,17 +1659,17 @@ export default function BudgetPlannerScreen() {
               <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>나라장터 키 저장</button>
             </div>
             {apiKey && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
               나라장터 API 키와 인터넷 가격조회 Client 정보는 선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
             </p>
           <div className="pt-3">
-            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2">인터넷 가격조회 Client 정보 (선택)</p>
+            <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">인터넷 가격조회 Client 정보 (선택)</p>
             <div className="space-y-2">
               <input type="password" value={naverClientId} onChange={e => setNaverClientId(e.target.value)} placeholder="인터넷 가격 조회 Client ID" className={inputCls} />
               <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder="인터넷 가격 조회 Client Secret" className={inputCls} />
             </div>
             <div className="mt-2 flex gap-2">
-              <button onClick={saveApiKey} className={`${btnCls} bg-slate-600 text-white hover:bg-slate-700 flex-1`}>
+              <button onClick={saveApiKey} className={`${btnCls} bg-[#78716C] text-white hover:bg-[#44403C] flex-1`}>
                 <Save className="w-3.5 h-3.5 inline mr-1" />인터넷 키 저장
               </button>
               <button onClick={testInternetPriceSearch} disabled={isTestingInternetPrice} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex-1`}>
@@ -1683,7 +1683,7 @@ export default function BudgetPlannerScreen() {
                 <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> {internetPriceTestMessage}
               </p>
             )}
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1">
               저장 후 예산안 화면 위쪽의 '인터넷 가격 조회로 품목 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
             </p>
           </div>
@@ -1691,47 +1691,47 @@ export default function BudgetPlannerScreen() {
             )}
           </section>
 
-          <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-2">
-            <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">1. 예산 정보</p>
+          <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] space-y-2">
+            <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide">1. 예산 정보</p>
             <input value={planTitle} onChange={e => setPlanTitle(e.target.value)} placeholder={`예: ${DEFAULT_BUDGET_TITLE}`} className={inputCls} />
             <input value={totalBudget} onChange={e => setTotalBudget(moneyInput(e.target.value))} placeholder={`예: ${DEFAULT_BUDGET_TOTAL}원`} className={inputCls} />
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 onClick={() => setUseCategoryRatio(true)}
-                className={`${btnCls} justify-center border ${useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                className={`${btnCls} justify-center border ${useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-[#221E1B] text-[#44403C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'}`}
               >
                 과목별 비율
               </button>
               <button
                 onClick={() => setUseCategoryRatio(false)}
-                className={`${btnCls} justify-center border ${!useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                className={`${btnCls} justify-center border ${!useCategoryRatio ? 'bg-blue-600 text-white border-blue-600' : 'bg-white dark:bg-[#221E1B] text-[#44403C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'}`}
               >
                 일반 작성
               </button>
             </div>
           </section>
 
-          <section className="p-4 border-b border-gray-100 dark:border-gray-700 space-y-3">
+          <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] space-y-3">
             {useCategoryRatio ? (
               <button onClick={() => setShowRatio(v => !v)} className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1">
                 {showRatio ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 2. 과목별 비율과 구입하고자 하는 물품
               </button>
             ) : (
-              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">2. 구입하고자 하는 물품</p>
+              <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide">2. 구입하고자 하는 물품</p>
             )}
             {useCategoryRatio && showRatio && CATEGORIES.map(category => (
-              <div key={category} className="rounded-lg bg-gray-50 dark:bg-gray-900/40 p-2">
+              <div key={category} className="rounded-lg bg-[#FAF9F7] dark:bg-[#171210]/40 p-2">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-20 text-xs font-bold text-gray-700 dark:text-gray-300">{category}</span>
+                  <span className="w-20 text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">{category}</span>
                   <input
                     type="number"
                     min={0}
                     value={category === '교육운영비' ? ratioEdu : category === '일반운영비' ? ratioGeneral : ratioBiz}
                     onChange={e => category === '교육운영비' ? setRatioEdu(e.target.value) : category === '일반운영비' ? setRatioGeneral(e.target.value) : setRatioBiz(e.target.value)}
-                    className="w-16 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                    className="w-16 px-2 py-1 text-xs border border-[#E7E5E4] dark:border-[#2E2822] rounded bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6]"
                   />
-                  <span className="text-xs text-gray-500">% · {fmt(allocations[category])}원</span>
+                  <span className="text-xs text-[#78716C]">% · {fmt(allocations[category])}원</span>
                 </div>
                 <input value={keywordMap[category]} onChange={e => setKeywordMap[category](e.target.value)} placeholder={`예: ${CATEGORY_KEYWORDS[category].join(', ')}`} className={inputCls} />
               </div>
@@ -1756,15 +1756,15 @@ export default function BudgetPlannerScreen() {
           </section>
 
           {plans.length > 0 && (
-            <section className="p-4 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide mb-2">저장된 계획</p>
+            <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+              <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide mb-2">저장된 계획</p>
               <div className="space-y-1">
                 {plans.map(plan => (
                   <button key={plan.id} onClick={() => { const normalized = normalizeBudgetPlan(plan); setActivePlan(normalized); setPlanTitle(normalized.title); setTotalBudget(fmt(normalized.totalBudget)); }}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-xs ${activePlan?.id === plan.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`}>
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs ${activePlan?.id === plan.id ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold' : 'hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] text-[#44403C] dark:text-[#C4B8B0]'}`}>
                     <p className="font-semibold truncate">{plan.title}</p>
-                    <p className="text-gray-400">{fmt(plan.totalBudget)}원</p>
-                    <p className="text-[10px] text-gray-400">저장 {formatSavedAt(plan.updatedAt || plan.createdAt)}</p>
+                    <p className="text-[#A8A29E]">{fmt(plan.totalBudget)}원</p>
+                    <p className="text-[10px] text-[#A8A29E]">저장 {formatSavedAt(plan.updatedAt || plan.createdAt)}</p>
                   </button>
                 ))}
               </div>
@@ -1776,18 +1776,18 @@ export default function BudgetPlannerScreen() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {!activePlan ? (
             <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
-              <section className="rounded-xl border border-blue-100 dark:border-blue-800 bg-white dark:bg-gray-800 p-4 shadow-sm">
+              <section className="rounded-xl border border-blue-100 dark:border-blue-800 bg-white dark:bg-[#221E1B] p-4 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                   <div>
                     <p className="text-xs font-bold text-blue-600 dark:text-blue-300 mb-1">예시 예산 미리보기</p>
-                    <h2 className="text-base font-black text-gray-900 dark:text-white">{DEFAULT_BUDGET_TITLE}</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <h2 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">{DEFAULT_BUDGET_TITLE}</h2>
+                    <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">
                       왼쪽 입력값 그대로 예산안 만들기를 누르면 아래 예시가 편집 가능한 예산안으로 들어갑니다.
                     </p>
                   </div>
-                  <div className="text-right text-xs text-gray-500 dark:text-gray-400">
+                  <div className="text-right text-xs text-[#78716C] dark:text-[#9C8F87]">
                     <p>배정 예산</p>
-                    <p className="text-lg font-black text-gray-900 dark:text-white">{DEFAULT_BUDGET_TOTAL}원</p>
+                    <p className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">{DEFAULT_BUDGET_TOTAL}원</p>
                   </div>
                 </div>
                 <BudgetSummary total={examplePreviewBudget} used={examplePreviewTotal} remaining={examplePreviewBudget - examplePreviewTotal} />
@@ -1797,11 +1797,11 @@ export default function BudgetPlannerScreen() {
             </div>
           ) : (
             <>
-              <header className="shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-3 space-y-3">
+              <header className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-3 space-y-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-black text-gray-900 dark:text-white">{activePlan.title}</h2>
-                    <p className="text-xs text-gray-500">배정 예산: {fmt(activePlan.totalBudget)}원</p>
+                    <h2 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">{activePlan.title}</h2>
+                    <p className="text-xs text-[#78716C]">배정 예산: {fmt(activePlan.totalBudget)}원</p>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-end">
                     <div className="relative flex items-center gap-1">
@@ -1816,8 +1816,8 @@ export default function BudgetPlannerScreen() {
                         <HelpCircle className="w-4 h-4" />
                       </button>
                       {showBalanceHelp && (
-                        <div className="absolute right-0 top-full mt-1 z-50 w-72 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-white dark:bg-gray-800 shadow-lg p-3 text-xs text-gray-700 dark:text-gray-200 space-y-2">
-                          <button onClick={() => setShowBalanceHelp(false)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                        <div className="absolute right-0 top-full mt-1 z-50 w-72 rounded-xl border border-emerald-200 dark:border-emerald-700 bg-white dark:bg-[#221E1B] shadow-lg p-3 text-xs text-[#44403C] dark:text-[#C4B8B0] space-y-2">
+                          <button onClick={() => setShowBalanceHelp(false)} className="absolute top-2 right-2 text-[#A8A29E] hover:text-[#78716C]">
                             <X className="w-3.5 h-3.5" />
                           </button>
                           <p className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">0원 맞추기 사용법</p>
@@ -1827,17 +1827,17 @@ export default function BudgetPlannerScreen() {
                             <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">3</span><span><strong>수량 조절 범위 지정:</strong> 각 품목 행의 <strong>최소수량</strong>·<strong>최대수량</strong> 칸을 채우면 그 범위 안에서만 수량을 조절합니다. 특정 품목의 수량을 고정하려면 수량을 직접 수정하면 잠금(고정) 상태가 됩니다.</span></li>
                             <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">4</span><span>결과가 만족스럽지 않으면 수량을 직접 조정한 뒤 다시 눌러보세요.</span></li>
                           </ol>
-                          <p className="text-[10px] text-gray-400 mt-1">💡 최소·최대 수량을 설정하지 않으면 최소 1 ~ 최대 제한 없음으로 처리됩니다.</p>
+                          <p className="text-[10px] text-[#A8A29E] mt-1">💡 최소·최대 수량을 설정하지 않으면 최소 1 ~ 최대 제한 없음으로 처리됩니다.</p>
                         </div>
                       )}
                     </div>
-                    <button onClick={() => window.electronAPI.openExternal(BUDGET_NOTEBOOK_LM_URL)} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                    <button onClick={() => window.electronAPI.openExternal(BUDGET_NOTEBOOK_LM_URL)} className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] flex items-center gap-1`}>
                       <ExternalLink className="w-3.5 h-3.5" />예산 질문하기
                     </button>
                     <button onClick={handleSave} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1`}>
                       <Save className="w-3.5 h-3.5" />저장
                     </button>
-                    <button onClick={handleImportCsv} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                    <button onClick={handleImportCsv} className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] flex items-center gap-1`}>
                       <Upload className="w-3.5 h-3.5" />CSV 불러오기
                     </button>
                     <button onClick={handleExportCsv} className={`${btnCls} bg-green-600 text-white hover:bg-green-700 flex items-center gap-1`}>
@@ -1855,15 +1855,15 @@ export default function BudgetPlannerScreen() {
               </header>
 
               <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
-                <section className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+                <section className="rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] p-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
                       <Search className="w-4 h-4 text-blue-500" />
-                      <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">인터넷 가격 조회로 품목 추가</h3>
+                      <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">인터넷 가격 조회로 품목 추가</h3>
                     </div>
                     <button
                       onClick={() => { setPriceSearchResults([]); setPriceSearchMessage(''); setPriceSearchQuery(''); setPriceSearchStatus('idle'); setPriceSearchHasMore(false); setPriceSearchPage(1); }}
-                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1] dark:text-[#9C8F87] dark:hover:text-[#F0EBE6] dark:hover:bg-[#2A2420]"
                       title="가격 조회 입력과 결과를 지웁니다"
                     >
                       <X className="w-3.5 h-3.5" />닫기
@@ -1874,7 +1874,7 @@ export default function BudgetPlannerScreen() {
                       <select
                         value={priceSearchCategory}
                         onChange={e => setPriceSearchCategory(e.target.value as BudgetCategory)}
-                        className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
+                        className="px-2 py-1.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6]"
                       >
                         {CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
                       </select>
@@ -1892,7 +1892,7 @@ export default function BudgetPlannerScreen() {
                     </button>
                   </div>
                   {!hasPriceLookupKey && (
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5 flex items-center gap-1">
+                    <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1.5 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3 shrink-0" />
                       나라장터 키 또는 인터넷 가격조회 Client 정보를 저장하면 검색을 사용할 수 있습니다.
                     </p>
@@ -1904,25 +1904,25 @@ export default function BudgetPlannerScreen() {
                     </p>
                   )}
                   {priceSearchResults.length > 0 && (
-                    <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+                    <div className="mt-2 max-h-64 overflow-auto rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] divide-y divide-[#EDE8E1] dark:divide-[#2E2822]">
                       {priceSearchResults.map((item, idx) => {
                         const preview = item.image ? previewImages[item.image] : undefined;
                         return (
                         <div
                           key={`${item.thngCd}-${idx}`}
-                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-900/40"
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-[#FAF9F7] dark:hover:bg-[#171210]/40"
                           onMouseEnter={() => loadPreviewImage(item.image)}
                         >
                           {item.image && (
-                            <div className="shrink-0 h-14 w-14 rounded border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center" title="마우스를 올리면 상품 이미지가 표시됩니다">
+                            <div className="shrink-0 h-14 w-14 rounded border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden bg-[#FAF9F7] dark:bg-[#171210] flex items-center justify-center" title="마우스를 올리면 상품 이미지가 표시됩니다">
                               {preview
                                 ? <img src={preview} alt="" className="h-full w-full object-contain" />
-                                : <span className="text-[9px] text-gray-400 text-center leading-tight px-0.5">이미지</span>}
+                                : <span className="text-[9px] text-[#A8A29E] text-center leading-tight px-0.5">이미지</span>}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{item.thngNm}</p>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate">{item.thngNm}</p>
+                            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] truncate">
                               {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
                                 <button onClick={() => window.electronAPI.openExternal(item.priceSourceUrl!)}
@@ -1933,7 +1933,7 @@ export default function BudgetPlannerScreen() {
                               )}
                             </p>
                           </div>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{fmt(item.unitPrice ?? 0)}원</span>
+                          <span className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] shrink-0">{fmt(item.unitPrice ?? 0)}원</span>
                           <button onClick={() => addSearchItemToPlan(item)} className={`${btnCls} bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 shrink-0`}>
                             <Plus className="w-3.5 h-3.5" />추가
                           </button>
@@ -1945,7 +1945,7 @@ export default function BudgetPlannerScreen() {
                   {priceSearchHasMore && (
                     <div className="mt-2 text-center">
                       <button onClick={handlePriceSearchMore} disabled={priceSearchStatus === 'loading'}
-                        className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 inline-flex items-center gap-1`}>
+                        className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] inline-flex items-center gap-1`}>
                         {priceSearchStatus === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         더 보기 (다음 10건)
                       </button>
@@ -1955,17 +1955,17 @@ export default function BudgetPlannerScreen() {
                 <section>
                   <div className="flex items-center justify-between mb-2">
                     <div>
-                      <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안</h3>
-                      <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+                      <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안</h3>
+                      <p className="mt-0.5 text-[11px] text-[#78716C] dark:text-[#9C8F87]">
                         최소·최대 수량은 필요한 경우에만 입력하세요.
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={toggleCollapseAll} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                      <button onClick={toggleCollapseAll} className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] flex items-center gap-1`}>
                         {collapsedBudgetIds.size > 0 ? <><ChevronDown className="w-3.5 h-3.5" />모두 펼치기</> : <><ChevronRight className="w-3.5 h-3.5" />모두 접기</>}
                       </button>
                       {useCategoryRatio && (
-                        <button onClick={handleSortByCategory} className={`${btnCls} bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 flex items-center gap-1`}>
+                        <button onClick={handleSortByCategory} className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] flex items-center gap-1`}>
                           <Layers className="w-3.5 h-3.5" />과목별 정렬
                         </button>
                       )}
@@ -2067,9 +2067,9 @@ function BudgetSummary({ total, used, remaining }: { total: number; used: number
         <p className="text-[11px] font-bold text-blue-600 dark:text-blue-300 mb-1">배정예산</p>
         <p className="text-xl font-black text-blue-900 dark:text-blue-100">{fmt(total)}원</p>
       </div>
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-gray-800 px-4 py-3">
-        <p className="text-[11px] font-bold text-slate-500 dark:text-slate-300 mb-1">집행예산</p>
-        <p className="text-xl font-black text-slate-900 dark:text-white">{fmt(used)}원</p>
+      <div className="rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 py-3">
+        <p className="text-[11px] font-bold text-[#78716C] dark:text-[#C4B8B0] mb-1">집행예산</p>
+        <p className="text-xl font-black text-[#1C1917] dark:text-[#F0EBE6]">{fmt(used)}원</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${remainingTone}`}>
         <div className="flex items-center justify-between gap-2 mb-1">
@@ -2099,21 +2099,21 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-black text-gray-800 dark:text-gray-100">예산안 예시</h3>
+        <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안 예시</h3>
       </div>
-      <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div className="overflow-auto rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]">
         <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center w-8">순</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28">예산 과목</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-52">품목</th>
-                <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최소</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최대</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-10"></th>
+          <tr className="bg-[#EDE8E1] dark:bg-[#2E2822] text-xs text-[#44403C] dark:text-[#C4B8B0]">
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-center w-8">순</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-28">예산 과목</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 min-w-52">품목</th>
+                <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-28 text-right">단가</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">최소</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">수량</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">최대</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-32 text-right">소계</th>
+              <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-10"></th>
             </tr>
           </thead>
           <tbody>
@@ -2125,12 +2125,12 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
               const isCollapsed = collapsedIds.has(item.id);
               return (
                 <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
-                  <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-xs font-semibold ${categoryColor.cell}`}>
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center text-[#78716C]">{idx + 1}</td>
+                  <td className={`border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-xs font-semibold ${categoryColor.cell}`}>
                     {item.budgetCategory}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
-                    <div className={`${indentClass} ${isParent ? 'font-black text-gray-900 dark:text-white' : 'text-gray-800 dark:text-gray-100'} flex items-center gap-1`}>
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
+                    <div className={`${indentClass} ${isParent ? 'font-black text-[#1C1917] dark:text-[#F0EBE6]' : 'text-[#1C1917] dark:text-[#F0EBE6]'} flex items-center gap-1`}>
                       {isParent ? (
                         <button
                           onClick={() => setCollapsedIds(prev => {
@@ -2143,26 +2143,26 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
                         >
                           {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
-                      ) : depth > 1 ? <span className="w-4 text-gray-400">└</span> : <span className="w-4" />}
+                      ) : depth > 1 ? <span className="w-4 text-[#A8A29E]">└</span> : <span className="w-4" />}
                       <span>{item.thngNm}</span>
                     </div>
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right text-xs text-gray-800 dark:text-gray-100">
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-right text-xs text-[#1C1917] dark:text-[#F0EBE6]">
                     {isParent ? '' : fmt(item.unitPrice)}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-500 dark:text-gray-300">
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center text-xs text-[#78716C] dark:text-[#C4B8B0]">
                     {item.minQuantity ?? ''}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-800 dark:text-gray-100">
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center text-xs text-[#1C1917] dark:text-[#F0EBE6]">
                     {isParent ? '' : item.quantity}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-xs text-gray-500 dark:text-gray-300">
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center text-xs text-[#78716C] dark:text-[#C4B8B0]">
                     {item.maxQuantity ?? ''}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right text-xs font-bold text-gray-800 dark:text-gray-100">
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-right text-xs font-bold text-[#1C1917] dark:text-[#F0EBE6]">
                     {fmt(displaySubtotal(item, items))}
                   </td>
-                  <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5"></td>
+                  <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5"></td>
                 </tr>
               );
             })}
@@ -2170,31 +2170,31 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
           <tfoot>
             {CATEGORIES.map(category => (
               <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
-                <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
+                <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-1.5 text-right text-[#44403C] dark:text-[#C4B8B0]">
                   {category} 배정 {fmt(previewAllocations[category])}원 / 집행 {fmt(previewUsedByCategory[category])}원
                 </td>
-                <td className={`border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-right font-bold ${previewAllocations[category] - previewUsedByCategory[category] < 0 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                <td className={`border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-1.5 text-right font-bold ${previewAllocations[category] - previewUsedByCategory[category] < 0 ? 'text-red-600' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}>
                   {fmt(previewAllocations[category] - previewUsedByCategory[category])}
                 </td>
-                <td className="border border-gray-300 dark:border-gray-600"></td>
+                <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
               </tr>
             ))}
-            <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
-              <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
-              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(previewTotal)}</td>
-              <td className="border border-gray-300 dark:border-gray-600"></td>
+            <tr className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 font-bold text-sm">
+              <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right">합계</td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(previewTotal)}</td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
             </tr>
-            <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
-              <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
-              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(previewBudget)}</td>
-              <td className="border border-gray-300 dark:border-gray-600"></td>
+            <tr className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 text-sm">
+              <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right text-[#44403C] dark:text-[#9C8F87]">배정 예산</td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right text-[#44403C] dark:text-[#C4B8B0]">{fmt(previewBudget)}</td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
             </tr>
             <tr className="text-sm font-black bg-green-50 dark:bg-green-900/20">
-              <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
-              <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-green-700 dark:text-green-400">
+              <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right">잔액</td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right text-green-700 dark:text-green-400">
                 {fmt(previewBudget - previewTotal)}
               </td>
-              <td className="border border-gray-300 dark:border-gray-600"></td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
             </tr>
           </tfoot>
         </table>
@@ -2234,7 +2234,7 @@ function EditableBudgetTable({
 }) {
   if (items.length === 0) {
     return (
-      <div className="h-28 flex items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-700 text-gray-400 text-sm">
+      <div className="h-28 flex items-center justify-center rounded-lg border border-dashed border-[#E7E5E4] dark:border-[#2E2822] text-[#A8A29E] text-sm">
         {emptyText}
       </div>
     );
@@ -2243,19 +2243,19 @@ function EditableBudgetTable({
   const parentIds = parentIdsWithChildren(items);
 
   return (
-    <div className="overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+    <div className="overflow-auto rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]">
       <table className="w-full text-sm border-collapse">
         <thead>
-          <tr className="bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-center w-8">순</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28">예산 과목</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 min-w-52">품목</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-28 text-right">단가</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최소</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">수량</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-20 text-center">최대</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-32 text-right">소계</th>
-            <th className="border border-gray-300 dark:border-gray-600 px-2 py-2 w-10"></th>
+          <tr className="bg-[#EDE8E1] dark:bg-[#2E2822] text-xs text-[#44403C] dark:text-[#C4B8B0]">
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-center w-8">순</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-28">예산 과목</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 min-w-52">품목</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-28 text-right">단가</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">최소</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">수량</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-20 text-center">최대</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-32 text-right">소계</th>
+            <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 w-10"></th>
           </tr>
         </thead>
         <tbody>
@@ -2269,11 +2269,11 @@ function EditableBudgetTable({
             const isCollapsed = collapsedIds.has(item.id);
             const indentClass = depth === 1 ? '' : depth === 2 ? 'pl-5' : 'pl-9';
             const blankInputs = isCategory || isParent; // 상위(부모) 행은 규격·단가·수량을 비운다
-            const blankCell = <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5"></td>;
+            const blankCell = <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5"></td>;
             return (
             <tr key={item.id} className={`${budgetRowClass(categoryColor, depth)} ${depth > 1 ? 'border-l-4 border-l-blue-300 dark:border-l-blue-700' : ''}`}>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center text-gray-500">{idx + 1}</td>
-              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${showCategoryRatio ? categoryColor.cell : ''}`}>
+              <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center text-[#78716C]">{idx + 1}</td>
+              <td className={`border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 ${showCategoryRatio ? categoryColor.cell : ''}`}>
                 {!showCategoryRatio ? (
                   <span className="block h-5"></span>
                 ) : isCategory ? (
@@ -2286,23 +2286,23 @@ function EditableBudgetTable({
                   </select>
                 )}
               </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+              <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
                 <div className={indentClass}>
                 <div className="flex items-center gap-1">
                   {(isCategory || isParent) ? (
                     <button
                       onClick={() => onToggleCollapse(item.id)}
-                      className="p-0.5 rounded text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 dark:text-gray-300"
+                      className="p-0.5 rounded text-[#78716C] hover:bg-black/5 dark:hover:bg-white/10 dark:text-[#C4B8B0]"
                       title={isCollapsed ? '펼치기' : '접기'}
                     >
                       {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     </button>
-                  ) : depth > 1 ? <span className="w-4 text-gray-400">└</span> : <span className="w-4" />}
+                  ) : depth > 1 ? <span className="w-4 text-[#A8A29E]">└</span> : <span className="w-4" />}
                   {isCategory ? (
-                    <span className="text-xs font-black text-gray-900 dark:text-white px-1">{item.budgetCategory}</span>
+                    <span className="text-xs font-black text-[#1C1917] dark:text-[#F0EBE6] px-1">{item.budgetCategory}</span>
                   ) : (
                     <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
-                      placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1 ${isParent ? 'font-semibold' : ''}`} />
+                      placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-[#1C1917] dark:text-[#F0EBE6] focus:ring-1 focus:ring-blue-400 rounded px-1 ${isParent ? 'font-semibold' : ''}`} />
                   )}
                   {isCategory && (
                     <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30" title="이 과목에 품목 추가">
@@ -2310,7 +2310,7 @@ function EditableBudgetTable({
                     </button>
                   )}
                   {!isCategory && canAddChild && (
-                    <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" title="세부 항목 추가">
+                    <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded text-[#A8A29E] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30" title="세부 항목 추가">
                       <Plus className="w-3 h-3" />
                     </button>
                   )}
@@ -2318,40 +2318,40 @@ function EditableBudgetTable({
                 </div>
               </td>
               {blankInputs ? blankCell : (
-                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
                   <input type="number" min={0} step={1000} value={item.unitPrice}
                     onChange={e => onChange(item.id, { unitPrice: parseInt(e.target.value, 10) || 0 })}
-                    className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-gray-800 dark:text-gray-100 focus:ring-1 focus:ring-blue-400 rounded px-1" />
-                  {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-right">고정</div>}
+                    className="w-full text-right text-xs bg-transparent border-none focus:outline-none text-[#1C1917] dark:text-[#F0EBE6] focus:ring-1 focus:ring-blue-400 rounded px-1" />
+                  {item.unitPriceLocked && <div className="mt-0.5 text-[10px] text-[#78716C] text-right">고정</div>}
                 </td>
               )}
               {blankInputs ? blankCell : (
-                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
                   <input type="number" min={1} value={item.minQuantity ?? ''}
                     onChange={e => onChange(item.id, { minQuantity: e.target.value ? parseInt(e.target.value, 10) || 1 : undefined })}
-                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                    className="w-full text-center text-xs bg-transparent border border-[#E7E5E4] dark:border-[#2E2822] rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-[#1C1917] dark:text-[#F0EBE6]" />
                 </td>
               )}
               {blankInputs ? blankCell : (
-                <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 ${adjustedCellClass}`}>
+                <td className={`border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 ${adjustedCellClass}`}>
                   <input type="number" min={1} value={item.quantity}
                     onChange={e => onChange(item.id, { quantity: parseInt(e.target.value, 10) || 1 })}
-                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
-                  {item.quantityLocked && <div className="mt-0.5 text-[10px] text-gray-500 text-center">고정</div>}
+                    className="w-full text-center text-xs bg-transparent border border-[#E7E5E4] dark:border-[#2E2822] rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-[#1C1917] dark:text-[#F0EBE6]" />
+                  {item.quantityLocked && <div className="mt-0.5 text-[10px] text-[#78716C] text-center">고정</div>}
                   {item.quantityAdjusted && <div className="mt-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300 text-center">자동 조정</div>}
                 </td>
               )}
               {blankInputs ? blankCell : (
-                <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
                   <input type="number" min={item.minQuantity ?? 1} value={item.maxQuantity ?? ''}
                     onChange={e => onChange(item.id, { maxQuantity: e.target.value ? parseInt(e.target.value, 10) || undefined : undefined })}
-                    className="w-full text-center text-xs bg-transparent border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-gray-800 dark:text-gray-100" />
+                    className="w-full text-center text-xs bg-transparent border border-[#E7E5E4] dark:border-[#2E2822] rounded focus:outline-none focus:ring-1 focus:ring-blue-400 text-[#1C1917] dark:text-[#F0EBE6]" />
                 </td>
               )}
-              <td className={`border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-right font-semibold text-gray-800 dark:text-gray-100 text-xs ${adjustedCellClass}`}>
+              <td className={`border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-right font-semibold text-[#1C1917] dark:text-[#F0EBE6] text-xs ${adjustedCellClass}`}>
                 {fmt(displaySubtotal(item, items))}
               </td>
-              <td className="border border-gray-200 dark:border-gray-700 px-2 py-1.5 text-center">
+              <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5 text-center">
                 {!isCategory && (
                   <button onClick={() => onRemove(item.id)} className="text-red-400 hover:text-red-600" title="행 삭제">
                     <Trash2 className="w-3.5 h-3.5" />
@@ -2365,31 +2365,31 @@ function EditableBudgetTable({
         <tfoot>
           {showCategoryRatio && CATEGORIES.map(category => (
             <tr key={category} className={`${CATEGORY_COLORS[category].footer} text-xs`}>
-              <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-right text-gray-600 dark:text-gray-300">
+              <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-1.5 text-right text-[#44403C] dark:text-[#C4B8B0]">
                 {category} 배정 {fmt(allocations[category])}원 / 집행 {fmt(usedByCategory[category])}원
               </td>
-              <td className={`border border-gray-300 dark:border-gray-600 px-2 py-1.5 text-right font-bold ${allocations[category] - usedByCategory[category] < 0 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
+              <td className={`border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-1.5 text-right font-bold ${allocations[category] - usedByCategory[category] < 0 ? 'text-red-600' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}>
                 {fmt(allocations[category] - usedByCategory[category])}
               </td>
-              <td className="border border-gray-300 dark:border-gray-600"></td>
+              <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
             </tr>
           ))}
-          <tr className="bg-gray-50 dark:bg-gray-700/50 font-bold text-sm">
-            <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">합계</td>
-            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(usedTotal)}</td>
-            <td className="border border-gray-300 dark:border-gray-600"></td>
+          <tr className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 font-bold text-sm">
+            <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right">합계</td>
+            <td className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right text-blue-700 dark:text-blue-300">{fmt(usedTotal)}</td>
+            <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
           </tr>
-          <tr className="bg-gray-50 dark:bg-gray-700/50 text-sm">
-            <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right text-gray-600 dark:text-gray-400">배정 예산</td>
-            <td className="border border-gray-300 dark:border-gray-600 px-2 py-2 text-right text-gray-700 dark:text-gray-300">{fmt(totalBudget)}</td>
-            <td className="border border-gray-300 dark:border-gray-600"></td>
+          <tr className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 text-sm">
+            <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right text-[#44403C] dark:text-[#9C8F87]">배정 예산</td>
+            <td className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right text-[#44403C] dark:text-[#C4B8B0]">{fmt(totalBudget)}</td>
+            <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
           </tr>
           <tr className={`text-sm font-black ${remaining === 0 ? 'bg-green-50 dark:bg-green-900/20' : remaining < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-            <td colSpan={7} className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-right">잔액</td>
-            <td className={`border border-gray-300 dark:border-gray-600 px-2 py-2 text-right ${remaining === 0 ? 'text-green-700 dark:text-green-400' : remaining < 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-400'}`}>
+            <td colSpan={7} className="border border-[#E7E5E4] dark:border-[#2E2822] px-3 py-2 text-right">잔액</td>
+            <td className={`border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-right ${remaining === 0 ? 'text-green-700 dark:text-green-400' : remaining < 0 ? 'text-red-600' : 'text-amber-700 dark:text-amber-400'}`}>
               {remaining === 0 ? '0' : fmt(remaining)}
             </td>
-            <td className="border border-gray-300 dark:border-gray-600"></td>
+            <td className="border border-[#E7E5E4] dark:border-[#2E2822]"></td>
           </tr>
         </tfoot>
       </table>
