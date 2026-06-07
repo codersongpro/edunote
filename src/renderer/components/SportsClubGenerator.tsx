@@ -441,8 +441,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 h-full flex flex-col transition-colors relative">
-      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-4 border-b border-slate-100 dark:border-slate-700">
+    <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
+      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mr-3 shadow-sm">
@@ -451,8 +451,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
               </svg>
             </div>
             <div>
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 text-lg">학교스포츠클럽 특기사항 생성</h2>
-              <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-lg">학교스포츠클럽 특기사항 생성</h2>
+              <div className="flex items-center space-x-2 text-xs text-[#78716C] dark:text-[#9C8F87] font-medium">
                  <span className={sportsState.step === 'SETUP' ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>1. 인원 설정</span>
                  <span>&gt;</span>
                  <span className={sportsState.step === 'CONFIG' ? 'text-blue-600 dark:text-blue-400 font-bold' : ''}>2. 활동 입력</span>
@@ -465,7 +465,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
               <button 
                 onClick={() => updateSportsState({ step: 'CONFIG' })} 
                 disabled={isGlobalGenerating}
-                className={`text-sm text-slate-500 underline hover:text-blue-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`text-sm text-[#78716C] underline hover:text-blue-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                   수정하기
               </button>
@@ -478,33 +478,33 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             <div className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     <div>
-                        <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-4">
+                        <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
                             생성할 학생 수는 몇 명인가요?
                         </label>
-                         <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 justify-center">
+                         <div className="flex items-center space-x-4 bg-[#FAF9F7] dark:bg-[#221E1B] p-6 rounded-2xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] justify-center">
                             <button 
                                 onClick={() => updateSportsState({ studentCount: Math.max(1, sportsState.studentCount - 1) })}
-                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                             >-</button>
                             <input
                                 type="number"
                                 value={sportsState.studentCount}
                                 onChange={handleCountChange}
-                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-white"
+                                className="w-32 text-center text-3xl font-bold bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#1C1917] dark:text-[#F0EBE6]"
                             />
                             <button 
                                 onClick={() => updateSportsState({ studentCount: sportsState.studentCount + 1 })}
-                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl shadow-sm text-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                className="w-12 h-12 flex items-center justify-center bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl shadow-sm text-xl text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                             >+</button>
                         </div>
                     </div>
                     
                     <div>
                         <div className="mb-4">
-                             <label className="block text-lg font-bold text-slate-700 dark:text-slate-300 mb-1">
+                             <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">
                                 학생 이름을 입력해주세요
                             </label>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">
                                 학생 이름을 쉼표(,)로 구분하거나, <strong>엑셀/스프레드시트에서 이름 열을 복사해 붙여넣기</strong>할 수 있습니다. <br/>
                                 <span className="text-blue-600 dark:text-blue-400 font-medium">(예: 김철수, 이영희, 박민수)</span>
                             </p>
@@ -525,7 +525,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             value={sportsState.nameInput}
                             onChange={handleNameInput}
                             placeholder="학생 1, 학생 2, 학생 3..."
-                            className="w-full h-32 px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none shadow-inner"
+                            className="w-full h-32 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none shadow-inner"
                         />
                     </div>
 
@@ -543,10 +543,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             <div className="flex-1 flex overflow-hidden">
                 {/* Sidebar List */}
                 {studentPanelCollapsed && (
-                    <div className="w-11 shrink-0 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex justify-center py-3">
+                    <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
                         <button
                             onClick={() => setStudentPanelCollapsed(false)}
-                            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
                             title="학생 목록 펼치기"
                         >
                             <PanelLeftOpen className="w-4 h-4" />
@@ -554,23 +554,23 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                 )}
                 {!studentPanelCollapsed && (
-                <div className={`w-1/4 min-w-[150px] bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className={`w-1/4 min-w-[150px] bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                     <div className="p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">학생 목록</h3>
+                            <h3 className="text-xs font-bold text-[#A8A29E] uppercase tracking-wider">학생 목록</h3>
                             <div className="flex items-center gap-2">
                                 <label className="flex items-center space-x-1 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={sportsState.students.length > 0 && sportsState.students.every(s => s.selected)}
                                         onChange={(e) => toggleAllSelection(e.target.checked)}
-                                        className="w-3 h-3 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        className="w-3 h-3 text-blue-600 rounded border-[#E7E5E4] focus:ring-blue-500"
                                     />
-                                    <span className="text-[10px] text-slate-500">전체</span>
+                                    <span className="text-[10px] text-[#78716C]">전체</span>
                                 </label>
                                 <button
                                     onClick={() => setStudentPanelCollapsed(true)}
-                                    className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                    className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
                                     title="학생 목록 접기"
                                 >
                                     <PanelLeftClose className="w-3.5 h-3.5" />
@@ -584,14 +584,14 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         type="checkbox" 
                                         checked={student.selected || false}
                                         onChange={() => toggleSelection(idx)}
-                                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        className="w-4 h-4 text-blue-600 rounded border-[#E7E5E4] focus:ring-blue-500"
                                     />
                                     <button
                                         onClick={() => updateSportsState({ currentStudentIndex: idx })}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                             sportsState.currentStudentIndex === idx
-                                            ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700'
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800'
+                                            ? 'bg-white dark:bg-[#221E1B] text-blue-600 dark:text-blue-400 shadow-sm ring-1 ring-[#E7E5E4] dark:ring-[#2E2822]'
+                                            : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1]/50 dark:hover:bg-[#221E1B]'
                                         }`}
                                     >
                                         <div className="flex justify-between items-center">
@@ -607,61 +607,61 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 )}
 
                 {/* Configuration Area */}
-                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-slate-800">
+                <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#221E1B]">
                     <div className="max-w-4xl mx-auto space-y-8">
                         
                         {/* Global Sport Settings */}
                         <div className="bg-blue-50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-800/30">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg mb-4">스포츠클럽 정보 (공통)</h3>
+                            <h3 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-lg mb-4">스포츠클럽 정보 (공통)</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">종목명</label>
+                                    <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">종목명</label>
                                     <input 
                                         type="text" 
                                         value={sportsState.sportName} 
                                         onChange={(e) => updateSportsState({ sportName: e.target.value })}
                                         disabled={isGlobalGenerating}
                                         placeholder="예: 축구, 배드민턴"
-                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 disabled:opacity-50"
+                                        className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-[#221E1B] disabled:opacity-50"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">클럽명</label>
+                                    <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">클럽명</label>
                                     <input 
                                         type="text" 
                                         value={sportsState.clubName} 
                                         onChange={(e) => updateSportsState({ clubName: e.target.value })}
                                         disabled={isGlobalGenerating}
                                         placeholder="예: 슛돌이 FC, 셔틀콕"
-                                        className="w-full px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 disabled:opacity-50"
+                                        className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-[#221E1B] disabled:opacity-50"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100 dark:border-slate-700">
-                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                            <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+                                <h3 className="text-xl font-bold text-[#1C1917] dark:text-[#F0EBE6]">
                                     <span className="text-blue-600 dark:text-blue-400">{sportsState.students[sportsState.currentStudentIndex].name}</span> 학생 개별 활동
                                 </h3>
-                                <div className="text-sm text-slate-500">{sportsState.currentStudentIndex + 1} / {sportsState.students.length}</div>
+                                <div className="text-sm text-[#78716C]">{sportsState.currentStudentIndex + 1} / {sportsState.students.length}</div>
                             </div>
 
                             <div className="mb-2">
                               <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">특성 선택 (클릭하면 아래 입력란에 추가)</label>
-                                <div className="flex rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden text-xs">
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">특성 선택 (클릭하면 아래 입력란에 추가)</label>
+                                <div className="flex rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] overflow-hidden text-xs">
                                   <button
                                     onClick={() => setTraitMode('positive')}
-                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'positive' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}
+                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'positive' ? 'bg-emerald-500 text-white' : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0]'}`}
                                   >긍정 요소</button>
                                   <button
                                     onClick={() => setTraitMode('negative')}
-                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'negative' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}
+                                    className={`px-3 py-1 font-semibold transition-colors ${traitMode === 'negative' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0]'}`}
                                   >부정 요소</button>
                                 </div>
                               </div>
-                              <div className="flex flex-wrap gap-1.5 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-600 max-h-28 overflow-y-auto">
+                              <div className="flex flex-wrap gap-1.5 p-2.5 bg-[#FAF9F7] dark:bg-[#2E2822]/50 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] max-h-28 overflow-y-auto">
                                 {(traitMode === 'positive' ? SPORTS_POSITIVE_TRAITS : SPORTS_NEGATIVE_TRAITS).map(trait => {
                                   const selected = isTraitSelected(trait);
                                   return (
@@ -675,8 +675,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             ? 'bg-emerald-500 text-white border-emerald-500'
                                             : 'bg-rose-500 text-white border-rose-500'
                                           : traitMode === 'positive'
-                                          ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50'
-                                          : 'bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700 hover:bg-rose-50'
+                                          ? 'bg-white dark:bg-[#2E2822] text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700 hover:bg-emerald-50'
+                                          : 'bg-white dark:bg-[#2E2822] text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700 hover:bg-rose-50'
                                       }`}
                                     >
                                       {trait}
@@ -685,20 +685,20 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 })}
                               </div>
                             </div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">개별 활동 내용 및 태도 <span className="text-xs font-normal text-slate-400">(특성 선택 시 자동으로 추가됨)</span></label>
+                            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">개별 활동 내용 및 태도 <span className="text-xs font-normal text-[#A8A29E]">(특성 선택 시 자동으로 추가됨)</span></label>
                             <textarea
                                 value={sportsState.students[sportsState.currentStudentIndex].additionalContext}
                                 onChange={(e) => handleContextChange(e.target.value)}
                                 disabled={isGlobalGenerating}
                                 placeholder="이 학생의 구체적인 활동 내용, 역할(주장 등), 성장한 점, 태도 등을 입력하세요."
-                                className="w-full h-28 px-4 py-3 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 dark:bg-slate-700 resize-none disabled:opacity-50"
+                                className="w-full h-28 px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-[#FAF9F7] dark:bg-[#2E2822] resize-none disabled:opacity-50"
                             />
                         </div>
 
                         {/* Length Settings */}
-                        <div className={`p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-600 ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                        <div className={`p-4 bg-[#FAF9F7] dark:bg-[#2E2822]/30 rounded-xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <label className="text-sm font-bold text-slate-600 dark:text-slate-300">생성 길이 설정 (전체 적용)</label>
+                                <label className="text-sm font-bold text-[#78716C] dark:text-[#C4B8B0]">생성 길이 설정 (전체 적용)</label>
                                 <div className="flex items-center gap-4">
                                     <div className="flex space-x-3">
                                         {(['100', '200', '300', 'custom'] as LengthOption[]).map((opt) => (
@@ -709,9 +709,9 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                                     value={opt} 
                                                     checked={sportsState.lengthOption === opt} 
                                                     onChange={() => updateSportsState({ lengthOption: opt })}
-                                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                                                    className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-[#E7E5E4]"
                                                 />
-                                                <span className="ml-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                                <span className="ml-1.5 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                                     {opt === 'custom' ? '직접' : opt}
                                                 </span>
                                             </label>
@@ -722,12 +722,12 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             type="number"
                                             value={sportsState.customLength}
                                             onChange={(e) => updateSportsState({ customLength: Number(e.target.value) })}
-                                            className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-slate-600 dark:text-white"
+                                            className="w-20 px-2 py-1 text-sm border rounded bg-white dark:bg-[#2E2822] dark:text-white"
                                         />
                                     )}
-                                    <div className="flex bg-white dark:bg-slate-600 rounded-lg p-0.5 border border-slate-200 dark:border-slate-500">
-                                         <button onClick={() => updateSportsState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${sportsState.lengthUnit === '자' ? 'bg-blue-100 text-blue-700' : 'text-slate-500'}`}>자</button>
-                                         <button onClick={() => updateSportsState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${sportsState.lengthUnit === 'byte' ? 'bg-blue-100 text-blue-700' : 'text-slate-500'}`}>byte</button>
+                                    <div className="flex bg-white dark:bg-[#2E2822] rounded-lg p-0.5 border border-[#E7E5E4] dark:border-[#6B5E57]">
+                                         <button onClick={() => updateSportsState({ lengthUnit: '자' })} className={`px-2 py-0.5 text-xs rounded ${sportsState.lengthUnit === '자' ? 'bg-blue-100 text-blue-700' : 'text-[#78716C]'}`}>자</button>
+                                         <button onClick={() => updateSportsState({ lengthUnit: 'byte' })} className={`px-2 py-0.5 text-xs rounded ${sportsState.lengthUnit === 'byte' ? 'bg-blue-100 text-blue-700' : 'text-[#78716C]'}`}>byte</button>
                                     </div>
                                 </div>
                              </div>
@@ -738,7 +738,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 <button 
                                     onClick={() => updateSportsState({ step: 'SETUP' })}
                                     disabled={isGlobalGenerating}
-                                    className="flex-1 py-4 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                    className="flex-1 py-4 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D] transition-colors"
                                 >
                                     이전 (인원 설정)
                                 </button>
@@ -769,8 +769,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
         {sportsState.step === 'RESULT' && (
              <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="p-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center flex-wrap gap-2">
-                    <h3 className="font-bold text-slate-700 dark:text-slate-200">생성 결과</h3>
+                <div className="p-4 bg-white dark:bg-[#221E1B] border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center flex-wrap gap-2">
+                    <h3 className="font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                     <div className="flex items-center gap-2">
                          <button
                             onClick={handleCopyAll}
@@ -778,7 +778,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors flex items-center shadow-md ${
                                 copiedId === '__ALL__'
                                 ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-400'
-                                : 'bg-slate-600 text-white hover:bg-slate-700'
+                                : 'bg-[#78716C] text-white hover:bg-[#44403C]'
                             } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 mr-2">
@@ -811,9 +811,9 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {sportsState.students.map((student, idx) => (
-                        <div key={student.id} className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <div key={student.id} className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-6 rounded-2xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
                              <div className="flex justify-between mb-4">
-                                <h4 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center">
+                                <h4 className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6] flex items-center">
                                     <span className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mr-3 text-sm">
                                         {idx + 1}
                                     </span>
@@ -826,7 +826,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         className={`text-sm font-medium flex items-center px-3 py-1.5 rounded-lg transition-colors border ${
                                             copiedId === student.id
                                             ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-400'
-                                            : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-600'
+                                            : 'bg-white border-[#E7E5E4] text-[#78716C] hover:bg-[#FAF9F7] dark:bg-[#2E2822] dark:border-[#2E2822] dark:text-[#C4B8B0] dark:hover:bg-[#3A332D]'
                                         } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {copiedId === student.id ? (
@@ -854,7 +854,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             next.has(student.id) ? next.delete(student.id) : next.add(student.id);
                                             return next;
                                           })}
-                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors"
+                                          className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                                         >
                                           이전 기록 ({hist.length})
                                         </button>
@@ -888,9 +888,9 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <textarea
                                     value={student.generatedContent || ''}
                                     onChange={(e) => handleResultChange(idx, e.target.value)}
-                                    className="w-full min-h-[120px] p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y text-sm leading-relaxed"
+                                    className="w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y text-sm leading-relaxed"
                                  />
-                                 <div className="absolute bottom-3 right-3 text-xs text-slate-400 pointer-events-none">
+                                 <div className="absolute bottom-3 right-3 text-xs text-[#A8A29E] pointer-events-none">
                                      {(student.generatedContent || '').length}자
                                  </div>
                              </div>
@@ -898,11 +898,11 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                const hist: HistoryEntry[] = getHistory('sports', student.name);
                                return hist.length > 0 ? (
                                  <div className="mt-3 space-y-2">
-                                   <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">이전 생성 기록</p>
+                                   <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">이전 생성 기록</p>
                                    {hist.map((entry, hi) => (
-                                     <div key={hi} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3 text-sm text-slate-600 dark:text-slate-400">
+                                     <div key={hi} className="rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210]/40 p-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                        <div className="flex justify-between items-center mb-1">
-                                         <span className="text-xs text-slate-400">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <span className="text-xs text-[#A8A29E]">{new Date(entry.date).toLocaleString('ko-KR')}</span>
                                          <button
                                            onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
@@ -923,10 +923,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         {/* Duplicate Check Modal */}
         {showDuplicateModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">중복 문장 검사 결과</h3>
-                        <button onClick={() => setShowDuplicateModal(false)} className="text-slate-400 hover:text-slate-600">
+                <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+                    <div className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6]">중복 문장 검사 결과</h3>
+                        <button onClick={() => setShowDuplicateModal(false)} className="text-[#A8A29E] hover:text-[#78716C]">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -934,7 +934,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                     <div className="p-4 overflow-y-auto flex-1">
                         {duplicateResults.length === 0 ? (
-                            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                            <div className="text-center py-8 text-[#78716C] dark:text-[#9C8F87]">
                                 <p className="text-lg">✅ 발견된 중복 문장이 없습니다.</p>
                                 <p className="text-sm">모든 학생의 내용이 고유하게 작성되었습니다.</p>
                             </div>
@@ -944,8 +944,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     ⚠️ 총 {duplicateResults.length}개의 중복 문장이 발견되었습니다. 내용을 수정해주세요.
                                 </div>
                                 {duplicateResults.map((result, idx) => (
-                                    <div key={idx} className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
-                                        <p className="text-slate-800 dark:text-slate-100 font-medium mb-2 text-sm">"{result.sentence}"</p>
+                                    <div key={idx} className="bg-[#FAF9F7] dark:bg-[#2E2822]/50 p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822]">
+                                        <p className="text-[#1C1917] dark:text-[#F0EBE6] font-medium mb-2 text-sm">"{result.sentence}"</p>
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {result.students.map((studentName, i) => (
                                                 <span key={i} className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs rounded-md font-bold">
@@ -958,10 +958,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
                         )}
                     </div>
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end">
+                    <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] flex justify-end">
                         <button
                             onClick={() => setShowDuplicateModal(false)}
-                            className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                            className="px-4 py-2 bg-[#EDE8E1] dark:bg-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] font-bold rounded-lg hover:bg-[#E7E5E4] dark:hover:bg-[#3A332D] transition-colors"
                         >
                             닫기
                         </button>
