@@ -15,8 +15,8 @@ interface DocArchiveItem {
   createdAt: number;
 }
 
-const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
-const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1';
+const inputClass = 'w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-md bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
+const labelClass = 'block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1';
 
 const CATEGORIES = ['안전', '연수', '행사', '공문', '방역', '업무', '기타'];
 
@@ -84,15 +84,15 @@ export default function DocArchivePanel() {
 
   if (view === 'add') {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+      <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
           <button
             onClick={() => { setView('list'); resetForm(); }}
-            className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1"
+            className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] flex items-center gap-1"
           >
             <X className="w-4 h-4" /> 취소
           </button>
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">공문 저장</h2>
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">공문 저장</h2>
           <button
             onClick={handleAdd}
             className="ml-auto px-4 py-1.5 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
@@ -143,12 +143,12 @@ export default function DocArchivePanel() {
 
   if (view === 'detail' && selected) {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
-          <button onClick={() => setView('list')} className="text-xs font-semibold text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 flex items-center gap-1">
+      <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
+          <button onClick={() => setView('list')} className="text-xs font-semibold text-[#78716C] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] flex items-center gap-1">
             <ChevronDown className="w-4 h-4 rotate-90" /> 목록으로
           </button>
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100 truncate flex-1">{selected.title}</h2>
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6] truncate flex-1">{selected.title}</h2>
           <button onClick={() => handleDelete(selected.id)} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1">
             <Trash2 className="w-4 h-4" /> 삭제
           </button>
@@ -156,12 +156,12 @@ export default function DocArchivePanel() {
         <div className="flex-1 overflow-y-auto p-5 space-y-4 max-w-2xl w-full mx-auto">
           <div className="flex gap-3 text-sm">
             <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">{selected.category}</span>
-            <span className="text-gray-500 dark:text-gray-400">{selected.date}</span>
+            <span className="text-[#78716C] dark:text-[#9C8F87]">{selected.date}</span>
           </div>
           {selected.captureBase64 && (
             <div>
               <p className={labelClass}>캡처 이미지</p>
-              <img src={selected.captureBase64} alt="공문 캡처" className="max-w-full rounded-lg border border-gray-200 dark:border-gray-700 shadow" />
+              <img src={selected.captureBase64} alt="공문 캡처" className="max-w-full rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow" />
             </div>
           )}
           {selected.attachments.length > 0 && (
@@ -169,9 +169,9 @@ export default function DocArchivePanel() {
               <p className={labelClass}>붙임문서 ({selected.attachments.length}개)</p>
               <div className="space-y-1">
                 {selected.attachments.map((att, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
+                  <div key={i} className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] text-sm">
                     <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="truncate text-gray-700 dark:text-gray-300">{att.name}</span>
+                    <span className="truncate text-[#44403C] dark:text-[#C4B8B0]">{att.name}</span>
                     <button
                       onClick={() => {
                         const a = document.createElement('a');
@@ -191,7 +191,7 @@ export default function DocArchivePanel() {
           {selected.memo && (
             <div>
               <p className={labelClass}>메모</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">{selected.memo}</p>
+              <p className="text-sm text-[#44403C] dark:text-[#C4B8B0] whitespace-pre-wrap bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] p-3">{selected.memo}</p>
             </div>
           )}
         </div>
@@ -200,15 +200,15 @@ export default function DocArchivePanel() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
       <div className="shrink-0 px-5 pt-5 pb-3 flex items-center gap-3">
         <div>
-          <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <h1 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
             <Archive className="w-5 h-5 text-emerald-500" />
             공문 보관함
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">공문 캡처 이미지와 붙임문서를 저장·관리합니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">공문 캡처 이미지와 붙임문서를 저장·관리합니다.</p>
         </div>
         <button
           onClick={() => setView('add')}
@@ -222,9 +222,9 @@ export default function DocArchivePanel() {
       {/* 검색/필터 */}
       <div className="shrink-0 px-5 pb-3 flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E]" />
           <input
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-emerald-500"
             placeholder="제목·메모 검색"
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -238,7 +238,7 @@ export default function DocArchivePanel() {
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                 filterCat === c
                   ? 'bg-emerald-500 text-white'
-                  : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  : 'bg-white dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
               }`}
             >
               {c}
@@ -250,7 +250,7 @@ export default function DocArchivePanel() {
       {/* 목록 */}
       <div className="flex-1 overflow-y-auto px-5 pb-5">
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-gray-600">
+          <div className="flex flex-col items-center justify-center h-48 text-[#A8A29E] dark:text-[#6B5E57]">
             <Archive className="w-10 h-10 mb-2 opacity-40" />
             <p className="text-sm font-semibold">저장된 공문이 없습니다.</p>
             <p className="text-xs mt-1">"공문 저장" 버튼으로 추가하세요.</p>
@@ -261,10 +261,10 @@ export default function DocArchivePanel() {
               <div
                 key={item.id}
                 onClick={() => { setSelected(item); setView('detail'); }}
-                className="flex items-center gap-3 p-3.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-600 cursor-pointer transition-all group"
+                className="flex items-center gap-3 p-3.5 bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] hover:border-emerald-400 dark:hover:border-emerald-600 cursor-pointer transition-all group"
               >
                 {item.captureBase64 ? (
-                  <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <div className="w-12 h-12 shrink-0 rounded-lg overflow-hidden border border-[#EDE8E1] dark:border-[#2E2822]">
                     <img src={item.captureBase64} alt="" className="w-full h-full object-cover" />
                   </div>
                 ) : (
@@ -273,12 +273,12 @@ export default function DocArchivePanel() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-300">{item.title}</p>
+                  <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-300">{item.title}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">{item.category}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{item.date}</span>
+                    <span className="text-xs text-[#78716C] dark:text-[#9C8F87]">{item.date}</span>
                     {item.attachments.length > 0 && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-0.5">
+                      <span className="text-xs text-[#A8A29E] dark:text-[#6B5E57] flex items-center gap-0.5">
                         <Tag className="w-3 h-3" /> 붙임 {item.attachments.length}개
                       </span>
                     )}
@@ -286,7 +286,7 @@ export default function DocArchivePanel() {
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); handleDelete(item.id); }}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                  className="p-2 text-[#A8A29E] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

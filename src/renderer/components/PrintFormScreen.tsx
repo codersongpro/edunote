@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 
-const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
-const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1';
+const inputClass = 'w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-md bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
+const labelClass = 'block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1';
 
 const CATEGORIES = Array.from(new Set(PRINT_FORMS.map(f => f.category)));
 
@@ -130,18 +130,18 @@ export default function PrintFormScreen() {
 
   if (selectedForm) {
     return (
-      <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
         {/* 헤더 */}
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
+        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
           <button
             onClick={() => { setSelectedForm(null); setPreview(false); }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             목록으로
           </button>
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">{selectedForm.title}</h2>
+          <span className="text-[#E7E5E4] dark:text-[#2E2822]">|</span>
+          <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">{selectedForm.title}</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">{selectedForm.category}</span>
           <div className="ml-auto flex gap-2">
             <button
@@ -149,7 +149,7 @@ export default function PrintFormScreen() {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
                 preview
                   ? 'bg-emerald-500 text-white border-emerald-500'
-                  : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  : 'border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -157,7 +157,7 @@ export default function PrintFormScreen() {
             </button>
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               초기화
@@ -176,10 +176,10 @@ export default function PrintFormScreen() {
         <div className="flex flex-1 overflow-hidden">
           {/* 입력 패널 */}
           {!preview && inputPanelCollapsed && (
-            <div className="w-11 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-center py-3">
+            <div className="w-11 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex justify-center py-3">
               <button
                 onClick={() => setInputPanelCollapsed(false)}
-                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
                 title="입력 패널 펼치기"
               >
                 <PanelLeftOpen className="w-4 h-4" />
@@ -187,12 +187,12 @@ export default function PrintFormScreen() {
             </div>
           )}
           {!preview && !inputPanelCollapsed && (
-            <div className="w-72 shrink-0 overflow-y-auto p-4 space-y-3 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="w-72 shrink-0 overflow-y-auto p-4 space-y-3 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-gray-500 dark:text-gray-400">입력 패널</p>
+                <p className="text-xs font-bold text-[#78716C] dark:text-[#9C8F87]">입력 패널</p>
                 <button
                   onClick={() => setInputPanelCollapsed(true)}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
                   title="입력 패널 접기"
                 >
                   <PanelLeftClose className="w-4 h-4" />
@@ -210,7 +210,7 @@ export default function PrintFormScreen() {
                         value={values[field.key] ?? ''}
                         onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
                       />
-                      <p className="text-[11px] text-gray-400 mt-1">
+                      <p className="text-[11px] text-[#A8A29E] mt-1">
                         한 줄에 한 명씩 입력하세요. 입력한 순서대로 번호가 매겨지며, 20명을 넘으면 자동으로 다음 장으로 이어집니다.
                       </p>
                     </>
@@ -223,7 +223,7 @@ export default function PrintFormScreen() {
                         value={values[field.key] ?? ''}
                         onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
                       />
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p className="text-[11px] text-[#A8A29E] mt-0.5">
                         한 줄에 한 행, 칸은 <span className="font-semibold">/</span>로 구분 · 순서: {(field.columns ?? []).join(' / ')}
                       </p>
                     </>
@@ -258,7 +258,7 @@ export default function PrintFormScreen() {
           )}
 
           {/* 미리보기 */}
-          <div className="flex-1 overflow-auto bg-gray-200 dark:bg-gray-950 flex items-start justify-center p-6">
+          <div className="flex-1 overflow-auto bg-[#EDE8E1] dark:bg-[#171210] flex items-start justify-center p-6">
             <div className="bg-white shadow-xl shrink-0" style={{ width: '210mm', height: '297mm', padding: '0' }}>
               <iframe
                 srcDoc={rendered}
@@ -273,17 +273,17 @@ export default function PrintFormScreen() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
       <div className="shrink-0 px-5 pt-5 pb-3">
-        <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+        <h1 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
           <FileText className="w-5 h-5 text-emerald-500" />
           양식 인쇄 도구
         </h1>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">자주 쓰는 학교 양식을 선택해 내용을 채우고 PDF로 인쇄하세요.</p>
+        <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 학교 양식을 선택해 내용을 채우고 PDF로 인쇄하세요.</p>
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="shrink-0 px-5 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="shrink-0 px-5 flex gap-2 border-b border-[#EDE8E1] dark:border-[#2E2822]">
         {CATEGORIES.map(cat => (
           <button
             key={cat}
@@ -291,7 +291,7 @@ export default function PrintFormScreen() {
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
               activeCategory === cat
                 ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0]'
             }`}
           >
             {cat}
@@ -306,13 +306,13 @@ export default function PrintFormScreen() {
             <button
               key={form.id}
               onClick={() => handleSelectForm(form)}
-              className="text-left p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-md transition-all group"
+              className="text-left p-4 bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-md transition-all group"
             >
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span className="font-bold text-sm text-gray-800 dark:text-gray-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">{form.title}</span>
+                <span className="font-bold text-sm text-[#1C1917] dark:text-[#F0EBE6] group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">{form.title}</span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                 입력 항목 {form.fields.length}개 · PDF 인쇄 지원
               </p>
             </button>
