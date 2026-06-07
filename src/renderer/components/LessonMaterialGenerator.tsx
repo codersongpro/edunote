@@ -474,7 +474,7 @@ li{margin-bottom:5pt;line-height:1.6;}
     (contentType === 'PLAN' && planContent !== '');
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA]">
+    <div className="flex flex-col h-full bg-[#FAF9F7]">
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
 
         {/* Left: input panel */}

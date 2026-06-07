@@ -165,7 +165,7 @@ const StudentMemoBoard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA]">
+    <div className="flex flex-col h-full bg-[#FAF9F7]">
       {/* Header */}
       <div className="bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">

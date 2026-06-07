@@ -462,7 +462,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
 
   // ── 목록 화면 ──
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-950">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between mb-4">

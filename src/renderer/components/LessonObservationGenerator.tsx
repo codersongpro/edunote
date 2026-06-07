@@ -99,7 +99,7 @@ const LessonObservationGenerator: React.FC = () => {
   const labelClass = 'block text-sm font-bold text-[#44403C] mb-1.5';
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
       <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
         {/* Header */}
         <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">

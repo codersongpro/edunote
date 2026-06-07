@@ -443,7 +443,7 @@ const DemoSamplesScreen: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#F5F7FA] dark:bg-slate-950">
+    <div className="flex h-full flex-col overflow-y-auto bg-[#FAF9F7] dark:bg-[#171210]">
       <div className="mx-auto w-full max-w-2xl space-y-3 px-5 py-6">
         <div className="mb-4">
           <h1 className="text-xl font-black text-slate-900 dark:text-white">시연 샘플</h1>
