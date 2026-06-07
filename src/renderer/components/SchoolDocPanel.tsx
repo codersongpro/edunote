@@ -438,8 +438,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // ─── Style helpers ─────────────────────────────────────────────────────────
 
-  const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
-  const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide';
+  const inputClass = 'w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-md bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] dark:placeholder-[#6B5E57] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+  const labelClass = 'block text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] mb-1 uppercase tracking-wide';
   const sectionClass = 'mb-4';
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -458,15 +458,15 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   )?.replace(/<\/body>/i, '</div></body>');
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden p-4 gap-4">
         {/* Left: input panel */}
         {inputPanelCollapsed && (
-          <div className="w-11 shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex justify-center py-3">
+          <div className="w-11 shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
             <button
               onClick={() => setInputPanelCollapsed(false)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
               title="입력 패널 펼치기"
             >
               <PanelLeftOpen className="w-4 h-4" />
@@ -474,17 +474,17 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           </div>
         )}
         {!inputPanelCollapsed && (
-        <div className="w-[420px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm flex flex-col overflow-hidden">
+        <div className="w-[420px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
-          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+          <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-3 shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-100 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-[#44403C] dark:text-[#F0EBE6] flex items-center gap-2">
                 <PenTool className="w-4 h-4 text-blue-500" />
                 입력 정보
               </h3>
               <button
                 onClick={() => setInputPanelCollapsed(true)}
-                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
                 title="입력 패널 접기"
               >
                 <PanelLeftClose className="w-4 h-4" />
@@ -521,7 +521,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               )}
             </div>
 
-            <hr className="border-gray-200 dark:border-gray-700" />
+            <hr className="border-[#EDE8E1] dark:border-[#2E2822]" />
 
             {/* Dynamic form by tab */}
 
@@ -542,14 +542,14 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                           className={`w-full py-1.5 text-xs rounded-md border transition-all ${
                             gongmunData.complexity === opt.val
                               ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                              : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                           }`}
                         >
                           {opt.label}
                         </button>
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 px-2.5 py-2 text-[11px] leading-relaxed text-white bg-gray-800 dark:bg-gray-700 rounded-lg shadow-lg hidden group-hover:block z-20 pointer-events-none whitespace-pre-line">
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 px-2.5 py-2 text-[11px] leading-relaxed text-white bg-[#1C1917] dark:bg-[#2E2822] rounded-lg shadow-lg hidden group-hover:block z-20 pointer-events-none whitespace-pre-line">
                           {opt.tooltip}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-gray-800 dark:border-b-gray-700" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-[#1C1917] dark:border-b-[#2E2822]" />
                         </div>
                       </div>
                     ))}
@@ -631,7 +631,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
                           pumuiData.type === opt.val
                             ? 'bg-blue-600 text-white border-blue-600'
-                            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                            : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                         }`}
                       >
                         {opt.label}
@@ -788,7 +788,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             {activeTab === DocType.MESSAGE && (
               <div className="space-y-4">
                 {/* 서브탭 */}
-                <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="flex rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden">
                   {([
                     { key: 'sms' as const, label: '문자' },
                     { key: 'social' as const, label: '소통메세지' },
@@ -799,7 +799,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                       className={`flex-1 py-2 text-sm font-semibold transition-colors ${
                         msgSubTab === tab.key
                           ? 'bg-blue-600 text-white'
-                          : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
                       }`}
                     >
                       {tab.label}
@@ -820,7 +820,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                             className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${
                               messageData.target === t
                                 ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                             }`}
                           >
                             {t}
@@ -841,7 +841,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                             className={`flex-1 py-1.5 text-sm rounded-md border transition-all ${
                               messageData.type === opt.val
                                 ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                             }`}
                           >
                             {opt.label}
@@ -849,17 +849,17 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2 py-2 border-t border-[#EDE8E1] dark:border-[#2E2822]">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={messageData.isReply}
                           onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-4 h-4 rounded border-[#E7E5E4] text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
+                        <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">답장 생성</span>
                       </label>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
+                      <span className="text-xs text-[#A8A29E] dark:text-[#6B5E57]">받은 메시지에 대한 답장을 생성합니다.</span>
                     </div>
                     {messageData.isReply && (
                       <div className="space-y-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-3">
@@ -873,7 +873,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                                 className={`px-3 py-1 text-xs rounded-full border transition-all ${
                                   messageData.relationship === r
                                     ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                    : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                                 }`}
                               >
                                 {r}
@@ -917,7 +917,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                             className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
                               messageData.relationship === r
                                 ? 'bg-blue-600 text-white border-blue-600'
-                                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:border-blue-400'
+                                : 'bg-white dark:bg-[#171210] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-blue-400'
                             }`}
                           >
                             {r}
@@ -925,17 +925,17 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         ))}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 py-2 border-t border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-2 py-2 border-t border-[#EDE8E1] dark:border-[#2E2822]">
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={messageData.isReply}
                           onChange={e => setMessageData({ ...messageData, isReply: e.target.checked })}
-                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="w-4 h-4 rounded border-[#E7E5E4] text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">답장 생성</span>
+                        <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">답장 생성</span>
                       </label>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">받은 메시지에 대한 답장을 생성합니다.</span>
+                      <span className="text-xs text-[#A8A29E] dark:text-[#6B5E57]">받은 메시지에 대한 답장을 생성합니다.</span>
                     </div>
                     {messageData.isReply && (
                       <div className="space-y-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg p-3">
@@ -992,7 +992,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               </div>
             )}
 
-            <hr className="border-gray-200 dark:border-gray-700" />
+            <hr className="border-[#EDE8E1] dark:border-[#2E2822]" />
 
             {/* File uploads */}
             <div>
@@ -1038,7 +1038,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                         handleLoadTemplateFavorite(e.target.value);
                         e.currentTarget.value = '';
                       }}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+                      className="w-full rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-2 py-1.5 text-xs text-[#44403C] dark:text-[#C4B8B0]"
                     >
                       <option value="">저장한 양식 불러오기</option>
                       {activeTemplateFavorites.map(item => (
@@ -1060,13 +1060,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           </div>
 
           {/* Generate button */}
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0">
+          <div className="px-4 py-3 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] shrink-0">
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
                 isGenerating
-                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  ? 'bg-[#E7E5E4] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm active:scale-[0.98]'
               }`}
             >
@@ -1107,15 +1107,15 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               hwpxTemplate={hwpxTemplateFile}
             />
           ) : (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
               {isGenerating ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                   <svg className="animate-spin w-8 h-8 text-blue-500 mb-4" viewBox="0 0 24 24" fill="none">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
-                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-200 mb-1">문서를 생성하는 중...</p>
-                  <p className="text-sm text-gray-400 dark:text-gray-500">{loadingMessage}</p>
+                  <p className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">문서를 생성하는 중...</p>
+                  <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57]">{loadingMessage}</p>
                 </div>
               ) : EXAMPLE_DOCS[activeTab] ? (
                 <>
@@ -1137,8 +1137,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-full mb-4">
                     <FileText className="w-10 h-10 text-blue-400" />
                   </div>
-                  <h3 className="text-base font-semibold text-gray-600 dark:text-gray-200 mb-2">문서를 생성해 주세요</h3>
-                  <p className="text-sm text-gray-400 dark:text-gray-500 max-w-xs">
+                  <h3 className="text-base font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-2">문서를 생성해 주세요</h3>
+                  <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57] max-w-xs">
                     왼쪽 패널에서 필요한 정보를 입력한 후<br />생성 버튼을 눌러주세요.
                   </p>
                 </div>
