@@ -132,7 +132,7 @@ export default function PrintFormScreen() {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
         {/* 헤더 */}
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
+        <div className="h-14 shrink-0 px-4 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
           <button
             onClick={() => { setSelectedForm(null); setPreview(false); }}
             className="flex items-center gap-1.5 text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] transition-colors"

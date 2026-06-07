@@ -1605,7 +1605,7 @@ export default function BudgetPlannerScreen() {
 
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
-      <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-3 flex items-center gap-3">
+      <div className="h-14 shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 flex items-center gap-3">
         <button
           onClick={() => setInputSidebarCollapsed(v => !v)}
           className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors shrink-0"

@@ -491,8 +491,8 @@ li{margin-bottom:5pt;line-height:1.6;}
         )}
         {!inputPanelCollapsed && (
         <div className="w-[360px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
-          <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-3 shrink-0">
-            <div className="flex items-center justify-between gap-2">
+          <div className="h-14 bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 shrink-0 flex items-center">
+            <div className="flex items-center justify-between gap-2 w-full">
               <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-amber-500" />
                 수업 정보 입력

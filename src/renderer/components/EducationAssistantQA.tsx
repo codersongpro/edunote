@@ -79,7 +79,7 @@ const EducationAssistantQA: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#EDE8E1] bg-white shrink-0">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] bg-white shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-green-100 p-1.5 rounded-lg">
             <GraduationCap className="w-4 h-4 text-green-600" />

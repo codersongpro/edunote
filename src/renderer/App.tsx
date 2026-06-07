@@ -1287,18 +1287,18 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-hidden flex flex-col">
-          <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
+        <main className="relative flex-1 overflow-hidden flex flex-col">
+          <div className={`pointer-events-none absolute inset-x-0 top-0 z-20 h-[3px] bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
           {topNavItems.length > 0 && (
-            <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] pr-5 overflow-x-auto">
-              <div className="flex items-center gap-1 min-w-max">
+            <div className="h-14 shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] pr-5 overflow-x-auto">
+              <div className="flex h-full items-stretch gap-1 min-w-max">
                 {topNavItems.map(item => {
                   const Icon = item.icon;
                   return (
                     <button
                       key={item.key}
                       onClick={item.onClick}
-                      className={`h-11 px-4 inline-flex items-center gap-1.5 border-t-2 rounded-t-lg text-sm transition-colors ${
+                      className={`h-full px-4 inline-flex items-center gap-1.5 border-t-2 rounded-t-lg text-sm transition-colors ${
                         item.active
                           ? 'border-indigo-500 bg-[#FAF9F7] dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] font-bold'
                           : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'

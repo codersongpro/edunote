@@ -94,7 +94,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#221E1B]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-indigo-100 p-1.5 rounded-lg">
             <Bot className="w-4 h-4 text-indigo-600" />

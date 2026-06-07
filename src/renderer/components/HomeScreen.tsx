@@ -118,18 +118,18 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               action: handleExportBackup,
             },
           ].map(item => (
-            <div key={item.label} className="flex items-center gap-2 py-1">
+            <div key={item.label} className="flex min-w-0 items-center gap-2 py-1">
               <span className="text-[#A8A29E] dark:text-[#6B5E57] shrink-0">{item.label}</span>
-              <span className={`font-bold flex items-center gap-0.5 truncate ${item.color}`}>
+              <span className={`min-w-0 flex-1 truncate font-bold flex items-center gap-0.5 ${item.color}`}>
                 {item.icon}
-                {item.value}
+                <span className="truncate">{item.value}</span>
               </span>
               {'action' in item && item.action && (
                 <button
                   type="button"
                   onClick={item.action}
                   disabled={isBackingUp}
-                  className="ml-auto shrink-0 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+                  className="ml-auto shrink-0 whitespace-nowrap rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
                 >
                   {isBackingUp ? '백업 중' : '자료 백업하기'}
                 </button>

@@ -85,7 +85,7 @@ export default function DocArchivePanel() {
   if (view === 'add') {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
+        <div className="h-14 shrink-0 px-4 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
           <button
             onClick={() => { setView('list'); resetForm(); }}
             className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] flex items-center gap-1"
@@ -144,7 +144,7 @@ export default function DocArchivePanel() {
   if (view === 'detail' && selected) {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
-        <div className="shrink-0 px-5 pt-4 pb-3 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
+        <div className="h-14 shrink-0 px-4 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
           <button onClick={() => setView('list')} className="text-xs font-semibold text-[#78716C] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] flex items-center gap-1">
             <ChevronDown className="w-4 h-4 rotate-90" /> 목록으로
           </button>

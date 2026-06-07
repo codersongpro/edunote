@@ -207,7 +207,7 @@ edunote
 | 기본 | `USAGE_GUIDE` | `UsageGuideScreen` | 사용법 안내 |
 | 기본 | `SETTINGS` | `SettingsScreen` | API 키, 학교급, 소속기관, 저장 위치, 백업 설정 |
 | 기본 | `ABOUT` | `AboutScreen` | 앱 정보, 버전, 업데이트 확인 |
-| 기본 | `DEMO_SAMPLES` | `DemoSamplesScreen` | 샘플 입력값 모음 (Demo 버튼 → 별도 창으로 열림) |
+| 기본 | `DEMO_SAMPLES` | `DemoSamplesScreen` | 샘플 입력값 모음 (Demo 버튼 → 별도 창으로 열림, 공문요약 예시에 일정·마감일·참고 웹사이트 포함) |
 | 교무행정AI | `EDUCATION_QA` | `EducationAssistantQA` | 교육 일반 질의응답 |
 | 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
 | 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
@@ -529,7 +529,7 @@ GitHub Actions 자동 실행
 - `index.css`의 prose 스타일(마크다운 렌더링용)은 `dark-prose-area` 클래스로 범위가 한정되어 있다. 문서 미리보기나 챗봇 응답 영역에 prose를 적용할 때 다크모드에서 배경색과 텍스트 색상이 충돌하지 않도록 적용 범위를 확인해야 한다.
 - 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하지 않는다.
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다.
-- Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다.
+- Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다. 공문요약·업무추출 샘플에는 일정, 마감일, 참고 웹사이트 주소가 포함된다.
 
 ---
 
