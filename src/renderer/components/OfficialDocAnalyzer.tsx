@@ -27,21 +27,25 @@ const OfficialDocAnalyzer: React.FC = () => {
 
   const getCalendarDate = () => {
     const dateFromText = (text: string) => {
-      const m = text.match(/(20\d{2})[-.년\s]+(\d{1,2})[-.월\s]+(\d{1,2})/);
-      return m ? `${m[1]}${m[2].padStart(2, '0')}${m[3].padStart(2, '0')}` : null;
+      const full = text.match(/(20\d{2})\s*(?:년|[-./])\s*(\d{1,2})\s*(?:월|[-./])\s*(\d{1,2})/);
+      if (full) return `${full[1]}${full[2].padStart(2, '0')}${full[3].padStart(2, '0')}`;
+
+      const short = text.match(/(?:^|[^\d])(\d{1,2})\s*(?:월|[-./])\s*(\d{1,2})\s*(?:일)?/);
+      if (!short) return null;
+      return `${new Date().getFullYear()}${short[1].padStart(2, '0')}${short[2].padStart(2, '0')}`;
     };
 
-    // 1순위: ## 마감 섹션
-    const deadlineSection = result.match(/##\s*마감\s*\n+([\s\S]*?)(?=\n##|\s*$)/);
+    // 1순위: 마감/기한/제출 섹션
+    const deadlineSection = result.match(/##\s*(?:마감|기한|제출)\s*\n+([\s\S]*?)(?=\n##|\s*$)/);
     if (deadlineSection?.[1]) {
       const d = dateFromText(deadlineSection[1]);
       if (d) return d;
     }
 
-    // 2순위: "까지" / "마감" / "기한" 키워드가 포함된 줄
+    // 2순위: 마감 업무를 뜻하는 키워드가 포함된 줄
     const source = `${result}\n${pastedText}\n${title}`;
     for (const line of source.split('\n')) {
-      if (/까지|마감|기한/.test(line)) {
+      if (/마감|기한|까지|제출|신청|접수|등록|회신/.test(line)) {
         const d = dateFromText(line);
         if (d) return d;
       }
@@ -122,7 +126,7 @@ const OfficialDocAnalyzer: React.FC = () => {
         '',
         result,
         '',
-        '원문 마감일과 제출처를 확인한 뒤 저장하세요.',
+        '마감일 기준으로 만든 일정입니다. 원문 마감일과 제출처를 확인한 뒤 저장하세요.',
       ].join('\n').slice(0, 1800),
     });
     if (date) params.set('dates', `${date}/${getCalendarEndDate(date)}`);

@@ -81,6 +81,16 @@ const UsageGuideScreen: React.FC = () => {
           </div>
         </Section>
 
+        <Section title="개인정보보호와 저장 방식" icon={<AlertTriangle className="w-4 h-4 text-emerald-500" />}>
+          <ul className="text-xs space-y-2 leading-relaxed text-[#78716C] dark:text-[#9C8F87]">
+            <li>• 기본 정보, 학생 명단, 학생 메모, 나만의 자료실 등 앱 자료는 사용자의 컴퓨터에 저장됩니다.</li>
+            <li>• 백업 파일에는 앱 자료와 설정이 포함되지만, Gemini API 키는 포함하지 않습니다.</li>
+            <li>• 저장된 API 키는 보안상 화면에 다시 표시하지 않으며, 변경할 때만 새 키를 입력합니다.</li>
+            <li>• 학생기록 생성 시 개인정보 보호 모드를 사용하면 학생 이름을 임시 표현으로 바꿔 AI에 전달하고, 결과 본문에 학생 이름이 남지 않도록 처리합니다.</li>
+            <li>• Gemini API로 전송되는 입력에는 학생·학부모·교직원의 실명, 연락처, 주민등록번호, 건강 정보 등 민감정보를 넣지 마세요.</li>
+          </ul>
+        </Section>
+
         <Section title="예산안작성" icon={<FileText className="w-4 h-4 text-green-600" />}>
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">AI가 예산 제목과 희망 물품을 분석해 어울리는 품목과 단가·수량을 자동으로 생성합니다.</p>
           <div className="space-y-3">

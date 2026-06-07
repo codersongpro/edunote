@@ -103,7 +103,6 @@ const App: React.FC = () => {
   const [onboardingStep, setOnboardingStep] = useState(1);
   const [showApiKeyLimitModal, setShowApiKeyLimitModal] = useState(false);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
-  const [onboardingDontShowAgain, setOnboardingDontShowAgain] = useState(false);
   const [onboardingApiKey, setOnboardingApiKey] = useState('');
   const [onboardingApiTier, setOnboardingApiTier] = useState<'free' | 'paid'>('free');
   const [onboardingApiStatus, setOnboardingApiStatus] = useState<'idle' | 'testing' | 'saved' | 'error'>('idle');
@@ -203,7 +202,7 @@ const App: React.FC = () => {
     initAudioUnlock();
     const init = async () => {
       try {
-        const [hn, sl, dm, lastUsable, version, apiTier, teacherName, institution, gradeClass, onboardingDismissed] = await Promise.all([
+        const [hn, sl, dm, lastUsable, version, apiTier, teacherName, institution, gradeClass] = await Promise.all([
           window.electronAPI.hasApiKey(),
           window.electronAPI.getConfig('schoolLevel'),
           window.electronAPI.getConfig('darkMode'),
@@ -213,7 +212,6 @@ const App: React.FC = () => {
           window.electronAPI.getConfig('teacherName'),
           window.electronAPI.getConfig('institution'),
           window.electronAPI.getConfig('gradeClass'),
-          window.electronAPI.getConfig('onboardingDismissed'),
         ]);
         setHasApiKey(hn as boolean);
         setShowApiKeyLimitModal(!(hn as boolean));
@@ -222,14 +220,13 @@ const App: React.FC = () => {
         setOnboardingTeacherName(String(teacherName || ''));
         setOnboardingInstitution(String(institution || ''));
         setOnboardingGradeClass(String(gradeClass || ''));
-        setOnboardingDontShowAgain(!!onboardingDismissed);
         if (hn) {
           setApiKeyAvailability(lastUsable ? 'usable' : 'unknown');
           setOnboardingApiStatus('saved');
         }
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(dm == null ? true : !!(dm as boolean));
-        setShowDisclaimerModal(!onboardingDismissed);
+        setShowDisclaimerModal(true);
         setMode(AppMode.HOME);
       } catch {
         setMode(AppMode.HOME);
@@ -318,9 +315,13 @@ const App: React.FC = () => {
       institution: onboardingInstitution,
       schoolLevel,
       gradeClass: onboardingGradeClass,
-      onboardingDismissed: onboardingDontShowAgain,
     });
     setHasEnteredStudentSection(true);
+    setShowApiKeyLimitModal(false);
+    handleAcceptDisclaimer();
+  };
+
+  const handleStartAfterDisclaimer = () => {
     setShowApiKeyLimitModal(false);
     handleAcceptDisclaimer();
   };
@@ -502,6 +503,26 @@ const App: React.FC = () => {
       ? 'from-pink-400 via-pink-500 to-rose-500'
       : 'from-transparent to-transparent';
 
+  const collapsedNavItems: Array<{
+    key: string;
+    label: string;
+    icon: React.ElementType;
+    active: boolean;
+    progress?: number | null;
+    onClick: () => void;
+  }> = [
+    { key: 'home', label: '홈', icon: Home, active: mode === AppMode.HOME, onClick: () => setMode(AppMode.HOME) },
+    { key: 'settings', label: '설정', icon: Settings, active: mode === AppMode.SETTINGS, onClick: () => goTo(AppMode.SETTINGS) },
+    { key: 'admin', label: '교무행정AI', icon: FileText, active: ADMIN_MODES.includes(mode), onClick: () => { setAdminSectionOpen(true); goTo(AppMode.EDUCATION_QA); } },
+    { key: 'doc-analyzer', label: '공문요약·업무추출', icon: ClipboardList, active: mode === AppMode.OFFICIAL_DOC_ANALYZER, progress: getProgressFor(AppMode.OFFICIAL_DOC_ANALYZER), onClick: () => goTo(AppMode.OFFICIAL_DOC_ANALYZER) },
+    { key: 'school-doc', label: '공문서 작성기', icon: FileText, active: mode === AppMode.SCHOOL_DOC, progress: getProgressFor(AppMode.SCHOOL_DOC), onClick: handleSchoolDocParent },
+    { key: 'lesson', label: '수업자료AI', icon: Presentation, active: LESSON_AI_MODES.includes(mode), onClick: () => { setLessonSectionOpen(true); goTo(AppMode.LESSON_MATERIAL); } },
+    { key: 'student', label: '학생기록AI', icon: Bot, active: STUDENT_RECORD_MODES.includes(mode), onClick: () => handleModeChange(AppMode.RECORD_CHATBOT) },
+    { key: 'my-tools', label: 'AI 스킬즈', icon: Wrench, active: MY_TOOLS_MODES.includes(mode), onClick: () => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); } },
+    { key: 'guide', label: '사용 방법', icon: BookMarked, active: mode === AppMode.USAGE_GUIDE, onClick: () => goTo(AppMode.USAGE_GUIDE) },
+    { key: 'about', label: '도움말 / 정보', icon: HelpCircle, active: mode === AppMode.ABOUT, onClick: () => goTo(AppMode.ABOUT) },
+  ];
+
   const renderMode = (m: AppMode): React.ReactNode => {
     switch (m) {
       case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
@@ -651,6 +672,11 @@ const App: React.FC = () => {
                         </button>
                       </div>
                       <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">무료 Gmail API 키</label>
+                      {hasApiKey && (
+                        <p className="mb-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+                          저장된 API 키가 있습니다. 보안상 키 원문은 다시 표시하지 않으며, 변경할 때만 새 키를 입력하세요.
+                        </p>
+                      )}
                       <input
                         type="password"
                         value={onboardingApiKey}
@@ -746,15 +772,6 @@ const App: React.FC = () => {
                     >
                       기본 정보 저장
                     </button>
-                    <label className="mt-5 flex items-center gap-2.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={onboardingDontShowAgain}
-                        onChange={e => setOnboardingDontShowAgain(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#E7E5E4] accent-indigo-600 cursor-pointer"
-                      />
-                      <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">다음부터 온보딩 창을 열지 않기</span>
-                    </label>
                   </div>
                 )}
               </div>
@@ -772,13 +789,24 @@ const App: React.FC = () => {
                   ))}
                 </div>
                 {onboardingStep < 3 ? (
-                  <button
-                    onClick={() => setOnboardingStep(step => Math.min(3, step + 1))}
-                    disabled={onboardingStep === 1 && !disclaimerChecked}
-                    className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:bg-indigo-200 disabled:cursor-not-allowed hover:bg-indigo-700"
-                  >
-                    다음 단계 →
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onboardingStep === 1 && (
+                      <button
+                        onClick={handleStartAfterDisclaimer}
+                        disabled={!disclaimerChecked}
+                        className="px-4 py-2.5 rounded-lg border border-indigo-200 bg-white text-indigo-700 text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-50 dark:bg-[#171210] dark:border-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-950/30"
+                      >
+                        동의하고 창 닫기
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setOnboardingStep(step => Math.min(3, step + 1))}
+                      disabled={onboardingStep === 1 && !disclaimerChecked}
+                      className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:bg-indigo-200 disabled:cursor-not-allowed hover:bg-indigo-700"
+                    >
+                      다음 단계 →
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={handleFinishOnboarding}
@@ -893,25 +921,43 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* 사이드바가 접혀 있을 때: 펼치기 버튼만 있는 얇은 바 */}
+        {/* 사이드바가 접혀 있을 때: 주요 메뉴 아이콘을 남기는 얇은 바 */}
         {sidebarCollapsed && (
-          <div className="w-11 shrink-0 bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex flex-col items-center py-3 gap-2">
+          <div className="w-12 shrink-0 bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex flex-col items-center py-3 gap-2">
             <button
               onClick={() => setSidebarCollapsed(false)}
-              className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
               title="메뉴 펼치기"
               aria-label="메뉴 펼치기"
             >
               <PanelLeftOpen className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setMode(AppMode.HOME)}
-              className="p-1.5 rounded-md text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
-              title="홈"
-              aria-label="홈"
-            >
-              <Home className="w-4 h-4" />
-            </button>
+            <div className="h-px w-7 bg-[#EDE8E1] dark:bg-[#2E2822]" />
+            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center gap-1 px-1">
+              {collapsedNavItems.map(item => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={item.onClick}
+                    className={`relative h-8 w-8 inline-flex items-center justify-center rounded-md transition-colors ${
+                      item.active
+                        ? 'bg-[#1C1917] dark:bg-[#2A2420] text-white dark:text-[#F0EBE6]'
+                        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
+                    }`}
+                    title={item.label}
+                    aria-label={item.label}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.progress && (
+                      <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-emerald-500 px-1 text-[8px] font-black leading-4 text-white shadow-sm">
+                        {item.progress}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

@@ -104,6 +104,16 @@ const AboutScreen: React.FC = () => {
           </p>
         </div>
 
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 rounded-2xl p-5 shadow-sm">
+          <h2 className="text-base font-bold text-emerald-800 dark:text-emerald-200 mb-3">개인정보보호 안내</h2>
+          <div className="space-y-2 text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+            <p>EduNote의 기본 정보, 학생 명단, 학생 메모, 나만의 자료실 등 앱 자료는 사용자의 컴퓨터에 저장됩니다.</p>
+            <p>Gemini API 키는 앱 설정 저장소에 보관되며, 백업 파일에는 포함하지 않습니다. 저장된 키는 보안상 화면에 다시 표시하지 않고 변경 시에만 새 키를 입력합니다.</p>
+            <p>학생기록 생성 시 개인정보 보호 모드를 사용하면 학생 이름을 임시 표현으로 바꿔 AI에 전달하고, 결과에서는 학생 이름이 본문에 남지 않도록 후처리합니다.</p>
+            <p>AI 기능을 사용할 때 입력한 내용은 Gemini API 요청 처리에 사용될 수 있으므로, 학생·학부모·교직원의 실명, 연락처, 주민등록번호, 건강 정보 등 민감정보는 입력하지 마세요.</p>
+          </div>
+        </div>
+
         {/* Developer */}
         <div className="bg-white dark:bg-[#221E1B] rounded-2xl border border-[#EDE8E1] dark:border-[#2E2822] p-6 shadow-sm">
           <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2 mb-4">

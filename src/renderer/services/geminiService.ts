@@ -635,6 +635,13 @@ export const generateDocument = async (
                   ? `[분량 지침] 이 문서는 학교 공고문입니다. A4 용지 1~2장 분량으로 작성하세요.`
                   : `[분량 지침] 이 문서는 A4 용지 기준으로 약 ${pageCount}장 분량이 되도록 작성하세요.`;
 
+  const pageFlowInstruction = `
+[A4 페이지 구성 규칙]
+- 모든 공문서 출력물은 A4 용지 기준으로 배치하세요.
+- 한 A4 페이지에 들어가지 않는 내용은 문장, 표, 항목이 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
+- 다음 장으로 넘길 때는 <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;" /> 태그를 사용하세요.
+- 표, 제목, 주요 항목에는 page-break-inside: avoid; page-break-after: avoid; 스타일을 적용해 인쇄 시 잘리지 않게 하세요.`;
+
   const commonContext = `[기본 설정] 학년도: ${schoolYear}학년도`;
 
   const numberingReinforcement = `
@@ -928,7 +935,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${sampleFormatInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${sampleFormatInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${pageFlowInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
@@ -1275,6 +1282,7 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
 - ${questionCount <= 2 ? 'A4 용지를 꽉 채울 수 있도록 각 활동에 충분한 여백과 설명 공간을 배치하세요. 기본 폰트 크기보다 1~2pt 크게 설정하고 줄 간격도 넉넉하게 잡으세요' : questionCount <= 4 ? 'A4 용지를 균형 있게 채울 수 있도록 적당한 여백과 설명을 배치하세요' : '반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요'}
 - ${questionCount <= 2 ? '각 활동에 충분한 답변 공간(줄 5~8개)을 확보하여 A4를 꽉 채우세요' : questionCount <= 4 ? '각 활동에 적당한 답변 공간(줄 2~4개)을 배치하세요' : '각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요'}
+- 사용자가 여러 장을 특별히 요청하지 않았다면 A4 용지 1장을 기준으로 구성하세요. 내용이 1장을 넘을 때는 문항, 표, 활동 단위가 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
 - 머리글 구조: 문서 제목(h1)에는 반드시 style="text-align:center;" 속성을 추가하세요. 학년/반/이름 기입란은 그 아래 별도 행에 '<div class="student-info" style="display:flex;gap:16pt;justify-content:flex-end;border-bottom:1pt solid #000;padding-bottom:3pt;margin-bottom:6pt;">' 형태로 오른쪽 정렬 배치하고, 각 항목은 '<span>학년: <span class="fill" style="display:inline-block;min-width:50pt;border-bottom:1pt solid #333;">&nbsp;</span></span>' 형태로 작성 공간이 밑줄로 표시되게 하세요.
 ${insertImagePlaceholder ? "- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 '<div class=\"worksheet-image\">[WORKSHEET_IMAGE]</div>' 줄을 정확히 이 형태로 삽입하세요." : ''}
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
@@ -1293,12 +1301,13 @@ h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-
 .student-info { display: flex; gap: 16pt; justify-content: flex-end; margin-bottom: 6pt; font-size: ${baseFontSize}; border-bottom: 1pt solid #000; padding-bottom: 3pt; }
 .student-info span { white-space: nowrap; }
 .student-info .fill { display: inline-block; min-width: 50pt; border-bottom: 1pt solid #333; }
-.activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
+.activity, section, .question { page-break-inside: avoid; break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
 .worksheet-image { text-align: center; margin: 6pt 0 10pt; page-break-inside: avoid; }
 .worksheet-image img { max-width: 100%; max-height: 140pt; object-fit: contain; }
-table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; table-layout: fixed; }
+table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; word-break: keep-all; overflow-wrap: break-word; }
+hr.page-break { page-break-after: always; break-after: page; border: none; margin: 0; }
 p { margin: 2pt 0; line-height: 1.5; }
 * { box-sizing: border-box; max-width: 100%; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;table-layout:fixed;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;word-break:keep-all;" 속성을 반드시 추가하세요.
@@ -1388,6 +1397,13 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif
 .r-q{font-weight:700;color:#1e293b;margin-bottom:4px}
 .r-my{color:#64748b;margin-bottom:2px}
 .r-ans{color:#16a34a;font-weight:700}
+@media print{
+  @page{size:A4;margin:14mm 16mm}
+  body{display:block;background:#fff;padding:0;min-height:auto}
+  .card{width:100%;box-shadow:none;border-radius:0;padding:0}
+  .result-list{max-height:none;overflow:visible}
+  .r-item,.question,.options,.sa-wrap,.ox-wrap{page-break-inside:avoid;break-inside:avoid}
+}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .card>div{animation:fadeUp .3s ease-out}
 </style>
@@ -1586,6 +1602,7 @@ export async function generateLessonPlan(params: LessonParams): Promise<string> 
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [필수 구성 요소]
+- 특별한 분량 요청이 없다면 A4 용지 1장을 기준으로 구성하세요. 내용이 A4 1장을 넘으면 표, 단계, 활동이 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
 1. 수업 개요 (학년, 교과, 단원, 주제, 차시)
 2. 학습 목표 (지식, 기능, 태도 영역)
 3. 교수·학습 과정안 (도입-전개-정리 단계별 표로 작성)
@@ -1601,10 +1618,11 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 <style> 태그에 다음 CSS를 반드시 포함하세요:
 @page { size: A4; margin: 20mm 15mm; }
 body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 10.5pt; color: #000; margin: 0; padding: 0; }
-table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; page-break-inside: avoid; break-inside: avoid; }
 th, td { border: 1pt solid #333; padding: 5pt 8pt; }
-section, .section, tr, h2, h3 { page-break-inside: avoid; }
-h1, h2, h3 { page-break-after: avoid; }
+section, .section, tr, h2, h3 { page-break-inside: avoid; break-inside: avoid; }
+h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+hr.page-break { page-break-after: always; break-after: page; border: none; margin: 0; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:1pt solid #333;padding:5pt 8pt;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
