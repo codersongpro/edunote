@@ -410,7 +410,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
       className={`shrink-0 flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold transition-all ${
         copied
           ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-700'
-          : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-100 hover:bg-blue-50 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-100 border border-slate-200 dark:border-slate-600'
+          : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-blue-50 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-100 border border-[#E7E5E4] dark:border-[#2E2822]'
       }`}
       title="클립보드에 복사"
     >
@@ -446,34 +446,34 @@ const DemoSamplesScreen: React.FC = () => {
     <div className="flex h-full flex-col overflow-y-auto bg-[#FAF9F7] dark:bg-[#171210]">
       <div className="mx-auto w-full max-w-2xl space-y-3 px-5 py-6">
         <div className="mb-4">
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">시연 샘플</h1>
-          <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">각 항목의 복사 버튼으로 입력칸에 붙여넣기 하세요.</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <h1 className="text-xl font-black text-[#1C1917] dark:text-[#F0EBE6]">시연 샘플</h1>
+          <p className="mt-0.5 text-sm text-[#78716C] dark:text-[#C4B8B0]">각 항목의 복사 버튼으로 입력칸에 붙여넣기 하세요.</p>
+          <p className="mt-1 text-xs text-[#78716C] dark:text-[#9C8F87]">
             가상 교사: <strong>박지은</strong> | 학교: <strong>충북초등학교</strong> | 학년/반: <strong>5학년 2반</strong>
           </p>
         </div>
 
         {DEMO_DATA.map(cat => (
-          <div key={cat.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <div key={cat.id} className="overflow-hidden rounded-xl border border-[#E7E5E4] bg-white dark:border-[#2E2822] dark:bg-[#221E1B]">
             <button
               onClick={() => toggleCategory(cat.id)}
-              className="w-full px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+              className="w-full px-4 py-3 text-left transition-colors hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822]"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="text-lg">{cat.icon}</span>
-                  <span className="truncate font-bold text-slate-800 dark:text-slate-50">{cat.title}</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-200">{cat.samples.length}</span>
+                  <span className="truncate font-bold text-[#1C1917] dark:text-[#F0EBE6]">{cat.title}</span>
+                  <span className="rounded-full bg-[#EDE8E1] px-2 py-0.5 text-xs text-[#78716C] dark:bg-[#2E2822] dark:text-[#C4B8B0]">{cat.samples.length}</span>
                 </div>
                 {openCategories.has(cat.id)
-                  ? <ChevronDown className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-300" />
-                  : <ChevronRight className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-300" />
+                  ? <ChevronDown className="h-4 w-4 shrink-0 text-[#78716C] dark:text-[#C4B8B0]" />
+                  : <ChevronRight className="h-4 w-4 shrink-0 text-[#78716C] dark:text-[#C4B8B0]" />
                 }
               </div>
             </button>
 
             {openCategories.has(cat.id) && (
-              <div className="divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-700 dark:border-slate-700">
+              <div className="divide-y divide-[#EDE8E1] border-t border-[#EDE8E1] dark:divide-[#2E2822] dark:border-[#2E2822]">
                 {cat.samples.map((sample, si) => {
                   const sampleKey = `${cat.id}-${si}`;
                   const isOpen = openSamples.has(sampleKey);
@@ -481,13 +481,13 @@ const DemoSamplesScreen: React.FC = () => {
                     <div key={sampleKey}>
                       <button
                         onClick={() => toggleSample(sampleKey)}
-                        className="w-full px-4 py-2.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
+                        className="w-full px-4 py-2.5 text-left transition-colors hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822]"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-semibold text-slate-700 dark:text-slate-100">{sample.title}</span>
+                          <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">{sample.title}</span>
                           {isOpen
-                            ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-300" />
-                            : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-300" />
+                            ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#78716C] dark:text-[#C4B8B0]" />
+                            : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#78716C] dark:text-[#C4B8B0]" />
                           }
                         </div>
                       </button>
@@ -498,12 +498,12 @@ const DemoSamplesScreen: React.FC = () => {
                             <p className="rounded bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-100">{sample.note}</p>
                           )}
                           {sample.fields.map((field, fi) => (
-                            <div key={`${sampleKey}-${fi}`} className="rounded-lg bg-slate-50 p-2.5 dark:bg-slate-900/70">
+                            <div key={`${sampleKey}-${fi}`} className="rounded-lg bg-[#FAF9F7] p-2.5 dark:bg-[#171210]/70">
                               <div className="mb-1 flex items-start justify-between gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300">{field.label}</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wide text-[#78716C] dark:text-[#C4B8B0]">{field.label}</span>
                                 <CopyButton text={field.value} />
                               </div>
-                              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-800 dark:text-slate-100">{field.value}</p>
+                              <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[#1C1917] dark:text-[#C4B8B0]">{field.value}</p>
                             </div>
                           ))}
                         </div>

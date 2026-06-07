@@ -23,8 +23,8 @@ interface SavedGeneratedVersion {
 }
 
 const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
-const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900';
-const optionClassName = 'bg-white text-slate-900';
+const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-[#1C1917] outline-none dark:bg-white dark:text-[#1C1917]';
+const optionClassName = 'bg-white text-[#1C1917]';
 
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
   const [copied, setCopied] = React.useState(false);
@@ -508,7 +508,7 @@ h2,h3{page-break-after:avoid;}
 
   return (
     <div className="bg-white dark:bg-[#221E1B] rounded-lg shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] flex flex-col h-full overflow-hidden">
-      <div className="bg-[#F8F9FA] dark:bg-[#171210] px-4 py-3 border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="bg-[#FAF9F7] dark:bg-[#171210] px-4 py-3 border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-2 mr-4">
           <FileText className="w-5 h-5 text-blue-600 shrink-0" />
           <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-base">미리보기 및 편집</h2>
@@ -550,7 +550,7 @@ h2,h3{page-break-after:avoid;}
             </select>
             <button
               onClick={handleSaveByFormat}
-              className="inline-flex items-center gap-1 rounded bg-slate-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-slate-800"
+              className="inline-flex items-center gap-1 rounded bg-[#44403C] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#1C1917]"
             >
               <Download className="w-3.5 h-3.5" />
               저장
@@ -584,12 +584,12 @@ h2,h3{page-break-after:avoid;}
             <div className="bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <History className="w-4 h-4 text-slate-500" />
+                  <History className="w-4 h-4 text-[#78716C]" />
                   <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">{'\uC0DD\uC131 \uACB0\uACFC \uD788\uC2A4\uD1A0\uB9AC'}</span>
                 </div>
                 <button
                   onClick={handleSaveCurrentVersion}
-                  className="px-3 py-1.5 text-xs font-bold rounded-md border border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800"
+                  className="px-3 py-1.5 text-xs font-bold rounded-md border border-[#E7E5E4] text-[#44403C] bg-[#FAF9F7] hover:bg-[#EDE8E1] dark:border-[#2E2822] dark:text-[#C4B8B0] dark:bg-[#171210] dark:hover:bg-[#221E1B]"
                 >
                   {'\uD604\uC7AC \uBC84\uC804 \uC800\uC7A5'}
                 </button>
@@ -599,7 +599,7 @@ h2,h3{page-break-after:avoid;}
                   <select
                     value={selectedVersionId}
                     onChange={e => setSelectedVersionId(e.target.value)}
-                    className="w-full rounded-md border border-[#E7E5E4] bg-white px-2 py-1.5 text-xs font-semibold text-slate-900 outline-none dark:bg-white dark:text-slate-900"
+                    className="w-full rounded-md border border-[#E7E5E4] bg-white px-2 py-1.5 text-xs font-semibold text-[#1C1917] outline-none dark:bg-white dark:text-[#1C1917]"
                     style={{ colorScheme: 'light' }}
                   >
                     <option className={optionClassName} value="">{'\uC774\uC804 \uBC84\uC804 \uBBF8\uB9AC\uBCF4\uAE30 \uC120\uD0DD'}</option>
@@ -614,7 +614,7 @@ h2,h3{page-break-after:avoid;}
                       <button
                         type="button"
                         onClick={handleRestoreVersion}
-                        className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-700 text-xs font-bold text-white hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500"
+                        className="inline-flex w-fit items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#44403C] text-xs font-bold text-white hover:bg-[#1C1917] dark:bg-[#2E2822] dark:hover:bg-[#6B5E57]"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                         {'\uC774 \uBB38\uC11C\uB85C \uB418\uB3CC\uB9AC\uAE30'}
@@ -627,7 +627,7 @@ h2,h3{page-break-after:avoid;}
                         <Trash2 className="w-3.5 h-3.5" />
                         {'\uC774 \uBC84\uC804 \uC0AD\uC81C'}
                       </button>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                         {'\uC120\uD0DD\uD55C \uC774\uC804 \uBC84\uC804\uC740 \uC544\uB798\uC5D0 \uBBF8\uB9AC\uBCF4\uAE30\uB85C\uB9CC \uD45C\uC2DC\uB429\uB2C8\uB2E4.'}
                       </span>
                     </div>

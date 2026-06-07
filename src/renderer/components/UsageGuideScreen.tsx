@@ -230,7 +230,7 @@ const UsageGuideScreen: React.FC = () => {
           </div>
         </Section>
 
-        <Section title="홈 화면 앱 상태" icon={<Settings className="w-4 h-4 text-slate-500" />}>
+        <Section title="홈 화면 앱 상태" icon={<Settings className="w-4 h-4 text-[#78716C]" />}>
           <p className="text-xs leading-relaxed">홈 화면 상단에 앱 상태 4가지가 한 줄로 표시됩니다.</p>
           <ul className="text-xs space-y-1.5 ml-3 mt-2">
             <li>• <strong>API 키</strong> — 등록됨/필요. 미설정이면 AI 기능을 사용할 수 없습니다.</li>
