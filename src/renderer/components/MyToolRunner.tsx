@@ -88,17 +88,17 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
     admin: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     lesson: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
     student: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
-    other: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+    other: 'bg-[#EDE8E1] text-[#44403C] dark:bg-[#2E2822] dark:text-[#C4B8B0]',
   };
 
   return (
     <div className="flex h-full overflow-hidden">
       {/* 좌측 폼 패널 */}
       {inputPanelCollapsed && (
-        <div className="w-11 shrink-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex justify-center py-3">
+        <div className="w-11 shrink-0 border-r border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] flex justify-center py-3">
           <button
             onClick={() => setInputPanelCollapsed(false)}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
             title="입력 패널 펼치기"
           >
             <PanelLeftOpen className="w-4 h-4" />
@@ -106,12 +106,12 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
         </div>
       )}
       {!inputPanelCollapsed && (
-      <div className="w-[360px] shrink-0 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 overflow-y-auto">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="w-[360px] shrink-0 flex flex-col border-r border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] overflow-y-auto">
+        <div className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={onBack}
-              className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-[#78716C] dark:text-[#9C8F87] hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               내 도구 목록으로
@@ -119,7 +119,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 수정
@@ -127,7 +127,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
             )}
             <button
               onClick={() => setInputPanelCollapsed(true)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
               title="입력 패널 접기"
             >
               <PanelLeftClose className="w-4 h-4" />
@@ -135,9 +135,9 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
           </div>
           <div className="flex items-start gap-2">
             <div>
-              <h2 className="text-base font-bold text-gray-900 dark:text-white">{tool.name}</h2>
+              <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">{tool.name}</h2>
               {tool.description && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{tool.description}</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5 leading-relaxed">{tool.description}</p>
               )}
               <span className={`inline-block mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full ${categoryColor[tool.category]}`}>
                 {categoryLabel[tool.category]}
@@ -172,7 +172,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
           {tool.inputs.map(input => (
             <div key={input.id}>
               {input.type !== 'file-upload' && (
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
+                <label className="block text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
                   {input.label}
                   {input.required && <span className="text-red-500 ml-1">*</span>}
                 </label>
@@ -192,7 +192,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
                   onChange={e => setFieldValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                   placeholder={input.placeholder}
                   rows={4}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                  className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
                 />
               ) : (
                 <input
@@ -201,14 +201,14 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
                   value={fieldValues[input.id] ?? ''}
                   onChange={e => setFieldValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                   placeholder={input.placeholder}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               )}
             </div>
           ))}
         </div>
 
-        <div className="p-4 border-t border-gray-100 dark:border-gray-700">
+        <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822]">
           {error && (
             <p className="text-xs text-red-600 dark:text-red-400 mb-2">{error}</p>
           )}
@@ -225,7 +225,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
               </div>
               <button
                 onClick={handleCancel}
-                className="flex items-center justify-center gap-1 px-3 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold rounded-lg text-sm transition-colors"
+                className="flex items-center justify-center gap-1 px-3 py-2.5 bg-[#EDE8E1] hover:bg-[#E7E5E4] dark:bg-[#2E2822] dark:hover:bg-[#3A332D] text-[#44403C] dark:text-[#C4B8B0] font-semibold rounded-lg text-sm transition-colors"
                 title="생성 취소"
               >
                 <X className="w-4 h-4" />
@@ -246,7 +246,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
       )}
 
       {/* 우측 결과 패널 */}
-      <div className="flex-1 overflow-hidden flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="flex-1 overflow-hidden flex flex-col bg-[#FAF9F7] dark:bg-[#171210]">
         {result ? (
           <div className="flex-1 overflow-hidden p-4">
             <GeneratedDisplay content={result} title={tool.name} />
@@ -257,8 +257,8 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
               <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
                 <Zap className="w-7 h-7 text-amber-500" />
               </div>
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">왼쪽에서 정보를 입력하고 생성을 눌러주세요</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">파일을 여러 개 올리면 순서대로 처리됩니다.</p>
+              <p className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">왼쪽에서 정보를 입력하고 생성을 눌러주세요</p>
+              <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57]">파일을 여러 개 올리면 순서대로 처리됩니다.</p>
             </div>
           </div>
         )}
