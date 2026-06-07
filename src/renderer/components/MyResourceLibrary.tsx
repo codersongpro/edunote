@@ -339,23 +339,23 @@ const MyResourceLibrary: React.FC = () => {
       r.tags.toLowerCase().includes(q) || r.url.toLowerCase().includes(q);
   });
 
-  const inputClass = 'w-full bg-white rounded-lg border border-gray-300 text-gray-800 text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none p-2.5 transition-all';
+  const inputClass = 'w-full bg-white rounded-lg border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none p-2.5 transition-all';
   const allTabs = ['전체', ...categories, ...(resources.some(r => !r.category) ? ['미분류'] : [])];
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F7FA] dark:bg-gray-900 overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-3">
 
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-teal-100 p-2 rounded-lg">
                 <BookMarked className="w-5 h-5 text-teal-600" />
               </div>
               <div>
-                <h2 className="font-bold text-gray-800 dark:text-gray-100">나만의 자료실</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">나만의 자료실</h2>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                   유용한 웹사이트·영상을 주제별로 모아두세요. {dataPath && '지정 폴더에 자동 저장됩니다.'}
                 </p>
               </div>
@@ -363,14 +363,14 @@ const MyResourceLibrary: React.FC = () => {
             <div className="flex items-center justify-end gap-2 flex-wrap">
               <button
                 onClick={() => setShowCatManager(s => !s)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap shrink-0"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-[#E7E5E4] text-[#78716C] rounded-lg hover:bg-[#FAF9F7] transition-colors whitespace-nowrap shrink-0"
               >
                 <FolderPlus className="w-4 h-4" />
                 주제 관리
               </button>
               <button
                 onClick={() => { setShowWebSearch(s => !s); setShowAdd(false); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors font-semibold whitespace-nowrap shrink-0 ${showWebSearch ? 'bg-blue-500 text-white border-blue-500' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors font-semibold whitespace-nowrap shrink-0 ${showWebSearch ? 'bg-blue-500 text-white border-blue-500' : 'border-[#E7E5E4] text-[#78716C] hover:bg-[#FAF9F7]'}`}
               >
                 <SearchIcon className="w-4 h-4" />
                 웹 검색
@@ -389,7 +389,7 @@ const MyResourceLibrary: React.FC = () => {
         {/* Category manager */}
         {showCatManager && (
           <div className="bg-white rounded-xl border border-teal-200 shadow-sm p-4 space-y-3">
-            <h3 className="text-sm font-bold text-gray-700">주제(폴더) 관리</h3>
+            <h3 className="text-sm font-bold text-[#44403C]">주제(폴더) 관리</h3>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -417,7 +417,7 @@ const MyResourceLibrary: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-400">아직 주제가 없습니다.</p>
+              <p className="text-xs text-[#A8A29E]">아직 주제가 없습니다.</p>
             )}
           </div>
         )}
@@ -426,25 +426,25 @@ const MyResourceLibrary: React.FC = () => {
         {showWebSearch && (
           <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
             {/* Search controls */}
-            <div className="p-3 border-b border-gray-100 space-y-2">
+            <div className="p-3 border-b border-[#EDE8E1] space-y-2">
               <div className="flex gap-2">
-                <div className="flex rounded-lg border border-gray-200 overflow-hidden shrink-0">
+                <div className="flex rounded-lg border border-[#EDE8E1] overflow-hidden shrink-0">
                   <button
                     onClick={() => setWebSearchEngine('google')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'google' ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'google' ? 'bg-blue-500 text-white' : 'bg-white text-[#78716C] hover:bg-[#FAF9F7]'}`}
                   >
                     <Globe className="w-3.5 h-3.5" />구글
                   </button>
                   <button
                     onClick={() => setWebSearchEngine('youtube')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'youtube' ? 'bg-red-500 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${webSearchEngine === 'youtube' ? 'bg-red-500 text-white' : 'bg-white text-[#78716C] hover:bg-[#FAF9F7]'}`}
                   >
                     <Youtube className="w-3.5 h-3.5" />유튜브
                   </button>
                 </div>
                 <input
                   type="text"
-                  className="flex-1 bg-white rounded-lg border border-gray-200 text-gray-800 text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none px-3 py-1.5"
+                  className="flex-1 bg-white rounded-lg border border-[#EDE8E1] text-[#1C1917] text-sm focus:border-blue-400 focus:ring-1 focus:ring-blue-100 outline-none px-3 py-1.5"
                   placeholder="검색어를 입력하세요..."
                   value={webSearchQuery}
                   onChange={e => setWebSearchQuery(e.target.value)}
@@ -460,16 +460,16 @@ const MyResourceLibrary: React.FC = () => {
               </div>
               {webviewSrc && (
                 <div className="flex items-center gap-2">
-                  <button onClick={() => webviewRef.current?.goBack?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="뒤로">
+                  <button onClick={() => webviewRef.current?.goBack?.()} className="p-1 text-[#A8A29E] hover:text-[#44403C] rounded" title="뒤로">
                     <ArrowLeft className="w-4 h-4" />
                   </button>
-                  <button onClick={() => webviewRef.current?.goForward?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="앞으로">
+                  <button onClick={() => webviewRef.current?.goForward?.()} className="p-1 text-[#A8A29E] hover:text-[#44403C] rounded" title="앞으로">
                     <ArrowRight className="w-4 h-4" />
                   </button>
-                  <button onClick={() => webviewRef.current?.reload?.()} className="p-1 text-gray-400 hover:text-gray-700 rounded" title="새로고침">
+                  <button onClick={() => webviewRef.current?.reload?.()} className="p-1 text-[#A8A29E] hover:text-[#44403C] rounded" title="새로고침">
                     <RefreshCw className="w-3.5 h-3.5" />
                   </button>
-                  <span className="flex-1 text-xs text-gray-400 truncate px-1">{webviewCurrentUrl || webviewSrc}</span>
+                  <span className="flex-1 text-xs text-[#A8A29E] truncate px-1">{webviewCurrentUrl || webviewSrc}</span>
                   <button
                     onClick={handleAddCurrentWebPage}
                     className="flex items-center gap-1.5 px-3 py-1 text-xs bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors font-semibold shrink-0"
@@ -490,9 +490,9 @@ const MyResourceLibrary: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-                <Globe className="w-12 h-12 text-gray-200" />
-                <p className="text-sm text-gray-400">검색어를 입력하고 검색 버튼을 눌러주세요.</p>
-                <p className="text-xs text-gray-300">원하는 페이지를 찾으면 <strong>현재 페이지 추가</strong> 버튼으로 자료실에 저장하세요.</p>
+                <Globe className="w-12 h-12 text-[#EDE8E1]" />
+                <p className="text-sm text-[#A8A29E]">검색어를 입력하고 검색 버튼을 눌러주세요.</p>
+                <p className="text-xs text-[#E7E5E4]">원하는 페이지를 찾으면 <strong>현재 페이지 추가</strong> 버튼으로 자료실에 저장하세요.</p>
               </div>
             )}
           </div>
@@ -501,7 +501,7 @@ const MyResourceLibrary: React.FC = () => {
         {/* Add form */}
         {showAdd && (
           <div className="bg-white rounded-xl border border-teal-200 shadow-sm p-4 space-y-3">
-            <h3 className="text-sm font-bold text-gray-700">새 자료 추가</h3>
+            <h3 className="text-sm font-bold text-[#44403C]">새 자료 추가</h3>
             <div className="flex gap-2">
               <input
                 ref={urlInputRef}
@@ -516,7 +516,7 @@ const MyResourceLibrary: React.FC = () => {
               <button
                 onClick={handleFetchMeta}
                 disabled={fetching || !addUrl.trim()}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-gray-700 transition-colors shrink-0 disabled:opacity-50 min-w-[110px] justify-center"
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-[#EDE8E1] hover:bg-[#E7E5E4] border border-[#E7E5E4] rounded-lg text-[#44403C] transition-colors shrink-0 disabled:opacity-50 min-w-[110px] justify-center"
               >
                 {fetching ? <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs ml-1">분석 중</span></> : '정보 가져오기'}
               </button>
@@ -532,7 +532,7 @@ const MyResourceLibrary: React.FC = () => {
 
             {/* Thumbnail preview */}
             {addThumbnail && (
-              <div className="relative w-full aspect-video max-h-36 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
+              <div className="relative w-full aspect-video max-h-36 rounded-lg overflow-hidden border border-[#EDE8E1] bg-[#EDE8E1]">
                 <img src={addThumbnail} alt="썸네일" className="w-full h-full object-cover" />
                 <button
                   onClick={() => setAddThumbnail('')}
@@ -551,7 +551,7 @@ const MyResourceLibrary: React.FC = () => {
                   if (shot) setAddThumbnail(shot);
                   setFetching(false); setFetchStep('');
                 }}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-teal-600 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-[#78716C] hover:text-teal-600 transition-colors"
               >
                 <Camera className="w-3.5 h-3.5" />
                 스크린샷으로 썸네일 만들기
@@ -563,7 +563,7 @@ const MyResourceLibrary: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">
+                <label className="text-xs font-semibold text-[#78716C] mb-1 block">
                   주제(폴더) 선택
                   {addCategory && <span className="ml-1.5 text-teal-600 font-bold">· 자동 분류됨</span>}
                 </label>
@@ -589,7 +589,7 @@ const MyResourceLibrary: React.FC = () => {
                 )}
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-1 block">태그 (선택)</label>
+                <label className="text-xs font-semibold text-[#78716C] mb-1 block">태그 (선택)</label>
                 <input type="text" className={inputClass} placeholder="예: 과학 5학년 실험" value={addTags} onChange={e => setAddTags(e.target.value)} />
               </div>
             </div>
@@ -597,7 +597,7 @@ const MyResourceLibrary: React.FC = () => {
             <div className="flex justify-end gap-2 pt-1">
               <button
                 onClick={() => { setShowAdd(false); resetForm(); }}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm border border-[#E7E5E4] rounded-lg text-[#78716C] hover:bg-[#FAF9F7] transition-colors"
               >취소</button>
               <button
                 onClick={handleAdd}
@@ -618,11 +618,11 @@ const MyResourceLibrary: React.FC = () => {
                 className={`shrink-0 px-3 py-1.5 text-sm rounded-full border transition-all font-medium whitespace-nowrap ${
                   activeCategory === tab
                     ? 'bg-teal-500 text-white border-teal-500'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-teal-400'
+                    : 'bg-white text-[#78716C] border-[#E7E5E4] hover:border-teal-400'
                 }`}
               >
                 {tab}
-                <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 ${activeCategory === tab ? 'bg-white/30 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`ml-1.5 text-[10px] rounded-full px-1.5 py-0.5 ${activeCategory === tab ? 'bg-white/30 text-white' : 'bg-[#EDE8E1] text-[#78716C]'}`}>
                   {tab === '전체' ? resources.length
                     : tab === '미분류' ? resources.filter(r => !r.category).length
                     : resources.filter(r => r.category === tab).length}
@@ -635,16 +635,16 @@ const MyResourceLibrary: React.FC = () => {
         {/* Search */}
         {resources.length > 0 && (
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E]" />
             <input
               type="text"
-              className="w-full bg-white rounded-xl border border-gray-200 text-gray-800 text-sm focus:border-teal-500 outline-none pl-9 pr-9 py-2.5 shadow-sm"
+              className="w-full bg-white rounded-xl border border-[#EDE8E1] text-[#1C1917] text-sm focus:border-teal-500 outline-none pl-9 pr-9 py-2.5 shadow-sm"
               placeholder="제목·설명·태그 검색"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A8A29E] hover:text-[#78716C]">
                 <X className="w-4 h-4" />
               </button>
             )}
@@ -655,7 +655,7 @@ const MyResourceLibrary: React.FC = () => {
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 gap-3">
             {filtered.map(r => (
-              <div key={r.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+              <div key={r.id} className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex">
                   {/* Thumbnail */}
                   {r.thumbnail ? (
@@ -670,10 +670,10 @@ const MyResourceLibrary: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="w-14 shrink-0 flex items-center justify-center bg-gray-50 dark:bg-gray-700 border-r border-gray-100 dark:border-gray-600 rounded-l-xl">
+                    <div className="w-14 shrink-0 flex items-center justify-center bg-[#FAF9F7] dark:bg-[#2E2822] border-r border-[#EDE8E1] dark:border-[#2E2822] rounded-l-xl">
                       {r.type === 'youtube'
                         ? <Youtube className="w-6 h-6 text-red-300" />
-                        : <Globe className="w-6 h-6 text-gray-300" />}
+                        : <Globe className="w-6 h-6 text-[#EDE8E1]" />}
                     </div>
                   )}
 
@@ -685,20 +685,20 @@ const MyResourceLibrary: React.FC = () => {
                         <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full text-xs border border-teal-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-teal-400 resize-none min-h-[50px]" />
                         <div className="flex gap-1.5">
                           <button onClick={() => handleEditSave(r.id)} className="flex items-center gap-1 px-2.5 py-1 text-xs bg-teal-500 text-white rounded hover:bg-teal-600"><Check className="w-3 h-3" />저장</button>
-                          <button onClick={() => setEditId(null)} className="px-2.5 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50">취소</button>
+                          <button onClick={() => setEditId(null)} className="px-2.5 py-1 text-xs border border-[#E7E5E4] rounded hover:bg-[#FAF9F7]">취소</button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 leading-snug line-clamp-1">{r.title}</h3>
+                          <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] leading-snug line-clamp-1">{r.title}</h3>
                           <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => { setEditId(r.id); setEditTitle(r.title); setEditDesc(r.description); }} className="p-1 text-gray-400 hover:text-teal-600 rounded transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => window.electronAPI.openExternal(r.url)} className="p-1 text-gray-400 hover:text-blue-600 rounded transition-colors"><ExternalLink className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => handleDelete(r.id)} className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => { setEditId(r.id); setEditTitle(r.title); setEditDesc(r.description); }} className="p-1 text-[#A8A29E] hover:text-teal-600 rounded transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => window.electronAPI.openExternal(r.url)} className="p-1 text-[#A8A29E] hover:text-blue-600 rounded transition-colors"><ExternalLink className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => handleDelete(r.id)} className="p-1 text-[#A8A29E] hover:text-red-500 rounded transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                           </div>
                         </div>
-                        {r.description && <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
+                        {r.description && <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed line-clamp-2 mb-1.5">{r.description}</p>}
                         <div className="flex items-center gap-2 flex-wrap">
                           {/* 분류 태그 — 클릭하면 드롭다운으로 분류 변경 가능 */}
                           <div className="relative" data-category-dropdown>
@@ -707,37 +707,37 @@ const MyResourceLibrary: React.FC = () => {
                               className={`text-[10px] rounded-full px-2 py-0.5 font-semibold transition-colors cursor-pointer ${
                                 r.category
                                   ? 'bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200'
-                                  : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                                  : 'bg-[#EDE8E1] text-[#78716C] border border-[#EDE8E1] hover:bg-[#E7E5E4]'
                               }`}
                               title="클릭하여 분류 변경"
                             >
                               {r.category || '+ 분류'}
                             </button>
                             {categoryEditId === r.id && (
-                              <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 min-w-[120px] max-h-[200px] overflow-y-auto">
+                              <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg shadow-lg py-1 min-w-[120px] max-h-[200px] overflow-y-auto">
                                 <button
                                   onClick={() => handleCategoryChange(r.id, '')}
-                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-600 ${!r.category ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-gray-700 dark:text-gray-200'}`}
+                                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] ${!r.category ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}
                                 >
                                   미분류
                                 </button>
-                                {categories.length > 0 && <div className="border-t border-gray-100 dark:border-gray-600 my-1" />}
+                                {categories.length > 0 && <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] my-1" />}
                                 {categories.map(cat => (
                                   <button
                                     key={cat}
                                     onClick={() => handleCategoryChange(r.id, cat)}
-                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-600 ${r.category === cat ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-gray-700 dark:text-gray-200'}`}
+                                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] ${r.category === cat ? 'font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30' : 'text-[#44403C] dark:text-[#C4B8B0]'}`}
                                   >
                                     {cat}
                                   </button>
                                 ))}
                                 {categories.length === 0 && (
-                                  <div className="border-t border-gray-100 dark:border-gray-600 my-1" />
+                                  <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] my-1" />
                                 )}
                                 {categories.length === 0 && (
                                   <button
                                     onClick={() => { setCategoryEditId(null); setShowCatManager(true); }}
-                                    className="w-full text-left px-3 py-1.5 text-xs text-teal-600 dark:text-teal-400 hover:bg-gray-50 dark:hover:bg-gray-600"
+                                    className="w-full text-left px-3 py-1.5 text-xs text-teal-600 dark:text-teal-400 hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]"
                                   >
                                     + 주제 만들기
                                   </button>
@@ -745,9 +745,9 @@ const MyResourceLibrary: React.FC = () => {
                               </div>
                             )}
                           </div>
-                          <span className="text-[10px] text-gray-400 truncate max-w-[180px]">{r.url.replace(/^https?:\/\//, '').substring(0, 50)}</span>
+                          <span className="text-[10px] text-[#A8A29E] truncate max-w-[180px]">{r.url.replace(/^https?:\/\//, '').substring(0, 50)}</span>
                           {r.tags && r.tags.split(/\s+/).filter(Boolean).map((tag, i) => (
-                            <span key={i} className="flex items-center gap-0.5 text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">
+                            <span key={i} className="flex items-center gap-0.5 text-[10px] bg-[#EDE8E1] text-[#78716C] rounded-full px-2 py-0.5">
                               <Tag className="w-2.5 h-2.5" />{tag}
                             </span>
                           ))}
@@ -760,9 +760,9 @@ const MyResourceLibrary: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-12 flex flex-col items-center justify-center text-center gap-3">
-            <BookMarked className="w-14 h-14 text-gray-200" />
-            <p className="text-sm text-gray-400 whitespace-pre-line">
+          <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] p-12 flex flex-col items-center justify-center text-center gap-3">
+            <BookMarked className="w-14 h-14 text-[#EDE8E1]" />
+            <p className="text-sm text-[#A8A29E] whitespace-pre-line">
               {search || activeCategory !== '전체'
                 ? '검색 결과가 없습니다.'
                 : '아직 저장된 자료가 없습니다.\n위의 추가 버튼으로 자료를 모아보세요.'}

@@ -151,12 +151,12 @@ const OfficialDocAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-slate-50 dark:bg-gray-900">
+    <div className="flex h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {inputPanelCollapsed && (
-        <div className="w-11 shrink-0 border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex justify-center py-3">
+        <div className="w-11 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex justify-center py-3">
           <button
             onClick={() => setInputPanelCollapsed(false)}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-gray-600 text-slate-500 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
             title="입력 패널 펼치기"
           >
             <PanelLeftOpen className="w-4 h-4" />
@@ -164,19 +164,19 @@ const OfficialDocAnalyzer: React.FC = () => {
         </div>
       )}
       {!inputPanelCollapsed && (
-      <div className="w-[390px] shrink-0 border-r border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-gray-700">
+      <div className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col">
+        <div className="px-5 py-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
               <ClipboardList className="w-5 h-5 text-emerald-600 dark:text-emerald-300" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">공문 요약 / 업무 추출</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">핵심 업무와 마감만 짧게 정리합니다.</p>
+              <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">공문 요약 / 업무 추출</h2>
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">핵심 업무와 마감만 짧게 정리합니다.</p>
             </div>
             <button
               onClick={() => setInputPanelCollapsed(true)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-slate-200 dark:border-gray-600 text-slate-500 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-700 transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
               title="입력 패널 접기"
             >
               <PanelLeftClose className="w-4 h-4" />
@@ -186,21 +186,21 @@ const OfficialDocAnalyzer: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           <div>
-            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">공문 제목 또는 메모</label>
+            <label className="block text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">공문 제목 또는 메모</label>
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full px-3 py-2 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-emerald-500"
               placeholder={`예: ${new Date().getMonth() < 2 ? new Date().getFullYear() - 1 : new Date().getFullYear()}학년도 학교자율시간 운영 자료 제출`}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">공문 내용 붙여넣기</label>
+            <label className="block text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">공문 내용 붙여넣기</label>
             <textarea
               value={pastedText}
               onChange={(event) => setPastedText(event.target.value)}
-              className="w-full min-h-[180px] px-3 py-2 rounded-lg border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+              className="w-full min-h-[180px] px-3 py-2 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
               placeholder="공문 본문, 메일 내용, 업무 안내 문구를 붙여넣으세요."
             />
           </div>
@@ -219,11 +219,11 @@ const OfficialDocAnalyzer: React.FC = () => {
           )}
         </div>
 
-        <div className="p-5 border-t border-slate-200 dark:border-gray-700">
+        <div className="p-5 border-t border-[#EDE8E1] dark:border-[#2E2822]">
           <button
             onClick={handleAnalyze}
             disabled={!canAnalyze || isLoading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-gray-700 text-white font-bold transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white font-bold transition-colors"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ClipboardList className="w-4 h-4" />}
             {isLoading ? '분석 중...' : '공문 업무 추출'}
@@ -233,16 +233,16 @@ const OfficialDocAnalyzer: React.FC = () => {
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="px-5 py-3 border-b border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">분석 결과</span>
+            <span className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">분석 결과</span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
               disabled={!result}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-600 text-xs text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-gray-700"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] text-xs text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
             >
               <Copy className="w-3.5 h-3.5" />
               복사
@@ -250,7 +250,7 @@ const OfficialDocAnalyzer: React.FC = () => {
             <button
               onClick={handleSave}
               disabled={!result}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-600 text-xs text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-gray-700"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] text-xs text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
             >
               <Save className="w-3.5 h-3.5" />
               TXT 저장
@@ -267,7 +267,7 @@ const OfficialDocAnalyzer: React.FC = () => {
             <button
               onClick={handleSaveIcs}
               disabled={!result}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-gray-600 text-xs text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-gray-700"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] text-xs text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
               title="Google Calendar 가져오기, Outlook, Apple Calendar에서 쓸 수 있는 표준 일정 파일입니다."
             >
               .ics 저장
@@ -277,11 +277,11 @@ const OfficialDocAnalyzer: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-6">
           {result ? (
-            <div className="dark-prose-area prose prose-sm max-w-none bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-2xl p-6 shadow-sm text-slate-900 dark:text-slate-100">
+            <div className="dark-prose-area prose prose-sm max-w-none bg-white dark:bg-[#221E1B] border border-[#EDE8E1] dark:border-[#2E2822] rounded-2xl p-6 shadow-sm text-[#1C1917] dark:text-[#F0EBE6]">
               <ReactMarkdown>{result}</ReactMarkdown>
             </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-center text-slate-400 dark:text-slate-500">
+            <div className="h-full flex items-center justify-center text-center text-[#A8A29E] dark:text-[#6B5E57]">
               <div>
                 <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-60" />
                 <p className="text-sm font-semibold">공문 내용을 입력하거나 파일/스크린샷을 올린 뒤 업무를 추출하세요.</p>

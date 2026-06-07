@@ -50,8 +50,8 @@ const QUIZ_TYPE_OPTIONS: { value: QuizType; label: string; desc: string }[] = [
   { value: 'OX', label: 'OX 퀴즈', desc: '참/거짓' },
 ];
 
-const inputClass = 'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
-const labelClass = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1 uppercase tracking-wide';
+const inputClass = 'w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-md bg-white dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] dark:placeholder-[#6B5E57] focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent';
+const labelClass = 'block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1 uppercase tracking-wide';
 
 const normalizeStudentNames = (names: string): string =>
   names
@@ -479,10 +479,10 @@ li{margin-bottom:5pt;line-height:1.6;}
 
         {/* Left: input panel */}
         {inputPanelCollapsed && (
-          <div className="w-11 shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm flex justify-center py-3">
+          <div className="w-11 shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
             <button
               onClick={() => setInputPanelCollapsed(false)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
               title="입력 패널 펼치기"
             >
               <PanelLeftOpen className="w-4 h-4" />
@@ -490,16 +490,16 @@ li{margin-bottom:5pt;line-height:1.6;}
           </div>
         )}
         {!inputPanelCollapsed && (
-        <div className="w-[360px] shrink-0 bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm flex flex-col overflow-hidden">
-          <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 shrink-0">
+        <div className="w-[360px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
+          <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-3 shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                 <SlidersHorizontal className="w-4 h-4 text-amber-500" />
                 수업 정보 입력
               </h3>
               <button
                 onClick={() => setInputPanelCollapsed(true)}
-                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
                 title="입력 패널 접기"
               >
                 <PanelLeftClose className="w-4 h-4" />
@@ -535,7 +535,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 {selectedStandard && (
                   <button
                     onClick={() => setSelectedStandardCode('')}
-                    className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
+                    className="text-[10px] text-[#A8A29E] dark:text-[#6B5E57] hover:text-red-500 transition-colors"
                   >
                     선택 해제
                   </button>
@@ -543,37 +543,37 @@ li{margin-bottom:5pt;line-height:1.6;}
               </div>
 
               {currentStandards.length > 0 ? (
-                <div className="border border-gray-200 dark:border-gray-700 rounded-md overflow-hidden">
+                <div className="border border-[#EDE8E1] dark:border-[#2E2822] rounded-md overflow-hidden">
                   {selectedStandard && (
                     <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700 px-3 py-2">
                       <span className="text-[10px] font-bold text-amber-700 font-mono block">{selectedStandard.code}</span>
                       <p className="text-[11px] text-amber-800 leading-snug mt-0.5">{selectedStandard.text}</p>
                     </div>
                   )}
-                  <div className="max-h-[220px] overflow-y-auto divide-y divide-gray-100">
+                  <div className="max-h-[220px] overflow-y-auto divide-y divide-[#EDE8E1]">
                     {domains.map(domain => (
                       <div key={domain}>
                         <button
                           onClick={() => toggleDomain(domain)}
-                          className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                          className="w-full flex items-center gap-1.5 px-3 py-1.5 bg-[#FAF9F7] dark:bg-[#171210] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors text-left"
                         >
                           {expandedDomains.has(domain)
-                            ? <ChevronDown className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
-                            : <ChevronRight className="w-3 h-3 text-gray-400 dark:text-gray-500 shrink-0" />
+                            ? <ChevronDown className="w-3 h-3 text-[#A8A29E] dark:text-[#6B5E57] shrink-0" />
+                            : <ChevronRight className="w-3 h-3 text-[#A8A29E] dark:text-[#6B5E57] shrink-0" />
                           }
-                          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">영역 {domain}</span>
-                          <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto">{standardsByDomain[domain].length}개</span>
+                          <span className="text-[10px] font-bold text-[#78716C] dark:text-[#9C8F87] uppercase tracking-wider">영역 {domain}</span>
+                          <span className="text-[10px] text-[#A8A29E] dark:text-[#6B5E57] ml-auto">{standardsByDomain[domain].length}개</span>
                         </button>
                         {expandedDomains.has(domain) && standardsByDomain[domain].map(std => (
                           <button
                             key={std.code}
                             onClick={() => setSelectedStandardCode(prev => prev === std.code ? '' : std.code)}
-                            className={`w-full text-left px-3 py-2 border-t border-gray-50 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors ${
+                            className={`w-full text-left px-3 py-2 border-t border-[#FAF9F7] dark:border-[#2E2822] hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors ${
                               selectedStandardCode === std.code ? 'bg-amber-100 dark:bg-amber-800/30' : ''
                             }`}
                           >
                             <span className="text-[10px] font-bold text-amber-600 font-mono block">{std.code}</span>
-                            <span className="text-[11px] text-gray-700 dark:text-gray-200 leading-snug">{std.text}</span>
+                            <span className="text-[11px] text-[#44403C] dark:text-[#C4B8B0] leading-snug">{std.text}</span>
                           </button>
                         ))}
                       </div>
@@ -581,7 +581,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-2">
+                <p className="text-[11px] text-[#A8A29E] dark:text-[#6B5E57] bg-[#FAF9F7] dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-md px-3 py-2">
                   {selectedGradeLabel.includes('고등학교')
                     ? '고등학교 성취기준은 추가 요청사항란에 직접 입력해 주세요.'
                     : '해당 학년/교과의 성취기준을 찾을 수 없습니다.'}
@@ -599,7 +599,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               <input type="text" className={inputClass} placeholder="예: 소화 기관의 역할과 구조" value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
 
-            <hr className="border-gray-200 dark:border-gray-700" />
+            <hr className="border-[#EDE8E1] dark:border-[#2E2822]" />
 
             {/* Content Type */}
             <div>
@@ -612,14 +612,14 @@ li{margin-bottom:5pt;line-height:1.6;}
                     className={`flex flex-col items-start gap-1 p-2.5 rounded-lg border-2 text-left transition-all ${
                       contentType === value
                         ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-amber-300 text-gray-600 dark:text-gray-300'
+                        : 'border-[#EDE8E1] dark:border-[#2E2822] hover:border-amber-300 text-[#78716C] dark:text-[#C4B8B0]'
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <Icon className={`w-3.5 h-3.5 shrink-0 ${contentType === value ? 'text-amber-600' : 'text-gray-400 dark:text-gray-500'}`} />
+                      <Icon className={`w-3.5 h-3.5 shrink-0 ${contentType === value ? 'text-amber-600' : 'text-[#A8A29E] dark:text-[#6B5E57]'}`} />
                       <span className="text-xs font-bold">{label}</span>
                     </div>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{desc}</span>
+                    <span className="text-[10px] text-[#A8A29E] dark:text-[#6B5E57] leading-tight">{desc}</span>
                   </button>
                 ))}
               </div>
@@ -640,7 +640,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <div className="flex gap-2">
                     {[{ val: 'activity', label: '워크시트' }, { val: 'assessment', label: '평가지' }].map(opt => (
                       <button key={opt.val} onClick={() => setWorksheetType(opt.val as any)}
-                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-amber-400'}`}>
+                        className={`flex-1 py-1.5 text-xs rounded-md border transition-all ${worksheetType === opt.val ? 'bg-amber-500 text-white border-amber-500' : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:border-amber-400'}`}>
                         {opt.label}
                       </button>
                     ))}
@@ -650,14 +650,14 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <label className={labelClass}>활동 수</label>
                   <input type="number" className={inputClass} min={1} max={10} value={worksheetCount} onChange={e => setWorksheetCount(Math.max(1, parseInt(e.target.value) || 2))} />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-300">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[#78716C] dark:text-[#C4B8B0]">
                   <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
                   점수란 포함
                 </label>
                 <div className="pt-1 space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 dark:text-gray-300">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-[#78716C] dark:text-[#C4B8B0]">
                     <input type="checkbox" checked={worksheetImageEnabled} onChange={e => setWorksheetImageEnabled(e.target.checked)} className="rounded" />
-                    <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                    <ImageIcon className="w-3.5 h-3.5 text-[#A8A29E]" />
                     이미지 삽입 (AI 생성)
                   </label>
                   {worksheetImageEnabled && (
@@ -686,8 +686,8 @@ li{margin-bottom:5pt;line-height:1.6;}
                           onChange={() => toggleQuizType(qt.value)}
                           className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
                         />
-                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{qt.label}</span>
-                        <span className="text-[11px] text-gray-400 dark:text-gray-500">{qt.desc}</span>
+                        <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">{qt.label}</span>
+                        <span className="text-[11px] text-[#A8A29E] dark:text-[#6B5E57]">{qt.desc}</span>
                       </label>
                     ))}
                   </div>
@@ -737,12 +737,12 @@ li{margin-bottom:5pt;line-height:1.6;}
             )}
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 shrink-0">
+          <div className="px-4 py-3 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] shrink-0">
             <button
               onClick={handleGenerate}
               disabled={isGenerating}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
-                isGenerating ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm active:scale-[0.98]'
+                isGenerating ? 'bg-[#E7E5E4] text-[#78716C] cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm active:scale-[0.98]'
               }`}
             >
               {isGenerating ? (
@@ -768,9 +768,9 @@ li{margin-bottom:5pt;line-height:1.6;}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Slide result */}
           {contentType === 'SLIDE' && slides && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
-              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
+              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
                   {allImagesProgress && (
@@ -796,22 +796,22 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <button onClick={handleSaveSlidesMd} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-500 hover:bg-indigo-600 rounded transition-colors">
                     <FileType className="w-3.5 h-3.5" />MD 저장
                   </button>
-                  <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded transition-colors">
+                  <button onClick={handleSaveSlidesTxt} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] rounded transition-colors">
                     <Download className="w-3.5 h-3.5" />TXT 저장
                   </button>
                   <button
                     disabled
                     title="이미지 생성 기능은 현재 구현 중입니다"
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-dashed border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#A8A29E] dark:text-[#6B5E57] bg-[#EDE8E1] dark:bg-[#2E2822] border border-dashed border-[#E7E5E4] dark:border-[#2E2822] rounded cursor-not-allowed"
                   >
                     <ImageIcon className="w-3.5 h-3.5" />전체 이미지 생성
-                    <span className="ml-1 text-[10px] bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full">구현중</span>
+                    <span className="ml-1 text-[10px] bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] px-1.5 py-0.5 rounded-full">구현중</span>
                   </button>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#EAECEF]">
                 {slides.map((slide) => (
-                  <div key={slide.page} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div key={slide.page} className="bg-white dark:bg-[#221E1B] rounded-xl shadow-sm border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden">
                     <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 flex items-center gap-2">
                       <span className="text-xs font-black text-white/80 bg-white/20 px-2 py-0.5 rounded-full shrink-0">{slide.page}</span>
                       <h3
@@ -826,16 +826,16 @@ li{margin-bottom:5pt;line-height:1.6;}
                         <img src={slideImages[slide.page]} alt="" className="w-full object-cover" style={{height: 160}} />
                       </div>
                     ) : slide.imagePrompt ? (
-                      <div className="w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center border-b border-gray-100 dark:border-gray-700" style={{height: 48}}>
-                        <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-gray-500">
-                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성 <span className="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded-full text-[10px]">구현중</span>
+                      <div className="w-full bg-[#FAF9F7] dark:bg-[#171210] flex items-center justify-center border-b border-[#EDE8E1] dark:border-[#2E2822]" style={{height: 48}}>
+                        <span className="flex items-center gap-1.5 text-[11px] text-[#A8A29E] dark:text-[#6B5E57]">
+                          <ImageIcon className="w-3.5 h-3.5" />이미지 생성 <span className="bg-[#EDE8E1] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] px-1.5 py-0.5 rounded-full text-[10px]">구현중</span>
                         </span>
                       </div>
                     ) : null}
                     <div className="px-4 py-3">
                       <ul className="space-y-1.5 mb-3">
                         {slide.content.slice(0, 3).map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-base text-gray-700 dark:text-gray-200">
+                          <li key={i} className="flex items-start gap-2 text-base text-[#44403C] dark:text-[#C4B8B0]">
                             <span className="text-amber-400 mt-0.5 shrink-0">•</span>
                             <span
                               contentEditable
@@ -847,12 +847,12 @@ li{margin-bottom:5pt;line-height:1.6;}
                         ))}
                       </ul>
                       {slide.notes !== undefined && (
-                        <div className="border-t border-gray-100 dark:border-gray-700 pt-2 mt-2 flex items-start gap-1">
-                          <p className="text-xs text-gray-400 dark:text-gray-500 italic shrink-0">[교사 메모]</p>
+                        <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] pt-2 mt-2 flex items-start gap-1">
+                          <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] italic shrink-0">[교사 메모]</p>
                           <p
                             contentEditable
                             suppressContentEditableWarning
-                            className="text-xs text-gray-400 dark:text-gray-500 italic outline-none focus:bg-gray-50 dark:focus:bg-gray-700 rounded px-1 -mx-1 flex-1"
+                            className="text-xs text-[#A8A29E] dark:text-[#6B5E57] italic outline-none focus:bg-[#FAF9F7] dark:focus:bg-[#2E2822] rounded px-1 -mx-1 flex-1"
                             onBlur={e => handleSlideFieldEdit(slide.page, 'notes', e.currentTarget.textContent || '')}
                           >{slide.notes}</p>
                         </div>
@@ -870,13 +870,13 @@ li{margin-bottom:5pt;line-height:1.6;}
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => setWorksheetTab('generate')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${worksheetTab === 'generate' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors ${worksheetTab === 'generate' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'}`}
                 >
                   생성된 워크시트
                 </button>
                 <button
                   onClick={() => setWorksheetTab('saved')}
-                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${worksheetTab === 'saved' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 ${worksheetTab === 'saved' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'}`}
                 >
                   <BookMarked className="w-3.5 h-3.5" />
                   저장된 워크시트 {savedWorksheets.length > 0 && <span className="bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-1.5 rounded-full">{savedWorksheets.length}</span>}
@@ -895,21 +895,21 @@ li{margin-bottom:5pt;line-height:1.6;}
                 <GeneratedDisplay content={worksheetHtml} title={`${topic} 워크시트`} />
               )}
               {worksheetTab === 'generate' && !worksheetHtml && (
-                <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm">아직 생성된 워크시트가 없습니다.</div>
+                <div className="flex-1 flex items-center justify-center text-[#A8A29E] dark:text-[#6B5E57] text-sm">아직 생성된 워크시트가 없습니다.</div>
               )}
               {worksheetTab === 'saved' && (
                 <div className="flex-1 overflow-y-auto space-y-2">
                   {savedWorksheets.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-gray-400 dark:text-gray-600">
+                    <div className="flex flex-col items-center justify-center h-48 text-[#A8A29E] dark:text-[#6B5E57]">
                       <BookMarked className="w-8 h-8 mb-2 opacity-40" />
                       <p className="text-sm">저장된 워크시트가 없습니다.</p>
                     </div>
                   ) : (
                     savedWorksheets.map(ws => (
-                      <div key={ws.id} className="flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div key={ws.id} className="flex items-center gap-3 p-3 bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822]">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{ws.title}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{ws.grade} · {new Date(ws.createdAt).toLocaleDateString('ko-KR')}</p>
+                          <p className="text-sm font-semibold text-[#1C1917] dark:text-[#C4B8B0] truncate">{ws.title}</p>
+                          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">{ws.grade} · {new Date(ws.createdAt).toLocaleDateString('ko-KR')}</p>
                         </div>
                         <button
                           onClick={() => handleLoadWorksheet(ws)}
@@ -929,7 +929,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                           <FileDown className="w-3.5 h-3.5" />
                           PDF
                         </button>
-                        <button onClick={() => handleDeleteWorksheet(ws.id)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors shrink-0">
+                        <button onClick={() => handleDeleteWorksheet(ws.id)} className="p-1.5 text-[#A8A29E] hover:text-red-500 transition-colors shrink-0">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -942,9 +942,9 @@ li{margin-bottom:5pt;line-height:1.6;}
 
           {/* Quiz result — iframe preview + HTML source editor */}
           {contentType === 'QUIZ' && quizHtml && (
-            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm">
-              <div className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+            <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
+              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0">
+                <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
                   퀴즈 앱 미리보기
                 </span>
@@ -958,7 +958,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
                       quizEditMode
                         ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                        : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                        : 'bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'
                     }`}
                   >
                     {quizEditMode
@@ -977,14 +977,14 @@ li{margin-bottom:5pt;line-height:1.6;}
               <div className="flex-1 overflow-hidden">
                 {quizEditMode ? (
                   <textarea
-                    className="w-full h-full p-3 text-xs font-mono text-gray-800 bg-gray-950 border-0 resize-none focus:outline-none"
+                    className="w-full h-full p-3 text-xs font-mono text-[#1C1917] bg-[#171210] border-0 resize-none focus:outline-none"
                     value={quizEditSource}
                     onChange={e => setQuizEditSource(e.target.value)}
                     spellCheck={false}
                   />
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-gray-50 dark:bg-gray-900">
-                    <p className="text-sm text-gray-400 dark:text-gray-500">퀴즈 앱은 새 창에서 실행하세요</p>
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-[#FAF9F7] dark:bg-[#171210]">
+                    <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57]">퀴즈 앱은 새 창에서 실행하세요</p>
                     <button
                       onClick={() => window.electronAPI.openHtmlExternal(quizHtml)}
                       className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow-md transition-colors"
@@ -1008,17 +1008,17 @@ li{margin-bottom:5pt;line-height:1.6;}
 
           {/* Empty / loading state */}
           {!currentTypeHasResult && (
-            <div className="flex-1 bg-white rounded-lg border border-gray-300 shadow-sm flex flex-col items-center justify-center text-center p-8">
+            <div className="flex-1 bg-white rounded-lg border border-[#E7E5E4] shadow-sm flex flex-col items-center justify-center text-center p-8">
               <div className="bg-amber-50 p-4 rounded-full mb-4">
                 <BookOpen className="w-10 h-10 text-amber-400" />
               </div>
-              <h3 className="text-base font-semibold text-gray-600 mb-2">
+              <h3 className="text-base font-semibold text-[#78716C] mb-2">
                 {isGenerating ? '수업 자료를 생성하는 중...' : '수업 자료를 생성해 주세요'}
               </h3>
               {isGenerating ? (
-                <p className="text-sm text-gray-400 max-w-xs">{loadingMessage}</p>
+                <p className="text-sm text-[#A8A29E] max-w-xs">{loadingMessage}</p>
               ) : (
-                <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
+                <p className="text-sm text-[#A8A29E] max-w-xs leading-relaxed">
                   왼쪽에서 학년·교과·성취기준·주제와 자료 유형을 선택한 후<br />생성 버튼을 눌러주세요.
                 </p>
               )}
@@ -1031,19 +1031,19 @@ li{margin-bottom:5pt;line-height:1.6;}
         const slide = slides[presentIndex];
         const img = slideImages[slide.page];
         return (
-          <div className="fixed inset-0 z-50 bg-gray-950 flex flex-col select-none" tabIndex={-1}>
+          <div className="fixed inset-0 z-50 bg-[#171210] flex flex-col select-none" tabIndex={-1}>
             {/* Top bar */}
-            <div className="flex items-center justify-between px-6 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
-              <span className="text-gray-400 text-sm truncate max-w-xs">{slide.title}</span>
+            <div className="flex items-center justify-between px-6 py-2 bg-[#171210] border-b border-[#2E2822] shrink-0">
+              <span className="text-[#9C8F87] text-sm truncate max-w-xs">{slide.title}</span>
               <div className="flex items-center gap-3 shrink-0">
                 <button
                   onClick={() => setShowNotes(n => !n)}
-                  className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${showNotes ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300'}`}
+                  className={`text-xs px-3 py-1.5 rounded-md border transition-colors ${showNotes ? 'bg-amber-500 border-amber-500 text-white' : 'border-[#2E2822] text-[#9C8F87] hover:border-[#6B5E57] hover:text-[#C4B8B0]'}`}
                 >
                   교사 메모 {showNotes ? '숨기기' : '보기'}
                 </button>
-                <span className="text-gray-500 text-sm tabular-nums">{presentIndex + 1} / {slides.length}</span>
-                <button onClick={() => setIsPresentMode(false)} className="text-gray-400 hover:text-white transition-colors p-1 rounded">
+                <span className="text-[#6B5E57] text-sm tabular-nums">{presentIndex + 1} / {slides.length}</span>
+                <button onClick={() => setIsPresentMode(false)} className="text-[#9C8F87] hover:text-white transition-colors p-1 rounded">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1066,7 +1066,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                       {slide.content.slice(0, 3).map((item, i) => (
                         <li key={i} className="flex items-start gap-3">
                           <span className="text-amber-400 mt-1.5 shrink-0 text-3xl leading-none">•</span>
-                          <span className="text-3xl font-medium leading-snug text-gray-800">{item}</span>
+                          <span className="text-3xl font-medium leading-snug text-[#1C1917]">{item}</span>
                         </li>
                       ))}
                     </ul>
@@ -1079,8 +1079,8 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </div>
                 {/* Notes */}
                 {showNotes && slide.notes && (
-                  <div className="bg-gray-50 border-t border-gray-200 px-8 py-3 shrink-0">
-                    <p className="text-sm text-gray-500 italic">📌 {slide.notes}</p>
+                  <div className="bg-[#FAF9F7] border-t border-[#EDE8E1] px-8 py-3 shrink-0">
+                    <p className="text-sm text-[#78716C] italic">📌 {slide.notes}</p>
                   </div>
                 )}
               </div>
@@ -1091,7 +1091,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               <button
                 onClick={() => setPresentIndex(i => Math.max(0, i - 1))}
                 disabled={presentIndex === 0}
-                className="flex items-center gap-1.5 px-5 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
+                className="flex items-center gap-1.5 px-5 py-2 bg-[#2E2822] hover:bg-[#3A332D] disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
               >
                 <ChevronLeft className="w-4 h-4" />이전
               </button>
@@ -1100,14 +1100,14 @@ li{margin-bottom:5pt;line-height:1.6;}
                   <button
                     key={i}
                     onClick={() => setPresentIndex(i)}
-                    className={`h-2 rounded-full transition-all ${i === presentIndex ? 'bg-amber-400 w-4' : 'bg-gray-600 hover:bg-gray-500 w-2'}`}
+                    className={`h-2 rounded-full transition-all ${i === presentIndex ? 'bg-amber-400 w-4' : 'bg-[#2E2822] hover:bg-[#6B5E57] w-2'}`}
                   />
                 ))}
               </div>
               <button
                 onClick={() => setPresentIndex(i => Math.min(slides.length - 1, i + 1))}
                 disabled={presentIndex === slides.length - 1}
-                className="flex items-center gap-1.5 px-5 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
+                className="flex items-center gap-1.5 px-5 py-2 bg-[#2E2822] hover:bg-[#3A332D] disabled:opacity-30 text-white rounded-lg transition-colors font-semibold text-sm"
               >
                 다음<ChevronRight className="w-4 h-4" />
               </button>
