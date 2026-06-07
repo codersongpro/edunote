@@ -161,13 +161,13 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-white dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+        <button onClick={onCancel} className="text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0] transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <h2 className="text-base font-bold text-gray-900 dark:text-white flex-1">
+        <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6] flex-1">
           {initial ? '도구 수정' : '새 도구 만들기'}
         </h2>
         {/* 단계 표시 */}
@@ -180,7 +180,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                   ? 'bg-amber-500 text-white'
                   : n < step
                   ? 'bg-amber-200 dark:bg-amber-800 text-amber-700 dark:text-amber-300'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                  : 'bg-[#EDE8E1] dark:bg-[#2E2822] text-[#A8A29E] dark:text-[#6B5E57]'
               }`}
             >
               {n}
@@ -196,7 +196,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
           <div className="space-y-5 max-w-xl">
             <div>
               <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-3">1단계 · 기본 정보</p>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">
+              <label className="block text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
                 도구 이름 <span className="text-red-500">*</span>
               </label>
               <input
@@ -205,23 +205,23 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                 onChange={e => setName(e.target.value)}
                 placeholder="예: 가정통신문 작성기"
                 autoFocus
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="w-full px-3 py-2.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">도구 설명</label>
+              <label className="block text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">도구 설명</label>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="이 도구가 무엇을 해주는지 간략히 설명하세요"
                 rows={3}
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                className="w-full px-3 py-2.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">카테고리</label>
+              <label className="block text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">카테고리</label>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map(cat => (
                   <button
@@ -230,7 +230,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                     className={`px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-colors ${
                       category === cat.value
                         ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-amber-300 hover:text-amber-600'
+                        : 'border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:border-amber-300 hover:text-amber-600'
                     }`}
                   >
                     {cat.label}
@@ -245,38 +245,38 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
         {step === 2 && (
           <div className="space-y-4 max-w-xl">
             <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">2단계 · 입력 필드 구성</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">사용자가 도구를 실행할 때 입력할 항목을 정의하세요. 필드가 없어도 괜찮습니다.</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">사용자가 도구를 실행할 때 입력할 항목을 정의하세요. 필드가 없어도 괜찮습니다.</p>
 
             {inputs.map((inp, idx) => (
-              <div key={inp.id} className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 space-y-3">
+              <div key={inp.id} className="border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400">필드 {idx + 1}</span>
-                  <button onClick={() => removeInput(idx)} className="text-gray-400 hover:text-red-500 transition-colors">
+                  <span className="text-xs font-bold text-[#78716C] dark:text-[#9C8F87]">필드 {idx + 1}</span>
+                  <button onClick={() => removeInput(idx)} className="text-[#A8A29E] hover:text-red-500 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">필드명 (화면에 표시) *</label>
+                  <label className="block text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] mb-1">필드명 (화면에 표시) *</label>
                   <input
                     type="text"
                     value={inp.label}
                     onChange={e => updateInput(idx, { label: e.target.value })}
                     placeholder="예: 학생 이름"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">예시 힌트</label>
+                  <label className="block text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] mb-1">예시 힌트</label>
                   <input
                     type="text"
                     value={inp.placeholder ?? ''}
                     onChange={e => updateInput(idx, { placeholder: e.target.value })}
                     placeholder="예: 예: 홍길동"
-                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">입력 형태</label>
+                  <label className="block text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] mb-1">입력 형태</label>
                   <div className="flex gap-2">
                     {[
                       { value: 'text', label: '한 줄 텍스트' },
@@ -289,7 +289,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                         className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
                           inp.type === t.value
                             ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                            : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-amber-300'
+                            : 'border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:border-amber-300'
                         }`}
                       >
                         {t.label}
@@ -317,7 +317,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
 
             {inputs.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">삽입 가능한 항목 (클릭하면 커서 위치에 삽입)</p>
+                <p className="text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] mb-2">삽입 가능한 항목 (클릭하면 커서 위치에 삽입)</p>
                 <div className="flex flex-wrap gap-2">
                   {inputs.map(inp => (
                     <button
@@ -333,10 +333,10 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
             )}
 
             {/* 참고 양식 파일 */}
-            <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 space-y-2">
+            <div className="border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl p-4 space-y-2">
               <div>
-                <p className="text-xs font-semibold text-gray-700 dark:text-gray-200">참고 양식 파일 <span className="font-normal text-gray-400">(선택)</span></p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">원하는 출력 형식의 예시 파일을 첨부하면 AI가 해당 양식 형식에 맞는 프롬프트를 작성해줍니다.</p>
+                <p className="text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0]">참고 양식 파일 <span className="font-normal text-[#A8A29E]">(선택)</span></p>
+                <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-0.5">원하는 출력 형식의 예시 파일을 첨부하면 AI가 해당 양식 형식에 맞는 프롬프트를 작성해줍니다.</p>
               </div>
               {templateFiles.length === 0 ? (
                 <FileUpload label="양식 파일 첨부" files={templateFiles} onFilesChange={setTemplateFiles} multiple={false} globalPaste={true} />
@@ -352,7 +352,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-semibold text-gray-700 dark:text-gray-200">AI 프롬프트</label>
+                <label className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">AI 프롬프트</label>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleCoach}
@@ -381,7 +381,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                 }}
                 placeholder="AI에게 어떤 결과를 만들어달라고 할지 작성하세요. 위 '삽입 가능한 항목'을 클릭하거나 직접 {{변수명}}을 입력할 수 있습니다."
                 rows={10}
-                className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none font-mono"
+                className="w-full px-3 py-2.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none font-mono"
               />
             </div>
 
@@ -394,15 +394,15 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                       {coachResult.score}점
                     </span>
                   </div>
-                  <button onClick={() => setCoachResult(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                  <button onClick={() => setCoachResult(null)} className="text-[#A8A29E] hover:text-[#78716C] dark:hover:text-[#C4B8B0] transition-colors">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">{coachResult.summary}</p>
+                <p className="text-xs text-[#78716C] dark:text-[#C4B8B0] leading-relaxed">{coachResult.summary}</p>
 
                 {coachResult.issues.length === 0 ? (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">특별히 고칠 점이 발견되지 않았습니다.</p>
+                  <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">특별히 고칠 점이 발견되지 않았습니다.</p>
                 ) : (
                   <div className="space-y-2">
                     {coachResult.issues.map((issue, idx) => {
@@ -411,21 +411,21 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                           ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
                           : issue.severity === 'medium'
                           ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
-                          : 'border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800';
+                          : 'border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#221E1B]';
                       const iconTone =
                         issue.severity === 'high'
                           ? 'text-red-500'
                           : issue.severity === 'medium'
                           ? 'text-amber-500'
-                          : 'text-gray-400';
+                          : 'text-[#A8A29E]';
                       return (
                         <div key={idx} className={`border rounded-lg p-3 ${tone}`}>
                           <div className="flex items-center gap-1.5 mb-1">
                             <AlertTriangle className={`w-3.5 h-3.5 shrink-0 ${iconTone}`} />
-                            <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{issue.title}</span>
+                            <span className="text-xs font-bold text-[#1C1917] dark:text-[#C4B8B0]">{issue.title}</span>
                           </div>
-                          <p className="text-xs leading-relaxed mb-1.5 text-gray-600 dark:text-gray-400">{issue.detail}</p>
-                          <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+                          <p className="text-xs leading-relaxed mb-1.5 text-[#78716C] dark:text-[#9C8F87]">{issue.detail}</p>
+                          <p className="text-xs leading-relaxed text-[#44403C] dark:text-[#C4B8B0]">
                             <span className="font-semibold">개선 제안: </span>{issue.suggestion}
                           </p>
                         </div>
@@ -454,8 +454,8 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
 
             {promptTemplate && (
               <div>
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">미리보기 (예시값으로 치환)</p>
-                <div className="px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed font-mono">
+                <p className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] mb-1.5">미리보기 (예시값으로 치환)</p>
+                <div className="px-3 py-2.5 bg-[#FAF9F7] dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg text-xs text-[#78716C] dark:text-[#9C8F87] whitespace-pre-wrap leading-relaxed font-mono">
                   {previewPrompt()}
                 </div>
               </div>
@@ -467,16 +467,16 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
         {step === 4 && (
           <div className="space-y-4 max-w-2xl">
             <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">4단계 · 테스트 실행</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">저장하기 전에 샘플 값을 넣고 직접 실행해 결과를 확인해 보세요. 교사 이름 등 전역 변수는 실제 실행 시 자동으로 채워집니다.</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">저장하기 전에 샘플 값을 넣고 직접 실행해 결과를 확인해 보세요. 교사 이름 등 전역 변수는 실제 실행 시 자동으로 채워집니다.</p>
 
             {inputs.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">입력 필드가 없습니다. 바로 테스트 실행을 눌러 결과를 확인하세요.</p>
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">입력 필드가 없습니다. 바로 테스트 실행을 눌러 결과를 확인하세요.</p>
             ) : (
               <div className="space-y-4">
                 {inputs.map(input => (
                   <div key={input.id}>
                     {input.type !== 'file-upload' && (
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1.5">{input.label}</label>
+                      <label className="block text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">{input.label}</label>
                     )}
                     {input.type === 'file-upload' ? (
                       <FileUpload
@@ -491,7 +491,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                         onChange={e => setTestValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                         placeholder={input.placeholder}
                         rows={4}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                        className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
                       />
                     ) : (
                       <input
@@ -499,7 +499,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
                         value={testValues[input.id] ?? ''}
                         onChange={e => setTestValues(prev => ({ ...prev, [input.id]: e.target.value }))}
                         placeholder={input.placeholder}
-                        className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-amber-400"
                       />
                     )}
                   </div>
@@ -510,7 +510,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
             <button
               onClick={handleTestRun}
               disabled={isTesting || !promptTemplate.trim()}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 text-white font-bold rounded-lg text-sm transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] disabled:text-[#A8A29E] text-white font-bold rounded-lg text-sm transition-colors"
             >
               <Zap className={`w-4 h-4 ${isTesting ? 'animate-pulse' : ''}`} />
               {isTesting ? 'AI 생성 중...' : '테스트 실행'}
@@ -534,10 +534,10 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
       </div>
 
       {/* 하단 버튼 */}
-      <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="flex items-center justify-between px-6 py-4 border-t border-[#EDE8E1] dark:border-[#2E2822]">
         <button
           onClick={() => step > 1 ? setStep(s => s - 1) : onCancel()}
-          className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
           {step === 1 ? '취소' : '이전'}
@@ -546,7 +546,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
           <button
             onClick={() => setStep(s => s + 1)}
             disabled={!canGoNext()}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] disabled:text-[#A8A29E] text-white rounded-lg transition-colors"
           >
             다음
             <ChevronRight className="w-4 h-4" />
@@ -555,7 +555,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
           <button
             onClick={handleSave}
             disabled={!name.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] disabled:text-[#A8A29E] text-white rounded-lg transition-colors"
           >
             <Save className="w-4 h-4" />
             저장
