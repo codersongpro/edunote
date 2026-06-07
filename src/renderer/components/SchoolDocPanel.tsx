@@ -1022,7 +1022,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   value={templateText}
                   onChange={e => setTemplateTextByTab(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 />
-                <div className="mt-2 grid gap-2">
+                <div className="hidden">
                   <button
                     type="button"
                     onClick={handleSaveTemplateFavorite}

@@ -100,22 +100,24 @@ const App: React.FC = () => {
   const [schoolLevel, setSchoolLevel] = useState<SchoolLevel>(SchoolLevel.HIGH);
   const [showSchoolLevelModal, setShowSchoolLevelModal] = useState(false);
   const [showDisclaimerModal, setShowDisclaimerModal] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(1);
   const [showApiKeyLimitModal, setShowApiKeyLimitModal] = useState(false);
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
+  const [onboardingApiKey, setOnboardingApiKey] = useState('');
+  const [onboardingApiTier, setOnboardingApiTier] = useState<'free' | 'paid'>('free');
+  const [onboardingApiStatus, setOnboardingApiStatus] = useState<'idle' | 'testing' | 'saved' | 'error'>('idle');
+  const [onboardingTeacherName, setOnboardingTeacherName] = useState('');
+  const [onboardingInstitution, setOnboardingInstitution] = useState('');
+  const [onboardingGradeClass, setOnboardingGradeClass] = useState('');
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const [schoolDocSubOpen, setSchoolDocSubOpen] = useState(false);
-  const [classToolsSubOpen, setClassToolsSubOpen] = useState(false);
   const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky'>('qr');
-  const [studentRecordGroupOpen, setStudentRecordGroupOpen] = useState(false);
-  const [teacherRecordSubOpen, setTeacherRecordSubOpen] = useState(false);
   const [teacherRecordInitialTab, setTeacherRecordInitialTab] = useState<'observation' | 'counseling' | 'class'>('observation');
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
   const [lessonSectionOpen, setLessonSectionOpen] = useState(false);
-  const [myToolsSectionOpen, setMyToolsSectionOpen] = useState(false);
   const [myToolsActiveTab, setMyToolsActiveTab] = useState<'my' | 'market'>('my');
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -251,9 +253,49 @@ const App: React.FC = () => {
     setShowDisclaimerModal(false);
   };
 
+  const getProgressFor = (key: string) => {
+    if (!generatingModes.has(key)) return null;
+    return generatingModes.get(key) ?? -1;
+  };
+
   const handleGoToApiSettings = () => {
     setShowApiKeyLimitModal(false);
     goTo(AppMode.SETTINGS);
+  };
+
+  const handleSaveOnboardingApiKey = async () => {
+    const key = onboardingApiKey.trim();
+    if (!key) return;
+    setOnboardingApiStatus('testing');
+    try {
+      const result = await window.electronAPI.testApiKey(key, onboardingApiTier);
+      if (!result.ok) {
+        setOnboardingApiStatus('error');
+        showToast({ type: 'error', title: 'API 키 확인 실패', description: result.error || '키를 다시 확인해 주세요.' });
+        return;
+      }
+      await window.electronAPI.setApiKey(key, onboardingApiTier);
+      await window.electronAPI.setConfig({ apiTier: onboardingApiTier, apiKeyLastUsable: !result.wait });
+      setHasApiKey(true);
+      setApiKeyAvailability(result.wait ? 'wait' : 'usable');
+      setOnboardingApiKey('');
+      setOnboardingApiStatus('saved');
+      showToast({ type: 'success', title: 'API 키 저장 완료', description: 'EduNote에서 AI 기능을 사용할 수 있습니다.' });
+    } catch {
+      setOnboardingApiStatus('error');
+      showToast({ type: 'error', title: 'API 키 저장 실패', description: '잠시 후 다시 시도해 주세요.' });
+    }
+  };
+
+  const handleSaveOnboardingProfile = async () => {
+    await window.electronAPI.setConfig({
+      teacherName: onboardingTeacherName,
+      institution: onboardingInstitution,
+      schoolLevel,
+      gradeClass: onboardingGradeClass,
+    });
+    setHasEnteredStudentSection(true);
+    showToast({ type: 'success', title: '기본 정보 저장 완료' });
   };
 
   const handleOpenApiGuide = () => {
@@ -290,45 +332,27 @@ const App: React.FC = () => {
   const handleSchoolDocNav = (docType: DocType) => {
     goTo(AppMode.SCHOOL_DOC);
     setActiveDocType(docType);
-    setSchoolDocSubOpen(true);
   };
 
   const handleSchoolDocParent = () => {
-    if (!schoolDocSubOpen) {
-      setSchoolDocSubOpen(true);
-      goTo(AppMode.SCHOOL_DOC);
-    } else {
-      setSchoolDocSubOpen(false);
-    }
+    goTo(AppMode.SCHOOL_DOC);
   };
 
   const handleClassToolsNav = (tab: 'qr' | 'lucky') => {
     setClassToolsInitialTab(tab);
-    setClassToolsSubOpen(true);
     goTo(AppMode.CLASS_TOOLS);
   };
 
   const handleClassToolsParent = () => {
-    if (!classToolsSubOpen) {
-      setClassToolsSubOpen(true);
-      goTo(AppMode.CLASS_TOOLS);
-    } else {
-      setClassToolsSubOpen(false);
-    }
+    goTo(AppMode.CLASS_TOOLS);
   };
 
   const handleTeacherRecordParent = () => {
-    if (!teacherRecordSubOpen) {
-      setTeacherRecordSubOpen(true);
-      goTo(AppMode.TEACHER_RECORD);
-    } else {
-      setTeacherRecordSubOpen(false);
-    }
+    goTo(AppMode.TEACHER_RECORD);
   };
 
   const handleTeacherRecordNav = (tab: 'observation' | 'counseling' | 'class') => {
     setTeacherRecordInitialTab(tab);
-    setTeacherRecordSubOpen(true);
     goTo(AppMode.TEACHER_RECORD);
   };
 
@@ -346,20 +370,6 @@ const App: React.FC = () => {
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
 
-  const studentSubNavClass = (m: AppMode) =>
-    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
-      mode === m
-        ? 'bg-indigo-500 text-white font-semibold'
-        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
-    }`;
-
-  const teacherRecordSubNavClass = (tab: 'observation' | 'counseling' | 'class') =>
-    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
-      mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === tab
-        ? 'bg-indigo-500 text-white font-semibold'
-        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
-    }`;
-
   const adminNavClass = (m: AppMode, isDocParent = false) =>
     `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
       (isDocParent && mode === AppMode.SCHOOL_DOC) || (!isDocParent && mode === m)
@@ -367,24 +377,10 @@ const App: React.FC = () => {
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
     }`;
 
-  const docSubNavClass = (dt: DocType) =>
-    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
-      mode === AppMode.SCHOOL_DOC && activeDocType === dt
-        ? 'bg-emerald-500 text-white font-semibold'
-        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300'
-    }`;
-
   const lessonNavClass = (m: AppMode, isParent = false) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
       (isParent && mode === AppMode.CLASS_TOOLS) || (!isParent && mode === m)
         ? 'bg-amber-500 text-white font-semibold shadow-sm'
-        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
-    }`;
-
-  const classToolsSubNavClass = (tab: 'qr' | 'lucky') =>
-    `w-full flex items-center gap-2 pl-8 pr-3 py-1.5 text-sm rounded-md transition-all cursor-pointer ${
-      mode === AppMode.CLASS_TOOLS && classToolsInitialTab === tab
-        ? 'bg-amber-500 text-white font-semibold'
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
 
@@ -442,6 +438,48 @@ const App: React.FC = () => {
   };
 
   const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM];
+
+  const topNavItems = (() => {
+    if (mode === AppMode.SCHOOL_DOC) {
+      return ALL_DOC_TYPES.map(dt => ({
+        key: `doc-${dt}`,
+        label: DOC_TYPE_LABELS[dt],
+        icon: File,
+        active: activeDocType === dt,
+        progress: getProgressFor(`SCHOOL_DOC_${dt}`),
+        onClick: () => handleSchoolDocNav(dt),
+      }));
+    }
+    if ([AppMode.GENERATOR, AppMode.SUBJECT_GENERATOR, AppMode.SPORTS_CLUB_GENERATOR, AppMode.CREATIVE_ACTIVITY_GENERATOR].includes(mode)) {
+      return [
+        { key: AppMode.GENERATOR, label: '행발생성', icon: User2, active: mode === AppMode.GENERATOR, progress: getProgressFor(AppMode.GENERATOR), onClick: () => handleModeChange(AppMode.GENERATOR) },
+        { key: AppMode.SUBJECT_GENERATOR, label: '교과 세특 생성', icon: BookOpen, active: mode === AppMode.SUBJECT_GENERATOR, progress: getProgressFor(AppMode.SUBJECT_GENERATOR), onClick: () => handleModeChange(AppMode.SUBJECT_GENERATOR) },
+        { key: AppMode.SPORTS_CLUB_GENERATOR, label: '학교스포츠클럽', icon: Dumbbell, active: mode === AppMode.SPORTS_CLUB_GENERATOR, progress: getProgressFor(AppMode.SPORTS_CLUB_GENERATOR), onClick: () => handleModeChange(AppMode.SPORTS_CLUB_GENERATOR) },
+        { key: AppMode.CREATIVE_ACTIVITY_GENERATOR, label: '창체 특기사항', icon: Palette, active: mode === AppMode.CREATIVE_ACTIVITY_GENERATOR, progress: getProgressFor(AppMode.CREATIVE_ACTIVITY_GENERATOR), onClick: () => handleModeChange(AppMode.CREATIVE_ACTIVITY_GENERATOR) },
+      ];
+    }
+    if (mode === AppMode.TEACHER_RECORD || mode === AppMode.STUDENT_MEMO) {
+      return [
+        { key: 'observation', label: '수업관찰기록', icon: Eye, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'observation', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('observation') },
+        { key: 'counseling', label: '상담일지', icon: MessageCircle, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'counseling', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('counseling') },
+        { key: 'class', label: '학급경영일지', icon: CalendarDays, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'class', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('class') },
+        { key: AppMode.STUDENT_MEMO, label: '학생 메모 보드', icon: StickyNote, active: mode === AppMode.STUDENT_MEMO, progress: getProgressFor(AppMode.STUDENT_MEMO), onClick: () => goTo(AppMode.STUDENT_MEMO) },
+      ];
+    }
+    if (mode === AppMode.CLASS_TOOLS) {
+      return [
+        { key: 'qr', label: 'QR 메이커', icon: QrCode, active: classToolsInitialTab === 'qr', progress: getProgressFor(AppMode.CLASS_TOOLS), onClick: () => handleClassToolsNav('qr') },
+        { key: 'lucky', label: '럭키드로우', icon: StickyNote, active: classToolsInitialTab === 'lucky', progress: getProgressFor(AppMode.CLASS_TOOLS), onClick: () => handleClassToolsNav('lucky') },
+      ];
+    }
+    if (mode === AppMode.MY_AI_TOOLS) {
+      return [
+        { key: 'my', label: '내 스킬', icon: Wrench, active: myToolsActiveTab === 'my', progress: getProgressFor(AppMode.MY_AI_TOOLS), onClick: () => setMyToolsActiveTab('my') },
+        { key: 'market', label: '스킬마켓', icon: Download, active: myToolsActiveTab === 'market', progress: getProgressFor(AppMode.MY_AI_TOOLS), onClick: () => setMyToolsActiveTab('market') },
+      ];
+    }
+    return [];
+  })();
 
   const contentAccent =
     STUDENT_RECORD_MODES.includes(mode)
@@ -510,58 +548,225 @@ const App: React.FC = () => {
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
 
-        {/* Disclaimer Modal */}
+        {/* Onboarding Modal */}
         {showDisclaimerModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="disclaimer-modal-title">
-            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
-              {/* Icon */}
-              <div className="flex flex-col items-center mb-5">
-                <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-3">
-                  <AlertTriangle className="w-8 h-8 text-orange-500" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100/85 dark:bg-black/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
+            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-8 py-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 id="onboarding-modal-title" className="text-lg font-black">EduNote 시작하기</h2>
+                  <span className="text-xs font-bold text-white/75">단계 {onboardingStep} / 3</span>
                 </div>
-                <h2 id="disclaimer-modal-title" className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">AI 활용 시 유의사항</h2>
-                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">사용 전 반드시 확인해주세요</p>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { n: 1, label: '유의사항' },
+                    { n: 2, label: 'API 키 설정' },
+                    { n: 3, label: '기본 정보' },
+                  ].map(step => (
+                    <div key={step.n} className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${
+                        onboardingStep > step.n ? 'bg-emerald-100 text-emerald-600' :
+                        onboardingStep === step.n ? 'bg-white text-indigo-600' :
+                        'bg-white/20 text-white/70'
+                      }`}>
+                        {onboardingStep > step.n ? <CheckCircle className="w-4 h-4" /> : step.n}
+                      </div>
+                      <div className="h-px flex-1 bg-white/25" />
+                      <span className={`text-xs font-bold truncate ${onboardingStep === step.n ? 'text-white' : 'text-white/65'}`}>{step.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              {/* Numbered items */}
-              <div className="space-y-4 mb-6">
-                {[
-                  { n: '01', title: '정보 정확성 확인', desc: 'AI 생성 내용은 사실과 다를 수 있습니다. 사용자 스스로 전문적인 검토가 필요합니다.' },
-                  { n: '02', title: '개인정보 보호', desc: '학생·학부모·교직원의 이름, 연락처 등 민감정보 입력 시 주의하여 사용하세요.' },
-                  { n: '03', title: '법적 책임', desc: '최종 문서에 대한 모든 책임은 사용자 본인에게 있습니다.' },
-                ].map(({ n, title, desc }) => (
-                  <div key={n} className="flex gap-3">
-                    <span className="text-xs font-black text-[#A8A29E] dark:text-[#6B5E57] w-5 shrink-0 mt-0.5">{n}</span>
+              <div className="px-8 py-7 min-h-[330px]">
+                {onboardingStep === 1 && (
+                  <div>
+                    <h3 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">AI 활용 시 유의사항</h3>
+                    <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-7">사용 전 반드시 확인해주세요</p>
+                    <div className="space-y-5">
+                      {[
+                        { n: '01', title: '정보 정확성 확인', desc: 'AI 생성 내용은 사실과 다를 수 있습니다. 사용자 스스로 전문적인 검토가 필요합니다.' },
+                        { n: '02', title: '개인정보 보호', desc: '학생·학부모·교직원의 이름, 연락처 등 민감정보 입력 시 주의하여 사용하세요.' },
+                        { n: '03', title: '법적 책임', desc: '최종 문서에 대한 모든 책임은 사용자 본인에게 있습니다.' },
+                      ].map(({ n, title, desc }) => (
+                        <div key={n} className="flex gap-4">
+                          <span className="text-xs font-black text-slate-300 dark:text-[#6B5E57] w-6 shrink-0 mt-0.5">{n}</span>
+                          <div>
+                            <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">{title}</p>
+                            <p className="text-sm text-[#78716C] dark:text-[#9C8F87] leading-relaxed mt-1">{desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-px bg-[#EDE8E1] dark:bg-[#2E2822] my-7" />
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={disclaimerChecked}
+                        onChange={e => setDisclaimerChecked(e.target.checked)}
+                        className="w-4 h-4 rounded border-[#E7E5E4] accent-indigo-600 cursor-pointer"
+                      />
+                      <span className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0]">위 내용을 모두 확인하고 동의합니다.</span>
+                    </label>
+                  </div>
+                )}
+                {onboardingStep === 2 && (
+                  <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-7">
                     <div>
-                      <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">{title}</p>
-                      <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed mt-0.5">{desc}</p>
+                      <h3 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">API 키 설정</h3>
+                      <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-6">Gemini API 키를 입력하면 AI 기능을 모두 사용할 수 있습니다.</p>
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        <button
+                          onClick={() => { setOnboardingApiTier('free'); setOnboardingApiStatus('idle'); }}
+                          className={`text-left rounded-lg border-2 px-4 py-3 ${
+                            onboardingApiTier === 'free'
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                              : 'border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210]'
+                          }`}
+                        >
+                          <p className="text-sm font-black text-indigo-700 dark:text-indigo-300">무료 Gmail 기본</p>
+                          <p className="text-xs text-indigo-400 mt-1">분당 15회 무료</p>
+                        </button>
+                        <button
+                          onClick={() => { setOnboardingApiTier('paid'); setOnboardingApiStatus('idle'); }}
+                          className={`text-left rounded-lg border-2 px-4 py-3 ${
+                            onboardingApiTier === 'paid'
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                              : 'border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210]'
+                          }`}
+                        >
+                          <p className="text-sm font-bold text-[#78716C] dark:text-[#9C8F87]">유료 API</p>
+                          <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-1">사용량 기반 과금</p>
+                        </button>
+                      </div>
+                      <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">무료 Gmail API 키</label>
+                      <input
+                        type="password"
+                        value={onboardingApiKey}
+                        onChange={e => { setOnboardingApiKey(e.target.value); setOnboardingApiStatus('idle'); }}
+                        className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="개인 Gmail 무료 API 키를 붙여넣으세요"
+                      />
+                      <button
+                        onClick={handleSaveOnboardingApiKey}
+                        disabled={!onboardingApiKey.trim() || onboardingApiStatus === 'testing'}
+                        className="mt-3 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition-colors"
+                      >
+                        {onboardingApiStatus === 'testing' ? '키 확인 중...' : onboardingApiStatus === 'saved' ? '저장 완료' : '저장'}
+                      </button>
+                      <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                        API 키가 없어도 일부 기능은 사용할 수 있습니다.
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-[#171210] rounded-xl p-5">
+                      <p className="text-sm font-black text-[#44403C] dark:text-[#F0EBE6] mb-4">무료 API 키 발급 방법</p>
+                      <ol className="space-y-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
+                        {['Google AI Studio에 접속', 'Google 계정으로 로그인', '좌측 메뉴 API 키 클릭', 'API 키 만들기 클릭', '생성된 키 복사 후 붙여넣기'].map((text, index) => (
+                          <li key={text} className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black flex items-center justify-center">{index + 1}</span>
+                            <span>{text}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <button
+                        onClick={handleOpenApiGuide}
+                        className="mt-5 w-full py-2.5 rounded-lg border border-indigo-200 bg-white text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:bg-[#221E1B] dark:border-indigo-900 dark:text-indigo-300"
+                      >
+                        발급 페이지 열기
+                      </button>
                     </div>
                   </div>
-                ))}
+                )}
+                {onboardingStep === 3 && (
+                  <div>
+                    <h3 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">기본 정보 입력</h3>
+                    <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-7">입력한 정보는 공문서와 수업자료 생성 시 자동으로 활용됩니다.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                      <div>
+                        <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">이름</label>
+                        <input
+                          type="text"
+                          value={onboardingTeacherName}
+                          onChange={e => setOnboardingTeacherName(e.target.value)}
+                          className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="예: 홍길동"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">소속기관</label>
+                        <input
+                          type="text"
+                          value={onboardingInstitution}
+                          onChange={e => setOnboardingInstitution(e.target.value)}
+                          className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
+                          placeholder="예: 충북초등학교"
+                        />
+                      </div>
+                    </div>
+                    <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">기본 학교급</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[SchoolLevel.ELEMENTARY, SchoolLevel.MIDDLE, SchoolLevel.HIGH].map(level => (
+                        <button
+                          key={level}
+                          onClick={() => handleSchoolLevelSelect(level)}
+                          className={`py-2.5 text-sm font-bold rounded-lg border transition-colors ${
+                            schoolLevel === level
+                              ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300'
+                              : 'border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:border-indigo-300'
+                          }`}
+                        >
+                          {level}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-5">
+                      <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">담당 학년/반</label>
+                      <input
+                        type="text"
+                        value={onboardingGradeClass}
+                        onChange={e => setOnboardingGradeClass(e.target.value)}
+                        className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="예: 5학년 2반"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveOnboardingProfile}
+                      className="mt-6 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
+                    >
+                      기본 정보 저장
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {/* Divider */}
-              <div className="h-px bg-[#EDE8E1] dark:bg-[#2E2822] mb-4" />
-
-              {/* Checkbox */}
-              <label className="flex items-center gap-2.5 cursor-pointer mb-5 select-none">
-                <input
-                  type="checkbox"
-                  checked={disclaimerChecked}
-                  onChange={e => setDisclaimerChecked(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#E7E5E4] accent-blue-600 cursor-pointer"
-                />
-                <span className="text-sm text-[#44403C] dark:text-[#C4B8B0]">위 내용을 모두 확인하고 동의합니다.</span>
-              </label>
-
-              {/* Button */}
-              <button
-                onClick={handleAcceptDisclaimer}
-                disabled={!disclaimerChecked}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] disabled:text-[#A8A29E] dark:disabled:text-[#6B5E57] disabled:cursor-not-allowed text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
-              >
-                EduNote 시작하기 →
-              </button>
+              <div className="px-8 py-5 border-t border-[#EDE8E1] dark:border-[#2E2822] flex items-center justify-between">
+                <button
+                  onClick={() => setOnboardingStep(step => Math.max(1, step - 1))}
+                  disabled={onboardingStep === 1}
+                  className="px-5 py-2.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] text-sm font-bold text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
+                >
+                  ← 이전 단계
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3].map(step => (
+                    <span key={step} className={`w-2 h-2 rounded-full ${onboardingStep === step ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-[#2E2822]'}`} />
+                  ))}
+                </div>
+                {onboardingStep < 3 ? (
+                  <button
+                    onClick={() => setOnboardingStep(step => Math.min(3, step + 1))}
+                    disabled={onboardingStep === 1 && !disclaimerChecked}
+                    className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:bg-indigo-200 disabled:cursor-not-allowed hover:bg-indigo-700"
+                  >
+                    다음 단계 →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowApiKeyLimitModal(false); handleAcceptDisclaimer(); }}
+                    className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
+                  >
+                    EduNote 시작하기 →
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -818,33 +1023,15 @@ const App: React.FC = () => {
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-emerald-400 cursor-grab mt-2.5" />
                       {m === AppMode.SCHOOL_DOC ? (
-                        <div className="min-w-0 flex-1">
-                          <button onClick={handleSchoolDocParent} className={adminNavClass(AppMode.SCHOOL_DOC, true)}>
-                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                            <span className="flex-1 text-left truncate">{label}</span>
-                            {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
-                              <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                                {generatingModes.get(AppMode.SCHOOL_DOC)}%
-                              </span>
-                            )}
-                            {schoolDocSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
-                          </button>
-                          {schoolDocSubOpen && (
-                            <div className="mt-0.5 space-y-0.5 border-l-2 border-emerald-200 dark:border-emerald-700 ml-3">
-                              {ALL_DOC_TYPES.map(dt => (
-                                <button key={dt} onClick={() => handleSchoolDocNav(dt)} className={docSubNavClass(dt)}>
-                                  <File className="w-3 h-3 shrink-0" />
-                                  <span className="flex-1 truncate">{DOC_TYPE_LABELS[dt]}</span>
-                                  {generatingModes.has(`SCHOOL_DOC_${dt}`) && (
-                                    <span className="text-[9px] px-1 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
-                                      {generatingModes.get(`SCHOOL_DOC_${dt}`)}%
-                                    </span>
-                                  )}
-                                </button>
-                              ))}
-                            </div>
+                        <button onClick={handleSchoolDocParent} className={`min-w-0 flex-1 ${adminNavClass(AppMode.SCHOOL_DOC, true)}`}>
+                          {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                          {generatingModes.has(AppMode.SCHOOL_DOC) && mode !== AppMode.SCHOOL_DOC && (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200 rounded font-bold shrink-0 tabular-nums">
+                              {generatingModes.get(AppMode.SCHOOL_DOC)}%
+                            </span>
                           )}
-                        </div>
+                        </button>
                       ) : (
                         <button onClick={() => goTo(m)} title={label} className={`min-w-0 flex-1 ${adminNavClass(m)}`}>
                           {Icon && <Icon className="w-4 h-4 shrink-0" />}
@@ -892,25 +1079,10 @@ const App: React.FC = () => {
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-amber-400 cursor-grab mt-2.5" />
                       {m === AppMode.CLASS_TOOLS ? (
-                        <div className="min-w-0 flex-1">
-                          <button onClick={handleClassToolsParent} className={lessonNavClass(AppMode.CLASS_TOOLS, true)}>
-                            {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
-                            <span className="flex-1 text-left truncate">{label}</span>
-                            {classToolsSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
-                          </button>
-                          {classToolsSubOpen && (
-                            <div className="mt-0.5 space-y-0.5 border-l-2 border-amber-200 dark:border-amber-700 ml-3">
-                              <button onClick={() => handleClassToolsNav('qr')} className={classToolsSubNavClass('qr')}>
-                                <QrCode className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">QR 메이커</span>
-                              </button>
-                              <button onClick={() => handleClassToolsNav('lucky')} className={classToolsSubNavClass('lucky')}>
-                                <span className="w-3 h-3 shrink-0 flex items-center justify-center text-xs">🎲</span>
-                                <span className="flex-1 truncate">럭키드로우</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <button onClick={handleClassToolsParent} className={`min-w-0 flex-1 ${lessonNavClass(AppMode.CLASS_TOOLS, true)}`}>
+                          {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                        </button>
                       ) : (
                         <button
                           onClick={() => goTo(m)}
@@ -967,64 +1139,18 @@ const App: React.FC = () => {
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-indigo-400 cursor-grab mt-2.5" />
                       {m === AppMode.STUDENT_RECORD_GROUP ? (
-                        <div className="min-w-0 flex-1">
-                          <button
-                            onClick={() => setStudentRecordGroupOpen(prev => !prev)}
-                            className={studentNavClass(AppMode.STUDENT_RECORD_GROUP)}
-                          >
-                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                            <span className="flex-1 text-left truncate">{label}</span>
-                            {studentRecordGroupOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
-                          </button>
-                          {studentRecordGroupOpen && (
-                            <div className="mt-0.5 space-y-0.5 border-l-2 border-indigo-200 dark:border-indigo-700 ml-3">
-                              <button onClick={() => handleModeChange(AppMode.GENERATOR)} className={studentSubNavClass(AppMode.GENERATOR)}>
-                                <User2 className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">행발생성</span>
-                              </button>
-                              <button onClick={() => handleModeChange(AppMode.SUBJECT_GENERATOR)} className={studentSubNavClass(AppMode.SUBJECT_GENERATOR)}>
-                                <BookOpen className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">교과 세특 생성</span>
-                              </button>
-                              <button onClick={() => handleModeChange(AppMode.SPORTS_CLUB_GENERATOR)} className={studentSubNavClass(AppMode.SPORTS_CLUB_GENERATOR)}>
-                                <Dumbbell className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">학교스포츠클럽</span>
-                              </button>
-                              <button onClick={() => handleModeChange(AppMode.CREATIVE_ACTIVITY_GENERATOR)} className={studentSubNavClass(AppMode.CREATIVE_ACTIVITY_GENERATOR)}>
-                                <Palette className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">창체 특기사항</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => handleModeChange(AppMode.GENERATOR)}
+                          className={`min-w-0 flex-1 ${studentNavClass(AppMode.STUDENT_RECORD_GROUP)}`}
+                        >
+                          {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                        </button>
                       ) : m === AppMode.TEACHER_RECORD ? (
-                        <div className="min-w-0 flex-1">
-                          <button onClick={handleTeacherRecordParent} className={studentNavClass(AppMode.TEACHER_RECORD)}>
-                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
-                            <span className="flex-1 text-left truncate">{label}</span>
-                            {teacherRecordSubOpen ? <ChevronDown className="w-3 h-3 shrink-0 opacity-70" /> : <ChevronRight className="w-3 h-3 shrink-0 opacity-70" />}
-                          </button>
-                          {teacherRecordSubOpen && (
-                            <div className="mt-0.5 space-y-0.5 border-l-2 border-indigo-200 dark:border-indigo-700 ml-3">
-                              <button onClick={() => handleTeacherRecordNav('observation')} className={teacherRecordSubNavClass('observation')}>
-                                <Eye className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">수업관찰기록</span>
-                              </button>
-                              <button onClick={() => handleTeacherRecordNav('counseling')} className={teacherRecordSubNavClass('counseling')}>
-                                <MessageCircle className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">상담일지</span>
-                              </button>
-                              <button onClick={() => handleTeacherRecordNav('class')} className={teacherRecordSubNavClass('class')}>
-                                <CalendarDays className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">학급경영일지</span>
-                              </button>
-                              <button onClick={() => goTo(AppMode.STUDENT_MEMO)} className={studentSubNavClass(AppMode.STUDENT_MEMO)}>
-                                <StickyNote className="w-3 h-3 shrink-0" />
-                                <span className="flex-1 truncate">학생 메모 보드</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <button onClick={handleTeacherRecordParent} className={`min-w-0 flex-1 ${studentNavClass(AppMode.TEACHER_RECORD)}`}>
+                          {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                          <span className="flex-1 text-left truncate">{label}</span>
+                        </button>
                       ) : (
                         <button onClick={() => handleModeChange(m)} title={label} className={`min-w-0 flex-1 ${studentNavClass(m)}`}>
                           {Icon && <Icon className="w-4 h-4 shrink-0" />}
@@ -1047,7 +1173,7 @@ const App: React.FC = () => {
             {/* ── 나만의AI ── */}
             <div className="rounded-xl overflow-hidden border border-pink-100 dark:border-pink-900/50 bg-pink-50/40 dark:bg-pink-950/20">
               <button
-                onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
+                onClick={() => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); }}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-pink-50/80 dark:hover:bg-pink-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -1056,34 +1182,8 @@ const App: React.FC = () => {
                   </div>
                   <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide truncate">AI 스킬즈</span>
                 </div>
-                {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
+                <ChevronRight className="w-3 h-3 text-pink-400" />
               </button>
-              {myToolsSectionOpen && (
-                <div className="px-1.5 pb-1.5 space-y-0.5">
-                  <button
-                    onClick={() => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'my'
-                        ? 'bg-pink-500 text-white font-semibold shadow-sm'
-                        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
-                    }`}
-                  >
-                    <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">내 스킬</span>
-                  </button>
-                  <button
-                    onClick={() => { setMyToolsActiveTab('market'); goTo(AppMode.MY_AI_TOOLS); }}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-                      mode === AppMode.MY_AI_TOOLS && myToolsActiveTab === 'market'
-                        ? 'bg-pink-500 text-white font-semibold shadow-sm'
-                        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
-                    }`}
-                  >
-                    <Download className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">스킬마켓</span>
-                  </button>
-                </div>
-              )}
             </div>
           </nav>
 
@@ -1122,6 +1222,34 @@ const App: React.FC = () => {
 
         <main className="flex-1 overflow-hidden flex flex-col">
           <div className={`h-[3px] shrink-0 bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
+          {topNavItems.length > 0 && (
+            <div className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] px-5 overflow-x-auto">
+              <div className="flex items-center gap-1 min-w-max">
+                {topNavItems.map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={item.onClick}
+                      className={`h-11 px-4 inline-flex items-center gap-1.5 border-t-2 rounded-t-lg text-sm transition-colors ${
+                        item.active
+                          ? 'border-indigo-500 bg-[#FAF9F7] dark:bg-[#171210] text-[#1C1917] dark:text-[#F0EBE6] font-bold'
+                          : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="whitespace-nowrap">{item.label}</span>
+                      {item.progress !== null && (
+                        <span className="ml-1 rounded-full bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 text-[10px] font-black tabular-nums text-indigo-700 dark:text-indigo-200">
+                          {item.progress === -1 ? '진행 중' : `${item.progress}%`}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {/* Generation progress banner */}
           {generatingModes.has(mode) && (() => {
             const pct = generatingModes.get(mode) ?? -1;

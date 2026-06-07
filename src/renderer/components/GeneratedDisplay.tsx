@@ -525,7 +525,7 @@ h2,h3{page-break-after:avoid;}
           >
             <Printer className="w-4 h-4" />
           </button>
-          {hwpxTemplate && hwpxFillData && (
+          {false && hwpxTemplate && hwpxFillData && (
             <button
               onClick={handleDownloadHwpx}
               disabled={hwpxDownloading}
