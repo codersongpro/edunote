@@ -181,15 +181,15 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-[#171210] border-b border-[#E7E5E4] dark:border-[#2E2822] px-6 py-4">
         <div className="flex items-center gap-3">
-          <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 transition-colors">
+          <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] text-[#A8A29E] transition-colors">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <Monitor className="w-5 h-5 text-violet-500" />
           <div>
-            <h1 className="text-base font-extrabold text-gray-900 dark:text-white">HTML 앱 만들기</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400">원하는 앱을 설명하면 AI가 즉시 만들어드립니다</p>
+            <h1 className="text-base font-extrabold text-[#1C1917] dark:text-[#F0EBE6]">HTML 앱 만들기</h1>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">원하는 앱을 설명하면 AI가 즉시 만들어드립니다</p>
           </div>
         </div>
       </div>
@@ -221,7 +221,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
         {/* 예시 칩 */}
         {!htmlContent && (
           <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">예시 클릭하면 자동 입력돼요</p>
+            <p className="text-[11px] font-semibold text-[#A8A29E] dark:text-[#6B5E57]">예시 클릭하면 자동 입력돼요</p>
             <div className="flex flex-wrap gap-1.5">
               {EXAMPLES.map((ex, i) => (
                 <button
@@ -237,11 +237,11 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
         )}
 
         {/* 입력 필드 */}
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+        <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-4">
 
           {/* 앱 이름/종류 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
+            <label className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">
               앱 이름 / 종류 <span className="text-red-500">*</span>
             </label>
             <input
@@ -249,20 +249,20 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
               value={appType}
               onChange={e => setAppType(e.target.value)}
               placeholder="예: 팀별 점수판, 수업 타이머, 어휘 플래시카드"
-              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+              className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-violet-400"
             />
           </div>
 
           {/* 기능 목록 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
+            <label className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">
               기능 목록
-              <span className="ml-1.5 text-[11px] font-normal text-gray-400 dark:text-gray-500">Enter로 줄 추가, Backspace로 빈 줄 삭제</span>
+              <span className="ml-1.5 text-[11px] font-normal text-[#A8A29E] dark:text-[#6B5E57]">Enter로 줄 추가, Backspace로 빈 줄 삭제</span>
             </label>
             <div className="space-y-1.5">
               {features.map((f, idx) => (
                 <div key={idx} className="flex items-center gap-1.5">
-                  <span className="text-gray-300 dark:text-gray-600 shrink-0">
+                  <span className="text-[#E7E5E4] dark:text-[#2E2822] shrink-0">
                     <GripVertical className="w-3.5 h-3.5" />
                   </span>
                   <input
@@ -271,11 +271,11 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
                     onChange={e => updateFeature(idx, e.target.value)}
                     onKeyDown={e => handleFeatureKeyDown(e, idx)}
                     placeholder={idx === 0 ? '예: +1/-1 버튼으로 점수 조절' : '예: 효과음(Web Audio API)'}
-                    className="flex-1 px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    className="flex-1 px-3 py-1.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-violet-400"
                   />
                   <button
                     onClick={() => removeFeature(idx)}
-                    className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors shrink-0"
+                    className="p-1 text-[#E7E5E4] dark:text-[#2E2822] hover:text-red-400 transition-colors shrink-0"
                     tabIndex={-1}
                   >
                     <X className="w-3.5 h-3.5" />
@@ -293,22 +293,22 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
           {/* 추가 요청 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-200">
-              추가 요청 <span className="text-[11px] font-normal text-gray-400 dark:text-gray-500">(선택)</span>
+            <label className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">
+              추가 요청 <span className="text-[11px] font-normal text-[#A8A29E] dark:text-[#6B5E57]">(선택)</span>
             </label>
             <textarea
               value={extra}
               onChange={e => setExtra(e.target.value)}
               placeholder="예: 전체화면 지원, 모바일 반응형, 파스텔 색상 테마"
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
+              className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-violet-400 resize-none"
             />
           </div>
 
           {/* AI 전달 문구 미리보기 */}
           {description.length > 1 && (
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2 text-xs text-gray-500 dark:text-gray-400">
-              <span className="font-semibold text-gray-400 dark:text-gray-500 mr-1">AI 전달:</span>
+            <div className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 rounded-lg px-3 py-2 text-xs text-[#78716C] dark:text-[#9C8F87]">
+              <span className="font-semibold text-[#A8A29E] dark:text-[#6B5E57] mr-1">AI 전달:</span>
               {description}
             </div>
           )}
@@ -318,7 +318,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             <button
               onClick={handleGenerate}
               disabled={!canGenerate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white text-sm font-bold rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] text-white text-sm font-bold rounded-xl transition-colors"
             >
               {isGenerating
                 ? <RefreshCw className="w-4 h-4 animate-spin" />
@@ -328,7 +328,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             {isGenerating && (
               <button
                 onClick={handleGenerateCancel}
-                className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-gray-500 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2.5 text-sm text-[#78716C] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
               >
                 <X className="w-3.5 h-3.5" /> 취소
               </button>
@@ -339,21 +339,21 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
         {/* 미리보기 */}
         {htmlContent && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col" style={{ height: '420px' }}>
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-700 shrink-0">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+          <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] overflow-hidden flex flex-col" style={{ height: '420px' }}>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
+              <span className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5" /> 미리보기
               </span>
               <div className="flex gap-1">
                 <button
                   onClick={() => window.electronAPI.openHtmlExternal(htmlContent, name || 'html-app')}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs text-[#78716C] hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 rounded-lg transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> 브라우저에서 열기
                 </button>
                 <button
                   onClick={() => setShowCode(!showCode)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs text-[#78716C] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] rounded-lg transition-colors"
                 >
                   <Code className="w-3.5 h-3.5" /> {showCode ? '미리보기' : '코드 보기'}
                 </button>
@@ -363,7 +363,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
               <textarea
                 value={htmlContent}
                 onChange={e => setHtmlContent(e.target.value)}
-                className="flex-1 px-4 py-3 text-xs font-mono bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 resize-none focus:outline-none"
+                className="flex-1 px-4 py-3 text-xs font-mono bg-[#FAF9F7] dark:bg-[#221E1B] text-[#1C1917] dark:text-[#C4B8B0] resize-none focus:outline-none"
               />
             ) : (
               <iframe
@@ -380,25 +380,25 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
         {/* 저장 */}
         {htmlContent && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+          <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">
                   앱 이름 <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="예: 팀별 점수판"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="w-full px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] placeholder-[#A8A29E] focus:outline-none focus:ring-2 focus:ring-violet-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">카테고리</label>
+                <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">카테고리</label>
                 <select
                   value={category}
                   onChange={e => setCategory(e.target.value as CustomTool['category'])}
-                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  className="px-3 py-2 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-violet-400"
                 >
                   {CATEGORY_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -409,7 +409,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             <button
               onClick={handleSave}
               disabled={!name.trim()}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-gray-200 dark:disabled:bg-gray-700 text-white text-sm font-bold rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] text-white text-sm font-bold rounded-xl transition-colors"
             >
               <Save className="w-4 h-4" />
               내 스킬에 저장
