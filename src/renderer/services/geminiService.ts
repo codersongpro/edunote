@@ -116,6 +116,23 @@ const normalizeStudentRecordEndings = (text: string): string =>
     .replace(/발전\./g, '발전함.')
     .replace(/개선\./g, '개선됨.');
 
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const stripStudentNameFromRecord = (text: string, studentName: string): string => {
+  const cleanName = studentName.replace(/^\d+[.\s)]+/, '').trim();
+  if (!cleanName) return text;
+  const name = escapeRegExp(cleanName);
+  return text
+    .replace(new RegExp(`(^|[\\s"'“‘(<])${name}\\s*(은|는|이|가|을|를|의)?\\s*`, 'g'), '$1')
+    .replace(new RegExp(name, 'g'), '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,!?])/g, '$1')
+    .trim();
+};
+
+const cleanStudentRecordOutput = (text: string, studentName: string): string =>
+  normalizeStudentRecordEndings(stripStudentNameFromRecord(text, studentName));
+
 const REPORT_STYLE_ENDING_INSTRUCTION = `
 [보고서체 종결 규칙]
 - 계획서, 보고서, 회의록, 홍보자료, 공고문 본문은 설명문 말투가 아니라 학교 업무 보고서체로 작성하세요.
@@ -437,7 +454,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
     });
-    return normalizeStudentRecordEndings(privacy.restore(result));
+    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
@@ -481,7 +498,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return normalizeStudentRecordEndings(privacy.restore(result));
+    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -520,7 +537,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return normalizeStudentRecordEndings(privacy.restore(result));
+    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -580,7 +597,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return normalizeStudentRecordEndings(privacy.restore(result));
+    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
