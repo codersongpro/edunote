@@ -15,7 +15,6 @@ import {
   NeisAnalyzedData,
   CustomTool,
   CustomToolInput,
-  PromptCoachResult,
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
@@ -100,38 +99,6 @@ const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 - 학생의 행동, 변화, 성장 과정, 학습 태도, 공동체 역량을 관찰 근거 중심으로 서술하세요.
 - 과장, 단정, 감정적 표현, 사적인 평가, 지나치게 친근한 말투를 쓰지 마세요.
 - 생활기록부와 학교 기록에 적합한 객관적 표현을 사용하세요.`;
-
-const STUDENT_RECORD_ENDING_INSTRUCTION = `
-[학생 서술 종결 규칙]
-- 모든 문장은 완성된 명사형 종결과 온점으로 끝내세요.
-- '노력.', '성장.', '참여.', '향상.', '발전.', '개선.'처럼 어간이나 명사만 남긴 종결은 금지합니다.
-- 반드시 '노력함.', '성장함.', '참여함.', '향상됨.', '발전함.', '개선됨.', '보임.', '나타냄.'처럼 서술어가 완성된 형태로 작성하세요.`;
-
-const normalizeStudentRecordEndings = (text: string): string =>
-  text
-    .replace(/노력\./g, '노력함.')
-    .replace(/성장\./g, '성장함.')
-    .replace(/참여\./g, '참여함.')
-    .replace(/향상\./g, '향상됨.')
-    .replace(/발전\./g, '발전함.')
-    .replace(/개선\./g, '개선됨.');
-
-const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-const stripStudentNameFromRecord = (text: string, studentName: string): string => {
-  const cleanName = studentName.replace(/^\d+[.\s)]+/, '').trim();
-  if (!cleanName) return text;
-  const name = escapeRegExp(cleanName);
-  return text
-    .replace(new RegExp(`(^|[\\s"'“‘(<])${name}\\s*(은|는|이|가|을|를|의)?\\s*`, 'g'), '$1')
-    .replace(new RegExp(name, 'g'), '')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/\s+([.,!?])/g, '$1')
-    .trim();
-};
-
-const cleanStudentRecordOutput = (text: string, studentName: string): string =>
-  normalizeStudentRecordEndings(stripStudentNameFromRecord(text, studentName));
 
 const REPORT_STYLE_ENDING_INSTRUCTION = `
 [보고서체 종결 규칙]
@@ -263,7 +230,6 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
-${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [2026 행동특성 평가 기준]
 - 낮은 평가(피해야 할 표현): "성격이 원만함", "친구들과 잘 어울림", "성실하게 생활함", "밝고 긍정적임"
@@ -303,7 +269,6 @@ ${EVALUATION_FRAMEWORK_2026}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
-${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [입시 우수 기재 사례 분석]
 ${GENERATION_EXAMPLES.SUBJECT[schoolLevel]}
@@ -326,7 +291,6 @@ ${getDevelopmentalGuidance(schoolLevel)}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
-${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [2026 스포츠클럽 평가 기준 — 공동체역량 중심]
 - 낮은 평가: "열심히 참여함", "팀워크가 좋음", "기술이 향상됨"
@@ -358,7 +322,6 @@ ${EVALUATION_FRAMEWORK_2026}
 
 ${NATURAL_WRITING_INSTRUCTION}
 ${EDUCATIONAL_RECORD_WRITING_INSTRUCTION}
-${STUDENT_RECORD_ENDING_INSTRUCTION}
 
 [기재요령 참고 우수 예시]
 ${GENERATION_EXAMPLES.CREATIVE[schoolLevel]}
@@ -454,7 +417,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
     });
-    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
@@ -498,7 +461,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -537,7 +500,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -597,7 +560,7 @@ ${avoidInstruction}`;
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
     });
-    return cleanStudentRecordOutput(privacy.restore(result), request.studentName);
+    return privacy.restore(result);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
@@ -634,13 +597,6 @@ export const generateDocument = async (
                 : docType === DocType.GONGGO
                   ? `[분량 지침] 이 문서는 학교 공고문입니다. A4 용지 1~2장 분량으로 작성하세요.`
                   : `[분량 지침] 이 문서는 A4 용지 기준으로 약 ${pageCount}장 분량이 되도록 작성하세요.`;
-
-  const pageFlowInstruction = `
-[A4 페이지 구성 규칙]
-- 모든 공문서 출력물은 A4 용지 기준으로 배치하세요.
-- 한 A4 페이지에 들어가지 않는 내용은 문장, 표, 항목이 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
-- 다음 장으로 넘길 때는 <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;" /> 태그를 사용하세요.
-- 표, 제목, 주요 항목에는 page-break-inside: avoid; page-break-after: avoid; 스타일을 적용해 인쇄 시 잘리지 않게 하세요.`;
 
   const commonContext = `[기본 설정] 학년도: ${schoolYear}학년도`;
 
@@ -679,24 +635,6 @@ export const generateDocument = async (
     : docType === DocType.GONGMUN || docType === DocType.PUMUI
       ? OFFICIAL_HAPSHO_STYLE_INSTRUCTION
       : REPORT_STYLE_ENDING_INSTRUCTION;
-
-  const sampleFormatInstruction = `
-[예시 문서 형식 준수]
-EduNote의 예시 문서처럼 실제 학교에서 바로 붙여 넣어 사용할 수 있는 완성 문서만 출력하세요.
-- 공문서: 수신, 경유, 제목, 1. 관련, 2. 시행문, 가./나./다. 세부 항목, 붙임, 끝. 순서를 지키세요.
-- 계획서: 큰 제목을 가운데 굵게 표시하고, 1. 추진배경, 2. 목적, 3. 운영방침, 4. 세부추진계획, 5. 소요예산, 6. 기대효과 순서로 작성하세요.
-- 보고서: 큰 제목을 가운데 굵게 표시하고, 1. 추진 개요, 2. 추진 실적, 3. 세부 운영 결과, 4. 만족도 조사 결과, 5. 예산 정산, 6. 운영 성과 및 제언 순서로 작성하세요.
-- 품의서: 1. 관련, 2. 본문 시행문, 가. 내역, 나. 용도, 다. 소요예산, 라. 산출내역, 붙임 순서로 간결하게 작성하세요. 산출내역은 표로 만들지 마세요.
-- 회의록: 제목, 일시, 장소, 참석위원, 회의안건, 회의내용, 발언자/발언내용 표 형식으로 작성하세요.
-- 보도자료: 제목, 도입, 주요 내용, 관계자 발언, 기대 효과 순서로 작성하고, 마지막에 SNS 홍보용 요약을 붙이세요.
-- 가정통신문: 제목, 학부모 인사말, 안내 내용, 협조 사항, 맺음말, 날짜, 학교장 순서로 작성하세요.
-- 메세지: 선택된 문자 유형에 맞게 바로 발송 가능한 본문만 출력하세요.
-- 공고문: 공고 제목, 공고번호, 공고일, 모집/공고 내용, 접수 기간 및 방법, 제출 서류, 문의처, 날짜, 학교장 순서로 작성하세요.
-[출력 품질]
-- "예시", "초안", "요청하신", "AI가" 같은 설명 문구를 붙이지 마세요.
-- 제목은 본문보다 크게, 표는 border="1"과 border-collapse:collapse를 사용해 실제 문서처럼 보이게 하세요.
-- 항목 번호는 1. 2. 3. 다음에 가. 나. 다., 그 아래에 1) 2) 3), 그 아래에 가) 나) 다) 순서만 사용하세요.
-- 입력 정보가 부족해도 임의로 과장하지 말고, 학교 현장에서 자연스러운 기본값으로 문서 형식을 완성하세요.`;
 
   let specificInstruction = '';
 
@@ -935,7 +873,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${sampleFormatInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${pageFlowInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
@@ -1282,7 +1220,6 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 - 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
 - ${questionCount <= 2 ? 'A4 용지를 꽉 채울 수 있도록 각 활동에 충분한 여백과 설명 공간을 배치하세요. 기본 폰트 크기보다 1~2pt 크게 설정하고 줄 간격도 넉넉하게 잡으세요' : questionCount <= 4 ? 'A4 용지를 균형 있게 채울 수 있도록 적당한 여백과 설명을 배치하세요' : '반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요'}
 - ${questionCount <= 2 ? '각 활동에 충분한 답변 공간(줄 5~8개)을 확보하여 A4를 꽉 채우세요' : questionCount <= 4 ? '각 활동에 적당한 답변 공간(줄 2~4개)을 배치하세요' : '각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요'}
-- 사용자가 여러 장을 특별히 요청하지 않았다면 A4 용지 1장을 기준으로 구성하세요. 내용이 1장을 넘을 때는 문항, 표, 활동 단위가 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
 - 머리글 구조: 문서 제목(h1)에는 반드시 style="text-align:center;" 속성을 추가하세요. 학년/반/이름 기입란은 그 아래 별도 행에 '<div class="student-info" style="display:flex;gap:16pt;justify-content:flex-end;border-bottom:1pt solid #000;padding-bottom:3pt;margin-bottom:6pt;">' 형태로 오른쪽 정렬 배치하고, 각 항목은 '<span>학년: <span class="fill" style="display:inline-block;min-width:50pt;border-bottom:1pt solid #333;">&nbsp;</span></span>' 형태로 작성 공간이 밑줄로 표시되게 하세요.
 ${insertImagePlaceholder ? "- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 '<div class=\"worksheet-image\">[WORKSHEET_IMAGE]</div>' 줄을 정확히 이 형태로 삽입하세요." : ''}
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
@@ -1301,13 +1238,12 @@ h2, h3 { font-size: ${h2Size}; margin: 6pt 0 3pt; page-break-after: avoid; word-
 .student-info { display: flex; gap: 16pt; justify-content: flex-end; margin-bottom: 6pt; font-size: ${baseFontSize}; border-bottom: 1pt solid #000; padding-bottom: 3pt; }
 .student-info span { white-space: nowrap; }
 .student-info .fill { display: inline-block; min-width: 50pt; border-bottom: 1pt solid #333; }
-.activity, section, .question { page-break-inside: avoid; break-inside: avoid; margin-bottom: 8pt; }
+.activity, section, .question { page-break-inside: avoid; margin-bottom: 8pt; }
 .answer-lines { border-bottom: 1pt solid #999; min-height: 14pt; margin-top: 3pt; }
 .worksheet-image { text-align: center; margin: 6pt 0 10pt; page-break-inside: avoid; }
 .worksheet-image img { max-width: 100%; max-height: 140pt; object-fit: contain; }
-table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; font-size: ${tableSize}; word-break: keep-all; table-layout: fixed; }
 th, td { border: 0.8pt solid #444; padding: 3pt 5pt; word-break: keep-all; overflow-wrap: break-word; }
-hr.page-break { page-break-after: always; break-after: page; border: none; margin: 0; }
 p { margin: 2pt 0; line-height: 1.5; }
 * { box-sizing: border-box; max-width: 100%; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;table-layout:fixed;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;word-break:keep-all;" 속성을 반드시 추가하세요.
@@ -1397,13 +1333,6 @@ body{font-family:'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif
 .r-q{font-weight:700;color:#1e293b;margin-bottom:4px}
 .r-my{color:#64748b;margin-bottom:2px}
 .r-ans{color:#16a34a;font-weight:700}
-@media print{
-  @page{size:A4;margin:14mm 16mm}
-  body{display:block;background:#fff;padding:0;min-height:auto}
-  .card{width:100%;box-shadow:none;border-radius:0;padding:0}
-  .result-list{max-height:none;overflow:visible}
-  .r-item,.question,.options,.sa-wrap,.ox-wrap{page-break-inside:avoid;break-inside:avoid}
-}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .card>div{animation:fadeUp .3s ease-out}
 </style>
@@ -1602,7 +1531,6 @@ export async function generateLessonPlan(params: LessonParams): Promise<string> 
 ${params.details ? `- 추가 요청사항: ${params.details}` : ''}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [필수 구성 요소]
-- 특별한 분량 요청이 없다면 A4 용지 1장을 기준으로 구성하세요. 내용이 A4 1장을 넘으면 표, 단계, 활동이 중간에 잘리지 않는 지점에서 다음 장으로 넘기세요.
 1. 수업 개요 (학년, 교과, 단원, 주제, 차시)
 2. 학습 목표 (지식, 기능, 태도 영역)
 3. 교수·학습 과정안 (도입-전개-정리 단계별 표로 작성)
@@ -1618,11 +1546,10 @@ ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 <style> 태그에 다음 CSS를 반드시 포함하세요:
 @page { size: A4; margin: 20mm 15mm; }
 body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; font-size: 10.5pt; color: #000; margin: 0; padding: 0; }
-table { width: 100%; border-collapse: collapse; page-break-inside: avoid; break-inside: avoid; }
+table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
 th, td { border: 1pt solid #333; padding: 5pt 8pt; }
-section, .section, tr, h2, h3 { page-break-inside: avoid; break-inside: avoid; }
-h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
-hr.page-break { page-break-after: always; break-after: page; border: none; margin: 0; }
+section, .section, tr, h2, h3 { page-break-inside: avoid; }
+h1, h2, h3 { page-break-after: avoid; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:1pt solid #333;padding:5pt 8pt;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
@@ -1914,16 +1841,24 @@ ${fieldList}
 ${existingPrompt}
 
 개선 방향:
-- 지시가 더 구체적이고 명확하도록 보완해줘
-- 출력 형식(표, 항목 구분 등)을 명시해줘
-- 교육 현장에 맞는 어조와 표현을 사용해줘
+- 먼저 도구 설명, 변수명, 기존 프롬프트를 종합해 이 도구의 실제 의도와 결과물 장르를 파악해줘.
+- 파악한 의도와 장르 안에서만 지시를 더 구체적이고 명확하게 보완해줘.
+- 기존 프롬프트가 일기 분석, 감상문 피드백, 상담 기록, 문서 요약, 공문서 작성, 수업자료 제작 등 어떤 작업을 요구하는지 구분하고, 다른 장르로 바꾸지 마.
+- 예를 들어 일기 분석 도구를 공문서/계획서/보고서 형식으로 바꾸거나, 상담 기록 도구를 세특 작성 도구로 바꾸는 식의 전환은 금지해.
+- 기존 프롬프트에 명시된 출력 형식이 있으면 그 형식을 보존하고 더 선명하게 다듬어줘. 형식이 불명확할 때만 도구 의도에 맞는 자연스러운 형식을 제안해줘.
+- 교육 현장에 맞는 어조와 표현을 사용하되, 도구 목적과 맞지 않는 공문서체·생기부체·보고서체를 억지로 적용하지 마.
 - 기존 변수({{변수명}})는 그대로 유지하고, 필요하면 추가해줘${templateNote}
 결과물은 개선된 프롬프트 텍스트만 출력해.`
     : `교사가 사용할 AI 도구의 프롬프트 템플릿을 작성해줘.
 도구 설명: ${description}
 사용 가능한 변수:
 ${fieldList}${templateNote}
-변수는 반드시 {{변수명}} 형태로 삽입하고, 결과물은 프롬프트 텍스트만 출력해.`;
+작성 방향:
+- 도구 설명과 변수명을 바탕으로 이 도구의 실제 의도와 결과물 장르를 먼저 파악해.
+- 파악한 의도에 맞는 프롬프트만 작성하고, 다른 장르로 임의 전환하지 마.
+- 일기 분석, 감상문 피드백, 상담 기록, 문서 요약, 공문서 작성, 수업자료 제작, 학생 기록 작성 등 서로 다른 작업을 혼동하지 마.
+- 도구 목적에 맞는 출력 형식과 어조를 지정하되, 목적과 맞지 않는 공문서체·생기부체·보고서체를 억지로 적용하지 마.
+- 변수는 반드시 {{변수명}} 형태로 삽입하고, 결과물은 프롬프트 텍스트만 출력해.`;
 
   if (templateFile) {
     const parts = [
@@ -1974,53 +1909,6 @@ category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-up
     return null;
   }
 };
-
-export const coachToolPrompt = async (
-  description: string,
-  inputs: CustomToolInput[],
-  promptTemplate: string,
-): Promise<PromptCoachResult | null> => {
-  const fieldList = inputs
-    .map(i => `- {{${i.id}}} : ${i.label} (${i.type === 'file-upload' ? '파일 첨부' : i.type === 'textarea' ? '여러 줄 텍스트' : '한 줄 텍스트'})`)
-    .join('\n') || '(없음)';
-
-  const prompt = `너는 교사가 작성한 AI 도구 프롬프트를 검토하는 프롬프트 코치다.
-아래 프롬프트의 약점을 진단하고, 교사가 "왜" 고쳐야 하는지 이해할 수 있도록 구체적으로 피드백해줘.
-
-도구 설명: ${description || '(없음)'}
-사용 가능한 변수:
-${fieldList}
-
-검토할 프롬프트:
-${promptTemplate}
-
-진단 기준:
-- 지시가 모호하거나 구체적이지 않은 부분
-- 출력 형식(표/항목/길이 등)이 명시되지 않은 부분
-- 정의된 변수({{변수명}})가 프롬프트에서 사용되지 않았거나, 정의되지 않은 변수를 쓴 부분
-- 교육 현장 어조/맥락이 부족한 부분
-
-아래 JSON 형식으로만 출력해 (JSON만, 설명 없이). 모든 텍스트는 한국어로:
-{
-  "score": 0,
-  "summary": "프롬프트 전반에 대한 한 줄 총평",
-  "issues": [
-    { "severity": "high", "title": "문제 제목", "detail": "왜 문제인지", "suggestion": "구체적 개선 방법" }
-  ],
-  "improvedPrompt": "정의된 변수를 유지한 개선된 전체 프롬프트"
-}
-score는 0~100 정수, severity는 high/medium/low 중 하나. 문제가 없으면 issues는 빈 배열로.`;
-
-  try {
-    const raw = await aiGenerate(prompt, '', { temperature: 0.3 });
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) return null;
-    return JSON.parse(match[0]) as PromptCoachResult;
-  } catch {
-    return null;
-  }
-};
-
 
 export const generateHtmlApp = async (
   description: string,
