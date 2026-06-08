@@ -422,7 +422,7 @@ const App: React.FC = () => {
   const defaultAdminMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
     { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
-    { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '공문서 작성기' },
+    { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '문서작성기' },
     { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
     { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
     { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산안작성' },
@@ -515,7 +515,7 @@ const App: React.FC = () => {
     { key: 'settings', label: '설정', icon: Settings, active: mode === AppMode.SETTINGS, onClick: () => goTo(AppMode.SETTINGS) },
     { key: 'admin', label: '교무행정AI', icon: FileText, active: ADMIN_MODES.includes(mode), onClick: () => { setAdminSectionOpen(true); goTo(AppMode.EDUCATION_QA); } },
     { key: 'doc-analyzer', label: '공문요약·업무추출', icon: ClipboardList, active: mode === AppMode.OFFICIAL_DOC_ANALYZER, progress: getProgressFor(AppMode.OFFICIAL_DOC_ANALYZER), onClick: () => goTo(AppMode.OFFICIAL_DOC_ANALYZER) },
-    { key: 'school-doc', label: '공문서 작성기', icon: FileText, active: mode === AppMode.SCHOOL_DOC, progress: getProgressFor(AppMode.SCHOOL_DOC), onClick: handleSchoolDocParent },
+    { key: 'school-doc', label: '문서작성기', icon: FileText, active: mode === AppMode.SCHOOL_DOC, progress: getProgressFor(AppMode.SCHOOL_DOC), onClick: handleSchoolDocParent },
     { key: 'lesson', label: '수업자료AI', icon: Presentation, active: LESSON_AI_MODES.includes(mode), onClick: () => { setLessonSectionOpen(true); goTo(AppMode.LESSON_MATERIAL); } },
     { key: 'student', label: '학생기록AI', icon: Bot, active: STUDENT_RECORD_MODES.includes(mode), onClick: () => handleModeChange(AppMode.RECORD_CHATBOT) },
     { key: 'my-tools', label: 'AI 스킬즈', icon: Wrench, active: MY_TOOLS_MODES.includes(mode), onClick: () => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); } },

@@ -133,7 +133,7 @@ const UsageGuideScreen: React.FC = () => {
               <p className="text-xs leading-relaxed">공문 내용이나 파일, 스크린샷을 넣으면 핵심 요약, 해야 할 일, 마감/제출 정보, 발신/담당 정보를 정리합니다. 결과 화면에서 Google Calendar 일정 작성 화면을 바로 열거나 .ics 파일로 저장할 수 있습니다.</p>
             </div>
             <div>
-              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">공문서 작성기</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">문서작성기</p>
               <p className="text-xs leading-relaxed">공문서, 계획서, 보고서, 품의서, 회의록, 홍보자료, 가정통신문, 문자&소통메시지, 공고문을 생성합니다. 필요한 경우 참고 자료 파일이나 스크린샷도 함께 넣을 수 있습니다.</p>
             </div>
           </div>
@@ -276,7 +276,7 @@ const UsageGuideScreen: React.FC = () => {
             </div>
             <div>
               <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. Demo 버튼은 무엇인가요?</p>
-              <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열립니다. 교무행정AI·수업자료AI·학생기록AI·내 스킬 등 주요 기능의 샘플 입력값이 카테고리별로 정리되어 있으며, 복사 버튼으로 바로 붙여넣을 수 있습니다. 공문서 작성기는 내부결재 공문·계획서·보고서·품의서·협의록·보도자료·메세지·공고문·가정통신문 9종 샘플이 모두 포함되어 있습니다.</p>
+              <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열립니다. 교무행정AI·수업자료AI·학생기록AI·내 스킬 등 주요 기능의 샘플 입력값이 카테고리별로 정리되어 있으며, 복사 버튼으로 바로 붙여넣을 수 있습니다. 문서작성기는 내부결재 공문·계획서·보고서·품의서·협의록·보도자료·메세지·공고문·가정통신문 9종 샘플이 모두 포함되어 있습니다.</p>
             </div>
           </div>
         </Section>

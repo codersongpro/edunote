@@ -662,8 +662,8 @@ export const generateDocument = async (
         complexityInstruction = `[작성 모드: 중간] 구성: 1.관련, 2.본문, 개요(가,나,다 3~4항목), 붙임. 각 항목은 1줄 이내.`;
         outputExample = `1. 관련: ${schoolYear}학년도 주요업무계획<br>2. 위 호와 관련하여 <strong>(핵심 건명)</strong>을(를) 다음과 같이 실시하고자 합니다.<br><br>&nbsp;&nbsp;가. 일시: ...<br>&nbsp;&nbsp;나. 장소: ...<br>&nbsp;&nbsp;다. 대상: ...<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
       } else {
-        complexityInstruction = `[작성 모드: 상세] 구성: 1.관련, 2.본문, 개요, 행정사항(표 포함), 붙임.`;
-        outputExample = `1. 관련: ...<br>2. 위 호와 관련하여 ... 다음과 같이 실시합니다.<br><br>가.일시: ... 나.장소: ... 다.대상: ... 라.주요내용: ... 마.행정사항(표)<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
+        complexityInstruction = `[작성 모드: 상세] 구성: 1.관련, 2.본문, 개요, 행정사항, 붙임. 행정사항은 일정·역할 분담·예산처럼 항목과 값이 여러 줄로 비교·정리되어야 하는 내용일 때만 표로 작성하고, 그렇지 않으면 가./나./다. 개조식 텍스트로 작성하세요. 표가 꼭 필요하지 않은 공문에는 표를 넣지 마세요.`;
+        outputExample = `1. 관련: ...<br>2. 위 호와 관련하여 ... 다음과 같이 실시합니다.<br><br>가.일시: ... 나.장소: ... 다.대상: ... 라.주요내용: ... 마.행정사항(필요 시에만 표, 아니면 개조식)<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
       }
 
       specificInstruction = `
