@@ -534,7 +534,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                     {[
                       { val: GongmunComplexity.SIMPLE, label: '간단', tooltip: '관련·시행문·붙임으로 구성.\n"붙임과 같이 실시합니다." 형식의 짧고 간결한 공문.' },
                       { val: GongmunComplexity.MEDIUM, label: '중간', tooltip: '관련·본문·개요(가/나/다 3~4항목)·붙임으로 구성.\n일정·장소·대상 등 기본 정보가 담긴 일반 공문.' },
-                      { val: GongmunComplexity.DETAILED, label: '상세', tooltip: '관련·본문·개요·행정사항·붙임으로 구성.\n세부 일정·역할 분담·예산 등 내용이 많은 공문이며, 필요한 경우에만 표가 포함됩니다.' },
+                      { val: GongmunComplexity.DETAILED, label: '상세', tooltip: '관련·본문·개요·행정사항·붙임으로 구성.\n세부 일정·역할 분담 등 내용이 많은 공문이며, 세부추진계획이 있을 때만 그 부분에 표가 포함됩니다.' },
                     ].map(opt => (
                       <div key={opt.val} className="flex-1 relative group">
                         <button
