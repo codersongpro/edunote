@@ -60,6 +60,29 @@ const aiGenerateMultipart = (
   throw error;
 });
 
+// 스트리밍 멀티파트 생성 — 누적 텍스트를 onText로 전달한다.
+// 모델 폴백·재시도로 'start'가 다시 오면 누적 버퍼를 비우고 처음부터 다시 쌓는다.
+const aiGenerateMultipartStream = (
+  parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
+  systemInstruction: string | undefined,
+  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+  onText: (accumulated: string) => void,
+) => {
+  let buffer = '';
+  return window.electronAPI.aiGenerateMultipartStream(parts, systemInstruction, options, (event) => {
+    if (event.type === 'start') {
+      buffer = '';
+      onText('');
+    } else if (event.type === 'chunk' && event.text) {
+      buffer += event.text;
+      onText(buffer);
+    }
+  }).catch((error) => {
+    notifyTemporaryApiError(error);
+    throw error;
+  });
+};
+
 // 텍스트류 첨부 파일은 base64(약 33% 부풀려짐)로 보내지 않고 텍스트로 풀어 보낸다.
 // 토큰을 절약하고, 지나치게 긴 문서는 앞부분만 잘라 전송한다.
 const TEXT_ATTACHMENT_CHAR_LIMIT = 30_000;
@@ -654,6 +677,7 @@ export const generateDocument = async (
   templateText: string = '',
   gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
   gonggoInputs?: GonggoInputs,
+  onProgressText?: (accumulated: string) => void,
 ): Promise<string> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
@@ -953,7 +977,10 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
   });
 
   try {
-    return stripGeneratedCodeFences(await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }));
+    const raw = onProgressText
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText)
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 });
+    return stripGeneratedCodeFences(raw);
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));

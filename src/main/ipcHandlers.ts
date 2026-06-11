@@ -8,7 +8,7 @@ import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry } from './configValidation';
 import { isBlockedHostname } from './netGuard';
-import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
+import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
@@ -77,6 +77,19 @@ export function registerIpcHandlers(): void {
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
+  });
+
+  // 스트리밍 생성 — 진행 중 텍스트를 'ai:stream-event'로 보내고 전체 텍스트를 반환한다.
+  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
+    if (typeof requestId !== 'string' || !/^[\w-]{1,64}$/.test(requestId)) {
+      throw new Error('AI 요청 형식이 올바르지 않습니다.');
+    }
+    validateMultipartArgs(parts, systemInstruction, options);
+    const { apiKey, apiTier } = getActiveApi();
+    if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
+    return generateContentMultipartStream(apiKey, parts, { systemInstruction, ...options, apiTier }, (event) => {
+      if (!e.sender.isDestroyed()) e.sender.send('ai:stream-event', { requestId, ...event });
+    });
   });
 
   ipcMain.handle('ai:test-key', async (_e, key: string, apiTier: ApiTier = 'free') => {

@@ -245,6 +245,36 @@ export async function generateContentMultipart(
   });
 }
 
+// 스트리밍 생성 이벤트 — 'start'는 새 시도(폴백 포함) 시작을 뜻하므로 수신 측은 버퍼를 비운다
+export type StreamEvent = { type: 'start' } | { type: 'chunk'; text: string };
+
+// 멀티파트 스트리밍 생성 — 생성 중간 텍스트를 onEvent로 흘려보내고 전체 텍스트를 반환한다.
+// 모델 폴백·재시도 시에는 'start' 이벤트가 다시 와서 화면 미리보기가 초기화된다.
+export async function generateContentMultipartStream(
+  apiKey: string,
+  parts: MultipartPart[],
+  options: GenerateOptions | undefined,
+  onEvent: (event: StreamEvent) => void,
+): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey });
+  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+    onEvent({ type: 'start' });
+    const stream = await withTimeout(
+      ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(options) }),
+      REQUEST_TIMEOUT_MS,
+    );
+    let full = '';
+    for await (const chunk of stream) {
+      const text = chunk.text ?? '';
+      if (text) {
+        full += text;
+        onEvent({ type: 'chunk', text });
+      }
+    }
+    return full;
+  });
+}
+
 // API 키 유효성 검증 (설정 화면에서 호출)
 //
 // 검증 전략:

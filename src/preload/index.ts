@@ -11,6 +11,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
     options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
 
+  aiGenerateMultipartStream: (
+    parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
+    systemInstruction: string | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+    onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
+  ) => {
+    const requestId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const listener = (_event: unknown, payload: { requestId?: string; type?: string; text?: string }) => {
+      if (payload?.requestId !== requestId) return;
+      if (payload.type === 'start' || payload.type === 'chunk') {
+        onEvent({ type: payload.type, text: payload.text });
+      }
+    };
+    ipcRenderer.on('ai:stream-event', listener as never);
+    return ipcRenderer.invoke('ai:generate-multipart-stream', requestId, parts, systemInstruction, options)
+      .finally(() => { ipcRenderer.removeListener('ai:stream-event', listener as never); });
+  },
+
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
   testStoredApiKey: () => ipcRenderer.invoke('ai:test-stored-key'),
 
