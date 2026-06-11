@@ -828,7 +828,7 @@ function buildLocalCandidates(title: string, keywordMap: Record<BudgetCategory, 
 }
 
 function balanceItemsByCategory(items: BudgetItem[], allocations: Record<BudgetCategory, number>): BudgetItem[] {
-  const userItems = items
+  const userItems: BudgetItem[] = items
     .filter(item => item.memo !== AUTO_BALANCE_MEMO)
     .map(item => {
       const originalQuantity = item.quantity;

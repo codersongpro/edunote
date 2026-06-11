@@ -23,7 +23,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
-  const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>();
+  const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>(undefined);
 
   const handleFileArray = async (fileArray: File[]) => {
     if (fileArray.length > 0) {

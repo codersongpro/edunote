@@ -9,7 +9,8 @@
     "preview": "electron-vite preview",
     "dist": "npm run build && electron-builder",
     "build:win": "npm run build && electron-builder --win",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc -b tsconfig.web.json tsconfig.node.json --force"
   },
   "dependencies": {
     "@fontsource/pretendard": "^5.2.5",
