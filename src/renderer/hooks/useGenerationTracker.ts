@@ -68,12 +68,16 @@ export function useGenerationTracker(mode: AppMode) {
 
   // AI 호출을 취소 신호와 함께 실행 — 중단 버튼 클릭 시 즉시 reject
   const callWithAbort = <T>(fn: () => Promise<T>): Promise<T> => {
-    const signal = getCancelSignal();
-    if (signal.aborted) return Promise.reject(new Error('CANCELLED'));
+    const signal = getCancelSignal(mode);
+    if (signal.aborted || isCancelled(mode)) return Promise.reject(new Error('CANCELLED'));
     return new Promise<T>((resolve, reject) => {
       const onAbort = () => reject(new Error('CANCELLED'));
       signal.addEventListener('abort', onAbort, { once: true });
-      fn().then(resolve).catch(reject).finally(() => {
+      fn().then(value => {
+        // 중단 직후 새 신호를 받은 호출이 결과를 화면에 반영하지 않도록 한 번 더 확인한다.
+        if (isCancelled(mode)) reject(new Error('CANCELLED'));
+        else resolve(value);
+      }).catch(reject).finally(() => {
         signal.removeEventListener('abort', onAbort);
       });
     });

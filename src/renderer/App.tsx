@@ -2,6 +2,7 @@
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { safeSetItem } from './lib/safeStorage';
+import { CancellationRegistry } from './lib/cancellation';
 import { GlobalState } from './types';
 
 import RecordChatbot from './components/RecordChatbot';
@@ -147,12 +148,11 @@ const App: React.FC = () => {
 
   // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
   const cancelFlagsRef = useRef<Set<string>>(new Set());
-  // AbortController — AI 호출 즉시 중단용
-  const abortControllerRef = useRef<AbortController>(new AbortController());
+  // 중단 신호 — 화면(modeKey)별로 분리해 한 화면의 중단이 다른 화면 생성에 영향을 주지 않는다
+  const cancellationRef = useRef<CancellationRegistry>(new CancellationRegistry());
   const requestCancel = (modeKey: string) => {
     cancelFlagsRef.current.add(modeKey);
-    abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    cancellationRef.current.cancel(modeKey);
     // 즉시 진행바 숨김 — useRef 변경은 리렌더를 유발하지 않으므로 state도 함께 업데이트
     setIsGlobalGenerating(false);
     setGlobalProgress(0);
@@ -160,15 +160,14 @@ const App: React.FC = () => {
   const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
   const resetGenerationState = () => {
     cancelFlagsRef.current.clear();
-    abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    cancellationRef.current.cancelAll();
     setIsGlobalGenerating(false);
     setGlobalProgress(0);
     setGeneratingModes(new Map());
     window.dispatchEvent(new CustomEvent('edunote-generation-reset'));
   };
   const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
-  const getCancelSignal = () => abortControllerRef.current.signal;
+  const getCancelSignal = (modeKey: string) => cancellationRef.current.signalFor(modeKey);
 
   // 토스트 알림 큐
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
