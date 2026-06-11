@@ -6,6 +6,7 @@ import * as https from 'https';
 import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
+import { sanitizeConfigEntry } from './configValidation';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
@@ -223,7 +224,12 @@ export function registerIpcHandlers(): void {
         continue;
       }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
-        store.set(key as any, value as any);
+        const safeValue = sanitizeConfigEntry(key, value);
+        if (safeValue === undefined) {
+          console.warn(`[ipc:config:set] 무효한 설정값을 건너뜁니다: ${key}`);
+          continue;
+        }
+        store.set(key as any, safeValue as any);
       }
     }
     const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
@@ -332,7 +338,12 @@ export function registerIpcHandlers(): void {
 
     for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
-        store.set(key as any, value as any);
+        const safeValue = sanitizeConfigEntry(key, value);
+        if (safeValue === undefined) {
+          console.warn(`[ipc:data:import-backup] 무효한 설정값을 건너뜁니다: ${key}`);
+          continue;
+        }
+        store.set(key as any, safeValue as any);
       }
     }
 
