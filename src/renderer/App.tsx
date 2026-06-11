@@ -723,6 +723,9 @@ const App: React.FC = () => {
                       >
                         발급 페이지 열기
                       </button>
+                      <p className="mt-3 text-xs text-[#A8A29E] dark:text-[#6B5E57] leading-relaxed">
+                        키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나오면, 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드에서 대응 방법을 확인할 수 있어요.
+                      </p>
                     </div>
                   </div>
                 )}

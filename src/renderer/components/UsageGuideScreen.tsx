@@ -79,6 +79,17 @@ const UsageGuideScreen: React.FC = () => {
           <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-xs text-amber-700 dark:text-amber-400">
             무료 API는 요청 제한이 있습니다. 토큰 소모나 잦은 요청으로 대기가 필요하면 앱이 안내합니다.
           </div>
+          <div className="mt-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg text-xs text-rose-700 dark:text-rose-400 leading-relaxed">
+            <p className="font-bold mb-1">키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나올 때</p>
+            <p>
+              ① 학교/기관 계정이라면 개인 Gmail 계정으로 다시 시도하세요. ② 개인 계정에서도 같다면{' '}
+              <button onClick={() => handleOpenLink('https://console.cloud.google.com')} className="text-blue-500 hover:underline inline-flex items-center gap-0.5">
+                console.cloud.google.com <ExternalLink className="w-3 h-3" />
+              </button>
+              에서 <strong>새 프로젝트</strong> 만들기 → <strong>Generative Language API</strong> 사용 설정 → <strong>API 및 서비스 → 사용자 인증 정보 → API 키</strong> 순서로 직접 발급할 수 있습니다.
+              자세한 순서는 <strong>설정</strong> 화면의 "Gemini API 키 무료 발급 방법" 가이드를 참고하세요.
+            </p>
+          </div>
         </Section>
 
         <Section title="개인정보보호와 저장 방식" icon={<AlertTriangle className="w-4 h-4 text-emerald-500" />}>
