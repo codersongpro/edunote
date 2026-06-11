@@ -7,6 +7,7 @@ import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry } from './configValidation';
+import { isBlockedHostname } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
@@ -403,6 +404,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+      if (isBlockedHostname(parsed.hostname)) throw new Error('blocked host');
       const res = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(8000),
@@ -433,6 +435,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(imageUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (isBlockedHostname(parsed.hostname)) return null;
       const res = await net.fetch(imageUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(10000),
@@ -454,6 +457,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol) || !videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
+      if (isBlockedHostname(parsed.hostname)) return { title: '', description: '', thumbnail: '', videoId: '' };
       const res = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(8000),
@@ -493,6 +497,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (isBlockedHostname(parsed.hostname)) return null;
       win = new BrowserWindow({
         width: 1280, height: 800, show: false,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
@@ -610,12 +615,20 @@ export function registerIpcHandlers(): void {
   // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
   // net.request 사용: 시스템 SSL 인증서 + 리다이렉트 URL 한글 인코딩 처리
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
-    let safeUrl: string;
-    try {
-      safeUrl = new URL(url).href;
-    } catch {
-      throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
-    }
+    // 최초 URL과 리다이렉트 URL 모두에 적용하는 검사.
+    const assertSafeUrl = (raw: string): string => {
+      let parsed: URL;
+      try {
+        parsed = new URL(raw);
+      } catch {
+        throw new Error('유효하지 않은 URL입니다: ' + String(raw).slice(0, 80));
+      }
+      if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedHostname(parsed.hostname)) {
+        throw new Error('허용되지 않는 주소입니다: ' + parsed.hostname);
+      }
+      return parsed.href;
+    };
+    const safeUrl = assertSafeUrl(url);
 
     const encodeUrl = (s: string): string =>
       s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
@@ -623,6 +636,12 @@ export function registerIpcHandlers(): void {
     const fetchUrl = (targetUrl: string, redirectsLeft: number): Promise<string> =>
       new Promise((resolve, reject) => {
         if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
+        try {
+          assertSafeUrl(targetUrl);
+        } catch (e) {
+          reject(e);
+          return;
+        }
         let settled = false;
         const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
 
