@@ -6,6 +6,7 @@ import {
   getRetryDelayMs,
   isDailyQuotaError,
 } from './modelChain';
+import { RequestPacer } from './requestPacer';
 
 export type ApiTier = 'free' | 'paid';
 
@@ -32,6 +33,9 @@ const SAME_MODEL_RETRY_MAX_WAIT_MS = 15_000;
 
 // AI 호출 최대 대기 시간 (90초) — 응답이 멈춰도 무한정 기다리지 않도록
 const REQUEST_TIMEOUT_MS = 90_000;
+
+// 무료 등급 분당 15회 제한 대응 — 호출 간 최소 4초 간격 (일괄 생성 시 429 연쇄 방지)
+const freeTierPacer = new RequestPacer(4_000);
 
 // Promise에 타임아웃을 거는 헬퍼 — 네트워크 hang으로 인한 무한 대기 방지
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -161,6 +165,7 @@ async function generateWithModelChain(
     if (isBlocked(model)) continue;
 
     try {
+      if (apiTier === 'free') await freeTierPacer.reserve();
       return await doCall(model);
     } catch (error: unknown) {
       lastError = error;
@@ -170,6 +175,7 @@ async function generateWithModelChain(
         if (!isDailyQuotaError(error) && retryMs !== null && retryMs <= SAME_MODEL_RETRY_MAX_WAIT_MS) {
           await new Promise(resolve => setTimeout(resolve, retryMs + 500));
           try {
+            if (apiTier === 'free') await freeTierPacer.reserve();
             return await doCall(model);
           } catch (retryError: unknown) {
             lastError = retryError;
