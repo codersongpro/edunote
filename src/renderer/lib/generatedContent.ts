@@ -18,6 +18,15 @@ export function stripGeneratedCodeFences(content: string): string {
   return cleaned;
 }
 
+// HTML에서 순수 텍스트만 추출한다.
+// innerHTML 대입 방식과 달리 DOMParser가 만드는 문서는 비활성(inert) 상태라
+// 이미지 로딩·onerror 핸들러 등이 실행되지 않는다.
+export function extractPlainText(html: string): string {
+  const doc = new DOMParser().parseFromString(String(html ?? ''), 'text/html');
+  doc.body.querySelectorAll('script, style, template').forEach(el => el.remove());
+  return (doc.body.textContent || '').trim();
+}
+
 // AI 생성 결과가 HTML인지 마크다운인지 판별해서 HTML로 변환
 export function markdownOrHtmlToHtml(content: string): string {
   const stripped = stripGeneratedCodeFences(content);

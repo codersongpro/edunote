@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripGeneratedCodeFences, markdownOrHtmlToHtml } from '../generatedContent';
+import { extractPlainText, stripGeneratedCodeFences, markdownOrHtmlToHtml } from '../generatedContent';
 
 describe('stripGeneratedCodeFences', () => {
   it('```html 코드펜스를 벗겨낸다', () => {
@@ -48,5 +48,26 @@ describe('markdownOrHtmlToHtml', () => {
   it('코드펜스로 감싼 HTML도 처리한다', () => {
     const result = markdownOrHtmlToHtml('```html\n<table><tr><td>셀</td></tr></table>\n```');
     expect(result).toContain('<td>셀</td>');
+  });
+});
+
+describe('extractPlainText', () => {
+  it('HTML 태그를 제거하고 텍스트만 반환한다', () => {
+    expect(extractPlainText('<p>안녕 <strong>세상</strong></p>')).toBe('안녕 세상');
+  });
+
+  it('onerror 같은 이벤트 속성이 있어도 안전하게 텍스트만 추출한다', () => {
+    expect(extractPlainText('<img src=x onerror="window.__pwned=true">안녕')).toBe('안녕');
+    expect((window as unknown as { __pwned?: boolean }).__pwned).toBeUndefined();
+  });
+
+  it('script 내용은 텍스트로 포함하지 않고 실행하지도 않는다', () => {
+    expect(extractPlainText('<script>window.__pwned2=true</script>본문')).toBe('본문');
+    expect((window as unknown as { __pwned2?: boolean }).__pwned2).toBeUndefined();
+  });
+
+  it('null·undefined를 빈 문자열로 처리한다', () => {
+    expect(extractPlainText(undefined as unknown as string)).toBe('');
+    expect(extractPlainText(null as unknown as string)).toBe('');
   });
 });

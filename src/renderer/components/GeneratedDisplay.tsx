@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
-import { markdownOrHtmlToHtml } from '../lib/generatedContent';
+import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
+import { sanitizeHtml } from '../lib/security';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -99,9 +100,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   }, [title, hwpxData]);
 
   const saveGeneratedSnapshot = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const text = temp.innerText.trim();
+    const text = extractPlainText(html);
     if (!text) return;
 
     let versions: SavedGeneratedVersion[] = [];
@@ -411,12 +410,15 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   };
 
   const selectedVersion = savedVersions.find(version => version.id === selectedVersionId) || null;
-  const selectedVersionPreviewHtml = selectedVersion ? selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text) : '';
+  // localStorage에 저장된 버전 HTML은 외부에서 변조될 수 있으므로 렌더 직전에 다시 소독한다.
+  const selectedVersionPreviewHtml = selectedVersion
+    ? sanitizeHtml(selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text))
+    : '';
 
   const handleRestoreVersion = () => {
     if (!selectedVersion || !contentRef.current) return;
     saveGeneratedSnapshot(getCurrentContent());
-    contentRef.current.innerHTML = selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text);
+    contentRef.current.innerHTML = sanitizeHtml(selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text));
     setSelectedVersionId('');
   };
 
