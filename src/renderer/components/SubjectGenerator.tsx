@@ -5,6 +5,7 @@ import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectDa
 import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -20,7 +21,7 @@ interface DuplicateResult {
 }
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
 
@@ -632,6 +633,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('subject', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
@@ -702,6 +704,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('subject', student.name, result);
               completedCount++;
               const selPct = Math.round((completedCount / selectedIndices.length) * 100);
@@ -764,6 +767,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...subjectState.activeStudents];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('subject', subjectState.activeStudents[index].name, result);
       updateSubjectState({ activeStudents: newStudents });
       playSuccessSound();

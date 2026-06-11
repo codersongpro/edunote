@@ -5,6 +5,7 @@ import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } fr
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
 import { generateOpinion } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { playSuccessSound } from '../lib/soundEffect';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -20,7 +21,7 @@ interface DuplicateResult {
 }
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
 
@@ -213,6 +214,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
@@ -274,6 +276,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
@@ -325,6 +328,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...opState.students];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
       playSuccessSound();

@@ -6,6 +6,7 @@ import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Stu
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
 import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualPlanFromDocuments } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -23,7 +24,7 @@ interface DuplicateResult {
 const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '봉사활동'];
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress, showToast } = useGlobalState();
   const { startGeneration, endGeneration, updateProgress, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
@@ -451,6 +452,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
@@ -518,6 +520,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / selectedIndices.length) * 100);
@@ -572,6 +575,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...creativeState.activeStudents];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('creative', creativeState.activeStudents[index].name, result);
       updateCreativeState({ activeStudents: newStudents });
       playSuccessSound();
