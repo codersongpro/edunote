@@ -9,6 +9,7 @@ import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
+import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
 
@@ -42,12 +43,14 @@ function readOpenApiItems(data: any): any[] {
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
   ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+    validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
   ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number }) => {
+    validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
