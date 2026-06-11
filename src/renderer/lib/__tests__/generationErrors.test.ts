@@ -48,3 +48,10 @@ describe('describeGenerationError', () => {
     expect(describeGenerationError('')).toContain('잠시 후 다시 시도해주세요');
   });
 });
+
+describe('describeGenerationError — 일일 한도', () => {
+  it('일일 한도 소진 메시지를 구분해 안내한다', () => {
+    expect(describeGenerationError(new Error('오늘 사용할 수 있는 무료 API 한도를 모두 사용했습니다. 내일 다시 시도하거나 설정에서 다른 API 키를 사용해주세요.')))
+      .toContain('[일일 한도 소진]');
+  });
+});

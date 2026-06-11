@@ -34,6 +34,9 @@ export function describeGenerationError(error: unknown): string {
   ) {
     return '⚠️ [API 키 오류] Gemini API 키가 유효하지 않습니다. 설정 화면에서 키를 다시 확인해주세요.';
   }
+  if (raw.includes('무료 API 한도')) {
+    return '⚠️ [일일 한도 소진] 오늘 사용할 수 있는 무료 API 한도를 모두 사용했습니다. 내일 다시 시도하거나 설정에서 다른 API 키를 사용해주세요.';
+  }
   if (isTemporaryApiError(error)) {
     return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되고 있습니다. 작성 내용을 백업하시고 1분 후 다시 시도해주세요.';
   }

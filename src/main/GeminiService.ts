@@ -1,9 +1,17 @@
 import { GoogleGenAI } from '@google/genai';
+import {
+  FREE_MODEL_PREFERENCE,
+  PAID_MODEL_PREFERENCE,
+  buildModelChain,
+  getRetryDelayMs,
+  isDailyQuotaError,
+} from './modelChain';
 
 export type ApiTier = 'free' | 'paid';
 
-const FREE_MODEL = 'gemini-2.5-flash-lite';
-const PAID_MODEL = 'gemini-2.5-pro';
+// 키 검증 등 단일 모델이 필요한 곳에서 쓰는 대표 모델
+const FREE_MODEL = FREE_MODEL_PREFERENCE[0];
+const PAID_MODEL = PAID_MODEL_PREFERENCE[0];
 
 // 권한 거부/모델 미지원으로 차단된 모델 → 차단 해제 시각(unix ms)
 // 1시간 후 자동 해제 → 상위 모델을 주기적으로 재시도하여 계정 상황 변화에 대응
@@ -15,6 +23,12 @@ const quotaBlockedModels = new Map<string, number>();
 
 // 쿼터 초과 시 재시도 대기 시간 (60초)
 const QUOTA_COOLDOWN_MS = 60_000;
+
+// 일일 한도 소진 모델의 차단 시간 (10분) — 매분 재시도해도 의미가 없으므로 길게 둔다
+const DAILY_QUOTA_COOLDOWN_MS = 10 * 60_000;
+
+// 분당 제한일 때 같은 모델로 재시도하기 위해 기다려줄 수 있는 최대 시간
+const SAME_MODEL_RETRY_MAX_WAIT_MS = 15_000;
 
 // AI 호출 최대 대기 시간 (90초) — 응답이 멈춰도 무한정 기다리지 않도록
 const REQUEST_TIMEOUT_MS = 90_000;
@@ -30,10 +44,39 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+// 키에서 실제 사용 가능한 모델 이름 목록 (세션당 1회 조회 후 캐시)
+let availableModelsCache: { keyId: string; names: string[] | null } | null = null;
+
+async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<string[] | null> {
+  const keyId = apiKey.slice(-12);
+  if (availableModelsCache && availableModelsCache.keyId === keyId) return availableModelsCache.names;
+
+  try {
+    const names = await withTimeout((async () => {
+      const collected: string[] = [];
+      const pager = await ai.models.list({ config: { pageSize: 200 } });
+      for await (const model of pager) {
+        if (!model.name) continue;
+        // 임베딩 등 생성 미지원 모델 제외 — 지원 정보가 없으면 이름 교집합으로만 거른다.
+        if (model.supportedActions && !model.supportedActions.includes('generateContent')) continue;
+        collected.push(model.name);
+      }
+      return collected;
+    })(), 10_000);
+    availableModelsCache = { keyId, names };
+  } catch (error: unknown) {
+    // 조회 실패 시 기본 모델 1개로만 동작 (종전과 동일한 안전한 동작)
+    console.warn('[GeminiService] 모델 목록 조회 실패 — 기본 모델만 사용:', (error as any)?.message ?? error);
+    availableModelsCache = { keyId, names: null };
+  }
+  return availableModelsCache.names;
+}
+
 // API 키 변경 시 모든 차단 상태를 초기화 (외부에서 호출)
 export function resetModelCache(): void {
   permanentlyBlockedModels.clear();
   quotaBlockedModels.clear();
+  availableModelsCache = null;
 }
 
 // 특정 모델이 현재 차단 상태인지 확인 (만료 시 자동 해제)
@@ -88,38 +131,56 @@ export interface MultipartPart {
   inlineData?: { data: string; mimeType: string };
 }
 
-// 텍스트 생성 (단일 프롬프트)
-export async function generateContent(
+// 공통 생성 옵션을 SDK config로 변환
+function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
+  const config: Record<string, unknown> = {};
+  if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
+  if (options?.temperature !== undefined) config.temperature = options.temperature;
+  return config;
+}
+
+// 검증된 모델 체인을 따라 생성을 시도한다.
+// - 분당 제한(429 + retryDelay)이면 같은 모델로 1회 재시도 (문체 일관성 유지)
+// - 일일 한도면 해당 모델을 길게 차단하고 다음 모델로 폴백
+// - 네트워크 등 모델 무관 오류는 즉시 전파 (모델을 바꿔도 동일하게 실패)
+async function generateWithModelChain(
+  ai: GoogleGenAI,
   apiKey: string,
-  prompt: string,
-  options?: GenerateOptions,
+  apiTier: ApiTier,
+  doCall: (model: string) => Promise<string>,
 ): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey });
+  const preference = apiTier === 'paid' ? PAID_MODEL_PREFERENCE : FREE_MODEL_PREFERENCE;
+  const models = buildModelChain(preference, await getAvailableModelNames(ai, apiKey));
   let lastError: unknown = null;
 
-  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
-  for (let i = 0; i < 1; i++) {
+  for (const model of models) {
     if (isBlocked(model)) continue;
 
     try {
-      const config: Record<string, unknown> = {};
-      if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
-      if (options?.temperature !== undefined) config.temperature = options.temperature;
-
-      const result = await withTimeout(ai.models.generateContent({ model, contents: prompt, config }), REQUEST_TIMEOUT_MS);
-      return result.text ?? '';
+      return await doCall(model);
     } catch (error: unknown) {
       lastError = error;
 
       if (isQuotaError(error)) {
-        quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
+        const retryMs = getRetryDelayMs(error);
+        if (!isDailyQuotaError(error) && retryMs !== null && retryMs <= SAME_MODEL_RETRY_MAX_WAIT_MS) {
+          await new Promise(resolve => setTimeout(resolve, retryMs + 500));
+          try {
+            return await doCall(model);
+          } catch (retryError: unknown) {
+            lastError = retryError;
+            if (!isQuotaError(retryError)) throw retryError;
+          }
+        }
+        const daily = isDailyQuotaError(lastError);
+        quotaBlockedModels.set(model, Date.now() + (daily ? DAILY_QUOTA_COOLDOWN_MS : QUOTA_COOLDOWN_MS));
+        console.warn(`[${model}] 쿼터 초과(${daily ? '일일 한도' : '분당 제한'}) → 차단 후 다음 모델로 폴백`);
         continue;
       }
 
       if (isPermanentBlockError(error)) {
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 임시 차단`);
+        console.warn(`[${model}] 접근 불가 → 임시 차단, 다음 모델로 폴백`);
         continue;
       }
 
@@ -128,11 +189,31 @@ export async function generateContent(
   }
 
   if (lastError && isQuotaError(lastError)) {
-    throw new Error('API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.');
+    throw new Error(
+      isDailyQuotaError(lastError)
+        ? '오늘 사용할 수 있는 무료 API 한도를 모두 사용했습니다. 내일 다시 시도하거나 설정에서 다른 API 키를 사용해주세요.'
+        : 'API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.',
+    );
   }
 
   // 모든 모델이 실패한 경우 마지막 에러 전파
   throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
+}
+
+// 텍스트 생성 (단일 프롬프트)
+export async function generateContent(
+  apiKey: string,
+  prompt: string,
+  options?: GenerateOptions,
+): Promise<string> {
+  const ai = new GoogleGenAI({ apiKey });
+  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+    const result = await withTimeout(
+      ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(options) }),
+      REQUEST_TIMEOUT_MS,
+    );
+    return result.text ?? '';
+  });
 }
 
 // 멀티파트(텍스트+파일) 생성
@@ -142,43 +223,13 @@ export async function generateContentMultipart(
   options?: GenerateOptions,
 ): Promise<string> {
   const ai = new GoogleGenAI({ apiKey });
-  let lastError: unknown = null;
-
-  const model = options?.apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
-  for (let i = 0; i < 1; i++) {
-    if (isBlocked(model)) continue;
-
-    try {
-      const config: Record<string, unknown> = {};
-      if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
-      if (options?.temperature !== undefined) config.temperature = options.temperature;
-
-      const result = await withTimeout(ai.models.generateContent({ model, contents: { parts }, config }), REQUEST_TIMEOUT_MS);
-      return result.text ?? '';
-    } catch (error: unknown) {
-      lastError = error;
-
-      if (isQuotaError(error)) {
-        quotaBlockedModels.set(model, Date.now() + QUOTA_COOLDOWN_MS);
-        console.warn(`[${model}] 쿼터 초과 → 60초 쿨다운`);
-        continue;
-      }
-
-      if (isPermanentBlockError(error)) {
-        permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
-        console.warn(`[${model}] 접근 불가 → 임시 차단`);
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  if (lastError && isQuotaError(lastError)) {
-    throw new Error('API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.');
-  }
-
-  throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
+  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+    const result = await withTimeout(
+      ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(options) }),
+      REQUEST_TIMEOUT_MS,
+    );
+    return result.text ?? '';
+  });
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)
