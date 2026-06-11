@@ -60,12 +60,40 @@ const aiGenerateMultipart = (
   throw error;
 });
 
-const fileToPart = (fileData: FileData) => ({
-  inlineData: {
-    data: fileData.base64.split(',')[1],
-    mimeType: fileData.mimeType,
-  },
-});
+// 텍스트류 첨부 파일은 base64(약 33% 부풀려짐)로 보내지 않고 텍스트로 풀어 보낸다.
+// 토큰을 절약하고, 지나치게 긴 문서는 앞부분만 잘라 전송한다.
+const TEXT_ATTACHMENT_CHAR_LIMIT = 30_000;
+
+const isTextLikeFile = (fileData: FileData): boolean =>
+  /^text\//i.test(fileData.mimeType || '') || /\.(txt|md|csv)$/i.test(fileData.file?.name || '');
+
+const decodeBase64Text = (base64: string): string => {
+  const raw = atob(base64.split(',').pop() || '');
+  const bytes = Uint8Array.from(raw, c => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+};
+
+const fileToPart = (fileData: FileData): { text?: string; inlineData?: { data: string; mimeType: string } } => {
+  if (isTextLikeFile(fileData)) {
+    try {
+      const text = decodeBase64Text(fileData.base64).trim();
+      if (text) {
+        const clipped = text.length > TEXT_ATTACHMENT_CHAR_LIMIT
+          ? `${text.slice(0, TEXT_ATTACHMENT_CHAR_LIMIT)}\n...(분량이 길어 이하 생략됨)`
+          : text;
+        return { text: `[첨부 문서: ${fileData.file?.name || '텍스트 파일'}]\n${clipped}` };
+      }
+    } catch {
+      // 디코딩 실패 시 기존 방식(inlineData)으로 보낸다.
+    }
+  }
+  return {
+    inlineData: {
+      data: fileData.base64.split(',')[1],
+      mimeType: fileData.mimeType,
+    },
+  };
+};
 
 const NATURAL_WRITING_INSTRUCTION = `
 [자연스러운 작성 원칙]
