@@ -228,8 +228,14 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'naverShoppingClientSecret') return undefined;
     return store.get(key as keyof typeof store.store);
+  });
+
+  // 시크릿 원문은 렌더러로 보내지 않고 저장 여부만 알려준다.
+  ipcMain.handle('config:has-naver-shopping-secret', () => {
+    const secret = store.get('naverShoppingClientSecret');
+    return typeof secret === 'string' && secret.trim().length > 0;
   });
 
   ipcMain.handle('config:get-all', () => {
@@ -654,7 +660,15 @@ export function registerIpcHandlers(): void {
   });
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
-  ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+  // 자격증명(인증키·Client Secret)은 렌더러에서 받지 않고 메인 프로세스 저장소에서 직접 읽는다.
+  function getNaramarketKey(): string {
+    const serviceKey = String(store.get('naramarketApiKey') || '').trim();
+    if (!serviceKey) throw new Error('나라장터 인증키가 저장되어 있지 않습니다. 예산안작성 화면에서 키를 먼저 저장해주세요.');
+    return serviceKey;
+  }
+
+  ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
+    const serviceKey = getNaramarketKey();
     // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const fetchList = async (queryKey: string) => {
@@ -690,7 +704,8 @@ export function registerIpcHandlers(): void {
     return { response: { body: { items: { item: [] } } } };
   });
 
-  ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+  ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
+    const serviceKey = getNaramarketKey();
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const fetchMall = async (queryKey: string) => {
       const params = new URLSearchParams();
@@ -725,21 +740,16 @@ export function registerIpcHandlers(): void {
     return { response: { body: { items: { item: [] } } } };
   });
 
-  // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('api:naver-shopping-search', async (_e, {
     keyword,
-    clientId,
-    clientSecret,
     pageNo = 1,
   }: {
     keyword: string;
-    clientId: string;
-    clientSecret: string;
     pageNo?: number;
   }) => {
     const trimmedKeyword = String(keyword || '').trim();
-    const trimmedId = String(clientId || '').trim();
-    const trimmedSecret = String(clientSecret || '').trim();
+    const trimmedId = String(store.get('naverShoppingClientId') || '').trim();
+    const trimmedSecret = String(store.get('naverShoppingClientSecret') || '').trim();
     if (!trimmedKeyword || !trimmedId || !trimmedSecret) {
       return { items: [] };
     }
@@ -765,6 +775,7 @@ export function registerIpcHandlers(): void {
     return response.json();
   });
 
+  // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');

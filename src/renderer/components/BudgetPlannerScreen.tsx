@@ -1011,7 +1011,9 @@ export default function BudgetPlannerScreen() {
 
   const [apiKey, setApiKey] = useState('');
   const [naverClientId, setNaverClientId] = useState('');
+  // Client Secret 원문은 앱에서 다시 받아오지 않는다. 입력칸 값과 저장 여부만 관리한다.
   const [naverClientSecret, setNaverClientSecret] = useState('');
+  const [hasSavedNaverSecret, setHasSavedNaverSecret] = useState(false);
   const [showPriceSettings, setShowPriceSettings] = useState(false);
   const [showApiGuide, setShowApiGuide] = useState(false);
   const [showBalanceHelp, setShowBalanceHelp] = useState(false);
@@ -1051,8 +1053,8 @@ export default function BudgetPlannerScreen() {
     window.electronAPI.getConfig('naverShoppingClientId').then((key: unknown) => {
       if (typeof key === 'string') setNaverClientId(key);
     }).catch(() => {});
-    window.electronAPI.getConfig('naverShoppingClientSecret').then((key: unknown) => {
-      if (typeof key === 'string') setNaverClientSecret(key);
+    window.electronAPI.hasNaverShoppingSecret().then(saved => {
+      setHasSavedNaverSecret(!!saved);
     }).catch(() => {});
     Promise.all([
       window.electronAPI.readJsonData('budget-plans').catch(() => []),
@@ -1147,17 +1149,22 @@ export default function BudgetPlannerScreen() {
     setApiKey(apiKey.trim());
     setNaverClientId(naverClientId.trim());
     setNaverClientSecret(naverClientSecret.trim());
-    await window.electronAPI.setConfig({
+    const payload: Record<string, string> = {
       naramarketApiKey: apiKey.trim(),
       naverShoppingClientId: naverClientId.trim(),
-      naverShoppingClientSecret: naverClientSecret.trim(),
-    });
+    };
+    // Secret 입력칸이 비어 있으면 저장된 기존 Secret을 지우지 않도록 보낼 항목에서 제외한다.
+    if (naverClientSecret.trim()) {
+      payload.naverShoppingClientSecret = naverClientSecret.trim();
+    }
+    await window.electronAPI.setConfig(payload);
+    if (naverClientSecret.trim()) setHasSavedNaverSecret(true);
   };
 
   const testInternetPriceSearch = async () => {
     const clientId = naverClientId.trim();
     const clientSecret = naverClientSecret.trim();
-    if (!clientId || !clientSecret) {
+    if (!clientId || (!clientSecret && !hasSavedNaverSecret)) {
       setInternetPriceTestMessage('Client ID와 Client Secret을 모두 입력해주세요.');
       return;
     }
@@ -1165,7 +1172,7 @@ export default function BudgetPlannerScreen() {
     setInternetPriceTestMessage('');
     try {
       await saveApiKey();
-      const data = await window.electronAPI.naverShoppingSearch('복사용지', clientId, clientSecret);
+      const data = await window.electronAPI.naverShoppingSearch('복사용지');
       const rows = normalizeNaverShoppingItems(data);
       setInternetPriceTestMessage(rows.length > 0
         ? `인터넷 가격조회 연결됨 · 복사용지 ${rows.length}건 확인`
@@ -1247,7 +1254,7 @@ export default function BudgetPlannerScreen() {
     const query = priceSearchQuery.trim();
     if (!query) return;
     const hasNaraKey = !!apiKey.trim();
-    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
+    const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
     if (!hasNaraKey && !hasNaverKey) {
       setPriceSearchStatus('error');
       setPriceSearchMessage('먼저 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해주세요.');
@@ -1260,7 +1267,7 @@ export default function BudgetPlannerScreen() {
     // 나라장터 결과는 첫 페이지에서만 한 번 가져온다.
     if (!append && hasNaraKey) {
       try {
-        const data = await window.electronAPI.naramarketShoppingSearch(query, apiKey);
+        const data = await window.electronAPI.naramarketShoppingSearch(query);
         fetched.push(...normalizeApiItems(data, true)
           .filter(item => (item.unitPrice ?? 0) > 0)
           .map(item => ({ ...item, priceSource: '나라장터' })));
@@ -1272,7 +1279,7 @@ export default function BudgetPlannerScreen() {
     let naverTotal = 0;
     if (hasNaverKey) {
       try {
-        const data: any = await window.electronAPI.naverShoppingSearch(query, naverClientId, naverClientSecret, page);
+        const data: any = await window.electronAPI.naverShoppingSearch(query, page);
         const naverItems = normalizeNaverShoppingItems(data).map(item => ({ ...item, priceSource: item.priceSource || '인터넷 가격조회' }));
         naverCount = naverItems.length;
         naverTotal = Number(data?.total) || 0;
@@ -1323,7 +1330,7 @@ export default function BudgetPlannerScreen() {
   };
 
   // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
-  const hasPriceLookupKey = !!apiKey.trim() || (!!naverClientId.trim() && !!naverClientSecret.trim());
+  const hasPriceLookupKey = !!apiKey.trim() || (!!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret));
   const priceSearchTooltip = hasPriceLookupKey
     ? '키워드로 실제 상품과 단가를 조회합니다.'
     : '먼저 왼쪽 \'가격 조회 정보 선택 입력\'에서 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해 주세요. 키가 없으면 조회되지 않습니다.';
@@ -1388,7 +1395,7 @@ export default function BudgetPlannerScreen() {
     };
 
     const hasNaraKey = !!apiKey.trim();
-    const hasNaverKey = !!naverClientId.trim() && !!naverClientSecret.trim();
+    const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
     if (!hasNaraKey && !hasNaverKey) return candidates;
     for (const category of CATEGORIES) {
       const explicitWords = splitDesiredItems(desiredItems[category]);
@@ -1399,7 +1406,7 @@ export default function BudgetPlannerScreen() {
       for (const keyword of keywords) {
         if (hasNaverKey) {
           try {
-            const data = await window.electronAPI.naverShoppingSearch(keyword, naverClientId, naverClientSecret);
+            const data = await window.electronAPI.naverShoppingSearch(keyword);
             candidates[category].push(...normalizeNaverShoppingItems(data));
           } catch {
             // Internet reference prices are optional.
@@ -1407,7 +1414,7 @@ export default function BudgetPlannerScreen() {
         }
         try {
           if (hasNaraKey) {
-            const data = await window.electronAPI.naramarketShoppingSearch(keyword, apiKey);
+            const data = await window.electronAPI.naramarketShoppingSearch(keyword);
             candidates[category].unshift(...normalizeApiItems(data, true));
           }
         } catch {
@@ -1666,7 +1673,7 @@ export default function BudgetPlannerScreen() {
             <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">인터넷 가격조회 Client 정보 (선택)</p>
             <div className="space-y-2">
               <input type="password" value={naverClientId} onChange={e => setNaverClientId(e.target.value)} placeholder="인터넷 가격 조회 Client ID" className={inputCls} />
-              <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder="인터넷 가격 조회 Client Secret" className={inputCls} />
+              <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder={hasSavedNaverSecret ? 'Client Secret 저장됨 (변경할 때만 입력)' : '인터넷 가격 조회 Client Secret'} className={inputCls} />
             </div>
             <div className="mt-2 flex gap-2">
               <button onClick={saveApiKey} className={`${btnCls} bg-[#78716C] text-white hover:bg-[#44403C] flex-1`}>
@@ -1677,7 +1684,7 @@ export default function BudgetPlannerScreen() {
                 테스트 조회
               </button>
             </div>
-            {(naverClientId && naverClientSecret) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 인터넷 가격 조회 키 설정됨</p>}
+            {(naverClientId && (naverClientSecret || hasSavedNaverSecret)) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 인터넷 가격 조회 키 설정됨</p>}
             {internetPriceTestMessage && (
               <p className={`text-xs mt-1 flex items-start gap-1 ${internetPriceTestMessage.includes('연결됨') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
                 <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> {internetPriceTestMessage}
