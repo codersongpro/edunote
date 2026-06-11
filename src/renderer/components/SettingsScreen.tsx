@@ -705,26 +705,26 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Save Folder */}
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-3">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Folder className="w-4 h-4 text-[#78716C]" />
-            <h3 className="text-sm font-bold text-[#44403C]">파일 저장 폴더</h3>
+            <Folder className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">파일 저장 폴더</h3>
           </div>
           <div className="flex gap-2 items-center">
             <input
               type="text"
               readOnly
               value={saveDir || '기본 다운로드 폴더'}
-              className="flex-1 bg-[#FAF9F7] rounded-md border border-[#EDE8E1] text-[#78716C] text-sm p-2.5 cursor-not-allowed"
+              className="flex-1 bg-[#FAF9F7] dark:bg-[#1C1917] rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] rounded-md text-[#44403C] hover:bg-[#FAF9F7] whitespace-nowrap"
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2521] whitespace-nowrap"
             >
               폴더 선택
             </button>
           </div>
-          <p className="text-xs text-[#A8A29E]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+          <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
         </div>
 
         {/* Version */}

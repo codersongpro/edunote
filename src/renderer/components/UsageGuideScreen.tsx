@@ -45,7 +45,7 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 
 const Step: React.FC<{ n: number; children: React.ReactNode }> = ({ n, children }) => (
   <li className="flex gap-3">
-    <span className="flex-shrink-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">{n}</span>
+    <span className="flex-shrink-0 w-5 h-5 bg-blue-500 dark:bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold">{n}</span>
     <span className="leading-relaxed">{children}</span>
   </li>
 );
