@@ -446,15 +446,21 @@ ${getDateContext()}
 [수행한 평가 과제 및 성취수준]:
 ${tasksText}
 
+[성취수준별 표현 기준]
+- 상: 심화·확장·자기주도 중심으로 표현 가능 (예: 스스로 가설을 세워 검증함, 개념을 다른 맥락에 적용함)
+- 중: 과장 없는 수행 중심 표현 (예: 개념을 적절히 적용하여 과제를 수행함). '뛰어난', '탁월한', '완벽하게' 금지
+- 하: 노력·태도·부분적 성취 중심 (예: 도움을 받아 개념을 이해하려 노력함). 성취를 부풀리는 표현 금지
+
 [추가 관찰내용]: ${request.additionalContext}
 ${formatStudentMemos(request.studentMemos)}
 
 [작성 길이]: ${lengthInstruction}
 
 [요구사항]
-1. 주어 절대 금지. 2. 과제명 직접 언급 금지. 3. [동기→수행→결과→성장] 흐름.
+1. 주어 절대 금지. 2. 과제명을 그대로 옮겨 적지 말 것 (단원·활동 유형으로 일반화해 서술).
+3. 시스템 지침의 [Action→Process→Concept→Insight→Connection] 5단계 흐름으로 문장 구성.
 4. 명사형 종결어미 + 온점 필수. 5. 따옴표/특수기호 금지. 6. 결과 텍스트만 출력.
-7. 작성 길이 엄수. 8. 문장 시작 다양화. 9. '중'/'하' 수준 과제에 과장 표현 금지.
+7. 작성 길이 엄수. 8. 문장 시작 다양화. 9. 위 [성취수준별 표현 기준] 엄수.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
