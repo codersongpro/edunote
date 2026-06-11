@@ -222,7 +222,8 @@ export function registerIpcHandlers(): void {
       if (parsed.protocol !== 'https:') return false;
       await shell.openExternal(parsed.href);
       return true;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:shell:open-external]', e);
       return false;
     }
   });
@@ -263,8 +264,9 @@ export function registerIpcHandlers(): void {
     const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
-    } catch {
+    } catch (e) {
       // 설정 저장 자체는 electron-store가 처리하므로 폴더 동기화 실패는 무시합니다.
+      console.warn('[ipc:config:set] 설정 폴더 동기화 실패:', e);
     }
   });
 
@@ -320,8 +322,9 @@ export function registerIpcHandlers(): void {
       const fullPath = path.join(dataDir, fileName);
       try {
         dataFiles[fileName.replace(/\.json$/, '')] = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-      } catch {
+      } catch (e) {
         // 손상된 JSON 파일은 백업에 포함하지 않습니다.
+        console.warn(`[ipc:data:export-backup] 손상된 데이터 파일 제외: ${fileName}`, e);
       }
     }
 
@@ -424,7 +427,8 @@ export function registerIpcHandlers(): void {
         image: ogImage?.[1] ?? '',
         domain: parsed.hostname,
       };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:url:fetch-meta]', e);
       return { title: '', description: '', image: '', domain: '' };
     }
   });
@@ -446,7 +450,8 @@ export function registerIpcHandlers(): void {
       const arrayBuffer = await res.arrayBuffer();
       const buf = Buffer.from(arrayBuffer);
       return `data:${mime};base64,${buf.toString('base64')}`;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:fetch-image]', e);
       return null;
     }
   });
@@ -475,7 +480,8 @@ export function registerIpcHandlers(): void {
         thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         videoId,
       };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:youtube-meta]', e);
       return { title: '', description: '', thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '', videoId };
     }
   });
@@ -486,7 +492,8 @@ export function registerIpcHandlers(): void {
       const apiKey = store.get('geminiApiKey');
       if (!apiKey) return null;
       return await generateSlideImage(apiKey, imagePrompt);
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:slide-image]', e);
       return null;
     }
   });
@@ -510,7 +517,8 @@ export function registerIpcHandlers(): void {
       const image = await win.webContents.capturePage({ x: 0, y: 0, width: 1280, height: 640 });
       const resized = image.resize({ width: 480, height: 240 });
       return `data:image/png;base64,${resized.toPNG().toString('base64')}`;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:screenshot]', e);
       return null;
     } finally {
       if (win && !win.isDestroyed()) win.destroy();
@@ -568,7 +576,8 @@ export function registerIpcHandlers(): void {
       const currentVersion = app.getVersion();
       const hasUpdate: boolean = !!latestVersion && semverGt(latestVersion, currentVersion);
       return { currentVersion, latestVersion: latestVersion || null, hasUpdate, releaseUrl: json.html_url || '' };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:app:check-update]', e);
       return { currentVersion: app.getVersion(), latestVersion: null, hasUpdate: false, releaseUrl: '' };
     }
   });
