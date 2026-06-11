@@ -79,13 +79,13 @@ AI는 문서의 파일명(${file.name})은 인지하지만, 내용은 정확히 
 export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(arrayBuffer);
-  
+
   const sectionFiles = Object.keys(zip.files).filter((name) =>
     /^Contents\/section\d+\.xml$/i.test(name)
   );
 
   let globalIdx = 0;
-  
+
   sectionFiles.sort((a, b) => {
     const numA = parseInt(a.match(/section(\d+)/i)?.[1] || "0");
     const numB = parseInt(b.match(/section(\d+)/i)?.[1] || "0");
@@ -95,12 +95,14 @@ export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Pr
   const fillMap = new Map<number, string>();
   fillData.forEach(item => fillMap.set(Number(item.idx), item.value));
 
+  const replaced = new Map<string, string>();
+
   for (const sectionPath of sectionFiles) {
     const sectionFile = zip.file(sectionPath);
     if (!sectionFile) continue;
 
     let xml = await sectionFile.async("string");
-    
+
     xml = xml.replace(/(<hp:t[^>]*>)([\s\S]*?)(<\/hp:t>)/g, (match, openTag, content, closeTag) => {
       const currentIdx = globalIdx++;
       if (fillMap.has(currentIdx)) {
@@ -111,16 +113,27 @@ export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Pr
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&apos;')
           .replace(/\n/g, '&#10;');
-        
+
         return `${openTag}${newValue}${closeTag}`;
       }
       return match;
     });
 
-    zip.file(sectionPath, xml);
+    replaced.set(sectionPath, xml);
   }
 
-  return await zip.generateAsync({ type: "blob" });
+  // 원본 zip을 직접 수정하지 않고 항목을 순서 그대로 새 zip에 복사한다.
+  // 기존 방식(zip.file 후 generateAsync)은 원본에 없던 폴더 항목('Contents/')을
+  // 추가해 한글이 파일을 열지 못하는 원인이 됐다. 압축 방식도 한글이 만드는
+  // 파일과 동일하게 모든 항목 DEFLATE로 맞춘다.
+  const out = new JSZip();
+  for (const name of Object.keys(zip.files)) {
+    const entry = zip.files[name];
+    if (entry.dir) continue;
+    const content = replaced.has(name) ? replaced.get(name)! : await entry.async("uint8array");
+    out.file(name, content, { createFolders: false, compression: "DEFLATE" });
+  }
+  return await out.generateAsync({ type: "blob", compression: "DEFLATE" });
 }
 
 

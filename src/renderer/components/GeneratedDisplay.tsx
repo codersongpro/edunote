@@ -529,12 +529,12 @@ h2,h3{page-break-after:avoid;}
           >
             <Printer className="w-4 h-4" />
           </button>
-          {false && hwpxTemplate && hwpxFillData && (
+          {hwpxTemplate && hwpxFillData && (
             <button
               onClick={handleDownloadHwpx}
               disabled={hwpxDownloading}
               className="inline-flex items-center gap-1 rounded bg-emerald-700 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
-              title="업로드한 HWPX 양식에 현재 데이터를 채워 저장"
+              title="업로드한 HWPX 양식의 텍스트 칸에 현재 데이터를 채워 저장합니다 (양식의 표 구조·서식은 그대로 유지)"
             >
               <Download className="w-3.5 h-3.5" />
               {hwpxDownloading ? '저장 중' : 'HWPX 양식 저장'}
