@@ -84,6 +84,12 @@ const FORMAL_PUBLIC_WRITING_INSTRUCTION = `
 - 판단이나 의견은 근거, 대상, 기간, 절차, 결과가 드러나도록 객관적으로 작성하세요.
 - 기관 문서에 맞게 간결하고 명확하게 쓰되, 의미가 모호한 추상어를 반복하지 마세요.`;
 
+const NO_FABRICATED_REFERENCES_INSTRUCTION = `
+[근거·출처 작성 규칙 — 반드시 지킬 것]
+- 사용자가 직접 제공하지 않은 법령명, 조항, 훈령·예규 번호, 교육청 공문번호, 정책·사업 명칭을 추측해서 쓰지 마세요.
+- '관련' 항목에 쓸 근거가 입력에 없으면 "(근거 공문·법령 입력 필요)"처럼 사용자가 채울 자리로 표시하세요.
+- 실존 여부가 불확실한 기관명, 인용문, 통계 수치를 만들어내지 마세요. 입력에 있는 사실만 사용하세요.`;
+
 const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 [학생기록 공적 문체 원칙]
 - 학생기록 생성 결과는 반드시 교육적이고 공적인 언어로 작성하세요.
@@ -787,14 +793,16 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     case DocType.MEETING_MINUTES:
       specificInstruction = `
 작업: [협의회 회의록 작성]
-[필수 구성] 제목(중앙, 크게), 학교명(우측 상단), 표(Table) 형태로:
-1행: 일시 | 장소
-2행: 출석위원 (colspan=3)
-3행: 회의안건 (colspan=3)
-4행: 회의내용(제목행)
-5행~: 발언자 | 발언내용(colspan=3) — 발언자별로 나누어 작성
-마지막 행: 서명란 (업무관리시스템 결재로 대신함)
-표 스타일: border="1" style="border-collapse:collapse;width:100%;color:#000000;border:1px solid black;"`;
+[필수 구성] 제목(중앙, 크게), 학교명(우측 상단), 그리고 아래 표.
+[표 작성 규칙] 반드시 아래 4열 구조 템플릿을 그대로 따르세요. 행마다 열 수(colspan 합계 4)가 맞아야 표가 깨지지 않습니다.
+<table border="1" style="border-collapse:collapse;width:100%;color:#000000;border:1px solid black;">
+  <tr><th style="width:15%;">일시</th><td style="width:35%;">(일시)</td><th style="width:15%;">장소</th><td style="width:35%;">(장소)</td></tr>
+  <tr><th>출석위원</th><td colspan="3">(직책·이름을 쉼표로 나열)</td></tr>
+  <tr><th>회의안건</th><td colspan="3">(안건)</td></tr>
+  <tr><th>발언자</th><th colspan="3">발언 내용</th></tr>
+  <tr><td>(발언자1)</td><td colspan="3">(발언 내용 — 발언자별로 행을 나누어 작성)</td></tr>
+  <tr><td colspan="4">서명란: 업무관리시스템 결재로 대신함</td></tr>
+</table>`;
       break;
 
     case DocType.PROMOTION:
@@ -868,7 +876,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
