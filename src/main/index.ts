@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { registerIpcHandlers } from './ipcHandlers';
+import { registerIpcHandlers, cleanupSessionTmpDir } from './ipcHandlers';
 
 function getAppIcon() {
   try {
@@ -113,4 +113,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('will-quit', () => {
+  cleanupSessionTmpDir();
 });

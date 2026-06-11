@@ -35,6 +35,27 @@ function getDataDir(): string {
   return dir;
 }
 
+// HTML 미리보기·PDF 변환용 세션 임시 디렉터리.
+// mkdtemp로 매 실행마다 예측 불가능한 경로를 만들고, 앱 종료 시 정리한다.
+let sessionTmpDir: string | null = null;
+
+function getSessionTmpDir(): string {
+  if (!sessionTmpDir || !fs.existsSync(sessionTmpDir)) {
+    sessionTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'edunote-'));
+  }
+  return sessionTmpDir;
+}
+
+export function cleanupSessionTmpDir(): void {
+  if (!sessionTmpDir) return;
+  try {
+    fs.rmSync(sessionTmpDir, { recursive: true, force: true });
+  } catch {
+    // 다른 프로세스(브라우저 등)가 파일을 잡고 있으면 OS가 임시 폴더를 정리하도록 둔다.
+  }
+  sessionTmpDir = null;
+}
+
 function readOpenApiItems(data: any): any[] {
   const raw = data?.response?.body?.items ?? data?.body?.items ?? [];
   const rows = raw?.item ?? raw;
@@ -315,9 +336,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('file:open-html-external', async (_e, htmlContent: string, suggestedName?: string) => {
     const baseName = (suggestedName || `edunote_game_${Date.now()}.html`).replace(/[\\/:*?"<>|]/g, '_');
     const fileName = baseName.toLowerCase().endsWith('.html') ? baseName : `${baseName}.html`;
-    const dir = path.join(os.tmpdir(), 'edunote-html-preview');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const filePath = path.join(dir, fileName);
+    const filePath = path.join(getSessionTmpDir(), fileName);
     fs.writeFileSync(filePath, htmlContent, 'utf-8');
     const openPathError = await shell.openPath(filePath);
     if (openPathError) await shell.openExternal(pathToFileURL(filePath).toString());
@@ -747,7 +766,7 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
-    const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);
+    const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
     const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
     try {
