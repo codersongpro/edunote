@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
+import { parseJsonArrayFromAiText } from '../lib/aiJson';
 import {
   AlertCircle,
   CheckCircle2,
@@ -763,11 +764,7 @@ function filterItemsByDesiredIntent(items: BudgetItem[], keywordMap: Record<Budg
 }
 
 function parseAiBudgetItems(text: string): Array<{ budgetCategory: BudgetCategory; thngNm: string; spec?: string; unitPrice: number; quantity: number }> {
-  const trimmed = text.trim();
-  const jsonText = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/)?.[1]?.trim()
-    ?? trimmed.slice(trimmed.indexOf('['), trimmed.lastIndexOf(']') + 1);
-  const parsed = JSON.parse(jsonText);
-  if (!Array.isArray(parsed)) throw new Error('AI 응답 형식이 올바르지 않습니다.');
+  const parsed = parseJsonArrayFromAiText(text);
   return parsed
     .map((row: any) => ({
       budgetCategory: normalizeBudgetCategory(row.budgetCategory),
