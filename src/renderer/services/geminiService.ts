@@ -19,6 +19,7 @@ import {
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { formatStudentMemos, withStudentPrivacy } from '../lib/generationSafety';
+import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
 
 // ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
 const getDateContext = (): string => {
@@ -29,21 +30,6 @@ const getDateContext = (): string => {
   // 한국 학년도: 3월 시작 → 1~2월은 전년도 학년도
   const schoolYear = month < 3 ? year - 1 : year;
   return `[내부 기준 정보 — 오늘: ${year}년 ${month}월 ${day}일 / 학년도: ${schoolYear}학년도. 이 정보는 날짜·연도 기준으로만 활용하고, 사용자가 명시적으로 요청하지 않는 한 출력 문서에 그대로 노출하지 마세요.]`;
-};
-
-const isTemporaryApiError = (error: unknown): boolean => {
-  const message = String((error as any)?.message || error || '').toLowerCase();
-  return [
-    'quota',
-    '429',
-    'resource_exhausted',
-    'rate limit',
-    'too many requests',
-    '잠시 기다리',
-    '토큰 소모',
-    '잦은 요청',
-    '사용 가능한 모델이 없습니다',
-  ].some(pattern => message.includes(pattern));
 };
 
 const notifyTemporaryApiError = (error: unknown) => {
@@ -359,7 +345,7 @@ export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: s
     return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3 });
   } catch (error: any) {
     console.error('Gemini QA Error:', error);
-    return '⚠️ [사용량 초과] 현재 이용자가 많아 AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -376,7 +362,7 @@ export const askRecordChatbot = async (
     return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7 });
   } catch (error: any) {
     console.error('Record Chatbot Error:', error);
-    return '⚠️ AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -420,7 +406,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
-    return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -464,7 +450,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -503,7 +489,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -563,7 +549,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -880,7 +866,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     return stripGeneratedCodeFences(await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }));
   } catch (error: any) {
     console.error('Gemini API Error:', error);
-    throw new Error('AI 문서 생성 중 오류가 발생했습니다. (잠시 후 다시 시도해주세요)');
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -1061,7 +1047,7 @@ export const askEducationQuestion = async (
     return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7 });
   } catch (error: any) {
     console.error('Education QA Error:', error);
-    return '⚠️ AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
