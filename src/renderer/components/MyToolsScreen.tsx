@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CustomTool } from '../types';
 import { SAMPLE_TOOLS } from '../data/sampleTools';
 import MyToolEditor from './MyToolEditor';
+import { safeSetItem } from '../lib/safeStorage';
 import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
@@ -917,8 +918,8 @@ const ShareModal: React.FC<{
       const json = JSON.stringify(tool, null, 2);
       await window.electronAPI.saveTxt(json, `${tool.name}.json`);
     }
-    localStorage.setItem('share-author-name', authorName);
-    localStorage.setItem('share-author-school', authorSchool);
+    safeSetItem('share-author-name', authorName);
+    safeSetItem('share-author-school', authorSchool);
     setJsonSaved(true);
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Trophy, Users, History, Trash2, RotateCcw } from 'lucide-react';
+import { safeSetItem } from '../lib/safeStorage';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -18,7 +19,7 @@ function loadHistory(): DrawRecord[] {
 }
 
 function saveHistory(records: DrawRecord[]): void {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(records));
+  safeSetItem(HISTORY_KEY, JSON.stringify(records));
 }
 
 // ── Audio ──────────────────────────────────────────────────────────────────

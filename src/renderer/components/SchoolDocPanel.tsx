@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
+import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
@@ -114,7 +115,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   }, []);
 
   const saveTemplateFavorites = (next: DocTemplateFavorite[]) => {
-    localStorage.setItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
+    safeSetItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
     setTemplateFavorites(next.slice(0, 20));
   };
 

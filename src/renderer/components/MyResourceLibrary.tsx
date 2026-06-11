@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera, SearchIcon, ArrowLeft, ArrowRight, RefreshCw, PlusCircle } from 'lucide-react';
+import { safeSetItem } from '../lib/safeStorage';
 
 declare global {
   namespace JSX {
@@ -46,13 +47,13 @@ function loadResources(): Resource[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
   catch { return []; }
 }
-function saveResources(list: Resource[]) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function saveResources(list: Resource[]) { safeSetItem(STORAGE_KEY, JSON.stringify(list)); }
 
 function loadCategories(): string[] {
   try { return JSON.parse(localStorage.getItem(CATEGORIES_KEY) || '[]'); }
   catch { return []; }
 }
-function saveCategories(cats: string[]) { localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats)); }
+function saveCategories(cats: string[]) { safeSetItem(CATEGORIES_KEY, JSON.stringify(cats)); }
 
 const MyResourceLibrary: React.FC = () => {
   const [resources, setResources] = useState<Resource[]>(loadResources);

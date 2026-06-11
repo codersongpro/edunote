@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
+import { safeSetItem } from './lib/safeStorage';
 import { GlobalState } from './types';
 
 import RecordChatbot from './components/RecordChatbot';
@@ -446,7 +447,7 @@ const App: React.FC = () => {
       const next = [...items];
       const [moved] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, moved);
-      localStorage.setItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
+      safeSetItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
       return next;
     };
     if (section === 'student') setStudentMenuItems(update);

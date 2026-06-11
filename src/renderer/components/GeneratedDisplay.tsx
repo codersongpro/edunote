@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
 import { sanitizeHtml } from '../lib/security';
+import { safeSetItem } from '../lib/safeStorage';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -126,7 +127,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       createdAt: now.toISOString(),
     };
     const nextVersions = [next, ...versions.filter(version => version.html !== html)].slice(0, 8);
-    localStorage.setItem(getHistoryKey(), JSON.stringify(nextVersions));
+    safeSetItem(getHistoryKey(), JSON.stringify(nextVersions));
     setSavedVersions(nextVersions);
   };
 
@@ -425,7 +426,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const handleDeleteVersion = () => {
     if (!selectedVersion) return;
     const next = savedVersions.filter(v => v.id !== selectedVersion.id);
-    localStorage.setItem(getHistoryKey(), JSON.stringify(next));
+    safeSetItem(getHistoryKey(), JSON.stringify(next));
     setSavedVersions(next);
     setSelectedVersionId('');
   };

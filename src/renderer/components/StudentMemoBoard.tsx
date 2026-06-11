@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StickyNote, Plus, Trash2, Download, Search } from 'lucide-react';
+import { safeSetItem } from '../lib/safeStorage';
 
 interface Memo {
   id: string;
@@ -73,7 +74,7 @@ const StudentMemoBoard: React.FC = () => {
 
   const saveMemos = (updated: Memo[]) => {
     setMemos(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    safeSetItem(STORAGE_KEY, JSON.stringify(updated));
     window.electronAPI.writeJsonData('student-memos', updated).catch(() => {});
   };
 
