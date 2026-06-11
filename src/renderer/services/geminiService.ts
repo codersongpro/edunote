@@ -353,6 +353,20 @@ const getLengthInstruction = (
 
 // ─── 학생기록 AI Functions ─────────────────────────────────────────
 
+// 일괄 생성 시 학생마다 첫 문장의 관점을 순환시켜, 같은 태그를 받은 학생들의
+// 결과가 비슷한 구조로 반복되는 것을 줄인다.
+const OPENING_PERSPECTIVES = [
+  '학급 공동 활동에서의 모습',
+  '교우 관계와 협력 상황',
+  '맡은 역할을 수행하는 과정',
+  '어려움에 부딪혔을 때의 대처',
+  '자율적인 학습·생활 태도',
+];
+let openingPerspectiveCounter = 0;
+
+const nextOpeningPerspective = (): string =>
+  OPENING_PERSPECTIVES[openingPerspectiveCounter++ % OPENING_PERSPECTIVES.length];
+
 export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: string): Promise<string> => {
   try {
     return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
@@ -411,7 +425,7 @@ ${formatStudentMemos(request.studentMemos)}
 5. 하나의 문단으로 작성하세요.
 6. 오직 결과 텍스트만 출력하세요.
 7. 작성 길이를 엄격히 준수하세요.
-8. 문장의 시작을 다양하게 하세요.
+8. 문장의 시작을 다양하게 하세요. 첫 문장은 '${nextOpeningPerspective()}' 관점에서 시작하되, 입력 정보에 맞는 내용만 사용하세요.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
@@ -502,7 +516,7 @@ ${formatStudentMemos(request.studentMemos)}
 [요구사항]
 1. 주어 절대 금지. 2. 스포츠맨십, 협동심, 기술 향상 등이 드러나게 작성.
 3. 명사형 종결어미 + 온점 필수. 4. 따옴표/특수기호 금지. 5. 결과 텍스트만 출력.
-6. 작성 길이 엄수. 7. 문장 시작 다양화.
+6. 작성 길이 엄수. 7. 문장 시작 다양화 — 첫 문장은 '${nextOpeningPerspective()}' 관점에서 시작하되, 입력 정보에 맞는 내용만 사용.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
