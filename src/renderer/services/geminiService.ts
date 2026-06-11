@@ -520,7 +520,9 @@ export const generateCreativeActivityReport = async (
 ): Promise<string> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
-    const keywordsStr = request.keywords.length > 0 ? request.keywords.join(', ') : '없음';
+    const keywordsStr = request.keywords.length > 0
+      ? request.keywords.join(', ')
+      : '(미입력 — 개별 관찰 내용과 학생 메모에서 주요 활동을 직접 찾아 활용할 것)';
     const avoidInstruction =
       request.avoidPhrases && request.avoidPhrases.length > 0
         ? `\n[주의 - 절대 사용 금지 문구]: "${request.avoidPhrases.join('", "')}"`
@@ -539,6 +541,24 @@ export const generateCreativeActivityReport = async (
         ? `\n[중요: 임원 활동 기재 양식 준수] 반드시 문장의 시작을 "${roleMap[foundRole]} ..."으로 하세요. 날짜는 임의로 '0000.00.00'으로 채우세요.`
         : '';
 
+    // 활동 영역별로 평가 관점이 다르므로 유형에 맞는 기재 기준을 함께 보낸다.
+    const typeGuideMap: Record<string, string> = {
+      자율활동: `[자율활동 기재 기준]
+- 학급·학교 조직 안에서의 역할 수행, 행사 참여, 민주적 의사결정 과정 중심으로 서술
+- 갈등 조정, 합의 도출, 역할 분담 등 공동체에 기여한 방식이 구체적으로 드러나게 작성
+- 전공·진로 연결은 자연스러운 경우에만 가볍게 언급`,
+      동아리활동: `[동아리활동 기재 기준]
+- 주제 선택 이유 → 탐구·제작 과정 → 산출물·발견 → 심화·확장의 흐름으로 서술
+- 지속적인 참여와 역할 변화, 탐구의 깊이가 드러나게 작성`,
+      진로활동: `[진로활동 기재 기준]
+- 활동 전후의 진로 인식 변화가 드러나게 서술
+- 체험·탐색에서 무엇을 확인했고 이후 어떤 노력으로 이어졌는지 연결해 작성`,
+      봉사활동: `[봉사활동 기재 기준]
+- 활동의 동기와 지속성, 활동 과정에서 보인 태도 변화 중심으로 서술
+- 시혜적 표현을 피하고 상호 배움과 책임감이 드러나게 작성`,
+    };
+    const typeGuide = typeGuideMap[request.activityType] ?? '';
+
     const prompt = `
 ${getDateContext()}
 다음 정보를 바탕으로 학교생활기록부 '창의적 체험활동 특기사항'을 작성해줘.
@@ -547,6 +567,7 @@ ${getDateContext()}
 [학교급]: ${request.schoolLevel}
 [활동명]: ${request.activityName}
 [활동 유형]: ${request.activityType}
+${typeGuide}
 
 [연간 지도 계획(공통)]: ${request.annualPlan}
 
