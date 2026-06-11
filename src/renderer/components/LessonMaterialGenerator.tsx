@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { notifyToast } from '../lib/toast';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
   Download, FileType, BookOpen, Monitor, Users, ChevronDown, ChevronRight, FileDown,
@@ -417,7 +418,7 @@ li{margin-bottom:5pt;line-height:1.6;}
 </style></head><body>${slidesHtml}</body></html>`;
     try {
       await (window.electronAPI as any).savePdf(html, `${topic}_슬라이드(${d}).pdf`);
-    } catch { alert('PDF 저장 중 오류가 발생했습니다.'); }
+    } catch { notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' }); }
   };
 
   const handleSaveHtmlPdf = async () => {
@@ -427,7 +428,7 @@ li{margin-bottom:5pt;line-height:1.6;}
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     try {
       await (window.electronAPI as any).savePdf(content, `${topic}(${d}).pdf`);
-    } catch { alert('PDF 저장 중 오류가 발생했습니다.'); }
+    } catch { notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' }); }
   };
 
   const handleSaveHtml = async () => {
@@ -452,7 +453,7 @@ li{margin-bottom:5pt;line-height:1.6;}
     const updated = [ws, ...savedWorksheets];
     setSavedWorksheets(updated);
     await window.electronAPI.writeJsonData('saved-worksheets', updated);
-    alert('워크시트가 저장되었습니다.');
+    notifyToast({ type: 'success', title: '워크시트가 저장되었습니다.' });
   };
 
   const handleDeleteWorksheet = async (id: string) => {
@@ -922,7 +923,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                           onClick={() => {
                             const d = new Date(ws.createdAt);
                             const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-                            (window.electronAPI as any).savePdf(ws.html, `${ws.title}(${ds}).pdf`).catch(() => alert('PDF 저장 오류'));
+                            (window.electronAPI as any).savePdf(ws.html, `${ws.title}(${ds}).pdf`).catch(() => notifyToast({ type: 'error', title: 'PDF 저장 오류' }));
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-300 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shrink-0"
                         >

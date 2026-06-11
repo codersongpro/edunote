@@ -255,6 +255,18 @@ const App: React.FC = () => {
     return () => window.removeEventListener('edunote-goto-settings', handler);
   }, []);
 
+  // 전역 토스트 이벤트(lib/toast.ts) 수신 — 컴포넌트에서 context 없이도 토스트를 띄울 수 있게 한다.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.title === 'string') {
+        showToast({ type: detail.type || 'info', title: detail.title, description: detail.description });
+      }
+    };
+    window.addEventListener('edunote-toast', handler);
+    return () => window.removeEventListener('edunote-toast', handler);
+  }, []);
+
   // 닫기 동작이 있는 모달은 Esc로 닫을 수 있게 한다.
   // (면책 모달은 동의 체크가 필요해 닫기 동작이 없으므로 Esc를 적용하지 않는다.)
   useEscapeKey(showApiKeyLimitModal && !showDisclaimerModal, () => setShowApiKeyLimitModal(false));

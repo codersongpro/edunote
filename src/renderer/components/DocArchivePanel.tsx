@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { notifyToast } from '../lib/toast';
 import { Archive, Plus, Trash2, Search, X, FileText, Image as ImageIcon, Tag, ChevronDown } from 'lucide-react';
 import { FileUpload } from './FileUpload';
 import { FileData } from '../types';
@@ -47,7 +48,7 @@ export default function DocArchivePanel() {
   };
 
   const handleAdd = async () => {
-    if (!title.trim()) { alert('제목을 입력하세요.'); return; }
+    if (!title.trim()) { notifyToast({ type: 'warning', title: '제목을 입력하세요.' }); return; }
     const capture = captureFiles[0];
     const item: DocArchiveItem = {
       id: crypto.randomUUID(),

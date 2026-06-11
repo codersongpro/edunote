@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { notifyToast } from '../lib/toast';
 import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
 import { sanitizeHtml } from '../lib/security';
@@ -246,7 +247,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert('클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.');
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.' });
     }
   };
 
@@ -346,7 +347,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       await window.electronAPI.saveBuffer(await blob.arrayBuffer(), getFormattedFilename('hwpx'));
     } catch (error) {
       console.error('Failed to merge HWPX file', error);
-      alert('HWPX 양식 채우기 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: 'HWPX 양식 채우기 중 오류가 발생했습니다.' });
     } finally {
       setHwpxDownloading(false);
     }
@@ -449,7 +450,7 @@ h2,h3{page-break-after:avoid;}
     try {
       await (window.electronAPI as any).savePdf(fullHtml, filename);
     } catch {
-      alert('PDF 저장 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' });
     }
   };
 

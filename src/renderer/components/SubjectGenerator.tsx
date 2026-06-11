@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { notifyToast } from '../lib/toast';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails, AppMode } from '../types';
 import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
@@ -80,7 +81,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // Switch subject handler
   const switchSubject = (newSubject: string) => {
     if (isGlobalGenerating) {
-        alert("생성 중에는 교과목을 전환할 수 없습니다.");
+        notifyToast({ type: 'warning', title: "생성 중에는 교과목을 전환할 수 없습니다." });
         return;
     }
 
@@ -332,7 +333,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleNeisAnalysis = async () => {
       if (!neisFile1 && !neisFile2) {
-          alert("최소한 하나의 파일을 업로드해주세요.");
+          notifyToast({ type: 'warning', title: "최소한 하나의 파일을 업로드해주세요." });
           return;
       }
 
@@ -345,7 +346,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           const results = await parseNeisGradeFiles(filesToAnalyze);
           
           if (!results || results.length === 0) {
-              alert("분석된 결과가 없습니다. 파일 내용을 확인해주세요.");
+              notifyToast({ type: 'warning', title: "분석된 결과가 없습니다. 파일 내용을 확인해주세요." });
               return;
           }
 
@@ -424,12 +425,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           }));
 
           setShowNeisModal(false);
-          alert("나이스 자료 분석이 완료되었습니다. 과제 및 평가 결과를 확인해주세요.");
+          notifyToast({ type: 'success', title: "나이스 자료 분석이 완료되었습니다. 과제 및 평가 결과를 확인해주세요." });
 
       } catch (err: any) {
           const error = err;
           console.error(error);
-          alert("분석 중 오류가 발생했습니다: " + error.message);
+          notifyToast({ type: 'error', title: "분석 중 오류가 발생했습니다: " + error.message });
       } finally {
           setIsAnalyzingNeis(false);
       }
@@ -476,7 +477,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         const results = await parseAssessmentTasks(base64Data, mimeType, subjectState.currentSubject);
         
         if (!results || results.length === 0) {
-            alert('평가 과제를 찾을 수 없습니다.');
+            notifyToast({ type: 'warning', title: '평가 과제를 찾을 수 없습니다.' });
             return;
         }
 
@@ -515,7 +516,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         const error = err;
         const errorMessage = error instanceof Error ? error.message : String(error as any);
         console.error("File Parse Error:", errorMessage);
-        alert("파일에서 평가 과제를 추출하지 못했습니다.");
+        notifyToast({ type: 'error', title: "파일에서 평가 과제를 추출하지 못했습니다." });
     } finally {
         setIsParsingFile(false);
     }
@@ -526,7 +527,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-      alert('이미지 파일 또는 PDF 파일만 업로드 가능합니다.');
+      notifyToast({ type: 'warning', title: '이미지 파일 또는 PDF 파일만 업로드 가능합니다.' });
       return;
     }
 
@@ -544,7 +545,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error as any);
       console.error(errorMessage);
-      alert('파일 처리 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: '파일 처리 중 오류가 발생했습니다.' });
     }
   };
 
@@ -647,7 +648,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
@@ -664,7 +665,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
-        alert("선택된 학생이 없습니다.");
+        notifyToast({ type: 'warning', title: "선택된 학생이 없습니다." });
         return;
     }
 
@@ -717,7 +718,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateSubjectState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
@@ -771,7 +772,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(errorMessage);
-      alert("재생성 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
     } finally {
       setGeneratingIds((prev: Set<string>) => {
         const next = new Set(prev);
@@ -849,7 +850,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       setShowDuplicateModal(true);
     } catch (error) {
       console.error("Duplicate check error:", String(error));
-      alert("중복 검사 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "중복 검사 중 오류가 발생했습니다." });
     }
   };
 
@@ -859,7 +860,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         if (subjectState.currentSubject && !subjectsToExport.includes(subjectState.currentSubject)) {
             subjectsToExport.push(subjectState.currentSubject);
         }
-        if (subjectsToExport.length === 0) { alert("다운로드할 데이터가 없습니다."); return; }
+        if (subjectsToExport.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
         const header = ['교과', '학생명', '생성된 세특', '평가과제(요약)', '추가 관찰내용'];
         const rows: string[][] = [];
         subjectsToExport.forEach(subj => {
@@ -879,12 +880,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 rows.push([subj, s.name, s.generatedContent || '', tasksSummary, s.additionalContext || '']);
             });
         });
-        if (rows.length === 0) { alert("다운로드할 데이터가 없습니다."); return; }
+        if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
         const csvContent = [header, ...rows].map(r => r.map(c => '"' + c.replace(/"/g, '""') + '"').join(',')).join('\n');
         await window.electronAPI.saveCsv(csvContent, '전체교과_세특_' + new Date().toISOString().slice(0,10) + '.csv');
     } catch (e) {
         console.error("CSV download error:", e);
-        alert("파일 생성 중 오류가 발생했습니다.");
+        notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
     }
   };
 
@@ -899,12 +900,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             }).join(' / ');
             return [s.name, s.generatedContent || '', tasksSummary, s.additionalContext || ''];
         });
-        if (rows.length === 0) { alert("다운로드할 데이터가 없습니다."); return; }
+        if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
         const csvContent = [header, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
         await window.electronAPI.saveCsv(csvContent, `${subjectState.currentSubject}_세특_${new Date().toISOString().slice(0,10)}.csv`);
     } catch (e) {
         console.error("CSV download error:", e);
-        alert("파일 생성 중 오류가 발생했습니다.");
+        notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
     }
   };
 
@@ -913,12 +914,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           initializeCommonStudents();
       } else if (subjectState.step === 'GLOBAL_SETUP') {
           if (!subjectState.currentSubject || !subjectState.currentSubject.trim()) {
-              alert("교과목을 선택하거나 입력해주세요.");
+              notifyToast({ type: 'warning', title: "교과목을 선택하거나 입력해주세요." });
               return;
           }
           const validTasks = subjectState.activeTasks.filter(t => t.task && t.task.trim().length > 0);
           if (validTasks.length === 0) {
-              alert("최소 하나 이상의 평가 과제(활동) 내용을 입력해주세요.");
+              notifyToast({ type: 'warning', title: "최소 하나 이상의 평가 과제(활동) 내용을 입력해주세요." });
               return;
           }
           if (validTasks.length !== subjectState.activeTasks.length) {
