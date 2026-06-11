@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AppMode } from '../types';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
+import { estimateA4Pages } from '../lib/a4Check';
 import { playSuccessSound } from '../lib/soundEffect';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
@@ -364,6 +365,12 @@ const LessonMaterialGenerator: React.FC = () => {
           return altMatch?.[1] ? `<span style="display:block;text-align:center;color:#888;font-style:italic;">[그림: ${altMatch[1]}]</span>` : '';
         });
         setWorksheetHtml(finalHtml);
+        // A4 한 장 기준을 넘는지 추정해 안내한다 (인쇄 시점에야 알게 되는 문제 예방)
+        estimateA4Pages(finalHtml).then(pages => {
+          if (pages > 1) {
+            setError(`생성된 워크시트가 A4 약 ${pages}장 분량으로 추정됩니다. 한 장에 맞추려면 활동 수를 줄이거나 다시 생성해 보세요.`);
+          }
+        }).catch(() => {});
       } else if (contentType === 'QUIZ') {
         const html = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));
         setQuizHtml(html);
