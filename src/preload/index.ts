@@ -2,14 +2,32 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // AI Generation
-  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number }) =>
+  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) =>
     ipcRenderer.invoke('ai:generate', prompt, systemInstruction, options),
 
   aiGenerateMultipart: (
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number },
+    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
+
+  aiGenerateMultipartStream: (
+    parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
+    systemInstruction: string | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+    onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
+  ) => {
+    const requestId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const listener = (_event: unknown, payload: { requestId?: string; type?: string; text?: string }) => {
+      if (payload?.requestId !== requestId) return;
+      if (payload.type === 'start' || payload.type === 'chunk') {
+        onEvent({ type: payload.type, text: payload.text });
+      }
+    };
+    ipcRenderer.on('ai:stream-event', listener as never);
+    return ipcRenderer.invoke('ai:generate-multipart-stream', requestId, parts, systemInstruction, options)
+      .finally(() => { ipcRenderer.removeListener('ai:stream-event', listener as never); });
+  },
 
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
   testStoredApiKey: () => ipcRenderer.invoke('ai:test-stored-key'),
@@ -81,11 +99,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchMarket: (sheetId: string): Promise<string> => ipcRenderer.invoke('data:fetch-market', sheetId),
   fetchUrlJson: (url: string): Promise<string> => ipcRenderer.invoke('data:fetch-url-json', url),
 
-  // 나라장터 물품 검색
-  naramarketSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
-    ipcRenderer.invoke('api:naramarket-search', { keyword, serviceKey, pageNo }),
-  naramarketShoppingSearch: (keyword: string, serviceKey: string, pageNo?: number) =>
-    ipcRenderer.invoke('api:naramarket-shopping-search', { keyword, serviceKey, pageNo }),
-  naverShoppingSearch: (keyword: string, clientId: string, clientSecret: string, pageNo?: number) =>
-    ipcRenderer.invoke('api:naver-shopping-search', { keyword, clientId, clientSecret, pageNo }),
+  // 나라장터 물품 검색 — 자격증명은 메인 프로세스 저장소에서 읽으므로 전달하지 않는다.
+  naramarketSearch: (keyword: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naramarket-search', { keyword, pageNo }),
+  naramarketShoppingSearch: (keyword: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naramarket-shopping-search', { keyword, pageNo }),
+  naverShoppingSearch: (keyword: string, pageNo?: number) =>
+    ipcRenderer.invoke('api:naver-shopping-search', { keyword, pageNo }),
+  hasNaverShoppingSecret: (): Promise<boolean> => ipcRenderer.invoke('config:has-naver-shopping-secret'),
 });

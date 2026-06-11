@@ -1,6 +1,8 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
+import { safeSetItem } from './lib/safeStorage';
+import { CancellationRegistry } from './lib/cancellation';
 import { GlobalState } from './types';
 
 import RecordChatbot from './components/RecordChatbot';
@@ -146,12 +148,11 @@ const App: React.FC = () => {
 
   // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
   const cancelFlagsRef = useRef<Set<string>>(new Set());
-  // AbortController — AI 호출 즉시 중단용
-  const abortControllerRef = useRef<AbortController>(new AbortController());
+  // 중단 신호 — 화면(modeKey)별로 분리해 한 화면의 중단이 다른 화면 생성에 영향을 주지 않는다
+  const cancellationRef = useRef<CancellationRegistry>(new CancellationRegistry());
   const requestCancel = (modeKey: string) => {
     cancelFlagsRef.current.add(modeKey);
-    abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    cancellationRef.current.cancel(modeKey);
     // 즉시 진행바 숨김 — useRef 변경은 리렌더를 유발하지 않으므로 state도 함께 업데이트
     setIsGlobalGenerating(false);
     setGlobalProgress(0);
@@ -159,15 +160,14 @@ const App: React.FC = () => {
   const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
   const resetGenerationState = () => {
     cancelFlagsRef.current.clear();
-    abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
+    cancellationRef.current.cancelAll();
     setIsGlobalGenerating(false);
     setGlobalProgress(0);
     setGeneratingModes(new Map());
     window.dispatchEvent(new CustomEvent('edunote-generation-reset'));
   };
   const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
-  const getCancelSignal = () => abortControllerRef.current.signal;
+  const getCancelSignal = (modeKey: string) => cancellationRef.current.signalFor(modeKey);
 
   // 토스트 알림 큐
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -253,6 +253,18 @@ const App: React.FC = () => {
     };
     window.addEventListener('edunote-goto-settings', handler);
     return () => window.removeEventListener('edunote-goto-settings', handler);
+  }, []);
+
+  // 전역 토스트 이벤트(lib/toast.ts) 수신 — 컴포넌트에서 context 없이도 토스트를 띄울 수 있게 한다.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.title === 'string') {
+        showToast({ type: detail.type || 'info', title: detail.title, description: detail.description });
+      }
+    };
+    window.addEventListener('edunote-toast', handler);
+    return () => window.removeEventListener('edunote-toast', handler);
   }, []);
 
   // 닫기 동작이 있는 모달은 Esc로 닫을 수 있게 한다.
@@ -446,7 +458,7 @@ const App: React.FC = () => {
       const next = [...items];
       const [moved] = next.splice(fromIndex, 1);
       next.splice(toIndex, 0, moved);
-      localStorage.setItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
+      safeSetItem(orderStorageKey(section), JSON.stringify(next.map(item => item.mode)));
       return next;
     };
     if (section === 'student') setStudentMenuItems(update);
@@ -711,6 +723,9 @@ const App: React.FC = () => {
                       >
                         발급 페이지 열기
                       </button>
+                      <p className="mt-3 text-xs text-[#A8A29E] dark:text-[#6B5E57] leading-relaxed">
+                        키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나오면, 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드에서 대응 방법을 확인할 수 있어요.
+                      </p>
                     </div>
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { notifyToast } from '../lib/toast';
 import { CustomTool, CustomToolInput, FileData } from '../types';
 import { generateToolPrompt, runCustomTool } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
@@ -80,7 +81,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
       const draft = await generateToolPrompt(description, inputs, promptTemplate, templateFiles[0] ?? null);
       setPromptTemplate(draft);
     } catch (e: any) {
-      alert('프롬프트 생성에 실패했습니다: ' + (e?.message ?? ''));
+      notifyToast({ type: 'error', title: '프롬프트 생성에 실패했습니다: ' + (e?.message ?? '') });
     } finally {
       setIsGeneratingPrompt(false);
     }

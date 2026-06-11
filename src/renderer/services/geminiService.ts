@@ -19,6 +19,7 @@ import {
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { formatStudentMemos, withStudentPrivacy } from '../lib/generationSafety';
+import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
 
 // ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
 const getDateContext = (): string => {
@@ -31,27 +32,17 @@ const getDateContext = (): string => {
   return `[내부 기준 정보 — 오늘: ${year}년 ${month}월 ${day}일 / 학년도: ${schoolYear}학년도. 이 정보는 날짜·연도 기준으로만 활용하고, 사용자가 명시적으로 요청하지 않는 한 출력 문서에 그대로 노출하지 마세요.]`;
 };
 
-const isTemporaryApiError = (error: unknown): boolean => {
-  const message = String((error as any)?.message || error || '').toLowerCase();
-  return [
-    'quota',
-    '429',
-    'resource_exhausted',
-    'rate limit',
-    'too many requests',
-    '잠시 기다리',
-    '토큰 소모',
-    '잦은 요청',
-    '사용 가능한 모델이 없습니다',
-  ].some(pattern => message.includes(pattern));
-};
-
 const notifyTemporaryApiError = (error: unknown) => {
   if (typeof window === 'undefined' || !isTemporaryApiError(error)) return;
   window.dispatchEvent(new CustomEvent('edunote-api-temporary-error'));
 };
 
-const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+// 텍스트형 결과(학생기록·QA·업무기록)의 출력 토큰 상한.
+// 폭주 방지용이며, 2.5 계열 모델의 내부 사고(thinking) 토큰도 이 상한에
+// 포함되므로 실제 필요량(약 1,500 토큰)보다 넉넉하게 둔다.
+const TEXT_OUTPUT_TOKEN_LIMIT = 8192;
+
+const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
   try {
     return await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
   } catch (error) {
@@ -63,18 +54,69 @@ const aiGenerate = async (prompt: string, systemInstruction?: string, options?: 
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number },
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
 ) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).catch((error) => {
   notifyTemporaryApiError(error);
   throw error;
 });
 
-const fileToPart = (fileData: FileData) => ({
-  inlineData: {
-    data: fileData.base64.split(',')[1],
-    mimeType: fileData.mimeType,
-  },
-});
+// 스트리밍 멀티파트 생성 — 누적 텍스트를 onText로 전달한다.
+// 모델 폴백·재시도로 'start'가 다시 오면 누적 버퍼를 비우고 처음부터 다시 쌓는다.
+const aiGenerateMultipartStream = (
+  parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
+  systemInstruction: string | undefined,
+  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+  onText: (accumulated: string) => void,
+) => {
+  let buffer = '';
+  return window.electronAPI.aiGenerateMultipartStream(parts, systemInstruction, options, (event) => {
+    if (event.type === 'start') {
+      buffer = '';
+      onText('');
+    } else if (event.type === 'chunk' && event.text) {
+      buffer += event.text;
+      onText(buffer);
+    }
+  }).catch((error) => {
+    notifyTemporaryApiError(error);
+    throw error;
+  });
+};
+
+// 텍스트류 첨부 파일은 base64(약 33% 부풀려짐)로 보내지 않고 텍스트로 풀어 보낸다.
+// 토큰을 절약하고, 지나치게 긴 문서는 앞부분만 잘라 전송한다.
+const TEXT_ATTACHMENT_CHAR_LIMIT = 30_000;
+
+const isTextLikeFile = (fileData: FileData): boolean =>
+  /^text\//i.test(fileData.mimeType || '') || /\.(txt|md|csv)$/i.test(fileData.file?.name || '');
+
+const decodeBase64Text = (base64: string): string => {
+  const raw = atob(base64.split(',').pop() || '');
+  const bytes = Uint8Array.from(raw, c => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+};
+
+const fileToPart = (fileData: FileData): { text?: string; inlineData?: { data: string; mimeType: string } } => {
+  if (isTextLikeFile(fileData)) {
+    try {
+      const text = decodeBase64Text(fileData.base64).trim();
+      if (text) {
+        const clipped = text.length > TEXT_ATTACHMENT_CHAR_LIMIT
+          ? `${text.slice(0, TEXT_ATTACHMENT_CHAR_LIMIT)}\n...(분량이 길어 이하 생략됨)`
+          : text;
+        return { text: `[첨부 문서: ${fileData.file?.name || '텍스트 파일'}]\n${clipped}` };
+      }
+    } catch {
+      // 디코딩 실패 시 기존 방식(inlineData)으로 보낸다.
+    }
+  }
+  return {
+    inlineData: {
+      data: fileData.base64.split(',')[1],
+      mimeType: fileData.mimeType,
+    },
+  };
+};
 
 const NATURAL_WRITING_INSTRUCTION = `
 [자연스러운 작성 원칙]
@@ -92,6 +134,12 @@ const FORMAL_PUBLIC_WRITING_INSTRUCTION = `
 - 구어체, 감탄형, 홍보성 표현, 사적인 평가, 과도하게 친근한 말투를 쓰지 마세요.
 - 판단이나 의견은 근거, 대상, 기간, 절차, 결과가 드러나도록 객관적으로 작성하세요.
 - 기관 문서에 맞게 간결하고 명확하게 쓰되, 의미가 모호한 추상어를 반복하지 마세요.`;
+
+const NO_FABRICATED_REFERENCES_INSTRUCTION = `
+[근거·출처 작성 규칙 — 반드시 지킬 것]
+- 사용자가 직접 제공하지 않은 법령명, 조항, 훈령·예규 번호, 교육청 공문번호, 정책·사업 명칭을 추측해서 쓰지 마세요.
+- '관련' 항목에 쓸 근거가 입력에 없으면 "(근거 공문·법령 입력 필요)"처럼 사용자가 채울 자리로 표시하세요.
+- 실존 여부가 불확실한 기관명, 인용문, 통계 수치를 만들어내지 마세요. 입력에 있는 사실만 사용하세요.`;
 
 const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 [학생기록 공적 문체 원칙]
@@ -190,7 +238,7 @@ const QA_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 [답변 원칙]
 1. 최신성: 2026학년도부터 적용되는 고교학점제(1, 2학년) 및 5등급 성적 산출 체계를 정확히 반영하세요.
 2. 구체성: 입시 현장에서 선생님들이 즉각 활용할 수 있도록 법적 근거와 구체적인 기재 팁을 함께 제공하세요.
-3. 출처 명시: 답변 끝에 근거가 되는 파일명과 페이지 정보를 반드시 포함하세요.
+3. 출처 명시: 답변 근거가 되는 기재요령 항목(예: 서술형 항목 기재 원칙, 학교폭력 조치사항 관리)을 답변에 밝히세요. 페이지 번호 등 제공되지 않은 정보를 추측해 쓰지 말고, 정확한 위치는 기재요령 원문 확인을 안내하세요.
 4. 전문 용어: 수행평가, 과정중심 평가, 성취도별 분포비율, 고교학점제 등 전문 교육 용어를 적절히 사용하세요.
 
 ${NATURAL_WRITING_INSTRUCTION}
@@ -212,7 +260,9 @@ const RECORD_CHATBOT_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 [학교급 컨텍스트: ${schoolLevel}]
 ${getDevelopmentalGuidance(schoolLevel)}
 
-${EVALUATION_FRAMEWORK_2026}
+[문구 예시 작성 기준 요약]
+- 감점 표현("성실하게 참여함", "흥미를 보임" 등 근거 없는 서술) 대신, 사고 과정·교과 개념·전공 연결이 드러나는 구조로 예시를 제시하세요.
+- 흐름: 무엇을 했는가 → 어떻게 했는가 → 어떤 개념을 다뤘는가 → 무엇을 깨달았는가 → 어디로 확장되었는가.
 
 ${NATURAL_WRITING_INSTRUCTION}
 
@@ -354,12 +404,26 @@ const getLengthInstruction = (
 
 // ─── 학생기록 AI Functions ─────────────────────────────────────────
 
+// 일괄 생성 시 학생마다 첫 문장의 관점을 순환시켜, 같은 태그를 받은 학생들의
+// 결과가 비슷한 구조로 반복되는 것을 줄인다.
+const OPENING_PERSPECTIVES = [
+  '학급 공동 활동에서의 모습',
+  '교우 관계와 협력 상황',
+  '맡은 역할을 수행하는 과정',
+  '어려움에 부딪혔을 때의 대처',
+  '자율적인 학습·생활 태도',
+];
+let openingPerspectiveCounter = 0;
+
+const nextOpeningPerspective = (): string =>
+  OPENING_PERSPECTIVES[openingPerspectiveCounter++ % OPENING_PERSPECTIVES.length];
+
 export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: string): Promise<string> => {
   try {
-    return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3 });
+    return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Gemini QA Error:', error);
-    return '⚠️ [사용량 초과] 현재 이용자가 많아 AI 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -369,14 +433,16 @@ export const askRecordChatbot = async (
   question: string,
 ): Promise<string> => {
   try {
+    // 토큰 절약을 위해 최근 대화 6개만 컨텍스트로 보낸다.
     const historyText = history
+      .slice(-6)
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
-    return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7 });
+    return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Record Chatbot Error:', error);
-    return '⚠️ AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -410,17 +476,18 @@ ${formatStudentMemos(request.studentMemos)}
 5. 하나의 문단으로 작성하세요.
 6. 오직 결과 텍스트만 출력하세요.
 7. 작성 길이를 엄격히 준수하세요.
-8. 문장의 시작을 다양하게 하세요.
+8. 문장의 시작을 다양하게 하세요. 첫 문장은 '${nextOpeningPerspective()}' 관점에서 시작하되, 입력 정보에 맞는 내용만 사용하세요.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
-    return '⚠️ [사용량 알림] 현재 AI 생성량이 많아 잠시 지연되었습니다. 내용을 백업하시고 1분 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -446,25 +513,32 @@ ${getDateContext()}
 [수행한 평가 과제 및 성취수준]:
 ${tasksText}
 
+[성취수준별 표현 기준]
+- 상: 심화·확장·자기주도 중심으로 표현 가능 (예: 스스로 가설을 세워 검증함, 개념을 다른 맥락에 적용함)
+- 중: 과장 없는 수행 중심 표현 (예: 개념을 적절히 적용하여 과제를 수행함). '뛰어난', '탁월한', '완벽하게' 금지
+- 하: 노력·태도·부분적 성취 중심 (예: 도움을 받아 개념을 이해하려 노력함). 성취를 부풀리는 표현 금지
+
 [추가 관찰내용]: ${request.additionalContext}
 ${formatStudentMemos(request.studentMemos)}
 
 [작성 길이]: ${lengthInstruction}
 
 [요구사항]
-1. 주어 절대 금지. 2. 과제명 직접 언급 금지. 3. [동기→수행→결과→성장] 흐름.
+1. 주어 절대 금지. 2. 과제명을 그대로 옮겨 적지 말 것 (단원·활동 유형으로 일반화해 서술).
+3. 시스템 지침의 [Action→Process→Concept→Insight→Connection] 5단계 흐름으로 문장 구성.
 4. 명사형 종결어미 + 온점 필수. 5. 따옴표/특수기호 금지. 6. 결과 텍스트만 출력.
-7. 작성 길이 엄수. 8. 문장 시작 다양화. 9. '중'/'하' 수준 과제에 과장 표현 금지.
+7. 작성 길이 엄수. 8. 문장 시작 다양화. 9. 위 [성취수준별 표현 기준] 엄수.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -493,17 +567,18 @@ ${formatStudentMemos(request.studentMemos)}
 [요구사항]
 1. 주어 절대 금지. 2. 스포츠맨십, 협동심, 기술 향상 등이 드러나게 작성.
 3. 명사형 종결어미 + 온점 필수. 4. 따옴표/특수기호 금지. 5. 결과 텍스트만 출력.
-6. 작성 길이 엄수. 7. 문장 시작 다양화.
+6. 작성 길이 엄수. 7. 문장 시작 다양화 — 첫 문장은 '${nextOpeningPerspective()}' 관점에서 시작하되, 입력 정보에 맞는 내용만 사용.
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -512,7 +587,9 @@ export const generateCreativeActivityReport = async (
 ): Promise<string> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
-    const keywordsStr = request.keywords.length > 0 ? request.keywords.join(', ') : '없음';
+    const keywordsStr = request.keywords.length > 0
+      ? request.keywords.join(', ')
+      : '(미입력 — 개별 관찰 내용과 학생 메모에서 주요 활동을 직접 찾아 활용할 것)';
     const avoidInstruction =
       request.avoidPhrases && request.avoidPhrases.length > 0
         ? `\n[주의 - 절대 사용 금지 문구]: "${request.avoidPhrases.join('", "')}"`
@@ -531,6 +608,24 @@ export const generateCreativeActivityReport = async (
         ? `\n[중요: 임원 활동 기재 양식 준수] 반드시 문장의 시작을 "${roleMap[foundRole]} ..."으로 하세요. 날짜는 임의로 '0000.00.00'으로 채우세요.`
         : '';
 
+    // 활동 영역별로 평가 관점이 다르므로 유형에 맞는 기재 기준을 함께 보낸다.
+    const typeGuideMap: Record<string, string> = {
+      자율활동: `[자율활동 기재 기준]
+- 학급·학교 조직 안에서의 역할 수행, 행사 참여, 민주적 의사결정 과정 중심으로 서술
+- 갈등 조정, 합의 도출, 역할 분담 등 공동체에 기여한 방식이 구체적으로 드러나게 작성
+- 전공·진로 연결은 자연스러운 경우에만 가볍게 언급`,
+      동아리활동: `[동아리활동 기재 기준]
+- 주제 선택 이유 → 탐구·제작 과정 → 산출물·발견 → 심화·확장의 흐름으로 서술
+- 지속적인 참여와 역할 변화, 탐구의 깊이가 드러나게 작성`,
+      진로활동: `[진로활동 기재 기준]
+- 활동 전후의 진로 인식 변화가 드러나게 서술
+- 체험·탐색에서 무엇을 확인했고 이후 어떤 노력으로 이어졌는지 연결해 작성`,
+      봉사활동: `[봉사활동 기재 기준]
+- 활동의 동기와 지속성, 활동 과정에서 보인 태도 변화 중심으로 서술
+- 시혜적 표현을 피하고 상호 배움과 책임감이 드러나게 작성`,
+    };
+    const typeGuide = typeGuideMap[request.activityType] ?? '';
+
     const prompt = `
 ${getDateContext()}
 다음 정보를 바탕으로 학교생활기록부 '창의적 체험활동 특기사항'을 작성해줘.
@@ -539,6 +634,7 @@ ${getDateContext()}
 [학교급]: ${request.schoolLevel}
 [활동명]: ${request.activityName}
 [활동 유형]: ${request.activityType}
+${typeGuide}
 
 [연간 지도 계획(공통)]: ${request.annualPlan}
 
@@ -559,11 +655,12 @@ ${avoidInstruction}`;
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
-    return '⚠️ [사용량 알림] AI 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -580,6 +677,7 @@ export const generateDocument = async (
   templateText: string = '',
   gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
   gonggoInputs?: GonggoInputs,
+  onProgressText?: (accumulated: string) => void,
 ): Promise<string> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
@@ -792,14 +890,16 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     case DocType.MEETING_MINUTES:
       specificInstruction = `
 작업: [협의회 회의록 작성]
-[필수 구성] 제목(중앙, 크게), 학교명(우측 상단), 표(Table) 형태로:
-1행: 일시 | 장소
-2행: 출석위원 (colspan=3)
-3행: 회의안건 (colspan=3)
-4행: 회의내용(제목행)
-5행~: 발언자 | 발언내용(colspan=3) — 발언자별로 나누어 작성
-마지막 행: 서명란 (업무관리시스템 결재로 대신함)
-표 스타일: border="1" style="border-collapse:collapse;width:100%;color:#000000;border:1px solid black;"`;
+[필수 구성] 제목(중앙, 크게), 학교명(우측 상단), 그리고 아래 표.
+[표 작성 규칙] 반드시 아래 4열 구조 템플릿을 그대로 따르세요. 행마다 열 수(colspan 합계 4)가 맞아야 표가 깨지지 않습니다.
+<table border="1" style="border-collapse:collapse;width:100%;color:#000000;border:1px solid black;">
+  <tr><th style="width:15%;">일시</th><td style="width:35%;">(일시)</td><th style="width:15%;">장소</th><td style="width:35%;">(장소)</td></tr>
+  <tr><th>출석위원</th><td colspan="3">(직책·이름을 쉼표로 나열)</td></tr>
+  <tr><th>회의안건</th><td colspan="3">(안건)</td></tr>
+  <tr><th>발언자</th><th colspan="3">발언 내용</th></tr>
+  <tr><td>(발언자1)</td><td colspan="3">(발언 내용 — 발언자별로 행을 나누어 작성)</td></tr>
+  <tr><td colspan="4">서명란: 업무관리시스템 결재로 대신함</td></tr>
+</table>`;
       break;
 
     case DocType.PROMOTION:
@@ -873,14 +973,17 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       : '';
 
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
-    return stripGeneratedCodeFences(await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }));
+    const raw = onProgressText
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText)
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 });
+    return stripGeneratedCodeFences(raw);
   } catch (error: any) {
     console.error('Gemini API Error:', error);
-    throw new Error('AI 문서 생성 중 오류가 발생했습니다. (잠시 후 다시 시도해주세요)');
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -916,7 +1019,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 교사의 수업관찰기록 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -949,7 +1052,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 교사의 상담일지 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -982,7 +1085,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 담임교사의 학급경영일지 문서 작성을 보조하는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -1054,14 +1157,16 @@ export const askEducationQuestion = async (
   history: Array<{ role: 'user' | 'model'; text: string }>,
 ): Promise<string> => {
   try {
+    // 토큰 절약을 위해 최근 대화 6개만 컨텍스트로 보낸다.
     const historyText = history
+      .slice(-6)
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
-    return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7 });
+    return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Education QA Error:', error);
-    return '⚠️ AI 응답 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+    return describeGenerationError(error);
   }
 };
 
@@ -1082,7 +1187,7 @@ ${isHintProvided ? `[중요] 사용자가 현재 선택한 교과목은 '${hintS
     { inlineData: { data: base64Data, mimeType } },
     { text: prompt },
   ];
-  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
+  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1, responseJson: true });
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const parsedData = JSON.parse(cleanJson);
   const results: any[] = Array.isArray(parsedData) ? parsedData : [parsedData];
@@ -1107,7 +1212,7 @@ export const parseNeisGradeFiles = async (files: { data: string; mimeType: strin
   const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [];
   files.forEach((f) => parts.push({ inlineData: { mimeType: f.mimeType, data: f.data } }));
   parts.push({ text: prompt });
-  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
+  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1, responseJson: true });
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const parsed = JSON.parse(cleanJson);
   return Array.isArray(parsed) ? parsed : [parsed];
@@ -1184,7 +1289,7 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
 [{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imagePrompt":"educational image description in english, no text"}]`;
 
-  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
+  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6, responseJson: true });
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
   if (!arrayMatch) throw new Error('슬라이드 JSON 파싱 실패: 올바른 배열 형식이 아닙니다.');
@@ -1513,7 +1618,7 @@ ${typeLines}
   ]
 }`;
 
-  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true });
   const data = parseQuizJson(raw);
   return buildQuizHtml(data);
 }
@@ -1898,9 +2003,9 @@ category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-up
         { inlineData: { data: templateFile.base64.split(',')[1], mimeType: templateFile.mimeType } },
         { text: prompt },
       ];
-      raw = await aiGenerateMultipart(parts, '', { temperature: 0.3 });
+      raw = await aiGenerateMultipart(parts, '', { temperature: 0.3, responseJson: true });
     } else {
-      raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+      raw = await aiGenerate(prompt, '', { temperature: 0.3, responseJson: true });
     }
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;

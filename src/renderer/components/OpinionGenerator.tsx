@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { notifyToast } from '../lib/toast';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } from '../types';
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
 import { generateOpinion } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { playSuccessSound } from '../lib/soundEffect';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -19,7 +21,7 @@ interface DuplicateResult {
 }
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
 
@@ -212,6 +214,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
@@ -226,7 +229,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateOpState({ students: newStudents, step: 'RESULT' });
     } finally {
@@ -243,7 +246,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
         .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
-        alert("선택된 학생이 없습니다.");
+        notifyToast({ type: 'warning', title: "선택된 학생이 없습니다." });
         return;
     }
 
@@ -273,6 +276,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
               updateProgress(Math.round((i + 1) / total * 100));
@@ -287,7 +291,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateOpState({ students: newStudents, step: 'RESULT' });
     } finally {
@@ -324,6 +328,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...opState.students];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
       playSuccessSound();
@@ -331,7 +336,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(errorMessage);
-      alert("재생성 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
     } finally {
       setGeneratingIds((prev: Set<string>) => {
         const next = new Set(prev);

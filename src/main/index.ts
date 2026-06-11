@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { registerIpcHandlers } from './ipcHandlers';
+import { registerIpcHandlers, cleanupSessionTmpDir } from './ipcHandlers';
 
 function getAppIcon() {
   try {
@@ -30,7 +30,7 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
       webviewTag: true,
     },
   });
@@ -102,6 +102,31 @@ function buildAppMenu() {
 // 데스크톱 앱에서 Web Audio API 즉시 재생 허용 (사용자 제스처 없이도 소리 재생)
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
+// 모든 웹 콘텐츠(메인 창·webview 게스트)에 공통 보안 정책을 적용한다.
+app.on('web-contents-created', (_event, contents) => {
+  // 자료실 webview가 임의의 preload·nodeIntegration을 갖지 못하게 하고,
+  // http(s) 외 주소(file: 등)는 webview에 붙이지 않는다.
+  contents.on('will-attach-webview', (event, webPreferences, params) => {
+    delete (webPreferences as { preload?: string }).preload;
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+    const src = String(params.src || '');
+    if (src && src !== 'about:blank' && !/^https?:\/\//i.test(src)) {
+      event.preventDefault();
+    }
+  });
+
+  // webview 안에서 새 창을 띄우려 하면 https 주소만 기본 브라우저로 연다.
+  contents.setWindowOpenHandler(({ url }) => {
+    try {
+      if (new URL(url).protocol === 'https:') shell.openExternal(url);
+    } catch {
+      // 잘못된 URL은 무시한다.
+    }
+    return { action: 'deny' };
+  });
+});
+
 app.whenReady().then(() => {
   buildAppMenu();
   createWindow();
@@ -113,4 +138,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('will-quit', () => {
+  cleanupSessionTmpDir();
 });

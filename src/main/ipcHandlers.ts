@@ -6,16 +6,14 @@ import * as https from 'https';
 import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
-import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
+import { sanitizeConfigEntry } from './configValidation';
+import { isBlockedHostname } from './netGuard';
+import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
+import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
+import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
-
-function validatePath(p: string): string {
-  const resolved = path.resolve(p);
-  // Prevent path traversal — must be under home or common writable dirs
-  return resolved;
-}
 
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
@@ -38,6 +36,27 @@ function getDataDir(): string {
   return dir;
 }
 
+// HTML 미리보기·PDF 변환용 세션 임시 디렉터리.
+// mkdtemp로 매 실행마다 예측 불가능한 경로를 만들고, 앱 종료 시 정리한다.
+let sessionTmpDir: string | null = null;
+
+function getSessionTmpDir(): string {
+  if (!sessionTmpDir || !fs.existsSync(sessionTmpDir)) {
+    sessionTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'edunote-'));
+  }
+  return sessionTmpDir;
+}
+
+export function cleanupSessionTmpDir(): void {
+  if (!sessionTmpDir) return;
+  try {
+    fs.rmSync(sessionTmpDir, { recursive: true, force: true });
+  } catch {
+    // 다른 프로세스(브라우저 등)가 파일을 잡고 있으면 OS가 임시 폴더를 정리하도록 둔다.
+  }
+  sessionTmpDir = null;
+}
+
 function readOpenApiItems(data: any): any[] {
   const raw = data?.response?.body?.items ?? data?.body?.items ?? [];
   const rows = raw?.item ?? raw;
@@ -46,16 +65,31 @@ function readOpenApiItems(data: any): any[] {
 
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
-  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
+    validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
-  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number }) => {
+  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
+    validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
+  });
+
+  // 스트리밍 생성 — 진행 중 텍스트를 'ai:stream-event'로 보내고 전체 텍스트를 반환한다.
+  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
+    if (typeof requestId !== 'string' || !/^[\w-]{1,64}$/.test(requestId)) {
+      throw new Error('AI 요청 형식이 올바르지 않습니다.');
+    }
+    validateMultipartArgs(parts, systemInstruction, options);
+    const { apiKey, apiTier } = getActiveApi();
+    if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
+    return generateContentMultipartStream(apiKey, parts, { systemInstruction, ...options, apiTier }, (event) => {
+      if (!e.sender.isDestroyed()) e.sender.send('ai:stream-event', { requestId, ...event });
+    });
   });
 
   ipcMain.handle('ai:test-key', async (_e, key: string, apiTier: ApiTier = 'free') => {
@@ -156,7 +190,7 @@ export function registerIpcHandlers(): void {
       properties: ['openFile'],
     });
     if (canceled || !filePaths[0]) return null;
-    const filePath = validatePath(filePaths[0]);
+    const filePath = resolveDialogPath(filePaths[0]);
     return {
       filePath,
       content: fs.readFileSync(filePath, 'utf-8'),
@@ -178,12 +212,20 @@ export function registerIpcHandlers(): void {
 
   // ── Shell ─────────────────────────────────────────────────────────
   ipcMain.handle('shell:open-folder', async (_e, folderPath: string) => {
-    const safe = validatePath(folderPath);
-    if (fs.existsSync(safe)) {
-      await shell.openPath(safe);
-      return true;
-    }
-    return false;
+    const allowedRoots = [
+      os.homedir(),
+      app.getPath('userData'),
+      app.getPath('documents'),
+      app.getPath('downloads'),
+      store.get('saveDir'),
+      store.get('appDataDir'),
+    ];
+    const safe = resolveOpenableDir(folderPath, allowedRoots, target => {
+      try { return fs.statSync(target); } catch { return null; }
+    });
+    if (!safe) return false;
+    await shell.openPath(safe);
+    return true;
   });
 
   ipcMain.handle('shell:open-external', async (_e, url: string) => {
@@ -193,15 +235,22 @@ export function registerIpcHandlers(): void {
       if (parsed.protocol !== 'https:') return false;
       await shell.openExternal(parsed.href);
       return true;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:shell:open-external]', e);
       return false;
     }
   });
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'naverShoppingClientSecret') return undefined;
     return store.get(key as keyof typeof store.store);
+  });
+
+  // 시크릿 원문은 렌더러로 보내지 않고 저장 여부만 알려준다.
+  ipcMain.handle('config:has-naver-shopping-secret', () => {
+    const secret = store.get('naverShoppingClientSecret');
+    return typeof secret === 'string' && secret.trim().length > 0;
   });
 
   ipcMain.handle('config:get-all', () => {
@@ -217,14 +266,20 @@ export function registerIpcHandlers(): void {
         continue;
       }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
-        store.set(key as any, value as any);
+        const safeValue = sanitizeConfigEntry(key, value);
+        if (safeValue === undefined) {
+          console.warn(`[ipc:config:set] 무효한 설정값을 건너뜁니다: ${key}`);
+          continue;
+        }
+        store.set(key as any, safeValue as any);
       }
     }
     const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
-    } catch {
+    } catch (e) {
       // 설정 저장 자체는 electron-store가 처리하므로 폴더 동기화 실패는 무시합니다.
+      console.warn('[ipc:config:set] 설정 폴더 동기화 실패:', e);
     }
   });
 
@@ -280,8 +335,9 @@ export function registerIpcHandlers(): void {
       const fullPath = path.join(dataDir, fileName);
       try {
         dataFiles[fileName.replace(/\.json$/, '')] = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-      } catch {
+      } catch (e) {
         // 손상된 JSON 파일은 백업에 포함하지 않습니다.
+        console.warn(`[ipc:data:export-backup] 손상된 데이터 파일 제외: ${fileName}`, e);
       }
     }
 
@@ -303,9 +359,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('file:open-html-external', async (_e, htmlContent: string, suggestedName?: string) => {
     const baseName = (suggestedName || `edunote_game_${Date.now()}.html`).replace(/[\\/:*?"<>|]/g, '_');
     const fileName = baseName.toLowerCase().endsWith('.html') ? baseName : `${baseName}.html`;
-    const dir = path.join(os.tmpdir(), 'edunote-html-preview');
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    const filePath = path.join(dir, fileName);
+    const filePath = path.join(getSessionTmpDir(), fileName);
     fs.writeFileSync(filePath, htmlContent, 'utf-8');
     const openPathError = await shell.openPath(filePath);
     if (openPathError) await shell.openExternal(pathToFileURL(filePath).toString());
@@ -326,7 +380,12 @@ export function registerIpcHandlers(): void {
 
     for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
-        store.set(key as any, value as any);
+        const safeValue = sanitizeConfigEntry(key, value);
+        if (safeValue === undefined) {
+          console.warn(`[ipc:data:import-backup] 무효한 설정값을 건너뜁니다: ${key}`);
+          continue;
+        }
+        store.set(key as any, safeValue as any);
       }
     }
 
@@ -361,6 +420,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
+      if (isBlockedHostname(parsed.hostname)) throw new Error('blocked host');
       const res = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(8000),
@@ -380,7 +440,8 @@ export function registerIpcHandlers(): void {
         image: ogImage?.[1] ?? '',
         domain: parsed.hostname,
       };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:url:fetch-meta]', e);
       return { title: '', description: '', image: '', domain: '' };
     }
   });
@@ -391,6 +452,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(imageUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (isBlockedHostname(parsed.hostname)) return null;
       const res = await net.fetch(imageUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(10000),
@@ -401,7 +463,8 @@ export function registerIpcHandlers(): void {
       const arrayBuffer = await res.arrayBuffer();
       const buf = Buffer.from(arrayBuffer);
       return `data:${mime};base64,${buf.toString('base64')}`;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:fetch-image]', e);
       return null;
     }
   });
@@ -412,6 +475,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol) || !videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
+      if (isBlockedHostname(parsed.hostname)) return { title: '', description: '', thumbnail: '', videoId: '' };
       const res = await net.fetch(rawUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0' },
         signal: AbortSignal.timeout(8000),
@@ -429,7 +493,8 @@ export function registerIpcHandlers(): void {
         thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
         videoId,
       };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:youtube-meta]', e);
       return { title: '', description: '', thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '', videoId };
     }
   });
@@ -440,7 +505,8 @@ export function registerIpcHandlers(): void {
       const apiKey = store.get('geminiApiKey');
       if (!apiKey) return null;
       return await generateSlideImage(apiKey, imagePrompt);
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:slide-image]', e);
       return null;
     }
   });
@@ -451,6 +517,7 @@ export function registerIpcHandlers(): void {
     try {
       const parsed = new URL(rawUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      if (isBlockedHostname(parsed.hostname)) return null;
       win = new BrowserWindow({
         width: 1280, height: 800, show: false,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
@@ -463,7 +530,8 @@ export function registerIpcHandlers(): void {
       const image = await win.webContents.capturePage({ x: 0, y: 0, width: 1280, height: 640 });
       const resized = image.resize({ width: 480, height: 240 });
       return `data:image/png;base64,${resized.toPNG().toString('base64')}`;
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:resource:screenshot]', e);
       return null;
     } finally {
       if (win && !win.isDestroyed()) win.destroy();
@@ -485,7 +553,7 @@ export function registerIpcHandlers(): void {
         preload: path.join(__dirname, '../preload/index.js'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false,
+        sandbox: true,
       },
     });
     win.setMenuBarVisibility(false);
@@ -521,7 +589,8 @@ export function registerIpcHandlers(): void {
       const currentVersion = app.getVersion();
       const hasUpdate: boolean = !!latestVersion && semverGt(latestVersion, currentVersion);
       return { currentVersion, latestVersion: latestVersion || null, hasUpdate, releaseUrl: json.html_url || '' };
-    } catch {
+    } catch (e) {
+      console.warn('[ipc:app:check-update]', e);
       return { currentVersion: app.getVersion(), latestVersion: null, hasUpdate: false, releaseUrl: '' };
     }
   });
@@ -533,7 +602,7 @@ export function registerIpcHandlers(): void {
       properties: ['openFile'],
     });
     if (canceled || !filePaths[0]) return null;
-    return fs.readFileSync(validatePath(filePaths[0]), 'utf-8');
+    return fs.readFileSync(resolveDialogPath(filePaths[0]), 'utf-8');
   });
 
   // ── 공유 마켓: 구글 시트 CSV 읽기 ────────────────────────────────────
@@ -568,12 +637,20 @@ export function registerIpcHandlers(): void {
   // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
   // net.request 사용: 시스템 SSL 인증서 + 리다이렉트 URL 한글 인코딩 처리
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
-    let safeUrl: string;
-    try {
-      safeUrl = new URL(url).href;
-    } catch {
-      throw new Error('유효하지 않은 URL입니다: ' + url.slice(0, 80));
-    }
+    // 최초 URL과 리다이렉트 URL 모두에 적용하는 검사.
+    const assertSafeUrl = (raw: string): string => {
+      let parsed: URL;
+      try {
+        parsed = new URL(raw);
+      } catch {
+        throw new Error('유효하지 않은 URL입니다: ' + String(raw).slice(0, 80));
+      }
+      if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedHostname(parsed.hostname)) {
+        throw new Error('허용되지 않는 주소입니다: ' + parsed.hostname);
+      }
+      return parsed.href;
+    };
+    const safeUrl = assertSafeUrl(url);
 
     const encodeUrl = (s: string): string =>
       s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
@@ -581,6 +658,12 @@ export function registerIpcHandlers(): void {
     const fetchUrl = (targetUrl: string, redirectsLeft: number): Promise<string> =>
       new Promise((resolve, reject) => {
         if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
+        try {
+          assertSafeUrl(targetUrl);
+        } catch (e) {
+          reject(e);
+          return;
+        }
         let settled = false;
         const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
 
@@ -618,7 +701,15 @@ export function registerIpcHandlers(): void {
   });
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
-  ipcMain.handle('api:naramarket-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+  // 자격증명(인증키·Client Secret)은 렌더러에서 받지 않고 메인 프로세스 저장소에서 직접 읽는다.
+  function getNaramarketKey(): string {
+    const serviceKey = String(store.get('naramarketApiKey') || '').trim();
+    if (!serviceKey) throw new Error('나라장터 인증키가 저장되어 있지 않습니다. 예산안작성 화면에서 키를 먼저 저장해주세요.');
+    return serviceKey;
+  }
+
+  ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
+    const serviceKey = getNaramarketKey();
     // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const fetchList = async (queryKey: string) => {
@@ -654,7 +745,8 @@ export function registerIpcHandlers(): void {
     return { response: { body: { items: { item: [] } } } };
   });
 
-  ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, serviceKey, pageNo = 1 }: { keyword: string; serviceKey: string; pageNo?: number }) => {
+  ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
+    const serviceKey = getNaramarketKey();
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
     const fetchMall = async (queryKey: string) => {
       const params = new URLSearchParams();
@@ -689,21 +781,16 @@ export function registerIpcHandlers(): void {
     return { response: { body: { items: { item: [] } } } };
   });
 
-  // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('api:naver-shopping-search', async (_e, {
     keyword,
-    clientId,
-    clientSecret,
     pageNo = 1,
   }: {
     keyword: string;
-    clientId: string;
-    clientSecret: string;
     pageNo?: number;
   }) => {
     const trimmedKeyword = String(keyword || '').trim();
-    const trimmedId = String(clientId || '').trim();
-    const trimmedSecret = String(clientSecret || '').trim();
+    const trimmedId = String(store.get('naverShoppingClientId') || '').trim();
+    const trimmedSecret = String(store.get('naverShoppingClientSecret') || '').trim();
     if (!trimmedKeyword || !trimmedId || !trimmedSecret) {
       return { items: [] };
     }
@@ -729,8 +816,9 @@ export function registerIpcHandlers(): void {
     return response.json();
   });
 
+  // ── PDF Save ──────────────────────────────────────────────────────
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
-    const tmpFile = path.join(os.tmpdir(), `edunote_pdf_${Date.now()}.html`);
+    const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
     const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
     try {

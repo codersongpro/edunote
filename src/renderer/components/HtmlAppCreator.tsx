@@ -368,6 +368,8 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             ) : (
               <iframe
                 key={htmlContent.length}
+                // sandbox에 allow-same-origin을 추가하면 AI가 만든 HTML이 앱 컨텍스트(localStorage 등)에
+                // 접근할 수 있게 되므로 절대 추가하면 안 된다.
                 sandbox="allow-scripts allow-forms allow-modals"
                 allow="fullscreen"
                 srcDoc={htmlContent}

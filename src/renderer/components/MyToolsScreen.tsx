@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { notifyToast } from '../lib/toast';
 import { CustomTool } from '../types';
 import { SAMPLE_TOOLS } from '../data/sampleTools';
 import MyToolEditor from './MyToolEditor';
+import { safeSetItem } from '../lib/safeStorage';
 import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
@@ -293,7 +295,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     try {
       const { tools: items, error } = parseImportedTools(raw);
       if (error) {
-        alert(error);
+        notifyToast({ type: 'warning', title: String(error) });
         return;
       }
       const now = new Date().toISOString();
@@ -306,9 +308,9 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       saveTools([...tools, ...imported]);
       setTab('my');
       onTabChange?.('my');
-      alert(`${imported.length}개 스킬을 내 스킬에 추가했습니다.`);
+      notifyToast({ type: 'success', title: `${imported.length}개 스킬을 내 스킬에 추가했습니다.` });
     } catch {
-      alert('유효한 스킬 JSON 파일이 아닙니다.');
+      notifyToast({ type: 'error', title: '유효한 스킬 JSON 파일이 아닙니다.' });
     }
   };
 
@@ -350,15 +352,15 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       }
 
       if (tools.some(t => t.name === imported[0]?.name)) {
-        alert(`"${imported[0]?.name}" 스킬은 이미 내 스킬에 있습니다.`);
+        notifyToast({ type: 'warning', title: `"${imported[0]?.name}" 스킬은 이미 내 스킬에 있습니다.` });
         return;
       }
       saveTools([...tools, ...imported]);
       setTab('my');
       onTabChange?.('my');
-      alert(`"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.`);
+      notifyToast({ type: 'success', title: `"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.` });
     } catch (err: any) {
-      alert(`도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.\n\n오류: ${err?.message ?? '알 수 없는 오류'}`);
+      notifyToast({ type: 'error', title: `도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.\n\n오류: ${err?.message ?? '알 수 없는 오류'}` });
     } finally {
       setImportingUrl(null);
     }
@@ -917,8 +919,8 @@ const ShareModal: React.FC<{
       const json = JSON.stringify(tool, null, 2);
       await window.electronAPI.saveTxt(json, `${tool.name}.json`);
     }
-    localStorage.setItem('share-author-name', authorName);
-    localStorage.setItem('share-author-school', authorSchool);
+    safeSetItem('share-author-name', authorName);
+    safeSetItem('share-author-school', authorSchool);
     setJsonSaved(true);
   };
 

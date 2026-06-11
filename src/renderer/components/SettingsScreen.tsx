@@ -335,6 +335,42 @@ const SettingsScreen: React.FC = () => {
                   </p>
                 </div>
 
+                {/* AI Studio가 발급을 거부하며 Google Cloud로 안내하는 경우의 대응 */}
+                <div className="mt-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md p-3">
+                  <p className="text-xs font-bold text-rose-800 dark:text-rose-300 mb-1.5">
+                    🚫 키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나올 때
+                  </p>
+                  <ol className="text-xs text-rose-700 dark:text-rose-400 space-y-1.5 leading-relaxed pl-4 list-decimal">
+                    <li>
+                      <strong>학교/기관 계정인지 먼저 확인</strong> — 학교 Google Workspace 계정은 기관 정책으로 발급이 막혀 있는 경우가 많습니다.
+                      개인 Gmail 계정(gmail.com)으로 로그아웃 후 다시 시도해 보세요.
+                    </li>
+                    <li>
+                      개인 계정인데도 같은 안내가 나오면{' '}
+                      <button
+                        onClick={() => window.electronAPI.openExternal('https://console.cloud.google.com')}
+                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium inline-flex items-center gap-0.5"
+                      >
+                        console.cloud.google.com <ExternalLink className="w-3 h-3" />
+                      </button>
+                      에서 직접 발급할 수 있습니다:
+                      <span className="block mt-1">
+                        ① 같은 Google 계정으로 로그인 → ② 상단 프로젝트 선택에서 <strong>"새 프로젝트"</strong> 만들기 (이름 예: edunote)
+                        → ③ 상단 검색창에 <strong>"Generative Language API"</strong> 검색 후 <strong>"사용(Enable)"</strong> 클릭
+                        → ④ 왼쪽 메뉴 <strong>"API 및 서비스" → "사용자 인증 정보"</strong>에서 <strong>"사용자 인증 정보 만들기" → "API 키"</strong>
+                        → ⑤ 생성된 <span className="bg-rose-100 dark:bg-rose-900/40 px-1 py-0.5 rounded font-mono">AIza...</span> 키를 복사해 아래 입력란에 붙여넣기
+                      </span>
+                    </li>
+                    <li>
+                      <strong>결제 정보 등록을 요구하는 경우</strong> — 먼저 다른 개인 계정으로 시도해 보세요. 그래도 같다면 결제를 등록한 뒤 발급할 수 있지만,
+                      이 경우 유료 등급이 되므로 아래 <strong>API 키 등급</strong>에서 "유료"를 선택하고 사용량에 주의하세요.
+                    </li>
+                  </ol>
+                  <p className="text-[11px] text-rose-600 dark:text-rose-500 mt-2">
+                    Cloud Console에서 발급한 키도 결제 계정을 연결하지 않은 새 프로젝트라면 무료 등급으로 동작합니다.
+                  </p>
+                </div>
+
                 <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
                   <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                     참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
@@ -705,26 +741,26 @@ const SettingsScreen: React.FC = () => {
         </div>
 
         {/* Save Folder */}
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-3">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
           <div className="flex items-center gap-2 mb-1">
-            <Folder className="w-4 h-4 text-[#78716C]" />
-            <h3 className="text-sm font-bold text-[#44403C]">파일 저장 폴더</h3>
+            <Folder className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">파일 저장 폴더</h3>
           </div>
           <div className="flex gap-2 items-center">
             <input
               type="text"
               readOnly
               value={saveDir || '기본 다운로드 폴더'}
-              className="flex-1 bg-[#FAF9F7] rounded-md border border-[#EDE8E1] text-[#78716C] text-sm p-2.5 cursor-not-allowed"
+              className="flex-1 bg-[#FAF9F7] dark:bg-[#1C1917] rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] rounded-md text-[#44403C] hover:bg-[#FAF9F7] whitespace-nowrap"
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2521] whitespace-nowrap"
             >
               폴더 선택
             </button>
           </div>
-          <p className="text-xs text-[#A8A29E]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+          <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
         </div>
 
         {/* Version */}

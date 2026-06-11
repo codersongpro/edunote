@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
+import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import { LOADING_MESSAGES } from '../constants';
@@ -69,6 +70,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     if (initialTab) setActiveTab(initialTab);
   }, [initialTab]);
   const [isGenerating, setIsGenerating] = useState(false);
+  // 스트리밍 생성 중간 텍스트 (생성 중 미리보기용)
+  const [streamPreview, setStreamPreview] = useState('');
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
@@ -114,7 +117,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   }, []);
 
   const saveTemplateFavorites = (next: DocTemplateFavorite[]) => {
-    localStorage.setItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
+    safeSetItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
     setTemplateFavorites(next.slice(0, 20));
   };
 
@@ -376,6 +379,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   const handleGenerate = async () => {
     setError(null);
+    setStreamPreview('');
     setIsGenerating(true);
     startGeneration(`SCHOOL_DOC_${activeTab}`);
     try {
@@ -392,6 +396,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           templateText,
           GongmunComplexity.MEDIUM,
           gonggoData,
+          setStreamPreview,
         );
       } else {
         const context = buildContextWithProfile();
@@ -408,6 +413,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           templateText,
           gongmunComplexity,
           undefined,
+          setStreamPreview,
         );
       }
       const { cleanContent, fillData } = extractResult(result);
@@ -418,6 +424,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');
     } finally {
       setIsGenerating(false);
+      setStreamPreview('');
       endGeneration();
     }
   };
@@ -1116,6 +1123,12 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   </svg>
                   <p className="text-sm font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">문서를 생성하는 중...</p>
                   <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57]">{loadingMessage}</p>
+                  {streamPreview && (
+                    <div className="mt-4 w-full max-w-lg max-h-44 overflow-hidden rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] p-3 text-left">
+                      <p className="text-[10px] font-bold text-[#A8A29E] dark:text-[#6B5E57] mb-1 uppercase tracking-wide">생성 중 미리보기</p>
+                      <pre className="text-[11px] leading-relaxed text-[#78716C] dark:text-[#9C8F87] whitespace-pre-wrap break-all font-sans">{streamPreview.slice(-600)}</pre>
+                    </div>
+                  )}
                 </div>
               ) : EXAMPLE_DOCS[activeTab] ? (
                 <>

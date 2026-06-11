@@ -1,9 +1,15 @@
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number }): Promise<string>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }): Promise<string>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number },
+    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
+  ): Promise<string>;
+  aiGenerateMultipartStream(
+    parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
+    systemInstruction: string | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+    onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
   ): Promise<string>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
@@ -46,9 +52,10 @@ export interface ElectronAPI {
   openJsonFile(): Promise<string | null>;
   fetchMarket(sheetId: string): Promise<string>;
   fetchUrlJson(url: string): Promise<string>;
-  naramarketSearch(keyword: string, serviceKey: string, pageNo?: number): Promise<unknown>;
-  naramarketShoppingSearch(keyword: string, serviceKey: string, pageNo?: number): Promise<unknown>;
-  naverShoppingSearch(keyword: string, clientId: string, clientSecret: string, pageNo?: number): Promise<unknown>;
+  naramarketSearch(keyword: string, pageNo?: number): Promise<unknown>;
+  naramarketShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
+  naverShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
+  hasNaverShoppingSecret(): Promise<boolean>;
 }
 
 declare global {

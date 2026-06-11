@@ -1,0 +1,37 @@
+// 렌더러가 넘긴 URL로 메인 프로세스가 요청을 보낼 때(메타 조회·이미지·스크린샷 등)
+// 로컬 서비스로의 우회 접근(SSRF)을 막기 위한 호스트 검사.
+// 학교 인트라넷(사설 IP 대역) 자료 조회는 막지 않도록 루프백·링크로컬·0.0.0.0만 차단한다.
+// 도메인이 내부 IP로 풀리는 DNS 리바인딩까지는 다루지 않는다(로컬 데스크톱 도구 기준).
+
+function isBlockedIpv4(hostname: string): boolean {
+  const match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (!match) return false;
+  const octets = match.slice(1).map(Number);
+  if (octets.some(n => n > 255)) return false; // IP 형식이 아니면 호스트명으로 본다.
+  const [a, b] = octets;
+  if (a === 127) return true;            // 루프백
+  if (a === 0) return true;              // 0.0.0.0/8
+  if (a === 169 && b === 254) return true; // 링크로컬
+  return false;
+}
+
+function isBlockedIpv6(hostname: string): boolean {
+  // URL.hostname은 IPv6를 대괄호로 감싼 형태([::1])로 줄 수 있다.
+  const host = hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (!host.includes(':')) return false;
+  if (host === '::' || host === '::1') return true; // 미지정·루프백
+  if (host.startsWith('fe8') || host.startsWith('fe9') || host.startsWith('fea') || host.startsWith('feb')) {
+    return true; // 링크로컬 fe80::/10
+  }
+  // IPv4 매핑(::ffff:127.0.0.1) 형태도 확인한다.
+  const v4 = host.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (v4) return isBlockedIpv4(v4[1]);
+  return false;
+}
+
+export function isBlockedHostname(hostname: string): boolean {
+  const host = String(hostname || '').trim().toLowerCase().replace(/\.$/, '');
+  if (!host) return true;
+  if (host === 'localhost' || host.endsWith('.localhost')) return true;
+  return isBlockedIpv4(host) || isBlockedIpv6(host);
+}

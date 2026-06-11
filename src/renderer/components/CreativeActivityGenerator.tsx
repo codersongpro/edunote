@@ -1,10 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { notifyToast } from '../lib/toast';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student, AppMode } from '../types';
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
 import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualPlanFromDocuments } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -22,7 +24,7 @@ interface DuplicateResult {
 const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '봉사활동'];
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress, showToast } = useGlobalState();
   const { startGeneration, endGeneration, updateProgress, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
 
@@ -78,7 +80,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // Switch Activity handler
   const switchActivity = (activityName: string) => {
     if (isGlobalGenerating) {
-        alert("생성 중에는 활동을 전환할 수 없습니다.");
+        notifyToast({ type: 'warning', title: "생성 중에는 활동을 전환할 수 없습니다." });
         return;
     }
 
@@ -114,11 +116,11 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // Create new Activity
   const createNewActivity = () => {
       if (!newActivityName.trim()) {
-          alert("활동명을 입력해주세요.");
+          notifyToast({ type: 'warning', title: "활동명을 입력해주세요." });
           return;
       }
       if (creativeState.dataStore[newActivityName]) {
-          alert("이미 존재하는 활동명입니다.");
+          notifyToast({ type: 'warning', title: "이미 존재하는 활동명입니다." });
           return;
       }
 
@@ -283,11 +285,11 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     const text = await extractTextFromHwpx(file);
                     if (text.trim()) textChunks.push(text.trim());
                 } catch {
-                    alert(`${file.name}: HWPX 텍스트 추출 실패. 다른 형식으로 시도해 주세요.`);
+                    notifyToast({ type: 'error', title: `${file.name}: HWPX 텍스트 추출 실패. 다른 형식으로 시도해 주세요.` });
                 }
 
             } else if (name.endsWith('.hwp')) {
-                alert(`${file.name}: HWP(구형) 파일은 직접 읽기가 어렵습니다. HWPX 또는 PDF로 변환 후 업로드해 주세요.`);
+                notifyToast({ type: 'warning', title: `${file.name}: HWP(구형) 파일은 직접 읽기가 어렵습니다. HWPX 또는 PDF로 변환 후 업로드해 주세요.` });
             }
         }
 
@@ -313,13 +315,13 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 : extractedText;
             updateCreativeState({ currentAnnualPlan: newPlan });
         } else {
-            alert('파일에서 내용을 추출하지 못했습니다.');
+            notifyToast({ type: 'error', title: '파일에서 내용을 추출하지 못했습니다.' });
         }
 
     } catch (err) {
         const error = err as any;
         console.error(error instanceof Error ? error.message : String(error));
-        alert('파일 분석 중 오류가 발생했습니다.');
+        notifyToast({ type: 'error', title: '파일 분석 중 오류가 발생했습니다.' });
     } finally {
         setIsAnalyzingPlan(false);
         if (planFileInputRef.current) planFileInputRef.current.value = '';
@@ -450,6 +452,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
@@ -466,7 +469,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
@@ -483,7 +486,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
-        alert("선택된 학생이 없습니다.");
+        notifyToast({ type: 'warning', title: "선택된 학생이 없습니다." });
         return;
     }
 
@@ -517,6 +520,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / selectedIndices.length) * 100);
@@ -533,7 +537,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateCreativeState({ activeStudents: newStudents, step: 'RESULT' });
     } finally {
@@ -571,6 +575,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...creativeState.activeStudents];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('creative', creativeState.activeStudents[index].name, result);
       updateCreativeState({ activeStudents: newStudents });
       playSuccessSound();
@@ -578,7 +583,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(errorMessage);
-      alert("재생성 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
     } finally {
       setGeneratingIds((prev: Set<string>) => {
         const next = new Set(prev);
@@ -655,7 +660,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       setShowDuplicateModal(true);
     } catch (error) {
       console.error("Duplicate check error:", String(error));
-      alert("중복 검사 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "중복 검사 중 오류가 발생했습니다." });
     }
   };
 
@@ -670,12 +675,12 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 rows.push([type, actName, s.name, s.generatedContent || '', data.annualPlan || '', (s.selectedTags || []).join(', '), s.additionalContext || '']);
             });
         });
-        if (rows.length === 0) { alert("다운로드할 데이터가 없습니다."); return; }
+        if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
         const csvContent = [header, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
         await window.electronAPI.saveCsv(csvContent, `창체특기사항_전체_${new Date().toISOString().slice(0,10)}.csv`);
     } catch (e) {
         console.error("CSV download error:", e);
-        alert("파일 생성 중 오류가 발생했습니다.");
+        notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
     }
   };
 
@@ -766,7 +771,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } else if (creativeState.step === 'ACTIVITY_SETUP') {
         const actName = creativeState.currentActivityName.trim();
         if (!actName) {
-            alert("활동명을 입력해주세요.");
+            notifyToast({ type: 'warning', title: "활동명을 입력해주세요." });
             return;
         }
         

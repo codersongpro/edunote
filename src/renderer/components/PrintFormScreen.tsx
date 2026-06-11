@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { notifyToast } from '../lib/toast';
 import { FileText, Printer, ChevronLeft, RotateCcw, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 
@@ -124,7 +125,7 @@ export default function PrintFormScreen() {
     try {
       await (window.electronAPI as any).savePdf(rendered, `${selectedForm.title}(${d}).pdf`);
     } catch {
-      alert('PDF 저장 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' });
     }
   };
 

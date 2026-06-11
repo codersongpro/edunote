@@ -1,6 +1,9 @@
 import React, { useEffect, useRef } from 'react';
+import { notifyToast } from '../lib/toast';
 import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
-import { markdownOrHtmlToHtml } from '../lib/generatedContent';
+import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
+import { sanitizeHtml } from '../lib/security';
+import { safeSetItem } from '../lib/safeStorage';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -99,9 +102,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   }, [title, hwpxData]);
 
   const saveGeneratedSnapshot = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    const text = temp.innerText.trim();
+    const text = extractPlainText(html);
     if (!text) return;
 
     let versions: SavedGeneratedVersion[] = [];
@@ -127,7 +128,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       createdAt: now.toISOString(),
     };
     const nextVersions = [next, ...versions.filter(version => version.html !== html)].slice(0, 8);
-    localStorage.setItem(getHistoryKey(), JSON.stringify(nextVersions));
+    safeSetItem(getHistoryKey(), JSON.stringify(nextVersions));
     setSavedVersions(nextVersions);
   };
 
@@ -246,7 +247,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert('클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.');
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.' });
     }
   };
 
@@ -346,7 +347,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       await window.electronAPI.saveBuffer(await blob.arrayBuffer(), getFormattedFilename('hwpx'));
     } catch (error) {
       console.error('Failed to merge HWPX file', error);
-      alert('HWPX 양식 채우기 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: 'HWPX 양식 채우기 중 오류가 발생했습니다.' });
     } finally {
       setHwpxDownloading(false);
     }
@@ -411,19 +412,22 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   };
 
   const selectedVersion = savedVersions.find(version => version.id === selectedVersionId) || null;
-  const selectedVersionPreviewHtml = selectedVersion ? selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text) : '';
+  // localStorage에 저장된 버전 HTML은 외부에서 변조될 수 있으므로 렌더 직전에 다시 소독한다.
+  const selectedVersionPreviewHtml = selectedVersion
+    ? sanitizeHtml(selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text))
+    : '';
 
   const handleRestoreVersion = () => {
     if (!selectedVersion || !contentRef.current) return;
     saveGeneratedSnapshot(getCurrentContent());
-    contentRef.current.innerHTML = selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text);
+    contentRef.current.innerHTML = sanitizeHtml(selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text));
     setSelectedVersionId('');
   };
 
   const handleDeleteVersion = () => {
     if (!selectedVersion) return;
     const next = savedVersions.filter(v => v.id !== selectedVersion.id);
-    localStorage.setItem(getHistoryKey(), JSON.stringify(next));
+    safeSetItem(getHistoryKey(), JSON.stringify(next));
     setSavedVersions(next);
     setSelectedVersionId('');
   };
@@ -446,7 +450,7 @@ h2,h3{page-break-after:avoid;}
     try {
       await (window.electronAPI as any).savePdf(fullHtml, filename);
     } catch {
-      alert('PDF 저장 중 오류가 발생했습니다.');
+      notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' });
     }
   };
 

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { notifyToast } from '../lib/toast';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { SchoolLevel, LengthOption, LengthUnit, StudentSportsData, AppMode } from '../types';
 import { generateSportsClubReport } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
+import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
@@ -36,7 +38,7 @@ const SPORTS_NEGATIVE_TRAITS = [
 ];
 
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
-  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress } = useGlobalState();
+  const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
 
@@ -196,7 +198,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // --- Generation Handlers ---
   const handleGenerateAll = async () => {
     if (!sportsState.sportName || !sportsState.clubName) {
-        alert("종목명과 클럽명을 입력해주세요.");
+        notifyToast({ type: 'warning', title: "종목명과 클럽명을 입력해주세요." });
         return;
     }
     
@@ -225,6 +227,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
@@ -241,7 +244,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
@@ -254,7 +257,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleGenerateSelected = async () => {
     if (!sportsState.sportName || !sportsState.clubName) {
-        alert("종목명과 클럽명을 입력해주세요.");
+        notifyToast({ type: 'warning', title: "종목명과 클럽명을 입력해주세요." });
         return;
     }
 
@@ -263,7 +266,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
-        alert("선택된 학생이 없습니다.");
+        notifyToast({ type: 'warning', title: "선택된 학생이 없습니다." });
         return;
     }
 
@@ -293,6 +296,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
               const selPct = Math.round((completedCount / selectedIndices.length) * 100);
@@ -309,7 +313,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
         if (!(err instanceof Error && err.message === 'CANCELLED')) {
           console.error(err instanceof Error ? err.message : String(err));
-          alert("생성 중 오류가 발생했습니다.");
+          notifyToast({ type: 'error', title: "생성 중 오류가 발생했습니다." });
         }
         updateSportsState({ students: newStudents, step: 'RESULT' });
     } finally {
@@ -345,6 +349,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       
       const newStudents = [...sportsState.students];
       newStudents[index].generatedContent = result;
+      queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('sports', sportsState.students[index].name, result);
       updateSportsState({ students: newStudents });
       playSuccessSound();
@@ -352,7 +357,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(errorMessage);
-      alert("재생성 중 오류가 발생했습니다.");
+      notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
     } finally {
       setGeneratingIds((prev: Set<string>) => {
         const next = new Set(prev);

@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { notifyToast } from '../lib/toast';
 import { Upload, X, FileText } from 'lucide-react';
 import { FileData } from '../types';
 
@@ -23,19 +24,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
-  const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>();
+  const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>(undefined);
 
   const handleFileArray = async (fileArray: File[]) => {
     if (fileArray.length > 0) {
       const currentCount = multiple ? files.length : 0;
       const remaining = maxFiles ? Math.max(0, maxFiles - currentCount) : fileArray.length;
       if (remaining === 0) {
-        alert(`최대 ${maxFiles}개까지 업로드할 수 있습니다.`);
+        notifyToast({ type: 'warning', title: `최대 ${maxFiles}개까지 업로드할 수 있습니다.` });
         return;
       }
       const limited = fileArray.slice(0, remaining);
       if (limited.length < fileArray.length) {
-        alert(`최대 ${maxFiles}개까지 업로드할 수 있습니다. ${limited.length}개만 추가됩니다.`);
+        notifyToast({ type: 'warning', title: `최대 ${maxFiles}개까지 업로드할 수 있습니다. ${limited.length}개만 추가됩니다.` });
       }
       fileArray = limited;
       const newFiles: FileData[] = [];
