@@ -12,6 +12,7 @@ const MIME_TYPE_PATTERN = /^[\w.+-]+\/[\w.+-]+$/;
 
 export interface GenerateOptions {
   temperature?: number;
+  maxOutputTokens?: number;
 }
 
 export interface MultipartPart {
@@ -22,10 +23,15 @@ export interface MultipartPart {
 function validateOptions(options?: GenerateOptions): void {
   if (options === undefined || options === null) return;
   if (typeof options !== 'object') throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
-  const { temperature } = options;
+  const { temperature, maxOutputTokens } = options;
   if (temperature !== undefined) {
     if (typeof temperature !== 'number' || !Number.isFinite(temperature) || temperature < 0 || temperature > 2) {
       throw new Error('AI 요청 temperature 값이 올바르지 않습니다.');
+    }
+  }
+  if (maxOutputTokens !== undefined) {
+    if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 65_536) {
+      throw new Error('AI 요청 출력 토큰 상한 값이 올바르지 않습니다.');
     }
   }
 }

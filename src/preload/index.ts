@@ -2,13 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // AI Generation
-  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number }) =>
+  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) =>
     ipcRenderer.invoke('ai:generate', prompt, systemInstruction, options),
 
   aiGenerateMultipart: (
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number },
+    options?: { temperature?: number; maxOutputTokens?: number },
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
 
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),

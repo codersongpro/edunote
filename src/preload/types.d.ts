@@ -1,9 +1,9 @@
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number }): Promise<string>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }): Promise<string>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number },
+    options?: { temperature?: number; maxOutputTokens?: number },
   ): Promise<string>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;

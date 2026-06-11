@@ -65,14 +65,14 @@ function readOpenApiItems(data: any): any[] {
 
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
-  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
     validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
-  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number }) => {
+  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
     validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');

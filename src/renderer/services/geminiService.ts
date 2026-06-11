@@ -37,7 +37,12 @@ const notifyTemporaryApiError = (error: unknown) => {
   window.dispatchEvent(new CustomEvent('edunote-api-temporary-error'));
 };
 
-const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number }) => {
+// 텍스트형 결과(학생기록·QA·업무기록)의 출력 토큰 상한.
+// 폭주 방지용이며, 2.5 계열 모델의 내부 사고(thinking) 토큰도 이 상한에
+// 포함되므로 실제 필요량(약 1,500 토큰)보다 넉넉하게 둔다.
+const TEXT_OUTPUT_TOKEN_LIMIT = 8192;
+
+const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
   try {
     return await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
   } catch (error) {
@@ -49,7 +54,7 @@ const aiGenerate = async (prompt: string, systemInstruction?: string, options?: 
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number },
+  options?: { temperature?: number; maxOutputTokens?: number },
 ) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).catch((error) => {
   notifyTemporaryApiError(error);
   throw error;
@@ -342,7 +347,7 @@ const getLengthInstruction = (
 
 export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: string): Promise<string> => {
   try {
-    return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3 });
+    return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Gemini QA Error:', error);
     return describeGenerationError(error);
@@ -359,7 +364,7 @@ export const askRecordChatbot = async (
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
-    return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7 });
+    return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Record Chatbot Error:', error);
     return describeGenerationError(error);
@@ -402,6 +407,7 @@ ${avoidInstruction}`;
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
@@ -446,6 +452,7 @@ ${avoidInstruction}`;
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
@@ -485,6 +492,7 @@ ${avoidInstruction}`;
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
@@ -545,6 +553,7 @@ ${avoidInstruction}`;
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
+      maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     });
     return privacy.restore(result);
   } catch (error: any) {
@@ -902,7 +911,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 교사의 수업관찰기록 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -935,7 +944,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 교사의 상담일지 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -968,7 +977,7 @@ ${getDateContext()}
   return await aiGenerate(
     prompt,
     '당신은 담임교사의 학급경영일지 문서 작성을 보조하는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요.',
-    { temperature: 0.4 },
+    { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
 };
 
@@ -1044,7 +1053,7 @@ export const askEducationQuestion = async (
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
-    return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7 });
+    return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Education QA Error:', error);
     return describeGenerationError(error);

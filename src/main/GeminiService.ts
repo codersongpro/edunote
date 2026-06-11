@@ -123,6 +123,9 @@ const isPermanentBlockError = (error: unknown): boolean => {
 export interface GenerateOptions {
   systemInstruction?: string;
   temperature?: number;
+  // 출력 토큰 상한 — 폭주 방지용. 2.5 계열 모델은 내부 사고(thinking) 토큰도
+  // 이 상한에 포함되므로 필요량보다 넉넉하게 잡아야 빈 응답이 생기지 않는다.
+  maxOutputTokens?: number;
   apiTier?: ApiTier;
 }
 
@@ -136,6 +139,7 @@ function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
   const config: Record<string, unknown> = {};
   if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
   if (options?.temperature !== undefined) config.temperature = options.temperature;
+  if (options?.maxOutputTokens !== undefined) config.maxOutputTokens = options.maxOutputTokens;
   return config;
 }
 
