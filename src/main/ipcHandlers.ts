@@ -8,14 +8,9 @@ import { pathToFileURL } from 'url';
 import { store } from './store';
 import { ApiTier, generateContent, generateContentMultipart, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
+import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
-
-function validatePath(p: string): string {
-  const resolved = path.resolve(p);
-  // Prevent path traversal — must be under home or common writable dirs
-  return resolved;
-}
 
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
@@ -156,7 +151,7 @@ export function registerIpcHandlers(): void {
       properties: ['openFile'],
     });
     if (canceled || !filePaths[0]) return null;
-    const filePath = validatePath(filePaths[0]);
+    const filePath = resolveDialogPath(filePaths[0]);
     return {
       filePath,
       content: fs.readFileSync(filePath, 'utf-8'),
@@ -178,12 +173,20 @@ export function registerIpcHandlers(): void {
 
   // ── Shell ─────────────────────────────────────────────────────────
   ipcMain.handle('shell:open-folder', async (_e, folderPath: string) => {
-    const safe = validatePath(folderPath);
-    if (fs.existsSync(safe)) {
-      await shell.openPath(safe);
-      return true;
-    }
-    return false;
+    const allowedRoots = [
+      os.homedir(),
+      app.getPath('userData'),
+      app.getPath('documents'),
+      app.getPath('downloads'),
+      store.get('saveDir'),
+      store.get('appDataDir'),
+    ];
+    const safe = resolveOpenableDir(folderPath, allowedRoots, target => {
+      try { return fs.statSync(target); } catch { return null; }
+    });
+    if (!safe) return false;
+    await shell.openPath(safe);
+    return true;
   });
 
   ipcMain.handle('shell:open-external', async (_e, url: string) => {
@@ -533,7 +536,7 @@ export function registerIpcHandlers(): void {
       properties: ['openFile'],
     });
     if (canceled || !filePaths[0]) return null;
-    return fs.readFileSync(validatePath(filePaths[0]), 'utf-8');
+    return fs.readFileSync(resolveDialogPath(filePaths[0]), 'utf-8');
   });
 
   // ── 공유 마켓: 구글 시트 CSV 읽기 ────────────────────────────────────
