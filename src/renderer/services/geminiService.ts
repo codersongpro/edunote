@@ -366,7 +366,9 @@ export const askRecordChatbot = async (
   question: string,
 ): Promise<string> => {
   try {
+    // 토큰 절약을 위해 최근 대화 6개만 컨텍스트로 보낸다.
     const historyText = history
+      .slice(-6)
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
@@ -1057,7 +1059,9 @@ export const askEducationQuestion = async (
   history: Array<{ role: 'user' | 'model'; text: string }>,
 ): Promise<string> => {
   try {
+    // 토큰 절약을 위해 최근 대화 6개만 컨텍스트로 보낸다.
     const historyText = history
+      .slice(-6)
       .map((m) => `[${m.role === 'user' ? '교사' : 'AI'}]: ${m.text}`)
       .join('\n');
     const fullPrompt = historyText ? `${historyText}\n[교사]: ${question}` : question;
