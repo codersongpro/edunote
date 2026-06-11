@@ -13,6 +13,7 @@ const MIME_TYPE_PATTERN = /^[\w.+-]+\/[\w.+-]+$/;
 export interface GenerateOptions {
   temperature?: number;
   maxOutputTokens?: number;
+  responseJson?: boolean;
 }
 
 export interface MultipartPart {
@@ -33,6 +34,9 @@ function validateOptions(options?: GenerateOptions): void {
     if (!Number.isInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 65_536) {
       throw new Error('AI 요청 출력 토큰 상한 값이 올바르지 않습니다.');
     }
+  }
+  if (options.responseJson !== undefined && typeof options.responseJson !== 'boolean') {
+    throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
   }
 }
 

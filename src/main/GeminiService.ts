@@ -130,6 +130,8 @@ export interface GenerateOptions {
   // 출력 토큰 상한 — 폭주 방지용. 2.5 계열 모델은 내부 사고(thinking) 토큰도
   // 이 상한에 포함되므로 필요량보다 넉넉하게 잡아야 빈 응답이 생기지 않는다.
   maxOutputTokens?: number;
+  // true면 모델이 순수 JSON만 출력하도록 강제한다 (코드펜스·설명 문장 제거 불필요)
+  responseJson?: boolean;
   apiTier?: ApiTier;
 }
 
@@ -144,6 +146,7 @@ function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
   if (options?.systemInstruction) config.systemInstruction = options.systemInstruction;
   if (options?.temperature !== undefined) config.temperature = options.temperature;
   if (options?.maxOutputTokens !== undefined) config.maxOutputTokens = options.maxOutputTokens;
+  if (options?.responseJson) config.responseMimeType = 'application/json';
   return config;
 }
 

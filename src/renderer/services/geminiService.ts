@@ -42,7 +42,7 @@ const notifyTemporaryApiError = (error: unknown) => {
 // 포함되므로 실제 필요량(약 1,500 토큰)보다 넉넉하게 둔다.
 const TEXT_OUTPUT_TOKEN_LIMIT = 8192;
 
-const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
+const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
   try {
     return await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
   } catch (error) {
@@ -54,7 +54,7 @@ const aiGenerate = async (prompt: string, systemInstruction?: string, options?: 
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number; maxOutputTokens?: number },
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
 ) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).catch((error) => {
   notifyTemporaryApiError(error);
   throw error;
@@ -1085,7 +1085,7 @@ ${isHintProvided ? `[중요] 사용자가 현재 선택한 교과목은 '${hintS
     { inlineData: { data: base64Data, mimeType } },
     { text: prompt },
   ];
-  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
+  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1, responseJson: true });
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const parsedData = JSON.parse(cleanJson);
   const results: any[] = Array.isArray(parsedData) ? parsedData : [parsedData];
@@ -1110,7 +1110,7 @@ export const parseNeisGradeFiles = async (files: { data: string; mimeType: strin
   const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [];
   files.forEach((f) => parts.push({ inlineData: { mimeType: f.mimeType, data: f.data } }));
   parts.push({ text: prompt });
-  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1 });
+  const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1, responseJson: true });
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
   const parsed = JSON.parse(cleanJson);
   return Array.isArray(parsed) ? parsed : [parsed];
@@ -1187,7 +1187,7 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
 [{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imagePrompt":"educational image description in english, no text"}]`;
 
-  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6 });
+  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6, responseJson: true });
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
   if (!arrayMatch) throw new Error('슬라이드 JSON 파싱 실패: 올바른 배열 형식이 아닙니다.');
@@ -1516,7 +1516,7 @@ ${typeLines}
   ]
 }`;
 
-  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 });
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true });
   const data = parseQuizJson(raw);
   return buildQuizHtml(data);
 }
@@ -1901,9 +1901,9 @@ category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-up
         { inlineData: { data: templateFile.base64.split(',')[1], mimeType: templateFile.mimeType } },
         { text: prompt },
       ];
-      raw = await aiGenerateMultipart(parts, '', { temperature: 0.3 });
+      raw = await aiGenerateMultipart(parts, '', { temperature: 0.3, responseJson: true });
     } else {
-      raw = await aiGenerate(prompt, '', { temperature: 0.3 });
+      raw = await aiGenerate(prompt, '', { temperature: 0.3, responseJson: true });
     }
     const match = raw.match(/\{[\s\S]*\}/);
     if (!match) return null;
