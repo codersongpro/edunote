@@ -1,0 +1,49 @@
+name: Fix Latest Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: v1.14.1 릴리스 제목 수정
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const r = await github.rest.repos.getRelease({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              release_id: 338611336
+            });
+            await github.rest.repos.updateRelease({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              release_id: 338611336,
+              name: 'EduNote v1.14.1',
+              body: r.data.body.replace('## EduNote v1.13.4', '## EduNote v1.14.1')
+            });
+            console.log('v1.14.1 릴리스 제목 수정 완료');
+
+      - name: 워크플로우 파일 삭제
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: file } = await github.rest.repos.getContent({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-latest-release.yml',
+              ref: 'main'
+            });
+            await github.rest.repos.deleteFile({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-latest-release.yml',
+              message: '릴리스 수정 완료 후 워크플로우 삭제',
+              sha: file.sha,
+              branch: 'main'
+            });
+            console.log('워크플로우 파일 삭제 완료');
