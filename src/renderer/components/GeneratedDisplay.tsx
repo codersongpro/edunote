@@ -37,7 +37,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [savedVersions, setSavedVersions] = React.useState<SavedGeneratedVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = React.useState('');
   const [copyFormat, setCopyFormat] = React.useState<'html' | 'excel' | 'md'>('html');
-  const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'html' | 'md'>('pdf');
+  const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'hwpx' | 'html' | 'md'>('pdf');
   const contentRef = useRef<HTMLDivElement>(null);
 
   const getPlainText = (): string => {
@@ -353,6 +353,18 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     }
   };
 
+  // 현재 문서를 내장 생성기로 HWPX 파일로 저장한다 (한글이 만든 빈 문서 골격에 본문 주입).
+  const handleDownloadHwpxDocument = async () => {
+    const currentHtml = getCurrentContent();
+    const docTitle = getDocumentTitle();
+    try {
+      await window.electronAPI.saveHwpx(docTitle, currentHtml, { title: docTitle });
+    } catch (error) {
+      console.error('Failed to save HWPX file', error);
+      notifyToast({ type: 'error', title: 'HWPX 저장 중 오류가 발생했습니다.' });
+    }
+  };
+
   const handleDownloadHtml = async () => {
     const currentHtml = getCurrentContent();
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title><style>@page{size:A4;margin:18mm 16mm;}body{margin:0;padding:18mm 16mm;font-family:'Malgun Gothic','Dotum',sans-serif;line-height:1.7;color:#000;background:#fff;word-break:keep-all;overflow-wrap:break-word;}table{width:100%;border-collapse:collapse;margin:10pt 0 14pt;}th,td{border:1pt solid #333;padding:8pt 10pt;vertical-align:middle;}</style></head><body>${currentHtml}</body></html>`;
@@ -403,6 +415,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const handleSaveByFormat = async () => {
     if (saveFormat === 'pdf') await handleSavePdf();
     else if (saveFormat === 'doc') await handleDownloadWord();
+    else if (saveFormat === 'hwpx') await handleDownloadHwpxDocument();
     else if (saveFormat === 'html') await handleDownloadHtml();
     else await handleDownloadMarkdown();
   };
@@ -549,6 +562,7 @@ h2,h3{page-break-after:avoid;}
             >
               <option className={optionClassName} value="pdf">PDF</option>
               <option className={optionClassName} value="doc">Word/HWP용</option>
+              <option className={optionClassName} value="hwpx">HWPX</option>
               <option className={optionClassName} value="html">HTML</option>
               <option className={optionClassName} value="md">Markdown</option>
             </select>
@@ -701,7 +715,7 @@ h2,h3{page-break-after:avoid;}
           <PenLine className="w-3 h-3" />
           {'\uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD074\uB9AD\uD558\uC5EC \uC218\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.'}
         </span>
-        <span>{'HTML, Word/HWP\uC6A9, Markdown \uC800\uC7A5 \uC9C0\uC6D0'}</span>
+        <span>{'PDF, Word/HWP\uC6A9, HWPX, HTML, Markdown \uC800\uC7A5 \uC9C0\uC6D0'}</span>
       </div>
       <style>{`
         @media print {
