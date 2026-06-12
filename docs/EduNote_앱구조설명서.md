@@ -55,7 +55,7 @@ EduNote
 │     ├─ 학급경영일지
 │     └─ 학생 메모 보드
 │
-└─ [AI 스킬즈]
+└─ [AI 스킬즈]                  ← 하위메뉴 드래그 정렬 지원
    ├─ 내 스킬                  ← 스킬 목록·실행·수정·공유, HTML 앱 만들기(HtmlAppCreator) (MY_AI_TOOLS)
    └─ 스킬마켓             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
 

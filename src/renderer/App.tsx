@@ -78,6 +78,8 @@ type SidebarMenuItem = {
   label: string;
 };
 
+type MenuSection = 'student' | 'lesson' | 'admin' | 'myTools';
+
 const orderStorageKey = (section: string) => `edunote_menu_order_${section}_v1`;
 
 const restoreMenuOrder = (section: string, items: SidebarMenuItem[]) => {
@@ -492,14 +494,20 @@ const App: React.FC = () => {
     { mode: AppMode.TRANSLATOR, icon: Languages, label: '간단 번역' },
   ];
 
+  const defaultMyToolsMenuItems: SidebarMenuItem[] = [
+    { mode: AppMode.MY_AI_TOOLS, icon: Wrench, label: '내 스킬' },
+    { mode: AppMode.MY_AI_TOOLS_SHARED, icon: BookMarked, label: '스킬마켓' },
+  ];
+
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
   const [lessonMenuItems, setLessonMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('lesson', defaultLessonMenuItems));
   const [adminMenuItems, setAdminMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('admin', defaultAdminMenuItems));
-  const [draggedMenu, setDraggedMenu] = useState<{ section: 'student' | 'lesson' | 'admin'; mode: AppMode } | null>(null);
+  const [myToolsMenuItems, setMyToolsMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('myTools', defaultMyToolsMenuItems));
+  const [draggedMenu, setDraggedMenu] = useState<{ section: MenuSection; mode: AppMode } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const reorderMenuItem = (
-    section: 'student' | 'lesson' | 'admin',
+    section: MenuSection,
     fromMode: AppMode,
     toMode: AppMode,
   ) => {
@@ -515,10 +523,11 @@ const App: React.FC = () => {
     };
     if (section === 'student') setStudentMenuItems(update);
     else if (section === 'lesson') setLessonMenuItems(update);
-    else setAdminMenuItems(update);
+    else if (section === 'admin') setAdminMenuItems(update);
+    else setMyToolsMenuItems(update);
   };
 
-  const handleMenuDrop = (section: 'student' | 'lesson' | 'admin', targetMode: AppMode) => {
+  const handleMenuDrop = (section: MenuSection, targetMode: AppMode) => {
     if (!draggedMenu || draggedMenu.section !== section) return;
     reorderMenuItem(section, draggedMenu.mode, targetMode);
     setDraggedMenu(null);
@@ -1326,20 +1335,26 @@ const App: React.FC = () => {
               </button>
               {myToolsSectionOpen && (
                 <div className="px-1.5 pb-1.5 space-y-0.5">
-                  <button
-                    onClick={() => handleMyToolsTabChange('my')}
-                    className={myToolsNavClass(AppMode.MY_AI_TOOLS)}
-                  >
-                    <Wrench className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">내 스킬</span>
-                  </button>
-                  <button
-                    onClick={() => handleMyToolsTabChange('market')}
-                    className={myToolsNavClass(AppMode.MY_AI_TOOLS_SHARED)}
-                  >
-                    <BookMarked className="w-4 h-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">스킬마켓</span>
-                  </button>
+                  {myToolsMenuItems.map(({ mode: m, icon: Icon, label }) => (
+                    <div
+                      key={m}
+                      draggable
+                      onDragStart={() => setDraggedMenu({ section: 'myTools', mode: m })}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => handleMenuDrop('myTools', m)}
+                      onDragEnd={() => setDraggedMenu(null)}
+                      className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'myTools' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
+                    >
+                      <GripVertical className="w-3.5 h-3.5 shrink-0 text-pink-400 cursor-grab mt-2.5" />
+                      <button
+                        onClick={() => handleMyToolsTabChange(m === AppMode.MY_AI_TOOLS_SHARED ? 'market' : 'my')}
+                        className={`min-w-0 flex-1 ${myToolsNavClass(m)}`}
+                      >
+                        {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                        <span className="flex-1 text-left truncate">{label}</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
