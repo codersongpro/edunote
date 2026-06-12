@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DOMParser } from '@xmldom/xmldom';
+import { BLANK_HWPX_BASE64 } from './hwpxSkeleton';
 
 interface HwpxMetadata {
   title?: string;
@@ -18,16 +19,6 @@ function escapeXml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-function makeParagraph(text: string): string {
-  const lines = text.split('\n');
-  return lines
-    .map((line) => {
-      const safe = escapeXml(line);
-      return `<hp:p><hp:run><hp:t>${safe}</hp:t></hp:run></hp:p>`;
-    })
-    .join('\n');
 }
 
 function htmlToText(content: string): string {
@@ -63,65 +54,53 @@ function htmlToText(content: string): string {
   }
 }
 
-function buildHwpxXml(title: string, content: string, meta: HwpxMetadata): string {
-  const headerLines = Object.entries(meta)
-    .filter(([, v]) => v)
-    .map(([k, v]) => `<hp:p><hp:run><hp:t>${escapeXml(k)}: ${escapeXml(v!)}</hp:t></hp:run></hp:p>`)
-    .join('\n');
-
-  const titleLine = `<hp:p><hp:run><hp:t>${escapeXml(title)}</hp:t></hp:run></hp:p>`;
-  const body = makeParagraph(htmlToText(content));
-
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<hsp:HWPMLPar xmlns:hsp="http://www.hancom.co.kr/hwpml/2012/paragraph"
-              xmlns:hp="http://www.hancom.co.kr/hwpml/2012/paragraph"
-              xmlns:hc="http://www.hancom.co.kr/hwpml/2012/core">
-  <hp:body>
-    <hp:sectionPr>
-      <hp:pagePr>
-        <hp:margins left="3000" right="3000" top="2000" bottom="1500" header="851" footer="1701" gutter="0"/>
-      </hp:pagePr>
-    </hp:sectionPr>
-    ${titleLine}
-    ${headerLines}
-    ${body}
-  </hp:body>
-</hsp:HWPMLPar>`;
+// 골격 문서의 첫 문단과 같은 속성(paraPrIDRef/styleIDRef)을 쓰는 문단 XML을 만든다.
+// 속성값이 header.xml에 정의된 ID와 일치해야 한글이 문서를 정상으로 인식한다.
+function makeParagraphs(text: string, paraAttrs: { paraPrIDRef: string; styleIDRef: string }): string {
+  let id = 1;
+  return text
+    .split('\n')
+    .map(line =>
+      `<hp:p id="${id++}" paraPrIDRef="${paraAttrs.paraPrIDRef}" styleIDRef="${paraAttrs.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
+      `<hp:run charPrIDRef="0"><hp:t>${escapeXml(line)}</hp:t></hp:run></hp:p>`)
+    .join('');
 }
 
-async function buildHwpxZip(title: string, content: string, meta: HwpxMetadata): Promise<Buffer> {
-  const zip = new JSZip();
+// 원본 zip의 항목을 순서 그대로 새 zip에 복사한다 (수정된 항목만 교체).
+// JSZip이 임의로 추가하는 폴더 항목을 만들지 않고, 한글이 생성하는 파일과
+// 동일하게 모든 항목을 DEFLATE로 압축한다.
+async function repackZip(source: JSZip, replaced: Map<string, string>): Promise<Buffer> {
+  const out = new JSZip();
+  for (const name of Object.keys(source.files)) {
+    const entry = source.files[name];
+    if (entry.dir) continue;
+    const content = replaced.has(name) ? replaced.get(name)! : await entry.async('uint8array');
+    out.file(name, content, { createFolders: false, compression: 'DEFLATE' });
+  }
+  return out.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
 
-  zip.file('mimetype', 'application/hwp+zip', { compression: 'STORE' });
+// 한글이 만든 빈 문서 골격에 제목·메타·본문 문단을 주입해 HWPX 버퍼를 만든다.
+export async function buildHwpxZip(title: string, content: string, meta: HwpxMetadata): Promise<Buffer> {
+  const skeleton = await JSZip.loadAsync(Buffer.from(BLANK_HWPX_BASE64, 'base64'));
+  const sectionPath = 'Contents/section0.xml';
+  const sectionXml = await skeleton.file(sectionPath)!.async('string');
 
-  zip.file(
-    'META-INF/container.xml',
-    `<?xml version="1.0" encoding="UTF-8"?>
-<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-  <rootfiles>
-    <rootfile full-path="Contents/content.hpf" media-type="application/hwp+zip"/>
-  </rootfiles>
-</container>`,
-  );
+  // 골격 첫 문단의 속성을 그대로 따라간다 (header.xml에 정의된 ID 보장)
+  const firstPara = sectionXml.match(/<hp:p [^>]*paraPrIDRef="(\d+)"[^>]*styleIDRef="(\d+)"/);
+  const paraAttrs = { paraPrIDRef: firstPara?.[1] ?? '0', styleIDRef: firstPara?.[2] ?? '0' };
 
-  zip.file(
-    'Contents/content.hpf',
-    `<?xml version="1.0" encoding="UTF-8"?>
-<opf:package xmlns:opf="http://www.idpf.org/2007/opf" version="2.0">
-  <opf:manifest>
-    <opf:item id="section0" href="section0.xml" media-type="application/xml"/>
-  </opf:manifest>
-  <opf:spine>
-    <opf:itemref idref="section0"/>
-  </opf:spine>
-</opf:package>`,
-  );
+  const metaLines = Object.entries(meta)
+    .filter(([key, value]) => key !== 'title' && value)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+  const bodyText = [title, metaLines, htmlToText(content)].filter(Boolean).join('\n');
 
-  const xml = buildHwpxXml(title, content, meta);
-  zip.file('Contents/section0.xml', xml);
+  const closeTag = '</hs:sec>';
+  if (!sectionXml.includes(closeTag)) throw new Error('HWPX 골격 문서 형식이 올바르지 않습니다.');
+  const newSectionXml = sectionXml.replace(closeTag, `${makeParagraphs(bodyText, paraAttrs)}${closeTag}`);
 
-  const buf = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
-  return buf;
+  return repackZip(skeleton, new Map([[sectionPath, newSectionXml]]));
 }
 
 export async function generateHwpx(
