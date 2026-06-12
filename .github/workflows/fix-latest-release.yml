@@ -1,0 +1,43 @@
+name: Fix Latest Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: v1.14.1 릴리스 및 태그 삭제
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'codersongpro';
+            const repo = 'edunote';
+
+            await github.rest.repos.deleteRelease({ owner, repo, release_id: 338611336 });
+            console.log('릴리스 삭제 완료');
+
+            await github.rest.git.deleteRef({ owner, repo, ref: 'tags/v1.14.1' });
+            console.log('태그 삭제 완료');
+
+      - name: 워크플로우 파일 삭제
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: file } = await github.rest.repos.getContent({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-latest-release.yml',
+              ref: 'main'
+            });
+            await github.rest.repos.deleteFile({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-latest-release.yml',
+              message: '릴리스 삭제 완료 후 워크플로우 삭제',
+              sha: file.sha,
+              branch: 'main'
+            });
