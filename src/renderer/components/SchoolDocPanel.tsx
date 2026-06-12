@@ -277,47 +277,52 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // ─── Build prompt context ──────────────────────────────────────────────────
 
+  // 빈 입력 필드는 '(미입력)'으로 표기한다 — AI가 제목·주제에 맞춰 추정해 채우도록
+  // 프롬프트 전역 지침(geminiService의 EMPTY_FIELD_INSTRUCTION)과 짝을 이룬다.
+  const field = (label: string, value: string | undefined): string =>
+    `[${label}]: ${value?.trim() ? value : '(미입력)'}`;
+
   const buildPromptContext = (): string => {
     switch (activeTab) {
       case DocType.GONGMUN: {
-        return `[공문 유형]: 내부결재\n[제목]: ${gongmunData.title || '(미입력)'}\n[본문 요청사항]: ${gongmunData.bodyContext || '(미입력)'}`;
+        return `[공문 유형]: 내부결재\n${field('제목', gongmunData.title)}\n${field('본문 요청사항', gongmunData.bodyContext)}`;
       }
       case DocType.PLAN:
-        return `[주제/사업명]: ${planData.topic}\n[대상]: ${planData.target}\n[예산]: ${planData.budget}\n[추가 사항]: ${planData.extraInfo}`;
+        return `${field('주제/사업명', planData.topic)}\n${field('대상', planData.target)}\n${field('예산', planData.budget)}\n${field('추가 사항', planData.extraInfo)}`;
       case DocType.REPORT:
-        return `[주제/사업명]: ${reportData.topic}\n[대상]: ${reportData.target}\n[예산]: ${reportData.budget}\n[운영 결과 및 주요 내용]: ${reportData.summary}\n[추가 사항]: ${reportData.extraInfo}`;
+        return `${field('주제/사업명', reportData.topic)}\n${field('대상', reportData.target)}\n${field('예산', reportData.budget)}\n${field('운영 결과 및 주요 내용', reportData.summary)}\n${field('추가 사항', reportData.extraInfo)}`;
       case DocType.NEWSLETTER:
-        return `[제목]: ${newsletterData.title}\n[대상]: ${newsletterData.target}\n[내용]: ${newsletterData.context}`;
+        return `${field('제목', newsletterData.title)}\n${field('대상', newsletterData.target)}\n${field('내용', newsletterData.context)}`;
       case DocType.MESSAGE: {
         if (msgSubTab === 'social') {
-          let msgCtx = `[유형]: 소통 메세지\n[나와의 관계]: ${messageData.relationship}\n[작성 내용]: ${messageData.context}`;
+          let msgCtx = `[유형]: 소통 메세지\n${field('나와의 관계', messageData.relationship)}\n${field('작성 내용', messageData.context)}`;
           if (messageData.isReply && messageData.receivedMessage.trim()) {
             msgCtx += `\n[답장 생성]: 예\n[받은 메시지]: ${messageData.receivedMessage}`;
           }
           return msgCtx;
         }
         const typeLabel = messageData.type === MessageType.SMS ? '단문(SMS)' : '장문(LMS)';
-        let msgCtx = `[수신 대상]: ${messageData.target}\n[문자 유형]: ${typeLabel}\n[내용]: ${messageData.context}`;
+        let msgCtx = `${field('수신 대상', messageData.target)}\n[문자 유형]: ${typeLabel}\n${field('내용', messageData.context)}`;
         if (messageData.isReply && messageData.receivedMessage.trim()) {
           msgCtx += `\n[답장 생성]: 예\n[나와의 관계]: ${messageData.relationship}\n[받은 메시지]: ${messageData.receivedMessage}`;
         }
         return msgCtx;
       }
       case DocType.PUMUI: {
-        let ctx = `[품의 유형]: ${pumuiData.type}\n[품의 제목/건명]: ${pumuiData.title}\n[관련 공문/근거]: ${pumuiData.relatedDoc}\n[소요 예산]: ${pumuiData.budget}원\n[산출 내역]: ${pumuiData.calcDetails}`;
+        let ctx = `[품의 유형]: ${pumuiData.type}\n${field('품의 제목/건명', pumuiData.title)}\n${field('관련 공문/근거', pumuiData.relatedDoc)}\n${field('소요 예산', pumuiData.budget ? `${pumuiData.budget}원` : '')}\n${field('산출 내역', pumuiData.calcDetails)}`;
         if (pumuiData.type === PumuiType.GOODS) {
-          ctx += `\n[세부 내역(물품명, 수량, 단가)]: ${pumuiData.details || ''}\n[구입 목적]: ${pumuiData.purpose || ''}`;
+          ctx += `\n${field('세부 내역(물품명, 수량, 단가)', pumuiData.details)}\n${field('구입 목적', pumuiData.purpose)}`;
         } else if (pumuiData.type === PumuiType.ALLOWANCE) {
-          ctx += `\n[지급 대상]: ${pumuiData.target || ''}\n[사업 일시]: ${pumuiData.datetime || ''}`;
+          ctx += `\n${field('지급 대상', pumuiData.target)}\n${field('사업 일시', pumuiData.datetime)}`;
         } else if (pumuiData.type === PumuiType.BIZ_PROMOTION) {
-          ctx += `\n[일시]: ${pumuiData.datetime || ''}\n[장소]: ${pumuiData.place || ''}\n[협의 안건]: ${pumuiData.agenda || ''}\n[참석자]: ${pumuiData.attendees || ''}`;
+          ctx += `\n${field('일시', pumuiData.datetime)}\n${field('장소', pumuiData.place)}\n${field('협의 안건', pumuiData.agenda)}\n${field('참석자', pumuiData.attendees)}`;
         }
         return ctx;
       }
       case DocType.MEETING_MINUTES:
-        return `[제목]: ${meetingMinutesData.title}\n[학교명]: ${meetingMinutesData.schoolName}\n[일시]: ${meetingMinutesData.datetime}\n[장소]: ${meetingMinutesData.place}\n[출석자]: ${meetingMinutesData.attendees}\n[회의 안건]: ${meetingMinutesData.topic}\n[회의 내용]: ${meetingMinutesData.context}`;
+        return `${field('제목', meetingMinutesData.title)}\n${field('학교명', meetingMinutesData.schoolName)}\n${field('일시', meetingMinutesData.datetime)}\n${field('장소', meetingMinutesData.place)}\n${field('출석자', meetingMinutesData.attendees)}\n${field('회의 안건', meetingMinutesData.topic)}\n${field('회의 내용', meetingMinutesData.context)}`;
       case DocType.PROMOTION:
-        return `[학교명]: ${promotionData.schoolName}\n[행사 일시]: ${promotionData.datetime}\n[대상]: ${promotionData.target}\n[내용]: ${promotionData.content}\n[목적/의의]: ${promotionData.purpose}\n[인터뷰 대상자]: ${promotionData.interview}`;
+        return `${field('학교명', promotionData.schoolName)}\n${field('행사 일시', promotionData.datetime)}\n${field('대상', promotionData.target)}\n${field('내용', promotionData.content)}\n${field('목적/의의', promotionData.purpose)}\n${field('인터뷰 대상자', promotionData.interview)}`;
       default:
         return '';
     }

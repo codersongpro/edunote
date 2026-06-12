@@ -5,7 +5,7 @@ import { SAMPLE_TOOLS } from '../data/sampleTools';
 import MyToolEditor from './MyToolEditor';
 import { safeSetItem } from '../lib/safeStorage';
 import MyToolRunner from './MyToolRunner';
-import MyToolChatCreator from './MyToolChatCreator';
+import MyToolChatCreator, { ChatToolDrafts } from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
 import { parseImportedTools, validateImportedTool } from '../lib/security';
 import {
@@ -392,9 +392,21 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
     }
   }, [tab]);
 
-  const handleChatComplete = (draft: Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'>) => {
-    setChatDraft(draft);
-    setView('create-wizard');
+  // 대화로 만들기 완료 — 앱은 목록에 바로 저장하고, 스킬은 확인 화면(위저드)을 거친다
+  const handleChatComplete = (drafts: ChatToolDrafts) => {
+    if (drafts.app) {
+      const now = new Date().toISOString();
+      const autoAuthor = [teacherName, institution].filter(Boolean).join(' / ') || undefined;
+      const appTool: CustomTool = { ...drafts.app, id: crypto.randomUUID(), createdAt: now, updatedAt: now, author: drafts.app.author || autoAuthor };
+      saveTools([...tools, appTool]);
+      notifyToast({ type: 'success', title: `"${appTool.name}" 앱을 내 스킬에 추가했습니다.` });
+    }
+    if (drafts.skill) {
+      setChatDraft(drafts.skill);
+      setView('create-wizard');
+    } else {
+      setView('list');
+    }
   };
 
   // ── 뷰 라우팅 ──

@@ -960,20 +960,29 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     for (const f of files) parts.push(fileToPart(f));
   }
 
+  const gonggoField = (value: string | undefined): string => (value?.trim() ? value : '(미입력)');
   const gonggoContext =
     docType === DocType.GONGGO && gonggoInputs
       ? `
 [공고 정보]
-- 공고 제목: ${gonggoInputs.title}
+- 공고 제목: ${gonggoField(gonggoInputs.title)}
 - 공고 번호: ${gonggoInputs.number || '제2026-001호 (임의 입력)'}
-- 공고 내용: ${gonggoInputs.content}
-- 접수 기간/마감: ${gonggoInputs.deadline}
-- 문의처: ${gonggoInputs.contact}
-- 추가 사항: ${gonggoInputs.extraInfo}`
+- 공고 내용: ${gonggoField(gonggoInputs.content)}
+- 접수 기간/마감: ${gonggoField(gonggoInputs.deadline)}
+- 문의처: ${gonggoField(gonggoInputs.contact)}
+- 추가 사항: ${gonggoField(gonggoInputs.extraInfo)}`
       : '';
 
+  // 사용자가 모든 입력칸을 채우지 않아도 제목·주제에 어울리는 완성 문서가 나오도록
+  const emptyFieldInstruction = `[미입력 항목 처리 — 반드시 준수]
+- 입력 정보에 "(미입력)"으로 표시되었거나 값이 비어 있는 항목은, 제목·주제와 문서 맥락에 어울리는 내용을 자연스럽게 추정하여 채워서 완성된 문서를 작성하세요.
+- "(미입력)", "미정", "추후 안내", "정보가 제공되지 않음" 같은 표시를 결과물에 절대 남기지 마세요.
+- 일시·기간이 비어 있으면 학년도와 오늘 날짜를 참고해 자연스러운 일정을 제안하고, 대상·장소 등은 학교 현장에서 일반적인 값으로 작성하세요.
+- 단, 사용자가 실제로 입력한 항목의 내용은 그대로 반영하고 임의로 바꾸지 마세요.
+- 법령명·공문번호·통계 등 근거·출처는 이 규칙의 예외입니다. [근거·출처 작성 규칙]에 따라 추측하지 말고 사용자가 채울 자리로 표시하세요.`;
+
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
@@ -1975,27 +1984,37 @@ ${fieldList}${templateNote}
   return await aiGenerate(prompt, '', { temperature: 0.7 });
 };
 
+// 대화 내용으로 AI 스킬을 설계한다. includeAppSpec이 true면 같은 주제를
+// HTML 앱으로 구현할 때의 상세 요구사항(appSpec)도 함께 설계해 돌려준다.
 export const generateToolFromChat = async (
   chatHistory: { role: 'ai' | 'user'; text: string }[],
   templateFile?: FileData | null,
-): Promise<Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> | null> => {
+  includeAppSpec = false,
+): Promise<(Omit<CustomTool, 'id' | 'createdAt' | 'updatedAt'> & { appSpec?: string }) | null> => {
   const conversation = chatHistory.map(m => `${m.role === 'ai' ? 'AI' : '교사'}: ${m.text}`).join('\n');
   const templateNote = templateFile
-    ? '\n첨부된 양식 파일을 분석하여, promptTemplate에 "이 양식의 형식을 따라 출력해줘"라는 지시를 명시해줘.'
+    ? '\n첨부된 양식 파일을 분석하여, promptTemplate에 양식의 구조(항목 구성·표 형식·문체)를 따라 출력하라는 지시를 구체적으로 명시해줘.'
     : '';
-  const prompt = `다음 대화를 바탕으로 EduNote AI 도구를 JSON으로 만들어줘.
+  const appSpecLine = includeAppSpec
+    ? '\n  "appSpec": "이 도구를 단일 HTML 웹앱으로 구현할 때의 요구사항을 한국어 5~10문장으로 구체적으로 서술 (화면 구성, 핵심 기능, 사용자 조작 흐름, 디자인 톤)",'
+    : '';
+  const prompt = `다음 대화를 바탕으로 교사용 AI 도구를 JSON으로 설계해줘.
 대화:
 ${conversation}
 ${templateNote}
 아래 형식으로만 출력해 (JSON만, 설명 없이):
 {
-  "name": "...",
-  "description": "...",
-  "category": "admin",
-  "inputs": [{ "id": "field_0", "label": "...", "type": "text", "placeholder": "..." }],
+  "name": "도구 이름 (간결하게)",
+  "description": "어떤 입력을 받아 무엇을 만들어 주는지 한 문장 요약",
+  "category": "admin",${appSpecLine}
+  "inputs": [{ "id": "field_0", "label": "...", "type": "text", "placeholder": "...", "required": true }],
   "promptTemplate": "..."
 }
-category는 admin/lesson/student/other 중 하나, type은 text/textarea/file-upload 중 하나.`;
+[설계 규칙]
+- category는 admin(교무 행정)/lesson(수업 자료)/student(학생 기록)/other 중 대화 주제에 맞는 것 하나.
+- inputs: 대화에서 언급된 입력 정보를 빠짐없이 필드로 만들고, id는 field_0부터 순서대로 붙여. 긴 글 입력은 type을 "textarea", 파일 첨부는 "file-upload", 짧은 값은 "text"로. 입력이 필요 없다고 했으면 빈 배열 [].
+- promptTemplate: AI에게 보낼 완성형 지시문. 역할(예: 당신은 학교 업무에 능숙한 교사입니다), 작업 내용, 출력 형식(항목 구성·표 사용 여부·문체)을 대화에서 파악한 대로 충실히 담아 작성해.
+- promptTemplate 안에서 각 입력값을 반드시 {{field_0}}, {{field_1}} 형태의 자리표시자로 모두 참조해야 해. (file-upload 필드는 제외 — 파일은 자동으로 첨부됨)`;
   try {
     let raw: string;
     if (templateFile) {
