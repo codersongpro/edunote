@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { notifyToast } from '../lib/toast';
-import { AlertTriangle, Copy, Download, FileText, History, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Copy, Download, FileText, History, Languages, Loader2, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
 import { sanitizeHtml } from '../lib/security';
 import { safeSetItem } from '../lib/safeStorage';
+import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/translation';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -15,6 +16,8 @@ interface GeneratedDisplayProps {
   hwpxFillData?: any[] | null;
   hwpxTemplate?: File;
   title?: string;
+  // 가정통신문·메시지처럼 다국어 안내가 필요한 문서에서 번역 버튼을 보여준다.
+  enableTranslation?: boolean;
 }
 
 interface SavedGeneratedVersion {
@@ -29,7 +32,7 @@ const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
 const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-[#1C1917] outline-none dark:bg-white dark:text-[#1C1917]';
 const optionClassName = 'bg-white text-[#1C1917]';
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -38,7 +41,52 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [selectedVersionId, setSelectedVersionId] = React.useState('');
   const [copyFormat, setCopyFormat] = React.useState<'html' | 'excel' | 'md'>('html');
   const [saveFormat, setSaveFormat] = React.useState<'pdf' | 'doc' | 'hwpx' | 'html' | 'md'>('pdf');
+  const [translateLang, setTranslateLang] = React.useState('en');
+  const [translating, setTranslating] = React.useState(false);
+  const [hasTranslation, setHasTranslation] = React.useState(false);
+  // 번역 전 원문 — 다른 언어로 다시 번역하거나 원문으로 되돌릴 때 쓴다.
+  const originalHtmlRef = useRef<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // 새 문서가 생성되면 번역 상태를 초기화한다.
+    originalHtmlRef.current = null;
+    setHasTranslation(false);
+  }, [content]);
+
+  // 현재 문서를 선택한 언어로 번역해 원문 아래에 병기한다 (다문화 가정 배포용).
+  const handleTranslate = async () => {
+    const el = contentRef.current;
+    const lang = languageByCode(translateLang);
+    if (!el || !lang || translating) return;
+    if (originalHtmlRef.current === null) originalHtmlRef.current = el.innerHTML;
+    setTranslating(true);
+    try {
+      const translated = await translateHtml(originalHtmlRef.current, lang);
+      el.innerHTML = sanitizeHtml(
+        `${originalHtmlRef.current}<hr/><p><strong>[${lang.label} · ${lang.native}]</strong></p>${translated}`,
+      );
+      setHasTranslation(true);
+      notifyToast({ type: 'success', title: `${lang.label} 번역을 원문 아래에 추가했습니다.` });
+    } catch (error) {
+      notifyToast({
+        type: 'error',
+        title: '번역 중 오류가 발생했습니다.',
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleRestoreOriginal = () => {
+    const el = contentRef.current;
+    if (el && originalHtmlRef.current !== null) {
+      el.innerHTML = originalHtmlRef.current;
+      originalHtmlRef.current = null;
+      setHasTranslation(false);
+    }
+  };
 
   const getPlainText = (): string => {
     const currentHtml = contentRef.current?.innerHTML || content;
@@ -552,6 +600,39 @@ h2,h3{page-break-after:avoid;}
               <Download className="w-3.5 h-3.5" />
               {hwpxDownloading ? '저장 중' : 'HWPX 양식 저장'}
             </button>
+          )}
+          {enableTranslation && (
+            <div className="flex items-center gap-1 rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-white p-1 shadow-sm">
+              <select
+                value={translateLang}
+                onChange={e => setTranslateLang(e.target.value)}
+                className={selectClassName}
+                style={{ colorScheme: 'light' }}
+                title="번역할 언어 — 번역문이 원문 아래에 함께 들어갑니다."
+              >
+                {TRANSLATION_LANGUAGES.map(lang => (
+                  <option key={lang.code} className={optionClassName} value={lang.code}>{lang.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleTranslate}
+                disabled={translating}
+                className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                title="선택한 언어 번역문을 원문 아래에 추가합니다 (다문화 가정 배포용)."
+              >
+                {translating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+                {translating ? '번역 중' : '번역'}
+              </button>
+              {hasTranslation && (
+                <button
+                  onClick={handleRestoreOriginal}
+                  className="inline-flex items-center gap-1 rounded px-2 py-1.5 text-xs font-bold text-[#44403C] hover:bg-[#EDE8E1]"
+                  title="번역문을 지우고 원문만 남깁니다."
+                >
+                  원문만
+                </button>
+              )}
+            </div>
           )}
           <div className="flex items-center gap-1 rounded-md border border-[#E7E5E4] dark:border-[#2E2822] bg-white p-1 shadow-sm">
             <select
