@@ -201,8 +201,11 @@ export function registerIpcHandlers(): void {
     const saveDir = store.get('saveDir');
     const title = meta.title || templateName;
     const safeName = title.replace(/[\\/:*?"<>|]/g, '_');
+    // 다른 저장 형식과 동일하게 파일명 앞에 날짜를 붙인다: (YYMMDD)_제목.hwpx
+    const now = new Date();
+    const stamp = `${String(now.getFullYear()).slice(2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const result = await dialog.showSaveDialog({
-      defaultPath: path.join(saveDir || app.getPath('documents'), `${safeName}.hwpx`),
+      defaultPath: path.join(saveDir || app.getPath('documents'), `(${stamp})_${safeName}.hwpx`),
       filters: [{ name: 'HWPX', extensions: ['hwpx'] }],
     });
     if (result.canceled || !result.filePath) return null;

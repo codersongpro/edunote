@@ -14,19 +14,31 @@ interface HwpxMetadata {
 
 // 골격 header.xml에 런타임으로 주입하는 스타일 ID (injectHeaderStyles와 일치해야 함).
 // 골격(blank.hwpx)의 기존 ID 범위: charPr 0~6, paraPr 0~15, borderFill 1~2.
+// 기본 포맷: 제목 22pt 가운데 / 기관명·본문·표 14pt / "1." 수준 15pt /
+// "가." 이하 수준은 단계마다 두 칸씩 들여쓰기.
 const CHAR_TITLE = '7'; // 22pt 굵게 — 문서 제목(h1)
-const CHAR_HEADING = '8'; // 14pt 굵게 — 절 제목(h2~h4)
-const CHAR_BOLD = '9'; // 10pt 굵게 — 본문 강조(strong/b, th)
+const CHAR_HEADING = '8'; // 15pt 굵게 — 절 제목(h2~h4)
+const CHAR_BOLD = '9'; // 14pt 굵게 — 본문 강조(strong/b, th)
+const CHAR_BODY = '10'; // 14pt — 본문 기본
+const CHAR_LEVEL1 = '11'; // 15pt — "1." 수준 문단
 const PARA_CENTER = '16'; // 가운데 정렬 문단
 const PARA_RIGHT = '17'; // 오른쪽 정렬 문단
 const BORDER_TABLE = '3'; // 표 셀 테두리(SOLID)
 const BODY_WIDTH = 42520; // 골격 본문 폭 (HWPUNIT)
 
+// 주입 charPr의 글자 크기(HWPUNIT). lineseg 줄 높이 계산에 쓴다.
+const CHAR_HEIGHTS: Record<string, number> = {
+  [CHAR_TITLE]: 2200,
+  [CHAR_HEADING]: 1500,
+  [CHAR_LEVEL1]: 1500,
+  [CHAR_BOLD]: 1400,
+  [CHAR_BODY]: 1400,
+};
+
 // 골격 첫 문단에서 추출한, 생성 문단이 따라가는 스타일 정보
 interface SectionStyle {
   paraPrIDRef: string;
   styleIDRef: string;
-  lineseg: string; // '<hp:linesegarray>…</hp:linesegarray>' — 한글은 문단마다 이 요소를 기대한다
 }
 
 function escapeXml(value: string): string {
@@ -50,11 +62,63 @@ function runXml(charPr: string, inner: string): string {
   return `<hp:run charPrIDRef="${charPr}">${inner}</hp:run>`;
 }
 
-function paraXml(runs: string, paraPr: string, style: SectionStyle): string {
+// 문단의 줄 수를 추정해 줄마다 lineseg를 만든다.
+// lineseg가 한 개뿐이면 한글이 긴 문단의 줄들을 같은 자리에 겹쳐 그린다.
+// 정확한 줄바꿈 위치는 한글이 편집 시 다시 계산하므로 추정값으로 충분하다.
+function linesegArrayXml(runs: string, width: number): string {
+  const charPr = runs.match(/charPrIDRef="(\d+)"/)?.[1] ?? CHAR_BODY;
+  const h = CHAR_HEIGHTS[charPr] ?? 1000;
+  const text = runs
+    .replace(/<hp:tbl[\s\S]*?<\/hp:tbl>/g, '') // 표는 셀 안 문단들이 각자 lineseg를 가진다
+    .replace(/<hp:tab\/>/g, '　')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&(amp|lt|gt|quot|apos);/g, 'x');
+  // 글자 폭 추정: 전각(한글 등) ≈ 글자 크기, 반각 ≈ 절반
+  const lineStarts = [0];
+  let acc = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const w = text.charCodeAt(i) < 0x2000 ? h * 0.52 : h;
+    if (acc + w > width && acc > 0) {
+      lineStarts.push(i);
+      acc = 0;
+    }
+    acc += w;
+  }
+  const spacing = Math.round(h * 0.6);
+  const segs = lineStarts.map((pos, i) =>
+    `<hp:lineseg textpos="${pos}" vertpos="${i * (h + spacing)}" vertsize="${h}" textheight="${h}" baseline="${Math.round(h * 0.85)}" spacing="${spacing}" horzpos="0" horzsize="${width}" flags="393216"/>`,
+  );
+  return `<hp:linesegarray>${segs.join('')}</hp:linesegarray>`;
+}
+
+function paraXml(runs: string, paraPr: string, style: SectionStyle, width = BODY_WIDTH): string {
+  const body = runs || runXml(CHAR_BODY, tXml(''));
   return (
     `<hp:p id="0" paraPrIDRef="${paraPr}" styleIDRef="${style.styleIDRef}" pageBreak="0" columnBreak="0" merged="0">` +
-    `${runs || runXml('0', tXml(''))}${style.lineseg}</hp:p>`
+    `${body}${linesegArrayXml(body, width)}</hp:p>`
   );
+}
+
+// 공문 번호 체계 수준 감지: 1. → 가. → 1) → 가) → (1) → (가) → ①
+// 수준이 깊어질 때마다 두 칸씩 들여쓰고, "1." 수준은 15pt로 키운다.
+const KOREAN_MARKERS = '가나다라마바사아자차카타파하';
+function levelOf(text: string): { prefix: string; charPr: string } {
+  const t = text.trimStart();
+  if (/^\d{1,2}\.(?!\d)/.test(t)) return { prefix: '', charPr: CHAR_LEVEL1 };
+  if (new RegExp(`^[${KOREAN_MARKERS}]\\.(?!\\d)`).test(t)) return { prefix: '  ', charPr: CHAR_BODY };
+  if (/^\d{1,2}\)/.test(t)) return { prefix: '    ', charPr: CHAR_BODY };
+  if (new RegExp(`^[${KOREAN_MARKERS}]\\)`).test(t)) return { prefix: '      ', charPr: CHAR_BODY };
+  if (/^\(\d{1,2}\)/.test(t)) return { prefix: '        ', charPr: CHAR_BODY };
+  if (new RegExp(`^\\([${KOREAN_MARKERS}]\\)`).test(t)) return { prefix: '          ', charPr: CHAR_BODY };
+  if (/^[①-⑮㉮-㉻]/.test(t)) return { prefix: '            ', charPr: CHAR_BODY };
+  return { prefix: '', charPr: CHAR_BODY };
+}
+
+// 강조(bold) 구간이 쓸 charPr — 기본 크기를 유지한 채 굵게만 바꾼다.
+function boldCharFor(base: string): string {
+  if (base === CHAR_BODY) return CHAR_BOLD;
+  if (base === CHAR_LEVEL1) return CHAR_HEADING;
+  return base;
 }
 
 function htmlToText(content: string): string {
@@ -175,7 +239,16 @@ function collectInline(node: any, bold: boolean, out: InlineSeg[]): void {
 
 // 인라인 콘텐츠를 <br> 기준으로 나눠 문단들로 만든다.
 // 굵은 구간은 별도 run으로 분리한다 (기본 스타일이 이미 굵으면 그대로 둔다).
-function inlineParas(el: any, baseChar: string, paraPr: string, style: SectionStyle, prefix = ''): string[] {
+// 본문 기본 스타일일 때는 줄머리 기호(1., 가., 1)…)로 수준을 감지해
+// 들여쓰기와 글자 크기를 정한다.
+function inlineParas(
+  el: any,
+  baseChar: string,
+  paraPr: string,
+  style: SectionStyle,
+  prefix = '',
+  width = BODY_WIDTH,
+): string[] {
   const segs: InlineSeg[] = [];
   collectInline(el, false, segs);
   const lines: { text: string; bold: boolean }[][] = [[]];
@@ -185,12 +258,19 @@ function inlineParas(el: any, baseChar: string, paraPr: string, style: SectionSt
   }
   if (lines.length > 1 && lines[lines.length - 1].length === 0) lines.pop();
   return lines.map((line, lineIdx) => {
+    let lineChar = baseChar;
+    let indent = '';
+    if (baseChar === CHAR_BODY && !prefix) {
+      const level = levelOf(line.map(seg => seg.text).join(''));
+      lineChar = level.charPr;
+      indent = level.prefix;
+    }
     const runs: string[] = [];
-    let buf = lineIdx === 0 ? prefix : '';
+    let buf = (lineIdx === 0 ? prefix : '') + indent;
     let bufBold = false;
     const flush = () => {
       if (!buf) return;
-      runs.push(runXml(bufBold && baseChar === '0' ? CHAR_BOLD : baseChar, tXml(buf)));
+      runs.push(runXml(bufBold ? boldCharFor(lineChar) : lineChar, tXml(buf)));
       buf = '';
     };
     for (const seg of line) {
@@ -199,7 +279,7 @@ function inlineParas(el: any, baseChar: string, paraPr: string, style: SectionSt
       buf += seg.text;
     }
     flush();
-    return paraXml(runs.join(''), paraPr, style);
+    return paraXml(runs.join(''), paraPr, style, width);
   });
 }
 
@@ -210,7 +290,7 @@ function convertList(listEl: any, ordered: boolean, depth: number, style: Sectio
     if (!li || li.nodeType !== 1 || tagOf(li) !== 'li') continue;
     const marker = `${'  '.repeat(depth)}${ordered ? `${index}. ` : '• '}`;
     index += 1;
-    out.push(...inlineParas(li, '0', style.paraPrIDRef, style, marker));
+    out.push(...inlineParas(li, CHAR_BODY, style.paraPrIDRef, style, marker));
     // li 안의 중첩 목록은 들여쓰기를 늘려 이어서 처리한다
     for (let j = 0; j < (li.childNodes?.length || 0); j += 1) {
       const nested = li.childNodes.item(j);
@@ -266,6 +346,8 @@ function convertTable(tableEl: any, style: SectionStyle, ids: { tbl: number }): 
     const tcXmls = cells
       .filter(cell => cell.row === r)
       .map(cell => {
+        // 셀 안 문단의 줄바꿈 추정 폭 = 셀 폭 − 좌우 안쪽 여백(510×2)
+        const cellWidth = Math.max(2000, colWidth * cell.colSpan - 1020);
         const inner: string[] = [];
         if (hasBlockChild(cell.el)) {
           convertBlocks(cell.el, style, inner, ids);
@@ -273,13 +355,15 @@ function convertTable(tableEl: any, style: SectionStyle, ids: { tbl: number }): 
           inner.push(
             ...inlineParas(
               cell.el,
-              cell.isHeader ? CHAR_BOLD : '0',
+              cell.isHeader ? CHAR_BOLD : CHAR_BODY,
               cell.isHeader ? PARA_CENTER : style.paraPrIDRef,
               style,
+              '',
+              cellWidth,
             ),
           );
         }
-        const paras = inner.join('') || paraXml('', style.paraPrIDRef, style);
+        const paras = inner.join('') || paraXml('', style.paraPrIDRef, style, cellWidth);
         return (
           `<hp:tc name="" header="0" hasMargin="0" protect="0" editable="0" dirty="0" borderFillIDRef="${BORDER_TABLE}">` +
           `<hp:subList id="" textDirection="HORIZONTAL" lineWrap="BREAK" vertAlign="CENTER" linkListIDRef="0" linkListNextIDRef="0" textWidth="0" textHeight="0" hasTextRef="0" hasNumRef="0">${paras}</hp:subList>` +
@@ -302,7 +386,7 @@ function convertTable(tableEl: any, style: SectionStyle, ids: { tbl: number }): 
     `<hp:inMargin left="510" right="510" top="141" bottom="141"/>` +
     `${rowXmls.join('')}</hp:tbl>`;
   // 표는 문단의 run 안에 글자처럼(treatAsChar) 배치된다
-  return paraXml(runXml('0', tbl), style.paraPrIDRef, style);
+  return paraXml(runXml(CHAR_BODY, tbl), style.paraPrIDRef, style);
 }
 
 // 블록 요소들을 순회하며 OWPML 문단/표 XML을 만든다.
@@ -312,7 +396,10 @@ function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl
     if (!child) continue;
     if (child.nodeType === 3) {
       const text = String(child.nodeValue || '').trim();
-      if (text) out.push(paraXml(runXml('0', tXml(text)), style.paraPrIDRef, style));
+      if (text) {
+        const level = levelOf(text);
+        out.push(paraXml(runXml(level.charPr, tXml(level.prefix + text)), style.paraPrIDRef, style));
+      }
       continue;
     }
     if (child.nodeType !== 1) continue;
@@ -345,7 +432,7 @@ function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl
     }
     const align = alignOf(child);
     const paraPr = align === 'center' ? PARA_CENTER : align === 'right' ? PARA_RIGHT : style.paraPrIDRef;
-    out.push(...inlineParas(child, '0', paraPr, style));
+    out.push(...inlineParas(child, CHAR_BODY, paraPr, style));
   }
 }
 
@@ -366,11 +453,12 @@ function injectHeaderStyles(header: string, basePara: string): string | null {
   if (!charPr0 || !paraPrBase || !borderFill1 || !charPr0.includes('<hh:underline')) return null;
 
   // 한글 원본 파일 기준으로 <hh:bold/>는 <hh:offset/> 뒤, <hh:underline/> 앞에 놓인다
-  const mkChar = (id: string, height: string) =>
-    charPr0
+  const mkChar = (id: string, height: string, bold: boolean) => {
+    const sized = charPr0
       .replace('id="0"', `id="${id}"`)
-      .replace(/height="\d+"/, `height="${height}"`)
-      .replace('<hh:underline', '<hh:bold/><hh:underline');
+      .replace(/height="\d+"/, `height="${height}"`);
+    return bold ? sized.replace('<hh:underline', '<hh:bold/><hh:underline') : sized;
+  };
   const mkPara = (id: string, align: string) =>
     paraPrBase
       .replace(`id="${basePara}"`, `id="${id}"`)
@@ -379,14 +467,17 @@ function injectHeaderStyles(header: string, basePara: string): string | null {
     .replace('id="1"', `id="${BORDER_TABLE}"`)
     .replace(/<hh:(leftBorder|rightBorder|topBorder|bottomBorder) type="NONE"/g, '<hh:$1 type="SOLID"');
 
+  const newChars =
+    mkChar(CHAR_TITLE, '2200', true) +
+    mkChar(CHAR_HEADING, '1500', true) +
+    mkChar(CHAR_BOLD, '1400', true) +
+    mkChar(CHAR_BODY, '1400', false) +
+    mkChar(CHAR_LEVEL1, '1500', false);
   return header
-    .replace(
-      '</hh:charProperties>',
-      `${mkChar(CHAR_TITLE, '2200')}${mkChar(CHAR_HEADING, '1400')}${mkChar(CHAR_BOLD, '1000')}</hh:charProperties>`,
-    )
+    .replace('</hh:charProperties>', `${newChars}</hh:charProperties>`)
     .replace('</hh:paraProperties>', `${mkPara(PARA_CENTER, 'CENTER')}${mkPara(PARA_RIGHT, 'RIGHT')}</hh:paraProperties>`)
     .replace('</hh:borderFills>', `${tableBorder}</hh:borderFills>`)
-    .replace(/<hh:charProperties itemCnt="(\d+)">/, (_m, n) => `<hh:charProperties itemCnt="${Number(n) + 3}">`)
+    .replace(/<hh:charProperties itemCnt="(\d+)">/, (_m, n) => `<hh:charProperties itemCnt="${Number(n) + 5}">`)
     .replace(/<hh:paraProperties itemCnt="(\d+)">/, (_m, n) => `<hh:paraProperties itemCnt="${Number(n) + 2}">`)
     .replace(/<hh:borderFills itemCnt="(\d+)">/, (_m, n) => `<hh:borderFills itemCnt="${Number(n) + 1}">`);
 }
@@ -408,8 +499,8 @@ async function repackZip(source: JSZip, replaced: Map<string, string>): Promise<
   return out.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
 }
 
-// 한글이 만든 빈 문서 골격에 제목·메타·본문을 주입해 HWPX 버퍼를 만든다.
-export async function buildHwpxZip(title: string, content: string, meta: HwpxMetadata): Promise<Buffer> {
+// 한글이 만든 빈 문서 골격에 본문·메타를 주입해 HWPX 버퍼를 만든다.
+export async function buildHwpxZip(_title: string, content: string, meta: HwpxMetadata): Promise<Buffer> {
   const skeleton = await JSZip.loadAsync(Buffer.from(BLANK_HWPX_BASE64, 'base64'));
   const sectionPath = 'Contents/section0.xml';
   const headerPath = 'Contents/header.xml';
@@ -421,7 +512,6 @@ export async function buildHwpxZip(title: string, content: string, meta: HwpxMet
   const style: SectionStyle = {
     paraPrIDRef: firstPara?.[1] ?? '0',
     styleIDRef: firstPara?.[2] ?? '0',
-    lineseg: sectionXml.match(/<hp:linesegarray>[\s\S]*?<\/hp:linesegarray>/)?.[0] ?? '',
   };
 
   const metaLines = Object.entries(meta)
@@ -434,15 +524,14 @@ export async function buildHwpxZip(title: string, content: string, meta: HwpxMet
   let bodyXml: string;
   if (root) {
     const out: string[] = [];
-    // 본문에 h1 제목이 이미 있으면 중복으로 넣지 않는다
-    if (title && !/<h1[\s>]/i.test(content)) {
-      out.push(paraXml(runXml(CHAR_TITLE, tXml(title)), PARA_CENTER, style));
-    }
-    for (const line of metaLines) out.push(paraXml(runXml('0', tXml(line)), style.paraPrIDRef, style));
+    // 본문은 미리보기(content)와 동일하게 변환한다.
+    // 파일명용 title을 문서 제목 문단으로 따로 주입하지 않는다 —
+    // 본문에 없는 "생성문서" 같은 가짜 제목이 생기는 문제를 막는다.
+    for (const line of metaLines) out.push(paraXml(runXml(CHAR_BODY, tXml(line)), style.paraPrIDRef, style));
     convertBlocks(root, style, out, { tbl: 1 });
     bodyXml = out.join('');
   } else {
-    const bodyText = [title, metaLines.join('\n'), htmlToText(content)].filter(Boolean).join('\n');
+    const bodyText = [metaLines.join('\n'), htmlToText(content)].filter(Boolean).join('\n');
     bodyXml = makeParagraphs(bodyText, style);
   }
 
