@@ -212,6 +212,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Promotion form
   const [promotionData, setPromotionData] = useState<PromotionInputs>({
+    title: '',
     schoolName: '',
     datetime: '',
     target: '',
@@ -322,7 +323,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       case DocType.MEETING_MINUTES:
         return `${field('제목', meetingMinutesData.title)}\n${field('학교명', meetingMinutesData.schoolName)}\n${field('일시', meetingMinutesData.datetime)}\n${field('장소', meetingMinutesData.place)}\n${field('출석자', meetingMinutesData.attendees)}\n${field('회의 안건', meetingMinutesData.topic)}\n${field('회의 내용', meetingMinutesData.context)}`;
       case DocType.PROMOTION:
-        return `${field('학교명', promotionData.schoolName)}\n${field('행사 일시', promotionData.datetime)}\n${field('대상', promotionData.target)}\n${field('내용', promotionData.content)}\n${field('목적/의의', promotionData.purpose)}\n${field('인터뷰 대상자', promotionData.interview)}`;
+        return `${field('제목', promotionData.title)}\n${field('학교명', promotionData.schoolName)}\n${field('행사 일시', promotionData.datetime)}\n${field('대상', promotionData.target)}\n${field('내용', promotionData.content)}\n${field('목적/의의', promotionData.purpose)}\n${field('인터뷰 대상자', promotionData.interview)}`;
       default:
         return '';
     }
@@ -359,7 +360,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     else if (tab === DocType.MESSAGE) title = messageData.context.substring(0, 20);
     else if (tab === DocType.PUMUI) title = pumuiData.title;
     else if (tab === DocType.MEETING_MINUTES) title = meetingMinutesData.title;
-    else if (tab === DocType.PROMOTION) title = promotionData.content.substring(0, 30);
+    else if (tab === DocType.PROMOTION) title = promotionData.title || promotionData.content.substring(0, 30);
     else if (tab === DocType.GONGGO) title = gonggoData.title;
     return title || 'document';
   };
@@ -752,6 +753,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             {activeTab === DocType.PROMOTION && (
               <div className="space-y-4">
                 <div>
+                  <label className={labelClass}>제목</label>
+                  <input type="text" className={inputClass} placeholder="예: ○○초, 지역과 함께하는 AI 체험 한마당 개최" value={promotionData.title} onChange={e => setPromotionData({ ...promotionData, title: e.target.value })} />
+                </div>
+                <div>
                   <label className={labelClass}>학교명</label>
                   <input type="text" className={inputClass} placeholder="예: ○○초등학교" value={promotionData.schoolName} onChange={e => setPromotionData({ ...promotionData, schoolName: e.target.value })} />
                 </div>
@@ -1117,6 +1122,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               content={generatedContent}
               hwpxFillData={hwpxFillData}
               hwpxTemplate={hwpxTemplateFile}
+              title={getHwpxTitleFromContent(generatedContent, activeTab)}
               enableTranslation={activeTab === DocType.NEWSLETTER || activeTab === DocType.MESSAGE}
             />
           ) : (

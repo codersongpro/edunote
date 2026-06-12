@@ -453,6 +453,7 @@ export interface MeetingMinutesInputs {
 }
 
 export interface PromotionInputs {
+  title: string;
   schoolName: string;
   datetime: string;
   target: string;

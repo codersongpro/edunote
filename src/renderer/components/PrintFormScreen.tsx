@@ -121,10 +121,18 @@ export default function PrintFormScreen() {
     doc.body.spellcheck = false;
   }, []);
 
-  const getEditedHtml = () => {
+  const getEditedDocumentHtml = () => {
     const doc = iframeRef.current?.contentDocument;
     if (!doc?.documentElement) return rendered;
     return `<!DOCTYPE html>${doc.documentElement.outerHTML}`;
+  };
+
+  const getEditedHwpxHtml = () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc?.body) return rendered;
+    const body = doc.body.cloneNode(true) as HTMLElement;
+    body.querySelectorAll('style, script, noscript').forEach(node => node.remove());
+    return `<div style="font-family:'Malgun Gothic','맑은 고딕',sans-serif;font-size:11pt;line-height:1.7;color:#000;">${body.innerHTML}</div>`;
   };
 
   const handlePrint = async () => {
@@ -132,7 +140,7 @@ export default function PrintFormScreen() {
     const now = new Date();
     const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
     try {
-      await (window.electronAPI as any).savePdf(getEditedHtml(), `${selectedForm.title}(${d}).pdf`);
+      await (window.electronAPI as any).savePdf(getEditedDocumentHtml(), `${selectedForm.title}(${d}).pdf`);
     } catch {
       notifyToast({ type: 'error', title: 'PDF 저장 중 오류가 발생했습니다.' });
     }
@@ -141,7 +149,7 @@ export default function PrintFormScreen() {
   const handleSaveHwpx = async () => {
     if (!rendered || !selectedForm) return;
     try {
-      await window.electronAPI.saveHwpx(selectedForm.title, getEditedHtml(), { title: selectedForm.title });
+      await window.electronAPI.saveHwpx(selectedForm.title, getEditedHwpxHtml(), { title: selectedForm.title });
     } catch {
       notifyToast({ type: 'error', title: 'HWPX 저장 중 오류가 발생했습니다.' });
     }
