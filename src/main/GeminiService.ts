@@ -6,6 +6,7 @@ import {
   getRetryDelayMs,
   isDailyQuotaError,
 } from './modelChain';
+import { RetryableStreamError, isDegenerateStream, isRetryableStreamError } from './streamGuard';
 import { RequestPacer } from './requestPacer';
 
 export type ApiTier = 'free' | 'paid';
@@ -33,6 +34,9 @@ const SAME_MODEL_RETRY_MAX_WAIT_MS = 15_000;
 
 // AI 호출 최대 대기 시간 (90초) — 응답이 멈춰도 무한정 기다리지 않도록
 const REQUEST_TIMEOUT_MS = 90_000;
+
+// 스트리밍 중 다음 청크를 기다리는 최대 시간 — 중간에 멈추면 다음 모델로 폴백
+const STREAM_CHUNK_TIMEOUT_MS = 45_000;
 
 // 무료 등급 분당 15회 제한 대응 — 호출 간 최소 4초 간격 (일괄 생성 시 429 연쇄 방지)
 const freeTierPacer = new RequestPacer(4_000);
@@ -197,6 +201,12 @@ async function generateWithModelChain(
         continue;
       }
 
+      // 비정상 반복 출력·스트리밍 중단 — 같은 모델 재시도는 무의미하므로 다음 모델로 폴백
+      if (isRetryableStreamError(error)) {
+        console.warn(`[${model}] 비정상 스트리밍 출력 → 다음 모델로 폴백:`, (error as Error).message);
+        continue;
+      }
+
       throw error;
     }
   }
@@ -207,6 +217,10 @@ async function generateWithModelChain(
         ? '오늘 사용할 수 있는 무료 API 한도를 모두 사용했습니다. 내일 다시 시도하거나 설정에서 다른 API 키를 사용해주세요.'
         : 'API 사용을 위해 잠시 기다리세요! 토큰 소모 또는 잦은 요청으로 지금은 결과물을 생성할 수 없습니다.',
     );
+  }
+
+  if (lastError && isRetryableStreamError(lastError)) {
+    throw new Error('AI가 정상적인 문서를 생성하지 못했습니다 (같은 내용 반복 또는 응답 중단). 잠시 후 다시 시도해 주세요.');
   }
 
   // 모든 모델이 실패한 경우 마지막 에러 전파
@@ -263,13 +277,32 @@ export async function generateContentMultipartStream(
       ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(options) }),
       REQUEST_TIMEOUT_MS,
     );
+    // for-await 대신 이터레이터를 직접 돌린다 — 청크 간 대기 시간 제한과
+    // 비정상 반복 감지 시 스트림을 명시적으로 닫기 위해서다.
+    const iterator = stream[Symbol.asyncIterator]();
     let full = '';
-    for await (const chunk of stream) {
-      const text = chunk.text ?? '';
-      if (text) {
-        full += text;
-        onEvent({ type: 'chunk', text });
+    try {
+      while (true) {
+        let next: IteratorResult<{ text?: string }>;
+        try {
+          next = await withTimeout(iterator.next(), STREAM_CHUNK_TIMEOUT_MS);
+        } catch {
+          throw new RetryableStreamError('생성 응답이 중간에 멈췄습니다.');
+        }
+        if (next.done) break;
+        const text = next.value.text ?? '';
+        if (text) {
+          full += text;
+          onEvent({ type: 'chunk', text });
+          // 글자 없는 마크업만 반복 생성 중이면 토큰 낭비를 멈추고 다음 모델로
+          if (isDegenerateStream(full)) {
+            throw new RetryableStreamError('AI가 같은 내용을 반복하는 비정상 출력을 생성했습니다.');
+          }
+        }
       }
+    } catch (error) {
+      await iterator.return?.(undefined).catch(() => undefined);
+      throw error;
     }
     return full;
   });
