@@ -349,7 +349,12 @@ const SettingsScreen: React.FC = () => {
                       개인 Gmail 계정(gmail.com)으로 로그아웃 후 다시 시도해 보세요.
                     </li>
                     <li>
-                      개인 계정인데도 같은 안내가 나오면{' '}
+                      <strong>AI Studio에서 프로젝트 먼저 만들기 (가장 간단한 방법)</strong> — aistudio.google.com 좌측 메뉴에서
+                      {' '}<strong>"프로젝트"</strong>를 클릭해 새 프로젝트를 만든 뒤, 다시 <strong>"API 키" → "API 키 만들기"</strong>에서
+                      방금 만든 프로젝트를 선택하면 키가 생성됩니다.
+                    </li>
+                    <li>
+                      위 방법도 안 되면{' '}
                       <button
                         onClick={() => window.electronAPI.openExternal('https://console.cloud.google.com')}
                         className="text-blue-600 dark:text-blue-400 hover:underline font-medium inline-flex items-center gap-0.5"

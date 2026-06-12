@@ -760,9 +760,12 @@ const App: React.FC = () => {
                       >
                         발급 페이지 열기
                       </button>
-                      <p className="mt-3 text-xs text-[#A8A29E] dark:text-[#6B5E57] leading-relaxed">
-                        키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나오면, 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드에서 대응 방법을 확인할 수 있어요.
-                      </p>
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
+                        <p className="font-bold">키 만들기가 거부될 때</p>
+                        <p>① AI Studio 좌측 메뉴 <strong>"프로젝트"</strong> 클릭 → 새 프로젝트 만들기</p>
+                        <p>② 다시 <strong>"API 키" → "API 키 만들기"</strong>에서 방금 만든 프로젝트 선택</p>
+                        <p className="text-amber-500 dark:text-amber-400">그래도 안 되면 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드를 확인하세요.</p>
+                      </div>
                     </div>
                   </div>
                 )}
