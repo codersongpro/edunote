@@ -1,0 +1,92 @@
+name: Fix Release Notes
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'codersongpro';
+            const repo = 'edunote';
+
+            // 1. v1.14.1: 이름이 "EduNote v1.13.4"로 잘못됨 → "EduNote v1.14.1"로 수정
+            {
+              const r = await github.rest.repos.getRelease({ owner, repo, release_id: 338611336 });
+              await github.rest.repos.updateRelease({
+                owner, repo, release_id: 338611336,
+                name: 'EduNote v1.14.1',
+                body: r.data.body.replace('## EduNote v1.13.4', '## EduNote v1.14.1')
+              });
+              console.log('v1.14.1 수정 완료');
+            }
+
+            // 2. v1.10.2: 이름이 "EduNote v1.10.1"로 잘못됨 → "EduNote v1.10.2"로 수정
+            {
+              const r = await github.rest.repos.getRelease({ owner, repo, release_id: 332272135 });
+              await github.rest.repos.updateRelease({
+                owner, repo, release_id: 332272135,
+                name: 'EduNote v1.10.2',
+                body: r.data.body.replace('## EduNote v1.10.1', '## EduNote v1.10.2')
+              });
+              console.log('v1.10.2 수정 완료');
+            }
+
+            // 3. v1.13.1: 본문에 이전 버전 내용 누적 → v1.13.1 내용만 남김
+            {
+              const r = await github.rest.repos.getRelease({ owner, repo, release_id: 335702920 });
+              const body = r.data.body;
+              const cutAt = body.indexOf('\r\n\r\n## EduNote v1.13.0');
+              const newBody = cutAt > -1 ? body.substring(0, cutAt) : body;
+              await github.rest.repos.updateRelease({ owner, repo, release_id: 335702920, body: newBody });
+              console.log('v1.13.1 수정 완료');
+            }
+
+            // 4. v1.13.0: 본문에 이전 버전 내용 누적 → v1.13.0 내용만 남김
+            {
+              const r = await github.rest.repos.getRelease({ owner, repo, release_id: 335559520 });
+              const body = r.data.body;
+              const cutAt = body.indexOf('\r\n\r\n## EduNote v1.12.2');
+              const newBody = cutAt > -1 ? body.substring(0, cutAt) : body;
+              await github.rest.repos.updateRelease({ owner, repo, release_id: 335559520, body: newBody });
+              console.log('v1.13.0 수정 완료');
+            }
+
+            // 5. v1.12.2: 본문에 v1.12.1 내용 누적 → v1.12.2 내용만 남김
+            {
+              const r = await github.rest.repos.getRelease({ owner, repo, release_id: 334911900 });
+              const body = r.data.body;
+              const cutAt = body.indexOf('\r\n\r\n## EduNote v1.12.1');
+              const newBody = cutAt > -1 ? body.substring(0, cutAt) : body;
+              await github.rest.repos.updateRelease({ owner, repo, release_id: 334911900, body: newBody });
+              console.log('v1.12.2 수정 완료');
+            }
+
+            console.log('모든 릴리스 정리 완료');
+
+      - name: 워크플로우 파일 자체 삭제
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: file } = await github.rest.repos.getContent({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-releases.yml',
+              ref: 'claude/github-edunote-release-1z3mj3'
+            });
+            await github.rest.repos.deleteFile({
+              owner: 'codersongpro',
+              repo: 'edunote',
+              path: '.github/workflows/fix-releases.yml',
+              message: '릴리스 노트 정리 완료 후 워크플로우 삭제',
+              sha: file.sha,
+              branch: 'claude/github-edunote-release-1z3mj3'
+            });
+            console.log('워크플로우 파일 삭제 완료');
