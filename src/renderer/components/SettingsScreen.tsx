@@ -25,13 +25,14 @@ const SettingsScreen: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
+  const [autoBackupInterval, setAutoBackupInterval] = useState<'off' | 'daily' | 'weekly'>('weekly');
   const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
   const [cautionTerms, setCautionTerms] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList, autoBackup] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
@@ -46,6 +47,7 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('privacyModeEnabled'),
         window.electronAPI.getConfig('reviewChecklistEnabled'),
         window.electronAPI.getConfig('cautionTerms'),
+        window.electronAPI.getConfig('autoBackupInterval'),
       ]);
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
@@ -61,6 +63,7 @@ const SettingsScreen: React.FC = () => {
       setPrivacyModeEnabled(privacyMode !== false);
       setReviewChecklistEnabled(reviewChecklist !== false);
       setCautionTerms(cautionTermList as string || '');
+      setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'weekly');
       setGuideExpanded(!(hn as boolean));
     };
     load();
@@ -736,6 +739,27 @@ const SettingsScreen: React.FC = () => {
               <Upload className="w-4 h-4" />
               백업 불러오기
             </button>
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-[#EDE8E1] dark:border-[#2E2822]">
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">자동 정기 백업</p>
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관).
+              </p>
+            </div>
+            <select
+              value={autoBackupInterval}
+              onChange={async e => {
+                const next = e.target.value as 'off' | 'daily' | 'weekly';
+                setAutoBackupInterval(next);
+                await window.electronAPI.setConfig({ autoBackupInterval: next });
+              }}
+              className="shrink-0 bg-white dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-sm text-[#1C1917] dark:text-[#F0EBE6] p-2 outline-none"
+            >
+              <option value="weekly">매주</option>
+              <option value="daily">매일</option>
+              <option value="off">사용 안 함</option>
+            </select>
           </div>
           {backupStatus && <p className="text-xs text-blue-600 dark:text-blue-400">{backupStatus}</p>}
         </div>

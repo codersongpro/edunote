@@ -235,6 +235,19 @@ const App: React.FC = () => {
       }
     };
     init();
+
+    // 자동 정기 백업 — 설정한 주기(매일/매주)가 지났으면 조용히 백업한다.
+    // 주기 판단과 저장은 메인 프로세스가 처리하고, 여기서는 localStorage만 전달한다.
+    try {
+      const dump: Record<string, string> = {};
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (key) dump[key] = localStorage.getItem(key) ?? '';
+      }
+      void window.electronAPI.autoBackup(dump).catch(() => {});
+    } catch {
+      // 자동 백업 실패가 앱 시작을 막지 않도록 한다.
+    }
   }, []);
 
   useEffect(() => {

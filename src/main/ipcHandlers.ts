@@ -13,7 +13,7 @@ import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
 
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
@@ -320,16 +320,8 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('data:get-file-path', (_e, name: string) => safeDataFile(name));
 
-  ipcMain.handle('data:export-backup', async (_e, localStorageDump?: Record<string, string>) => {
-    const saveDir = store.get('saveDir');
-    const now = new Date();
-    const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const result = await dialog.showSaveDialog({
-      defaultPath: path.join(saveDir || app.getPath('documents'), `edunote_backup_${stamp}.json`),
-      filters: [{ name: 'EduNote 백업 파일', extensions: ['json'] }],
-    });
-    if (result.canceled || !result.filePath) return null;
-
+  // 백업 페이로드(설정·데이터 파일·localStorage)를 만든다 — 수동/자동 백업 공용.
+  const buildBackupPayload = (localStorageDump?: Record<string, string>) => {
     const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
@@ -347,16 +339,56 @@ export function registerIpcHandlers(): void {
     // 렌더러 localStorage(공문 히스토리·메뉴 순서·즐겨찾기 등)도 함께 백업합니다.
     const localStorageData = (localStorageDump && typeof localStorageDump === 'object') ? localStorageDump : {};
 
-    const payload = {
+    return {
       app: 'EduNote',
       schemaVersion: 2,
-      exportedAt: now.toISOString(),
+      exportedAt: new Date().toISOString(),
       settings: safeSettings,
       dataFiles,
       localStorage: localStorageData,
     };
-    fs.writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf-8');
+  };
+
+  ipcMain.handle('data:export-backup', async (_e, localStorageDump?: Record<string, string>) => {
+    const saveDir = store.get('saveDir');
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const result = await dialog.showSaveDialog({
+      defaultPath: path.join(saveDir || app.getPath('documents'), `edunote_backup_${stamp}.json`),
+      filters: [{ name: 'EduNote 백업 파일', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+
+    fs.writeFileSync(result.filePath, JSON.stringify(buildBackupPayload(localStorageDump), null, 2), 'utf-8');
     return result.filePath;
+  });
+
+  // 자동 정기 백업 — 주기가 지났을 때만 대화상자 없이 데이터 폴더의 backups에 저장한다.
+  // 주기 전이거나 꺼져 있으면 null을 돌려준다.
+  ipcMain.handle('data:auto-backup', async (_e, localStorageDump?: Record<string, string>) => {
+    const interval = store.get('autoBackupInterval');
+    if (interval !== 'daily' && interval !== 'weekly') return null;
+    const last = Date.parse(store.get('lastAutoBackupAt') || '') || 0;
+    const dueMs = (interval === 'daily' ? 1 : 7) * 24 * 60 * 60 * 1000;
+    if (Date.now() - last < dueMs) return null;
+
+    const backupDir = path.join(getDataDir(), 'backups');
+    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const filePath = path.join(backupDir, `edunote_backup_${stamp}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(buildBackupPayload(localStorageDump), null, 2), 'utf-8');
+    store.set('lastAutoBackupAt', now.toISOString());
+
+    // 오래된 자동 백업은 최근 10개만 남긴다
+    const files = fs.readdirSync(backupDir).filter(f => /^edunote_backup_\d{8}\.json$/.test(f)).sort();
+    for (const f of files.slice(0, Math.max(0, files.length - 10))) {
+      try {
+        fs.unlinkSync(path.join(backupDir, f));
+      } catch {
+        // 정리 실패는 다음 백업 때 다시 시도한다.
+      }
+    }
+    return filePath;
   });
 
   ipcMain.handle('file:open-html-external', async (_e, htmlContent: string, suggestedName?: string) => {

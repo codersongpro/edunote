@@ -27,6 +27,10 @@ export function sanitizeConfigEntry(key: string, value: unknown): unknown | unde
     return value === 'free' || value === 'paid' ? value : undefined;
   }
 
+  if (key === 'autoBackupInterval') {
+    return value === 'off' || value === 'daily' || value === 'weekly' ? value : undefined;
+  }
+
   if (typeof value !== 'string' || value.length > MAX_STRING_VALUE_CHARS) {
     return undefined;
   }
