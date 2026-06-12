@@ -48,8 +48,12 @@ export enum AppMode {
   BUDGET_PLANNER = 'BUDGET_PLANNER',
   // 공문 보관함
   DOC_ARCHIVE = 'DOC_ARCHIVE',
+  // 공문 할일
+  DOC_TODO = 'DOC_TODO',
   // 양식 인쇄
   PRINT_FORM = 'PRINT_FORM',
+  // 간단 번역
+  TRANSLATOR = 'TRANSLATOR',
 }
 
 // ─── Custom Tool ───────────────────────────────────────────────────

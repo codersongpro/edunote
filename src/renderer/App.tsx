@@ -32,12 +32,14 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
 import DocArchivePanel from './components/DocArchivePanel';
 import PrintFormScreen from './components/PrintFormScreen';
+import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel';
+import TranslatorScreen from './components/TranslatorScreen';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -235,6 +237,37 @@ const App: React.FC = () => {
       }
     };
     init();
+
+    // 자동 정기 백업 — 설정한 주기(매일/매주)가 지났으면 조용히 백업한다.
+    // 주기 판단과 저장은 메인 프로세스가 처리하고, 여기서는 localStorage만 전달한다.
+    try {
+      const dump: Record<string, string> = {};
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (key) dump[key] = localStorage.getItem(key) ?? '';
+      }
+      void window.electronAPI.autoBackup(dump).catch(() => {});
+    } catch {
+      // 자동 백업 실패가 앱 시작을 막지 않도록 한다.
+    }
+
+    // 마감이 3일 이내이거나 이미 지난 공문 할일이 있으면 알려준다.
+    loadDocTodos()
+      .then(todos => {
+        const urgent = todos.filter(t => {
+          if (t.done || !t.deadline) return false;
+          const days = daysUntil(t.deadline);
+          return days !== null && days <= 3;
+        });
+        if (urgent.length > 0) {
+          showToast({
+            type: 'warning',
+            title: `마감이 임박한 공문 할일이 ${urgent.length}건 있습니다.`,
+            description: urgent.slice(0, 3).map(t => `${t.title} (${t.deadline})`).join(' · '),
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -434,10 +467,12 @@ const App: React.FC = () => {
   const defaultAdminMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
     { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
+    { mode: AppMode.DOC_TODO, icon: ListTodo, label: '공문 할일' },
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '문서작성기' },
     { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
     { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
     { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산안작성' },
+    { mode: AppMode.TRANSLATOR, icon: Languages, label: '간단 번역' },
   ];
 
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
@@ -549,7 +584,9 @@ const App: React.FC = () => {
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.BUDGET_PLANNER: return <BudgetPlannerScreen />;
       case AppMode.DOC_ARCHIVE: return <DocArchivePanel />;
+      case AppMode.DOC_TODO: return <DocTodoPanel />;
       case AppMode.PRINT_FORM: return <PrintFormScreen />;
+      case AppMode.TRANSLATOR: return <TranslatorScreen />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.STUDENT_RECORD_GROUP: return null;
@@ -723,9 +760,12 @@ const App: React.FC = () => {
                       >
                         발급 페이지 열기
                       </button>
-                      <p className="mt-3 text-xs text-[#A8A29E] dark:text-[#6B5E57] leading-relaxed">
-                        키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나오면, 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드에서 대응 방법을 확인할 수 있어요.
-                      </p>
+                      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
+                        <p className="font-bold">키 만들기가 거부될 때</p>
+                        <p>① AI Studio 좌측 메뉴 <strong>"프로젝트"</strong> 클릭 → 새 프로젝트 만들기</p>
+                        <p>② 다시 <strong>"API 키" → "API 키 만들기"</strong>에서 방금 만든 프로젝트 선택</p>
+                        <p className="text-amber-500 dark:text-amber-400">그래도 안 되면 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드를 확인하세요.</p>
+                      </div>
                     </div>
                   </div>
                 )}

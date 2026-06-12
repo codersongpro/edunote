@@ -72,6 +72,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getJsonDataPath: (name: string) => ipcRenderer.invoke('data:get-file-path', name),
   exportBackup: (localStorageDump?: Record<string, string>) => ipcRenderer.invoke('data:export-backup', localStorageDump),
   importBackup: () => ipcRenderer.invoke('data:import-backup'),
+  autoBackup: (localStorageDump?: Record<string, string>) => ipcRenderer.invoke('data:auto-backup', localStorageDump),
 
   // Dialog
   selectFolder: () => ipcRenderer.invoke('dialog:select-folder'),

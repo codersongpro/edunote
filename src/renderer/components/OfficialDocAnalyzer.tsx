@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarPlus, ClipboardList, Copy, FileText, Loader2, PanelLeftClose, PanelLeftOpen, Save } from 'lucide-react';
+import { CalendarPlus, ClipboardList, Copy, FileText, ListTodo, Loader2, PanelLeftClose, PanelLeftOpen, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AppMode, FileData } from '../types';
 import { analyzeOfficialDocument } from '../services/geminiService';
 import { FileUpload } from './FileUpload';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { notifyToast } from '../lib/toast';
+import { loadDocTodos, saveDocTodos, DocTodo } from './DocTodoPanel';
 
 const OfficialDocAnalyzer: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.OFFICIAL_DOC_ANALYZER);
@@ -113,6 +115,34 @@ const OfficialDocAnalyzer: React.FC = () => {
     if (!result) return;
     const safeTitle = (title || '공문_업무_추출').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
     await window.electronAPI.saveTxt(result, `${safeTitle}.txt`);
+  };
+
+  // 분석 결과에서 제목·마감일을 추출해 공문 할일 목록에 저장한다.
+  const handleSaveTodo = async () => {
+    if (!result) return;
+    const date = getCalendarDate();
+    const deadline = date ? `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}` : '';
+    const taskSection = result.match(/##\s*(?:할 일|해야 할 일)\s*\n+([\s\S]*?)(?=\n##\s|\n?$)/)?.[1] ?? '';
+    const memo = taskSection.trim().slice(0, 300);
+    const todo: DocTodo = {
+      id: `todo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      title: getCalendarTitle(),
+      deadline,
+      memo,
+      done: false,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const todos = await loadDocTodos();
+      await saveDocTodos([...todos, todo]);
+      notifyToast({
+        type: 'success',
+        title: '공문 할일에 저장했습니다.',
+        description: deadline ? `마감 ${deadline}` : '마감일을 찾지 못해 비워 두었습니다.',
+      });
+    } catch {
+      notifyToast({ type: 'error', title: '할일 저장 중 오류가 발생했습니다.' });
+    }
   };
 
   const handleOpenGoogleCalendar = async () => {
@@ -258,6 +288,15 @@ const OfficialDocAnalyzer: React.FC = () => {
             >
               <Save className="w-3.5 h-3.5" />
               TXT 저장
+            </button>
+            <button
+              onClick={handleSaveTodo}
+              disabled={!result}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-700 text-xs text-emerald-700 dark:text-emerald-300 disabled:opacity-40 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+              title="분석한 업무와 마감일을 공문 할일 목록에 추가합니다."
+            >
+              <ListTodo className="w-3.5 h-3.5" />
+              할일로 저장
             </button>
             <button
               onClick={handleOpenGoogleCalendar}

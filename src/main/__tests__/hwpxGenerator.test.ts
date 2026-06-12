@@ -45,11 +45,17 @@ describe('buildHwpxZip', () => {
   it('본문 텍스트가 문단으로 주입되고 메타 정보가 포함된다', async () => {
     const buf = await buildHwpxZip('계획서 제목', '<p>첫 줄</p><p>둘째 줄 & 검증</p>', { date: '2026-06-12' });
     const section = await readEntry(buf, 'Contents/section0.xml');
-    expect(section).toContain('<hp:t>계획서 제목</hp:t>');
     expect(section).toContain('<hp:t>둘째 줄 &amp; 검증</hp:t>');
     expect(section).toContain('date: 2026-06-12');
     // 일반 문단은 골격 첫 문단의 paraPrIDRef를 그대로 사용한다 (blank 골격은 3)
     expect(section).toMatch(/<hp:p id="0" paraPrIDRef="3" styleIDRef="0"[^>]*>(?:(?!<\/hp:p>).)*첫 줄/);
+  });
+
+  it('파일명용 제목을 본문 제목 문단으로 주입하지 않는다 (미리보기와 동일한 본문)', async () => {
+    const buf = await buildHwpxZip('생성문서', '<p>수신 (내부결재)</p><p>제목 독서교육 계획</p>', { title: '생성문서' });
+    const section = await readEntry(buf, 'Contents/section0.xml');
+    expect(section).not.toContain('생성문서');
+    expect(section).toContain('수신 (내부결재)');
   });
 
   it('모든 문단에 linesegarray가 포함된다', async () => {
@@ -68,6 +74,29 @@ describe('buildHwpxZip', () => {
     expect(section).not.toMatch(/<hp:t>[^<]*\t/);
   });
 
+  it('본문 폭을 넘는 긴 문단은 줄마다 lineseg를 가진다 (줄 겹침 방지)', async () => {
+    const longText = '학교 교육 활동에 깊은 관심과 격려를 보내 주시는 학부모님께 감사드립니다. '.repeat(5);
+    const buf = await buildHwpxZip('제목', `<p>${longText}</p>`, {});
+    const section = await readEntry(buf, 'Contents/section0.xml');
+    const para = section.match(/<hp:p [^>]*>(?:(?!<\/hp:p>)[\s\S])*감사드립니다[\s\S]*?<\/hp:p>/)?.[0] ?? '';
+    const segs = [...para.matchAll(/<hp:lineseg [^>]*vertpos="(\d+)"/g)].map(m => Number(m[1]));
+    expect(segs.length).toBeGreaterThan(1);
+    // 줄마다 세로 위치가 증가해야 겹쳐 그려지지 않는다
+    for (let i = 1; i < segs.length; i += 1) expect(segs[i]).toBeGreaterThan(segs[i - 1]);
+  });
+
+  it('공문 번호 수준에 따라 글자 크기와 들여쓰기가 적용된다', async () => {
+    const html = '<p>1. 추진 배경</p><p>가. 세부 내용</p><p>1) 더 깊은 수준</p>';
+    const buf = await buildHwpxZip('제목', html, {});
+    const section = await readEntry(buf, 'Contents/section0.xml');
+    // "1." 수준 → 15pt(charPr 11), 들여쓰기 없음
+    expect(section).toContain('<hp:run charPrIDRef="11"><hp:t>1. 추진 배경</hp:t></hp:run>');
+    // "가." 수준 → 14pt(charPr 10), 두 칸 들여쓰기
+    expect(section).toContain('<hp:run charPrIDRef="10"><hp:t>  가. 세부 내용</hp:t></hp:run>');
+    // "1)" 수준 → 14pt, 네 칸 들여쓰기
+    expect(section).toContain('<hp:run charPrIDRef="10"><hp:t>    1) 더 깊은 수준</hp:t></hp:run>');
+  });
+
   it('h1 제목은 가운데 정렬·제목 서식으로, strong은 굵게 run으로 분리된다', async () => {
     const buf = await buildHwpxZip(
       '제목',
@@ -77,8 +106,8 @@ describe('buildHwpxZip', () => {
     const section = await readEntry(buf, 'Contents/section0.xml');
     // h1 → charPr 7(22pt 굵게) + paraPr 16(가운데)
     expect(section).toMatch(/<hp:p id="0" paraPrIDRef="16"[^>]*><hp:run charPrIDRef="7"><hp:t>문서 큰제목<\/hp:t>/);
-    // strong → charPr 9(굵게) run 분리
-    expect(section).toContain('<hp:run charPrIDRef="0"><hp:t>일반 </hp:t></hp:run>');
+    // strong → charPr 9(14pt 굵게) run 분리, 일반 본문은 charPr 10(14pt)
+    expect(section).toContain('<hp:run charPrIDRef="10"><hp:t>일반 </hp:t></hp:run>');
     expect(section).toContain('<hp:run charPrIDRef="9"><hp:t>강조</hp:t></hp:run>');
     // 본문에 h1이 있으면 제목 문단을 중복 주입하지 않는다
     expect((section.match(/문서 큰제목|<hp:t>제목<\/hp:t>/g) || []).length).toBe(1);
@@ -125,10 +154,14 @@ describe('buildHwpxZip', () => {
   it('header.xml에 스타일이 주입되고 itemCnt가 갱신된다', async () => {
     const buf = await buildHwpxZip('제목', '<p>본문</p>', {});
     const header = await readEntry(buf, 'Contents/header.xml');
-    expect(header).toContain('<hh:charProperties itemCnt="10">');
+    expect(header).toContain('<hh:charProperties itemCnt="12">');
     expect(header).toContain('<hh:paraProperties itemCnt="18">');
     expect(header).toContain('<hh:borderFills itemCnt="3">');
     expect(header).toMatch(/<hh:charPr id="7" height="2200"[\s\S]*?<hh:bold\/>/);
+    // 본문 기본 14pt(굵게 아님), "1." 수준 15pt
+    expect(header).toMatch(/<hh:charPr id="10" height="1400"(?:(?!<\/hh:charPr>)[\s\S])*?<\/hh:charPr>/);
+    expect(header.match(/<hh:charPr id="10"[\s\S]*?<\/hh:charPr>/)?.[0]).not.toContain('<hh:bold/>');
+    expect(header).toMatch(/<hh:charPr id="11" height="1500"/);
     expect(header).toMatch(/<hh:paraPr id="16"[^>]*>[\s\S]*?horizontal="CENTER"/);
     expect(header).toMatch(/<hh:borderFill id="3"[\s\S]*?<hh:leftBorder type="SOLID"/);
   });
