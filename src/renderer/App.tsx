@@ -32,12 +32,14 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
 import DocArchivePanel from './components/DocArchivePanel';
 import PrintFormScreen from './components/PrintFormScreen';
+import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel';
+import TranslatorScreen from './components/TranslatorScreen';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -248,6 +250,24 @@ const App: React.FC = () => {
     } catch {
       // 자동 백업 실패가 앱 시작을 막지 않도록 한다.
     }
+
+    // 마감이 3일 이내이거나 이미 지난 공문 할일이 있으면 알려준다.
+    loadDocTodos()
+      .then(todos => {
+        const urgent = todos.filter(t => {
+          if (t.done || !t.deadline) return false;
+          const days = daysUntil(t.deadline);
+          return days !== null && days <= 3;
+        });
+        if (urgent.length > 0) {
+          showToast({
+            type: 'warning',
+            title: `마감이 임박한 공문 할일이 ${urgent.length}건 있습니다.`,
+            description: urgent.slice(0, 3).map(t => `${t.title} (${t.deadline})`).join(' · '),
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -447,10 +467,12 @@ const App: React.FC = () => {
   const defaultAdminMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
     { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
+    { mode: AppMode.DOC_TODO, icon: ListTodo, label: '공문 할일' },
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '문서작성기' },
     { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
     { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
     { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산안작성' },
+    { mode: AppMode.TRANSLATOR, icon: Languages, label: '간단 번역' },
   ];
 
   const [studentMenuItems, setStudentMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('student', defaultStudentMenuItems));
@@ -562,7 +584,9 @@ const App: React.FC = () => {
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.BUDGET_PLANNER: return <BudgetPlannerScreen />;
       case AppMode.DOC_ARCHIVE: return <DocArchivePanel />;
+      case AppMode.DOC_TODO: return <DocTodoPanel />;
       case AppMode.PRINT_FORM: return <PrintFormScreen />;
+      case AppMode.TRANSLATOR: return <TranslatorScreen />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.STUDENT_RECORD_GROUP: return null;
