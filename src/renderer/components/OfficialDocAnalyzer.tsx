@@ -135,6 +135,7 @@ const OfficialDocAnalyzer: React.FC = () => {
     try {
       const todos = await loadDocTodos();
       await saveDocTodos([...todos, todo]);
+      window.dispatchEvent(new CustomEvent('edunote:doc-todos-updated'));
       notifyToast({
         type: 'success',
         title: '공문 할일에 저장했습니다.',

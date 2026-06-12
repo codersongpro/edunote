@@ -122,6 +122,7 @@ const App: React.FC = () => {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showConcurrentNotice, setShowConcurrentNotice] = useState(false);
   const [lessonSectionOpen, setLessonSectionOpen] = useState(false);
+  const [myToolsSectionOpen, setMyToolsSectionOpen] = useState(false);
   const [myToolsActiveTab, setMyToolsActiveTab] = useState<'my' | 'market'>('my');
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,6 +193,11 @@ const App: React.FC = () => {
       if (prev.size > 0 && !concurrentNoticeDismissed.current) setShowConcurrentNotice(true);
       return prev;
     });
+  };
+
+  const handleMyToolsTabChange = (tab: 'my' | 'market') => {
+    setMyToolsActiveTab(tab);
+    goTo(tab === 'market' ? AppMode.MY_AI_TOOLS_SHARED : AppMode.MY_AI_TOOLS);
   };
 
   const handleDismissConcurrentNotice = () => {
@@ -299,6 +305,10 @@ const App: React.FC = () => {
     window.addEventListener('edunote-toast', handler);
     return () => window.removeEventListener('edunote-toast', handler);
   }, []);
+
+  useEffect(() => {
+    if (MY_TOOLS_MODES.includes(mode)) setMyToolsSectionOpen(true);
+  }, [mode]);
 
   // 닫기 동작이 있는 모달은 Esc로 닫을 수 있게 한다.
   // (면책 모달은 동의 체크가 필요해 닫기 동작이 없으므로 Esc를 적용하지 않는다.)
@@ -452,6 +462,13 @@ const App: React.FC = () => {
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
 
+  const myToolsNavClass = (m: AppMode) =>
+    `w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
+      mode === m
+        ? 'bg-pink-600 text-white font-semibold shadow-sm'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
+    }`;
+
   const defaultStudentMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.RECORD_CHATBOT, icon: Bot, label: '학생기록AI 챗봇' },
     { mode: AppMode.STUDENT_RECORD_GROUP, icon: GraduationCap, label: '생기부도우미' },
@@ -507,7 +524,7 @@ const App: React.FC = () => {
     setDraggedMenu(null);
   };
 
-  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM];
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR];
 
   const topNavItems = (() => {
     if (mode === AppMode.SCHOOL_DOC) {
@@ -558,14 +575,14 @@ const App: React.FC = () => {
     progress?: number | null;
     onClick: () => void;
   }> = [
-    { key: 'home', label: '홈', icon: Home, active: mode === AppMode.HOME, onClick: () => setMode(AppMode.HOME) },
+    { key: 'home', label: '홈', icon: Home, active: mode === AppMode.HOME, onClick: () => goTo(AppMode.HOME) },
     { key: 'settings', label: '설정', icon: Settings, active: mode === AppMode.SETTINGS, onClick: () => goTo(AppMode.SETTINGS) },
     { key: 'admin', label: '교무행정AI', icon: FileText, active: ADMIN_MODES.includes(mode), onClick: () => { setAdminSectionOpen(true); goTo(AppMode.EDUCATION_QA); } },
     { key: 'doc-analyzer', label: '공문요약·업무추출', icon: ClipboardList, active: mode === AppMode.OFFICIAL_DOC_ANALYZER, progress: getProgressFor(AppMode.OFFICIAL_DOC_ANALYZER), onClick: () => goTo(AppMode.OFFICIAL_DOC_ANALYZER) },
     { key: 'school-doc', label: '문서작성기', icon: FileText, active: mode === AppMode.SCHOOL_DOC, progress: getProgressFor(AppMode.SCHOOL_DOC), onClick: handleSchoolDocParent },
     { key: 'lesson', label: '수업자료AI', icon: Presentation, active: LESSON_AI_MODES.includes(mode), onClick: () => { setLessonSectionOpen(true); goTo(AppMode.LESSON_MATERIAL); } },
     { key: 'student', label: '학생기록AI', icon: Bot, active: STUDENT_RECORD_MODES.includes(mode), onClick: () => handleModeChange(AppMode.RECORD_CHATBOT) },
-    { key: 'my-tools', label: 'AI 스킬즈', icon: Wrench, active: MY_TOOLS_MODES.includes(mode), onClick: () => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); } },
+    { key: 'my-tools', label: 'AI 스킬즈', icon: Wrench, active: MY_TOOLS_MODES.includes(mode), onClick: () => { setMyToolsSectionOpen(true); handleMyToolsTabChange('my'); } },
     { key: 'guide', label: '사용 방법', icon: BookMarked, active: mode === AppMode.USAGE_GUIDE, onClick: () => goTo(AppMode.USAGE_GUIDE) },
     { key: 'about', label: '도움말 / 정보', icon: HelpCircle, active: mode === AppMode.ABOUT, onClick: () => goTo(AppMode.ABOUT) },
   ];
@@ -593,8 +610,9 @@ const App: React.FC = () => {
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;
       case AppMode.MY_RESOURCES: return <MyResourceLibrary />;
-      case AppMode.MY_AI_TOOLS: return <MyToolsScreen activeTab={myToolsActiveTab} onTabChange={setMyToolsActiveTab} schoolLevel={schoolLevel} />;
-      case AppMode.MY_AI_TOOLS_SHARED: return null;
+      case AppMode.MY_AI_TOOLS:
+      case AppMode.MY_AI_TOOLS_SHARED:
+        return <MyToolsScreen activeTab={myToolsActiveTab} onTabChange={handleMyToolsTabChange} schoolLevel={schoolLevel} />;
       case AppMode.SETTINGS: return <SettingsScreen />;
       case AppMode.ABOUT: return <AboutScreen />;
       case AppMode.DEMO_SAMPLES: return <DemoSamplesScreen />;
@@ -1021,7 +1039,7 @@ const App: React.FC = () => {
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
             <button
-              onClick={() => setMode(AppMode.HOME)}
+              onClick={() => goTo(AppMode.HOME)}
               className="flex items-baseline gap-1.5 text-lg font-extrabold text-[#1C1917] dark:text-[#F0EBE6] tracking-tight hover:text-blue-600 dark:hover:text-indigo-400 transition-colors"
             >
               <span>EduNote</span>
@@ -1050,11 +1068,11 @@ const App: React.FC = () => {
           <nav className="flex-1 min-h-0 overflow-y-auto py-3 px-2 space-y-1">
 
             <button
-              onClick={() => setMode(AppMode.HOME)}
+              onClick={() => goTo(AppMode.HOME)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-base rounded-md transition-all cursor-pointer ${
                 mode === AppMode.HOME
-                  ? 'bg-[#1C1917] dark:bg-[#2A2420] text-white dark:text-[#F0EBE6] font-semibold'
-                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
+                  ? 'bg-blue-600 text-white font-semibold shadow-sm'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300'
               }`}
             >
               <Home className="w-4 h-4 shrink-0" />
@@ -1065,8 +1083,8 @@ const App: React.FC = () => {
               onClick={() => goTo(AppMode.SETTINGS)}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md transition-all cursor-pointer ${
                 mode === AppMode.SETTINGS
-                  ? 'bg-[#1C1917] dark:bg-[#2A2420] text-white dark:text-[#F0EBE6] font-semibold'
-                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]'
+                  ? 'bg-amber-600 text-white font-semibold shadow-sm'
+                  : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
               }`}
             >
               <Settings className="w-4 h-4 shrink-0" />
@@ -1295,7 +1313,7 @@ const App: React.FC = () => {
             {/* ── 나만의AI ── */}
             <div className="rounded-xl overflow-hidden border border-pink-100 dark:border-pink-900/50 bg-pink-50/40 dark:bg-pink-950/20">
               <button
-                onClick={() => { setMyToolsActiveTab('my'); goTo(AppMode.MY_AI_TOOLS); }}
+                onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
                 className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-pink-50/80 dark:hover:bg-pink-900/20 transition-colors"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -1304,8 +1322,26 @@ const App: React.FC = () => {
                   </div>
                   <span className="text-sm font-bold text-pink-700 dark:text-pink-300 tracking-wide truncate">AI 스킬즈</span>
                 </div>
-                <ChevronRight className="w-3 h-3 text-pink-400" />
+                {myToolsSectionOpen ? <ChevronDown className="w-3 h-3 text-pink-400" /> : <ChevronRight className="w-3 h-3 text-pink-400" />}
               </button>
+              {myToolsSectionOpen && (
+                <div className="px-1.5 pb-1.5 space-y-0.5">
+                  <button
+                    onClick={() => handleMyToolsTabChange('my')}
+                    className={myToolsNavClass(AppMode.MY_AI_TOOLS)}
+                  >
+                    <Wrench className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">내 스킬</span>
+                  </button>
+                  <button
+                    onClick={() => handleMyToolsTabChange('market')}
+                    className={myToolsNavClass(AppMode.MY_AI_TOOLS_SHARED)}
+                  >
+                    <BookMarked className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left truncate">스킬마켓</span>
+                  </button>
+                </div>
+              )}
             </div>
           </nav>
 

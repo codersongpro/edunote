@@ -52,10 +52,17 @@ const DocTodoPanel: React.FC = () => {
   const [newDeadline, setNewDeadline] = useState('');
 
   useEffect(() => {
-    loadDocTodos().then(items => {
+    const reload = () => loadDocTodos().then(items => {
       setTodos(items);
       setLoaded(true);
     });
+    const handleUpdated = () => {
+      void reload();
+    };
+
+    reload();
+    window.addEventListener('edunote:doc-todos-updated', handleUpdated);
+    return () => window.removeEventListener('edunote:doc-todos-updated', handleUpdated);
   }, []);
 
   const update = async (next: DocTodo[]) => {

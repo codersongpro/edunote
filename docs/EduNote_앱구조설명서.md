@@ -1,7 +1,7 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
-작성 기준: 2026년 6월 2일
-대상 버전: EduNote v1.12.1
+작성 기준: 2026년 6월 12일
+대상 버전: EduNote v1.14.0
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
 
 ---
@@ -10,7 +10,7 @@
 
 EduNote는 교사의 학생기록 작성, 교무행정 문서 작성, 수업자료 제작, 공문 업무추출, 자료 관리 업무를 하나의 Windows 데스크톱 앱에서 처리하기 위해 만든 Electron (웹 기술로 만든 Windows 데스크톱 앱 프레임워크) 기반 애플리케이션이다.
 
-앱은 React (화면을 구성하는 자바스크립트 라이브러리) 화면을 Electron 데스크톱 환경에서 실행하며, Gemini API (구글이 제공하는 AI 서비스)를 통해 학생기록, 공문서, 수업자료, 업무 메모 등을 생성한다. 생성 결과는 HTML, PDF, TXT, CSV, HWPX 실험 형식 등으로 저장하거나 앱 내부에서 편집할 수 있다.
+앱은 React (화면을 구성하는 자바스크립트 라이브러리) 화면을 Electron 데스크톱 환경에서 실행하며, Gemini API (구글이 제공하는 AI 서비스)를 통해 학생기록, 공문서, 수업자료, 업무 메모 등을 생성한다. 생성 결과는 HTML, PDF, TXT, CSV, HWPX 형식 등으로 저장하거나 앱 내부에서 편집할 수 있다.
 
 ---
 
@@ -28,10 +28,12 @@ EduNote
 ├─ [교무행정AI]
 │  ├─ 교무행정AI 챗봇
 │  ├─ 공문요약·업무추출
+│  ├─ 공문 할일                ← 공문요약에서 저장한 업무의 마감일·완료 상태 관리
 │  ├─ 문서작성기             ← 9종 문서 생성 (탭 전환)
 │  ├─ 공문 보관함               ← 공문 캡처·첨부 저장·검색
 │  ├─ 양식 인쇄                 ← 학교 양식 10종 A4 출력
-│  └─ 예산안작성                ← 제목 주제 분석 기반 예산안 생성·0원 맞추기
+│  ├─ 예산안작성                ← 제목 주제 분석 기반 예산안 생성·0원 맞추기
+│  └─ 간단 번역                 ← 안내문·문자·알림장 문구 다국어 번역
 │
 ├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
@@ -53,7 +55,7 @@ EduNote
 │     ├─ 학급경영일지
 │     └─ 학생 메모 보드
 │
-└─ [내 스킬]
+└─ [AI 스킬즈]
    ├─ 내 스킬                  ← 스킬 목록·실행·수정·공유, HTML 앱 만들기(HtmlAppCreator) (MY_AI_TOOLS)
    └─ 스킬마켓             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
 
@@ -73,7 +75,7 @@ EduNote
 | AI SDK | @google/genai | Gemini API 호출, 텍스트·이미지·파일 입력 처리 |
 | 로컬 저장 | electron-store, JSON 파일 | 사용자 설정, 학생 명단, 자료실, 학생 메모, 백업 데이터 저장 |
 | 문서 처리 | HTML, CSS, Electron printToPDF | 공문서, 수업자료, 워크시트, PDF 저장 |
-| HWPX 실험 | JSZip, @xmldom/xmldom | HWPX 내부 XML 분석 및 템플릿 치환 실험 |
+| HWPX 저장 | JSZip, @xmldom/xmldom | HWPX 내부 XML 생성·분석, 줄 배치 정보(lineseg)와 기본 문서 포맷 구성 |
 | 마크다운 렌더링 | react-markdown | 챗봇 응답 마크다운 렌더링 |
 | 아이콘 | lucide-react | 메뉴 및 버튼 아이콘 |
 | QR 생성 | qrcode | QR 메이커 기능 |
@@ -171,7 +173,7 @@ edunote
 | `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
 | `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
 | `src/main/GeminiService.ts` | Gemini API 실제 호출, 모델 선택, 무료·유료 API 등급 처리, 이미지 생성 |
-| `src/main/HwpxGenerator.ts` | HWPX 파일 생성 실험 기능 |
+| `src/main/HwpxGenerator.ts` | HWPX 파일 생성 기능. 제목·본문·표 포맷과 줄 배치 정보를 구성한다. |
 | `src/main/store.ts` | electron-store 인스턴스 관리 |
 | `src/preload/index.ts` | preload (화면과 앱 본체를 안전하게 연결하는 중간 다리)가 renderer에 노출하는 `window.electronAPI` 정의 |
 | `src/preload/types.d.ts` | `window.electronAPI` 타입 정의 |
@@ -540,4 +542,4 @@ GitHub Actions 자동 실행
 | 상담 녹음 분석 | Gemini 오디오 입력으로 녹음파일 전사와 상담 요약 가능. 개인정보와 API tier 정책 검토 필요 |
 | 수업 참여방 | 교사 PC 로컬 서버와 QR 입장 구조 가능. 교사망·학생망 분리 환경에서는 외부 서버 방식 검토 필요 |
 | 파일 제출방 | 학생이 QR로 접속해 파일을 제출하고 교사 PC에 저장하는 구조 가능. 인증, 용량 제한, 확장자 제한 필요 |
-| HWPX 정식 저장 | 문서 구조 보존 안정성이 확보되면 구현중 상태에서 정식 기능으로 전환 가능 |
+| HWPX 저장 개선 | 한글 호환성, lineseg 생성, 표·본문 포맷 유지, 양식 인쇄 등 추가 화면 적용 범위 확대 |
