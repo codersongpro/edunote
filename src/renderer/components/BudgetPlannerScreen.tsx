@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
+import { useTour } from '../TourContext';
 import {
   AlertCircle,
   CheckCircle2,
@@ -1001,6 +1002,7 @@ function solveZeroBalance(items: BudgetItem[], totalBudget: number): { items: Bu
 }
 
 export default function BudgetPlannerScreen() {
+  const { startTour } = useTour();
   const [plans, setPlans] = useState<BudgetPlan[]>([]);
   const [activePlan, setActivePlan] = useState<BudgetPlan | null>(null);
   const [totalBudget, setTotalBudget] = useState('');
@@ -1619,10 +1621,18 @@ export default function BudgetPlannerScreen() {
         </button>
         <h1 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안작성</h1>
         <span className="text-xs text-[#A8A29E]">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
+        <button
+          onClick={() => startTour('budget-planner')}
+          className="ml-auto inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors shrink-0"
+          title="이 화면 사용법을 단계별로 안내합니다"
+        >
+          <HelpCircle className="w-3.5 h-3.5" />
+          튜토리얼
+        </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className={`${inputSidebarCollapsed ? 'hidden' : 'block'} w-80 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] overflow-y-auto`}>
+        <aside data-tour="budget-input" className={`${inputSidebarCollapsed ? 'hidden' : 'block'} w-80 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] overflow-y-auto`}>
           <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide">가격 조회 정보 선택 입력</span>
@@ -1749,6 +1759,7 @@ export default function BudgetPlannerScreen() {
               />
             )}
             <button
+              data-tour="budget-generate"
               onClick={handleNewPlan}
               disabled={!planTitle.trim() || !totalBudget || recommendationStatus === 'loading'}
               className={`${btnCls} mt-2 w-full bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm ring-2 ring-purple-200 dark:ring-purple-900 flex items-center justify-center gap-2`}
@@ -1777,7 +1788,7 @@ export default function BudgetPlannerScreen() {
 
         </aside>
 
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main data-tour="budget-output" className="flex-1 flex flex-col overflow-hidden">
           {!activePlan ? (
             <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
               <section className="rounded-xl border border-blue-100 dark:border-blue-800 bg-white dark:bg-[#221E1B] p-4 shadow-sm">

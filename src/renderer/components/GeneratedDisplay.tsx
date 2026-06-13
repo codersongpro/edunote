@@ -32,6 +32,44 @@ const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
 const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-[#1C1917] outline-none dark:bg-white dark:text-[#1C1917]';
 const optionClassName = 'bg-white text-[#1C1917]';
 
+// 미리보기/편집 영역에 들어온 문서 HTML에 공통 표·셀·제목 서식을 적용한다.
+// 표가 화면(A4 폭)을 넘지 않도록 table-layout: fixed와 셀 줄바꿈을 함께 지정한다.
+// 초기 생성 시점과 번역 결과 주입 직후 모두 호출해, 번역으로 새로 들어온 표에도 동일하게 적용한다.
+function applyDocumentStyles(el: HTMLElement): void {
+  el.querySelectorAll<HTMLTableElement>('table').forEach(table => {
+    if (!table.style.borderCollapse) table.style.borderCollapse = 'collapse';
+    if (!table.style.width) table.style.width = '100%';
+    if (!table.style.margin) table.style.margin = '10pt 0 14pt';
+    // 긴 번역어가 칸을 늘려 표가 화면 밖으로 넘치는 것을 막는다.
+    table.style.tableLayout = 'fixed';
+    table.style.maxWidth = '100%';
+  });
+  el.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
+    if (!cell.style.border) cell.style.border = '1pt solid #333';
+    if (!cell.style.padding) cell.style.padding = '8pt 10pt';
+    if (!cell.style.verticalAlign) cell.style.verticalAlign = 'middle';
+    // 긴 단어도 칸 안에서 줄바꿈되어 칸 너비를 넘지 않도록 한다.
+    cell.style.wordBreak = 'break-word';
+    cell.style.overflowWrap = 'break-word';
+  });
+  el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
+    if (!h1.style.textAlign) h1.style.textAlign = 'center';
+  });
+  el.querySelectorAll<HTMLElement>('.student-info').forEach(div => {
+    div.style.display = 'flex';
+    div.style.gap = '16pt';
+    div.style.justifyContent = 'flex-end';
+    if (!div.style.borderBottom) div.style.borderBottom = '1pt solid #000';
+    if (!div.style.paddingBottom) div.style.paddingBottom = '3pt';
+    if (!div.style.marginBottom) div.style.marginBottom = '6pt';
+  });
+  el.querySelectorAll<HTMLElement>('.student-info .fill, .fill').forEach(span => {
+    span.style.display = 'inline-block';
+    if (!span.style.minWidth) span.style.minWidth = '50pt';
+    if (!span.style.borderBottom) span.style.borderBottom = '1pt solid #333';
+  });
+}
+
 export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
@@ -66,6 +104,8 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       el.innerHTML = sanitizeHtml(
         `${originalHtmlRef.current}<hr/><p><strong>[${lang.label} · ${lang.native}]</strong></p>${translated}`,
       );
+      // 번역으로 새로 들어온 표에도 고정 레이아웃·셀 줄바꿈을 다시 적용해 화면 밖 넘침을 막는다.
+      applyDocumentStyles(el);
       setHasTranslation(true);
       notifyToast({ type: 'success', title: `${lang.label} 번역을 원문 아래에 추가했습니다.` });
     } catch (error) {
@@ -202,32 +242,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     saveGeneratedSnapshot(cleanContent);
     el.innerHTML = cleanContent;
 
-    el.querySelectorAll<HTMLTableElement>('table').forEach(table => {
-      if (!table.style.borderCollapse) table.style.borderCollapse = 'collapse';
-      if (!table.style.width) table.style.width = '100%';
-      if (!table.style.margin) table.style.margin = '10pt 0 14pt';
-    });
-    el.querySelectorAll<HTMLElement>('th, td').forEach(cell => {
-      if (!cell.style.border) cell.style.border = '1pt solid #333';
-      if (!cell.style.padding) cell.style.padding = '8pt 10pt';
-      if (!cell.style.verticalAlign) cell.style.verticalAlign = 'middle';
-    });
-    el.querySelectorAll<HTMLElement>('h1').forEach(h1 => {
-      if (!h1.style.textAlign) h1.style.textAlign = 'center';
-    });
-    el.querySelectorAll<HTMLElement>('.student-info').forEach(div => {
-      div.style.display = 'flex';
-      div.style.gap = '16pt';
-      div.style.justifyContent = 'flex-end';
-      if (!div.style.borderBottom) div.style.borderBottom = '1pt solid #000';
-      if (!div.style.paddingBottom) div.style.paddingBottom = '3pt';
-      if (!div.style.marginBottom) div.style.marginBottom = '6pt';
-    });
-    el.querySelectorAll<HTMLElement>('.student-info .fill, .fill').forEach(span => {
-      span.style.display = 'inline-block';
-      if (!span.style.minWidth) span.style.minWidth = '50pt';
-      if (!span.style.borderBottom) span.style.borderBottom = '1pt solid #333';
-    });
+    applyDocumentStyles(el);
   }, [content]);
 
   useEffect(() => {
@@ -370,6 +385,8 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       cell.style.lineHeight = '1.5';
       cell.style.color = '#000000';
       cell.style.verticalAlign = 'middle';
+      cell.style.wordBreak = 'break-word';
+      cell.style.overflowWrap = 'break-word';
       if (!cell.style.textAlign) cell.style.textAlign = cell.tagName.toLowerCase() === 'th' ? 'center' : 'left';
     });
 
@@ -503,8 +520,8 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
 html,body{margin:0;padding:0;font-family:'Malgun Gothic','Dotum','Apple SD Gothic Neo',sans-serif;font-size:11pt;color:#000;background:#fff;word-break:keep-all;overflow-wrap:break-word;}
 h1{font-size:15pt;margin:0 0 10pt;}h2{font-size:13pt;margin:8pt 0 6pt;}h3{font-size:11pt;margin:6pt 0 4pt;}
 p,li{line-height:1.75;margin:0 0 8pt;}
-table{width:100%;border-collapse:collapse;page-break-inside:avoid;margin:10pt 0 14pt;}
-th,td{border:1pt solid #333;padding:8pt 10pt;font-size:10pt;vertical-align:middle;}
+table{width:100%;table-layout:fixed;border-collapse:collapse;page-break-inside:avoid;margin:10pt 0 14pt;}
+th,td{border:1pt solid #333;padding:8pt 10pt;font-size:10pt;vertical-align:middle;word-break:break-word;overflow-wrap:break-word;}
 section,.section,tr{page-break-inside:avoid;}
 h2,h3{page-break-after:avoid;}
 </style></head><body>${currentHtml}</body></html>`;

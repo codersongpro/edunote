@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react';
 import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
+import { useTour } from '../TourContext';
 import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -61,6 +62,7 @@ const DOC_TEMPLATE_FAVORITES_KEY = 'edunote_doc_template_favorites_v1';
 
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
+  const { startTour } = useTour();
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
   const [settingsProfile, setSettingsProfile] = useState<SettingsProfile>({
     institution: '',
@@ -487,7 +489,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           </div>
         )}
         {!inputPanelCollapsed && (
-        <div className="w-[420px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
+        <div data-tour="school-doc-input" className="w-[420px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
           <div className="h-14 bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 shrink-0 flex items-center">
             <div className="flex items-center justify-between gap-2 w-full">
@@ -495,13 +497,23 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 <PenTool className="w-4 h-4 text-blue-500" />
                 입력 정보
               </h3>
-              <button
-                onClick={() => setInputPanelCollapsed(true)}
-                className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
-                title="입력 패널 접기"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => startTour('school-doc')}
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                  title="이 화면 사용법을 단계별로 안내합니다"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  튜토리얼
+                </button>
+                <button
+                  onClick={() => setInputPanelCollapsed(true)}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
+                  title="입력 패널 접기"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1079,6 +1091,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           {/* Generate button */}
           <div className="px-4 py-3 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] shrink-0">
             <button
+              data-tour="school-doc-generate"
               onClick={handleGenerate}
               disabled={isGenerating}
               className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
@@ -1116,7 +1129,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
         )}
 
         {/* Right: output panel */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div data-tour="school-doc-output" className="flex-1 flex flex-col overflow-hidden">
           {generatedContent ? (
             <GeneratedDisplay
               content={generatedContent}

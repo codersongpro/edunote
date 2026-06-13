@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
+import { TourProvider } from './TourContext';
 import { safeSetItem } from './lib/safeStorage';
 import { CancellationRegistry } from './lib/cancellation';
 import { GlobalState } from './types';
@@ -651,6 +652,7 @@ const App: React.FC = () => {
   }
 
   return (
+    <TourProvider>
     <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState }}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
@@ -1516,6 +1518,7 @@ const App: React.FC = () => {
         </div>
       )}
     </GlobalStateContext.Provider>
+    </TourProvider>
   );
 };
 
