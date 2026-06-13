@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { notifyToast } from '../lib/toast';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useTour } from '../TourContext';
 import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } from '../types';
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
 import { generateOpinion } from '../services/geminiService';
@@ -21,6 +22,7 @@ interface DuplicateResult {
 }
 
 const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
+  const { startTour } = useTour();
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.GENERATOR);
   const opState = state.opinion;
@@ -427,7 +429,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   return (
     <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
       {/* Header with Steps */}
-      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
+      <div data-tour="opinion-gen-header" className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mr-3 shadow-sm">
@@ -446,21 +448,29 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
               </div>
             </div>
           </div>
-          {opState.step === 'RESULT' && (
-              <button 
-                onClick={() => updateOpState({ step: 'CONFIG' })} 
-                disabled={isGlobalGenerating}
-                className={`text-sm text-[#78716C] underline hover:text-emerald-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                  수정하기
-              </button>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => startTour('opinion-gen')}
+              className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+            >
+              <HelpCircle className="w-3 h-3" />튜토리얼
+            </button>
+            {opState.step === 'RESULT' && (
+                <button
+                  onClick={() => updateOpState({ step: 'CONFIG' })}
+                  disabled={isGlobalGenerating}
+                  className={`text-sm text-[#78716C] underline hover:text-emerald-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    수정하기
+                </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {opState.step === 'SETUP' && (
-            <div className="flex-1 overflow-y-auto p-8">
+            <div data-tour="opinion-gen-setup" className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     <div>
                         <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
@@ -525,7 +535,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {opState.step === 'CONFIG' && (
-            <div className="flex-1 flex overflow-hidden">
+            <div data-tour="opinion-gen-config" className="flex-1 flex overflow-hidden">
                 {/* Sidebar List */}
                 {studentPanelCollapsed && (
                     <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
@@ -735,7 +745,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {opState.step === 'RESULT' && (
-             <div className="flex-1 overflow-hidden flex flex-col">
+             <div data-tour="opinion-gen-result" className="flex-1 overflow-hidden flex flex-col">
                 <div className="p-4 bg-white dark:bg-[#221E1B] border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center flex-wrap gap-2">
                     <h3 className="font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                     <div className="flex items-center gap-2">

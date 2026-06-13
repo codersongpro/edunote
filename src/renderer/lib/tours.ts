@@ -358,4 +358,124 @@ export const TOURS: Record<string, Tour> = {
       },
     ],
   },
+  'opinion-gen': {
+    id: 'opinion-gen',
+    title: '행발 생성기 사용법',
+    steps: [
+      {
+        selector: '[data-tour="opinion-gen-header"]',
+        title: '1. 행동특성 및 종합의견 생성기',
+        body: '학생별 행동특성 및 종합의견 문장을 AI로 생성합니다. 상단 단계 표시(1→2→3)를 따라 진행하면 됩니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="opinion-gen-setup"]',
+        title: '2. 인원 설정',
+        body: '생성할 학생 수를 설정하고 이름을 입력합니다. 설정에 저장된 우리 반 명단을 자동으로 불러올 수도 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="opinion-gen-config"]',
+        title: '3. 특성 선택',
+        body: '긍정적 특성과 보완이 필요한 특성을 태그로 선택합니다. 학생별로 개별 내용을 추가로 입력할 수도 있습니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="opinion-gen-result"]',
+        title: '4. 결과 확인',
+        body: '생성된 행발 문장을 학생별로 확인합니다. 복사 버튼으로 각 문장을 복사하거나 재생성할 수 있습니다.',
+        placement: 'top',
+      },
+    ],
+  },
+  'subject-gen': {
+    id: 'subject-gen',
+    title: '세특 생성기 사용법',
+    steps: [
+      {
+        selector: '[data-tour="subject-gen-header"]',
+        title: '1. 교과세특 생성기',
+        body: '학생별 교과학습발달상황(세특) 문장을 AI로 생성합니다. NEIS 성적 파일을 업로드하면 명단·과목·평가 정보가 자동으로 입력됩니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="subject-gen-setup"]',
+        title: '2. 인원 설정',
+        body: '학생 수와 이름을 입력합니다. NEIS 성적 자료를 업로드하면 이 단계를 자동으로 건너뛸 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="subject-gen-config"]',
+        title: '3. 과목 및 평가과제 설정',
+        body: '교과목을 선택하고 평가 과제(수행평가·서술형 등)를 입력합니다. 평가계획서 파일을 첨부해 자동으로 분석할 수도 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="subject-gen-result"]',
+        title: '4. 결과 확인',
+        body: '학생별 세특 문장을 확인하고 복사하거나 저장합니다. 재생성 버튼으로 특정 학생만 다시 생성할 수도 있습니다.',
+        placement: 'top',
+      },
+    ],
+  },
+  'sports-gen': {
+    id: 'sports-gen',
+    title: '스포츠클럽 특기사항 사용법',
+    steps: [
+      {
+        selector: '[data-tour="sports-gen-header"]',
+        title: '1. 스포츠클럽 특기사항 생성기',
+        body: '학생별 학교스포츠클럽 특기사항 문장을 AI로 생성합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="sports-gen-setup"]',
+        title: '2. 인원 설정',
+        body: '생성할 학생 수를 설정하고 이름을 입력합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="sports-gen-config"]',
+        title: '3. 활동 입력',
+        body: '종목명과 긍정·부정 특성 태그를 선택합니다. 학생별 개별 활동 내용도 추가로 입력할 수 있습니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="sports-gen-result"]',
+        title: '4. 결과 확인',
+        body: '생성된 특기사항 문장을 학생별로 확인하고 복사합니다.',
+        placement: 'top',
+      },
+    ],
+  },
+  'creative-gen': {
+    id: 'creative-gen',
+    title: '창체 특기사항 사용법',
+    steps: [
+      {
+        selector: '[data-tour="creative-gen-header"]',
+        title: '1. 창의적 체험활동 특기사항 생성기',
+        body: '자율활동·동아리·진로·봉사 등 창의적 체험활동 특기사항 문장을 AI로 생성합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="creative-gen-setup"]',
+        title: '2. 인원 설정',
+        body: '생성할 학생 수와 이름을 입력합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="creative-gen-config"]',
+        title: '3. 활동 설정',
+        body: '활동 유형(자율/동아리/진로/봉사)과 활동명, 연간 지도계획을 입력합니다. 계획 문서를 파일로 업로드하면 자동으로 분석합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="creative-gen-result"]',
+        title: '4. 결과 확인',
+        body: '학생별 창체 특기사항 문장을 확인하고 복사하거나 저장합니다.',
+        placement: 'top',
+      },
+    ],
+  },
 };

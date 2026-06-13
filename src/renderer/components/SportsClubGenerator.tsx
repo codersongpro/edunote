@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { notifyToast } from '../lib/toast';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useTour } from '../TourContext';
 import { SchoolLevel, LengthOption, LengthUnit, StudentSportsData, AppMode } from '../types';
 import { generateSportsClubReport } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
@@ -38,6 +39,7 @@ const SPORTS_NEGATIVE_TRAITS = [
 ];
 
 const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
+  const { startTour } = useTour();
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SPORTS_CLUB_GENERATOR);
   const sportsState = state.sports;
@@ -447,7 +449,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   return (
     <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
-      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+      <div data-tour="sports-gen-header" className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 mr-3 shadow-sm">
@@ -466,21 +468,29 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
               </div>
             </div>
           </div>
-          {sportsState.step === 'RESULT' && (
-              <button 
-                onClick={() => updateSportsState({ step: 'CONFIG' })} 
-                disabled={isGlobalGenerating}
-                className={`text-sm text-[#78716C] underline hover:text-blue-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                  수정하기
-              </button>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => startTour('sports-gen')}
+              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            >
+              <HelpCircle className="w-3 h-3" />튜토리얼
+            </button>
+            {sportsState.step === 'RESULT' && (
+                <button
+                  onClick={() => updateSportsState({ step: 'CONFIG' })}
+                  disabled={isGlobalGenerating}
+                  className={`text-sm text-[#78716C] underline hover:text-blue-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    수정하기
+                </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
         {sportsState.step === 'SETUP' && (
-            <div className="flex-1 overflow-y-auto p-8">
+            <div data-tour="sports-gen-setup" className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     <div>
                         <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
@@ -545,7 +555,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {sportsState.step === 'CONFIG' && (
-            <div className="flex-1 flex overflow-hidden">
+            <div data-tour="sports-gen-config" className="flex-1 flex overflow-hidden">
                 {/* Sidebar List */}
                 {studentPanelCollapsed && (
                     <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
@@ -773,7 +783,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {sportsState.step === 'RESULT' && (
-             <div className="flex-1 overflow-hidden flex flex-col">
+             <div data-tour="sports-gen-result" className="flex-1 overflow-hidden flex flex-col">
                 <div className="p-4 bg-white dark:bg-[#221E1B] border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center flex-wrap gap-2">
                     <h3 className="font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                     <div className="flex items-center gap-2">

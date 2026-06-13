@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { notifyToast } from '../lib/toast';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useTour } from '../TourContext';
 import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails, AppMode } from '../types';
 import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
@@ -21,6 +22,7 @@ interface DuplicateResult {
 }
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
+  const { startTour } = useTour();
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
   const subjectState = state.subject;
@@ -1010,7 +1012,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   return (
     <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
-      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
+      <div data-tour="subject-gen-header" className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
         <div className="flex justify-between items-center">
             <div className="flex items-center">
                 <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center text-purple-600 dark:text-purple-400 mr-3 shadow-sm">
@@ -1031,21 +1033,29 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                 </div>
             </div>
-            {subjectState.step === 'RESULT' && (
-              <button 
-                onClick={() => updateSubjectState({ step: 'INDIVIDUAL_CONTEXT' })} 
-                disabled={isGlobalGenerating}
-                className={`text-sm text-[#78716C] underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => startTour('subject-gen')}
+                className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 dark:text-purple-400 px-2 py-1 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
               >
-                  수정하기
+                <HelpCircle className="w-3 h-3" />튜토리얼
               </button>
-            )}
+              {subjectState.step === 'RESULT' && (
+                <button
+                  onClick={() => updateSubjectState({ step: 'INDIVIDUAL_CONTEXT' })}
+                  disabled={isGlobalGenerating}
+                  className={`text-sm text-[#78716C] underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    수정하기
+                </button>
+              )}
+            </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
          {subjectState.step === 'STUDENT_SETUP' && (
-             <div className="flex-1 overflow-y-auto p-8">
+             <div data-tour="subject-gen-setup" className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     {/* New NEIS Upload Button */}
                     <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-2xl p-6 text-center shadow-sm">
@@ -1239,7 +1249,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
          )}
 
          {subjectState.step === 'GLOBAL_SETUP' && (
-             <div className="flex-1 overflow-y-auto p-6">
+             <div data-tour="subject-gen-config" className="flex-1 overflow-y-auto p-6">
                  {/* ... Content of GLOBAL_SETUP step ... */}
                  <div className="max-w-4xl mx-auto space-y-6">
                      {/* Tab Navigation Area */}
@@ -1635,7 +1645,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
          {/* ... (Rest of file content) ... */}
          {subjectState.step === 'RESULT' && (
-             <div className="flex-1 overflow-hidden flex flex-col">
+             <div data-tour="subject-gen-result" className="flex-1 overflow-hidden flex flex-col">
                  <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#E7E5E4] dark:border-[#2E2822] px-4 pt-3 pb-0">
                     <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">교과목 전환 (결과 화면)</label>
                     {renderSubjectTabs()}

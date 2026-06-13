@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { notifyToast } from '../lib/toast';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useTour } from '../TourContext';
 import { SchoolLevel, LengthOption, LengthUnit, StudentCreativeActivityData, Student, AppMode } from '../types';
 import { CREATIVE_ACTIVITY_TAGS } from '../constants';
 import { generateCreativeActivityReport, parseAnnualPlanFromImages, parseAnnualPlanFromDocuments } from '../services/geminiService';
@@ -24,6 +25,7 @@ interface DuplicateResult {
 const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '봉사활동'];
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
+  const { startTour } = useTour();
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, setGlobalProgress, globalProgress, showToast } = useGlobalState();
   const { startGeneration, endGeneration, updateProgress, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.CREATIVE_ACTIVITY_GENERATOR);
   const creativeState = state.creative;
@@ -797,7 +799,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   return (
     <div className="bg-white dark:bg-[#221E1B] h-full flex flex-col transition-colors relative">
-      <div className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
+      <div data-tour="creative-gen-header" className="bg-white/80 dark:bg-[#221E1B]/80 backdrop-blur-sm p-4 border-b border-[#EDE8E1] dark:border-[#2E2822] sticky top-0 z-10">
         <div className="flex justify-between items-center">
             <div className="flex items-center">
                 <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center text-orange-600 dark:text-orange-400 mr-3 shadow-sm">
@@ -818,21 +820,29 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </div>
                 </div>
             </div>
-            {creativeState.step === 'RESULT' && (
-              <button 
-                onClick={() => updateCreativeState({ step: 'INDIVIDUAL_CONTEXT' })} 
-                disabled={isGlobalGenerating}
-                className={`text-sm text-[#78716C] underline hover:text-orange-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => startTour('creative-gen')}
+                className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-800 dark:text-orange-400 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
               >
-                  수정하기
+                <HelpCircle className="w-3 h-3" />튜토리얼
               </button>
-            )}
+              {creativeState.step === 'RESULT' && (
+                <button
+                  onClick={() => updateCreativeState({ step: 'INDIVIDUAL_CONTEXT' })}
+                  disabled={isGlobalGenerating}
+                  className={`text-sm text-[#78716C] underline hover:text-orange-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                    수정하기
+                </button>
+              )}
+            </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
          {creativeState.step === 'STUDENT_SETUP' && (
-             <div className="flex-1 overflow-y-auto p-8">
+             <div data-tour="creative-gen-setup" className="flex-1 overflow-y-auto p-8">
                 <div className="max-w-2xl mx-auto space-y-8">
                     <div>
                         <label className="block text-lg font-bold text-[#44403C] dark:text-[#C4B8B0] mb-4">
@@ -891,7 +901,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {creativeState.step === 'ACTIVITY_SETUP' && (
-             <div className="flex-1 overflow-y-auto p-6">
+             <div data-tour="creative-gen-config" className="flex-1 overflow-y-auto p-6">
                  <div className="max-w-4xl mx-auto space-y-6">
                      <div className="mb-4">
                          <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">작업 중인 활동</label>
@@ -1219,7 +1229,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         )}
 
         {creativeState.step === 'RESULT' && (
-             <div className="flex-1 overflow-hidden flex flex-col">
+             <div data-tour="creative-gen-result" className="flex-1 overflow-hidden flex flex-col">
                 <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#E7E5E4] dark:border-[#2E2822] px-4 pt-3 pb-0">
                     <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-2">활동 전환 (결과 화면)</label>
                     {renderActivityTabs()}
