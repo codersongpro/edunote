@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CalendarPlus, ClipboardList, Copy, FileText, ListTodo, Loader2, PanelLeftClose, PanelLeftOpen, Save } from 'lucide-react';
+import { CalendarPlus, ClipboardList, Copy, FileText, HelpCircle, ListTodo, Loader2, PanelLeftClose, PanelLeftOpen, Save } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { AppMode, FileData } from '../types';
 import { analyzeOfficialDocument } from '../services/geminiService';
@@ -8,9 +8,11 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { notifyToast } from '../lib/toast';
 import { loadDocTodos, saveDocTodos, DocTodo } from './DocTodoPanel';
+import { useTour } from '../TourContext';
 
 const OfficialDocAnalyzer: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.OFFICIAL_DOC_ANALYZER);
+  const { startTour } = useTour();
   const [title, setTitle] = useState('');
   const [pastedText, setPastedText] = useState('');
   const [files, setFiles] = useState<FileData[]>([]);
@@ -199,7 +201,7 @@ const OfficialDocAnalyzer: React.FC = () => {
         </div>
       )}
       {!inputPanelCollapsed && (
-      <div className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col">
+      <div data-tour="official-doc-input" className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col">
         <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
@@ -209,6 +211,13 @@ const OfficialDocAnalyzer: React.FC = () => {
               <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">공문 요약 / 업무 추출</h2>
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">핵심 업무와 마감만 짧게 정리합니다.</p>
             </div>
+            <button
+              onClick={() => startTour('official-doc')}
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-emerald-200 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+              title="튜토리얼"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
             <button
               onClick={() => setInputPanelCollapsed(true)}
               className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
@@ -256,6 +265,7 @@ const OfficialDocAnalyzer: React.FC = () => {
 
         <div className="p-5 border-t border-[#EDE8E1] dark:border-[#2E2822]">
           <button
+            data-tour="official-doc-analyze"
             onClick={handleAnalyze}
             disabled={!canAnalyze || isLoading}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white font-bold transition-colors"
@@ -267,7 +277,7 @@ const OfficialDocAnalyzer: React.FC = () => {
       </div>
       )}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div data-tour="official-doc-output" className="flex-1 flex flex-col min-w-0">
         <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />

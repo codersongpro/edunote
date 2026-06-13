@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { notifyToast } from '../lib/toast';
-import { Archive, Plus, Trash2, Search, X, FileText, Image as ImageIcon, Tag, ChevronDown } from 'lucide-react';
+import { Archive, HelpCircle, Plus, Trash2, Search, X, FileText, Image as ImageIcon, Tag, ChevronDown } from 'lucide-react';
+import { useTour } from '../TourContext';
 import { FileUpload } from './FileUpload';
 import { FileData } from '../types';
 
@@ -22,6 +23,7 @@ const labelClass = 'block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B
 const CATEGORIES = ['안전', '연수', '행사', '공문', '방역', '업무', '기타'];
 
 export default function DocArchivePanel() {
+  const { startTour } = useTour();
   const [items, setItems] = useState<DocArchiveItem[]>([]);
   const [view, setView] = useState<'list' | 'add' | 'detail'>('list');
   const [selected, setSelected] = useState<DocArchiveItem | null>(null);
@@ -211,17 +213,27 @@ export default function DocArchivePanel() {
           </h1>
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">공문 캡처 이미지와 붙임문서를 저장·관리합니다.</p>
         </div>
-        <button
-          onClick={() => setView('add')}
-          className="ml-auto flex items-center gap-1.5 px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          공문 저장
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => startTour('doc-archive')}
+            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+          >
+            <HelpCircle className="w-3 h-3" />
+            튜토리얼
+          </button>
+          <button
+            data-tour="doc-archive-add"
+            onClick={() => setView('add')}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            공문 저장
+          </button>
+        </div>
       </div>
 
       {/* 검색/필터 */}
-      <div className="shrink-0 px-5 pb-3 flex gap-2 flex-wrap">
+      <div data-tour="doc-archive-list" className="shrink-0 px-5 pb-3 flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E]" />
           <input

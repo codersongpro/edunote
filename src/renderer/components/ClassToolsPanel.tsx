@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import QRMaker from './QRMaker';
 import LuckyDraw from './LuckyDraw';
-import { QrCode } from 'lucide-react';
+import { HelpCircle, QrCode } from 'lucide-react';
+import { useTour } from '../TourContext';
 
 type Tab = 'qr' | 'lucky';
 
@@ -11,6 +12,7 @@ interface Props {
 
 const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? 'qr');
+  const { startTour } = useTour();
 
   useEffect(() => {
     if (initialTab) setActiveTab(initialTab);
@@ -18,7 +20,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="h-14 flex border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
+      <div data-tour="class-tools-tabs" className="h-14 flex items-center border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <button
           onClick={() => setActiveTab('qr')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
@@ -40,6 +42,13 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
         >
           <span className="text-sm">🎲</span>
           럭키드로우
+        </button>
+        <button
+          onClick={() => startTour('class-tools')}
+          className="ml-auto mr-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+        >
+          <HelpCircle className="w-3 h-3" />
+          튜토리얼
         </button>
       </div>
       <div className="flex-1 overflow-hidden">

@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, AppMode } from '../types';
 import { askEducationQuestion } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
-import { GraduationCap, Trash2 } from 'lucide-react';
+import { GraduationCap, HelpCircle, Trash2 } from 'lucide-react';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { useTour } from '../TourContext';
 
 const EducationAssistantQA: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.EDUCATION_QA);
+  const { startTour } = useTour();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -79,7 +81,7 @@ const EducationAssistantQA: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] bg-white shrink-0">
+      <div data-tour="education-qa-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] bg-white shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-green-100 p-1.5 rounded-lg">
             <GraduationCap className="w-4 h-4 text-green-600" />
@@ -89,18 +91,27 @@ const EducationAssistantQA: React.FC = () => {
             <p className="text-xs text-[#78716C]">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
           </div>
         </div>
-        <button
-          onClick={handleClear}
-          className="flex items-center gap-1 text-xs text-[#A8A29E] hover:text-[#78716C] px-2 py-1 rounded hover:bg-[#FAF9F7] transition-colors"
-        >
-          <Trash2 className="w-3 h-3" />
-          초기화
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => startTour('education-qa')}
+            className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+          >
+            <HelpCircle className="w-3 h-3" />
+            튜토리얼
+          </button>
+          <button
+            onClick={handleClear}
+            className="flex items-center gap-1 text-xs text-[#A8A29E] hover:text-[#78716C] px-2 py-1 rounded hover:bg-[#FAF9F7] transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+            초기화
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div data-tour="education-qa-messages" className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length <= 1 && (
-          <div className="pt-2">
+          <div data-tour="education-qa-suggestions" className="pt-2">
             <p className="text-xs text-[#A8A29E] text-center mb-3">자주 묻는 질문</p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((q, i) => (
@@ -146,7 +157,7 @@ const EducationAssistantQA: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 border-t border-[#EDE8E1] bg-white shrink-0">
+      <div data-tour="education-qa-input" className="p-4 border-t border-[#EDE8E1] bg-white shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"

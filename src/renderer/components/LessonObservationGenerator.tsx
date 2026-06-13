@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ClipboardList, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
+import { ClipboardList, HelpCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateLessonObservation } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
+import { useTour } from '../TourContext';
 
 const EXAMPLE_RESULT = `【 수업관찰기록 】
 
@@ -37,6 +38,7 @@ const EXAMPLE_RESULT = `【 수업관찰기록 】
 
 const LessonObservationGenerator: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_OBSERVATION);
+  const { startTour } = useTour();
   const [date, setDate] = useState('');
   const [subject, setSubject] = useState('');
   const [unit, setUnit] = useState('');
@@ -102,18 +104,27 @@ const LessonObservationGenerator: React.FC = () => {
     <div className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
       <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
         {/* Header */}
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="bg-blue-100 p-1.5 rounded-lg">
-              <ClipboardList className="w-4 h-4 text-blue-600" />
+        <div data-tour="teacher-record-header" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <div className="bg-blue-100 p-1.5 rounded-lg">
+                <ClipboardList className="w-4 h-4 text-blue-600" />
+              </div>
+              <h2 className="font-bold text-[#1C1917]">수업관찰기록 생성</h2>
             </div>
-            <h2 className="font-bold text-[#1C1917]">수업관찰기록 생성</h2>
+            <button
+              onClick={() => startTour('teacher-record')}
+              className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+            >
+              <HelpCircle className="w-3 h-3" />
+              튜토리얼
+            </button>
           </div>
           <p className="text-xs text-[#78716C]">수업 관찰 내용을 입력하면 정형화된 수업관찰기록을 생성합니다.</p>
         </div>
 
         {/* Form */}
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-4">
+        <div data-tour="teacher-record-input" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>교과 <span className="text-red-500">*</span></label>
@@ -156,6 +167,7 @@ const LessonObservationGenerator: React.FC = () => {
           )}
 
           <button
+            data-tour="teacher-record-generate"
             onClick={handleGenerate}
             disabled={isLoading}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white font-bold text-sm transition-all ${
@@ -173,7 +185,7 @@ const LessonObservationGenerator: React.FC = () => {
 
         {/* Result */}
         {result && (
-          <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+          <div data-tour="teacher-record-output" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h3 className="font-bold text-[#1C1917] text-sm">생성 결과</h3>
