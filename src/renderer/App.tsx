@@ -398,7 +398,8 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    document.documentElement.style.fontSize = `${16 * fontSize / 100}px`;
+    // 표시값 100% = 실제 110% 적용 (기본 크기 보정)
+    document.documentElement.style.fontSize = `${16 * (fontSize + 10) / 100}px`;
   }, [fontSize]);
 
   const changeFontSize = async (delta: number) => {
