@@ -33,7 +33,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -130,6 +130,7 @@ const App: React.FC = () => {
   const concurrentNoticeDismissed = useRef(false);
   const [isLoading, setIsLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(true);
+  const [fontSize, setFontSize] = useState(100);
   const [appVersion, setAppVersion] = useState('');
   const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
   const setGeneratingMode = (modeKey: string, progress: number | null) => {
@@ -213,7 +214,7 @@ const App: React.FC = () => {
     initAudioUnlock();
     const init = async () => {
       try {
-        const [hn, sl, dm, lastUsable, version, apiTier, teacherName, institution, gradeClass] = await Promise.all([
+        const [hn, sl, dm, lastUsable, version, apiTier, teacherName, institution, gradeClass, fz] = await Promise.all([
           window.electronAPI.hasApiKey(),
           window.electronAPI.getConfig('schoolLevel'),
           window.electronAPI.getConfig('darkMode'),
@@ -223,6 +224,7 @@ const App: React.FC = () => {
           window.electronAPI.getConfig('teacherName'),
           window.electronAPI.getConfig('institution'),
           window.electronAPI.getConfig('gradeClass'),
+          window.electronAPI.getConfig('fontSize'),
         ]);
         setHasApiKey(hn as boolean);
         setShowApiKeyLimitModal(!(hn as boolean));
@@ -237,6 +239,7 @@ const App: React.FC = () => {
         }
         if (sl) { setSchoolLevel(sl as SchoolLevel); setHasEnteredStudentSection(true); }
         setDarkMode(dm == null ? true : !!(dm as boolean));
+        if (typeof fz === 'number') setFontSize(fz);
         setShowDisclaimerModal(true);
         setMode(AppMode.HOME);
       } catch {
@@ -392,6 +395,21 @@ const App: React.FC = () => {
     const next = !darkMode;
     setDarkMode(next);
     await window.electronAPI.setConfig({ darkMode: next });
+  };
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${16 * fontSize / 100}px`;
+  }, [fontSize]);
+
+  const changeFontSize = async (delta: number) => {
+    const next = Math.min(150, Math.max(75, fontSize + delta));
+    setFontSize(next);
+    await window.electronAPI.setConfig({ fontSize: next });
+  };
+
+  const resetFontSize = async () => {
+    setFontSize(100);
+    await window.electronAPI.setConfig({ fontSize: 100 });
   };
 
   const handleModeChange = (newMode: AppMode) => {
@@ -1392,6 +1410,33 @@ const App: React.FC = () => {
               <ClipboardList className="w-4 h-4 shrink-0" />
               <span className="truncate">Demo</span>
             </button>
+            {/* 글씨 크기 조절 */}
+            <div className="flex items-center gap-1 px-2 pt-1">
+              <button
+                onClick={() => changeFontSize(-5)}
+                title="글씨 축소"
+                className="h-7 w-7 flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="flex-1 text-center text-xs text-[#78716C] dark:text-[#9C8F87] tabular-nums select-none">{fontSize}%</span>
+              <button
+                onClick={() => changeFontSize(5)}
+                title="글씨 확대"
+                className="h-7 w-7 flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              {fontSize !== 100 && (
+                <button
+                  onClick={resetFontSize}
+                  title="기본 크기로"
+                  className="ml-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
+                >
+                  기본
+                </button>
+              )}
+            </div>
           </div>
         </aside>
 
