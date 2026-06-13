@@ -3,9 +3,10 @@ import { SchoolLevel, ChatMessage, AppMode } from '../types';
 import { askRecordChatbot } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import { useGlobalState } from '../GlobalStateContext';
-import { Bot, Trash2 } from 'lucide-react';
+import { Bot, HelpCircle, Trash2 } from 'lucide-react';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
+import { useTour } from '../TourContext';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -13,6 +14,7 @@ interface Props {
 
 const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.RECORD_CHATBOT);
+  const { startTour } = useTour();
   const { state, setState } = useGlobalState();
   const messages = state.recordChatbot.messages;
 
@@ -94,7 +96,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#221E1B]">
       {/* Header */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
+      <div data-tour="record-chatbot-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-indigo-100 p-1.5 rounded-lg">
             <Bot className="w-4 h-4 text-indigo-600" />
@@ -104,19 +106,28 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">2026 기재요령 기반 · {schoolLevel}</p>
           </div>
         </div>
-        <button
-          onClick={handleClear}
-          className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
-        >
-          <Trash2 className="w-3 h-3" />
-          초기화
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => startTour('record-chatbot')}
+            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+          >
+            <HelpCircle className="w-3 h-3" />
+            튜토리얼
+          </button>
+          <button
+            onClick={handleClear}
+            className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+            초기화
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+      <div data-tour="record-chatbot-messages" className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length <= 1 && (
-          <div className="pt-2">
+          <div data-tour="record-chatbot-suggestions" className="pt-2">
             <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] text-center mb-3">자주 묻는 질문</p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((q, i) => (
@@ -165,7 +176,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
+      <div data-tour="record-chatbot-input" className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"

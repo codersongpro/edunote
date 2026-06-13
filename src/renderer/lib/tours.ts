@@ -88,4 +88,274 @@ export const TOURS: Record<string, Tour> = {
       },
     ],
   },
+  'record-chatbot': {
+    id: 'record-chatbot',
+    title: '학생기록AI 챗봇 사용법',
+    steps: [
+      {
+        selector: '[data-tour="record-chatbot-header"]',
+        title: '1. 학생기록AI 챗봇',
+        body: '2026 학교생활기록부 기재요령을 바탕으로 생기부 작성을 도와드립니다. 기재 예시 요청, 금지 사항 확인 등을 물어보세요.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="record-chatbot-suggestions"]',
+        title: '2. 자주 묻는 질문',
+        body: '버튼을 클릭하면 자주 쓰는 질문의 답변을 바로 볼 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="record-chatbot-input"]',
+        title: '3. 질문 입력',
+        body: '궁금한 사항을 자유롭게 입력하고 전송 버튼을 누르세요.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="record-chatbot-messages"]',
+        title: '4. AI 답변 확인',
+        body: 'AI의 답변이 여기에 표시됩니다. 스크롤하여 이전 대화 이력을 볼 수 있고, 초기화 버튼으로 새 대화를 시작합니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'education-qa': {
+    id: 'education-qa',
+    title: '교무행정AI 챗봇 사용법',
+    steps: [
+      {
+        selector: '[data-tour="education-qa-header"]',
+        title: '1. 교무행정AI 챗봇',
+        body: '교육 정책, 교육과정, 교수법, 평가 방법, 학교 행정 등 교육 전반에 관한 질문을 자유롭게 해주세요.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="education-qa-suggestions"]',
+        title: '2. 자주 묻는 질문',
+        body: '버튼을 클릭하면 교육 관련 자주 묻는 질문의 답변을 바로 볼 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="education-qa-input"]',
+        title: '3. 질문 입력',
+        body: '교육 관련 질문을 자유롭게 입력하고 전송하세요.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="education-qa-messages"]',
+        title: '4. AI 답변 확인',
+        body: 'AI의 답변이 여기에 표시됩니다. 스크롤하여 이전 대화를 확인하고, 초기화 버튼으로 새 대화를 시작합니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'official-doc': {
+    id: 'official-doc',
+    title: '공문요약·업무추출 사용법',
+    steps: [
+      {
+        selector: '[data-tour="official-doc-input"]',
+        title: '1. 공문 입력',
+        body: '공문 제목을 적고, 내용을 붙여넣거나 파일·스크린샷을 올립니다. 셋 중 하나만 있어도 됩니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="official-doc-analyze"]',
+        title: '2. 업무 추출',
+        body: '이 버튼을 누르면 AI가 핵심 업무와 마감 일정을 간결하게 정리해 줍니다.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="official-doc-output"]',
+        title: '3. 결과 활용',
+        body: '정리된 업무를 복사하거나 TXT로 저장합니다. "할일로 저장"으로 공문 할일 목록에 추가하거나, Google Calendar에 마감 일정을 바로 등록할 수 있습니다.',
+        placement: 'left',
+      },
+    ],
+  },
+  'teacher-record': {
+    id: 'teacher-record',
+    title: '수업관찰기록 사용법',
+    steps: [
+      {
+        selector: '[data-tour="teacher-record-header"]',
+        title: '1. 우리반기록',
+        body: '수업관찰기록·상담일지·학급경영일지를 AI로 작성합니다. 사이드바에서 원하는 유형을 선택하세요.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="teacher-record-input"]',
+        title: '2. 관찰 내용 입력',
+        body: '교과, 날짜, 학년/반, 관찰 내용을 입력합니다. 교과와 관찰 내용은 필수입니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="teacher-record-generate"]',
+        title: '3. 기록 생성',
+        body: '이 버튼을 누르면 AI가 정형화된 기록을 작성해 줍니다.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="teacher-record-output"]',
+        title: '4. 복사·저장',
+        body: '생성된 기록을 복사하거나 TXT 파일로 저장합니다.',
+        placement: 'top',
+      },
+    ],
+  },
+  'class-tools': {
+    id: 'class-tools',
+    title: '수업 도구 사용법',
+    steps: [
+      {
+        selector: '[data-tour="class-tools-tabs"]',
+        title: '1. 수업 도구',
+        body: 'QR 메이커와 럭키드로우 두 가지 도구가 있습니다. 탭을 클릭해 전환하세요.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="class-tools-qr"]',
+        title: '2. QR 메이커',
+        body: 'URL이나 텍스트를 입력하면 QR 코드를 즉시 생성합니다. 이미지로 저장하거나 인쇄할 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="class-tools-lucky"]',
+        title: '3. 럭키드로우',
+        body: '학생 이름을 입력하고 돌리기 버튼을 누르면 무작위로 한 명을 뽑아 줍니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'my-tools': {
+    id: 'my-tools',
+    title: 'AI스킬즈 사용법',
+    steps: [
+      {
+        selector: '[data-tour="my-tools-header"]',
+        title: '1. AI스킬즈',
+        body: '자주 쓰는 AI 작업 패턴을 스킬로 만들어 저장하고, 동료 선생님과 공유할 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="my-tools-tabs"]',
+        title: '2. 내 스킬 / 스킬마켓',
+        body: '"내 스킬"은 내가 만든 스킬, "스킬마켓"은 다른 선생님이 공유한 스킬입니다. 마켓에서 스킬을 내 스킬로 가져올 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="my-tools-list"]',
+        title: '3. 스킬 목록',
+        body: '▶ 버튼으로 실행, ✏ 버튼으로 편집, ⬇ 버튼으로 내보내기, 🗑 버튼으로 삭제합니다. 핀 고정으로 자주 쓰는 스킬을 상단에 배치할 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="my-tools-create"]',
+        title: '4. 새 스킬 만들기',
+        body: '"새 스킬 만들기"로 AI 프롬프트 스킬, "대화로 만들기"로 AI와 대화하며 제작, "HTML 앱 만들기"로 인터랙티브 앱을 만들 수 있습니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'html-app': {
+    id: 'html-app',
+    title: 'HTML 앱 만들기 사용법',
+    steps: [
+      {
+        selector: '[data-tour="html-app-input"]',
+        title: '1. 앱 정보 입력',
+        body: '앱 이름·종류와 원하는 기능 목록을 입력합니다. 예시 칩을 클릭하면 자동으로 입력됩니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="html-app-generate"]',
+        title: '2. AI로 만들기',
+        body: '이 버튼을 누르면 AI가 HTML·CSS·JavaScript를 자동으로 작성합니다.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="html-app-preview"]',
+        title: '3. 미리보기',
+        body: '즉시 실행되는 앱을 미리봅니다. "코드 보기"로 전환하면 코드를 직접 수정할 수 있습니다.',
+        placement: 'top',
+      },
+      {
+        selector: '[data-tour="html-app-save"]',
+        title: '4. 저장',
+        body: '앱 이름과 카테고리를 지정해 내 스킬에 저장하면 언제든 다시 실행할 수 있습니다.',
+        placement: 'top',
+      },
+    ],
+  },
+  'doc-archive': {
+    id: 'doc-archive',
+    title: '공문 보관함 사용법',
+    steps: [
+      {
+        selector: '[data-tour="doc-archive-list"]',
+        title: '1. 공문 목록',
+        body: '저장된 공문을 검색하거나 카테고리(안전·연수·행사 등)로 필터링합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="doc-archive-add"]',
+        title: '2. 공문 추가',
+        body: '+ 버튼을 눌러 공문 제목·분류·캡처 이미지·붙임문서·메모를 저장합니다. Ctrl+V로 스크린샷을 바로 붙여넣을 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="doc-archive-list"]',
+        title: '3. 공문 열기',
+        body: '저장된 공문을 클릭하면 캡처 이미지와 붙임문서를 바로 확인할 수 있습니다. 공문 요약·업무추출 기능과 함께 활용하면 더욱 편리합니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'print-form': {
+    id: 'print-form',
+    title: '양식 인쇄 사용법',
+    steps: [
+      {
+        selector: '[data-tour="print-form-list"]',
+        title: '1. 양식 선택',
+        body: '카테고리 탭에서 원하는 분류를 고른 뒤, 양식 이름을 클릭합니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="print-form-editor"]',
+        title: '2. 내용 입력',
+        body: '각 항목을 입력하면 미리보기가 실시간으로 업데이트됩니다. 미리보기를 직접 클릭해 수정할 수도 있습니다.',
+        placement: 'right',
+      },
+      {
+        selector: '[data-tour="print-form-save"]',
+        title: '3. 저장·인쇄',
+        body: '"PDF 저장·인쇄"로 인쇄하거나, "HWPX 저장"으로 한글 파일로 내보낼 수 있습니다.',
+        placement: 'bottom',
+      },
+    ],
+  },
+  'student-memo': {
+    id: 'student-memo',
+    title: '학생 메모 보드 사용법',
+    steps: [
+      {
+        selector: '[data-tour="student-memo-header"]',
+        title: '1. 학생 메모 보드',
+        body: '학생별 메모를 카드 형태로 저장하고 관리합니다. 수업 중 관찰 내용, 상담 기록 등을 빠르게 남길 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="student-memo-search"]',
+        title: '2. 검색·필터',
+        body: '키워드로 메모를 검색하거나, 드롭다운에서 특정 학생의 메모만 볼 수 있습니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="student-memo-grid"]',
+        title: '3. 메모 관리',
+        body: '카드를 클릭하면 내용을 편집하고, 🗑 버튼으로 삭제합니다. 우상단 CSV 내보내기로 전체 메모를 파일로 저장할 수 있습니다.',
+        placement: 'top',
+      },
+    ],
+  },
 };

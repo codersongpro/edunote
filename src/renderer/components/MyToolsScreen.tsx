@@ -8,10 +8,11 @@ import MyToolRunner from './MyToolRunner';
 import MyToolChatCreator, { ChatToolDrafts } from './MyToolChatCreator';
 import HtmlAppCreator from './HtmlAppCreator';
 import { parseImportedTools, validateImportedTool } from '../lib/security';
+import { useTour } from '../TourContext';
 import {
   Plus, Play, Pencil, Download, Trash2, Upload, MessageSquare,
   RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
-  Pin, PinOff, Copy,
+  Pin, PinOff, Copy, HelpCircle,
 } from 'lucide-react';
 
 type Tab = 'my' | 'market';
@@ -157,6 +158,7 @@ const parseMarketCsv = (csv: string): { entries: MarketEntry[]; rawHeaders: stri
 };
 
 const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void; schoolLevel?: string }> = ({ activeTab = 'my', onTabChange, schoolLevel }) => {
+  const { startTour } = useTour();
   const [tab, setTab] = useState<Tab>(activeTab);
   const [view, setView] = useState<View>('list');
   const [tools, setTools] = useState<CustomTool[]>([]);
@@ -478,14 +480,22 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-4">
+      <div data-tour="my-tools-header" className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-lg font-extrabold text-[#1C1917] dark:text-[#F0EBE6]">AI스킬즈</h1>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => startTour('my-tools')}
+              className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+            >
+              <HelpCircle className="w-3 h-3" />
+              튜토리얼
+            </button>
           {tab === 'my' && (
-            <div className="flex gap-2">
+            <div data-tour="my-tools-create" className="flex gap-2">
               <button
                 onClick={handleImport}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"
@@ -516,10 +526,11 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               </button>
             </div>
           )}
+          </div>
         </div>
 
         {/* 탭 */}
-        <div className="flex gap-4 border-b border-[#EDE8E1] dark:border-[#2E2822] -mb-px">
+        <div data-tour="my-tools-tabs" className="flex gap-4 border-b border-[#EDE8E1] dark:border-[#2E2822] -mb-px">
           {([['my', '내 스킬'], ['market', '스킬마켓']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
@@ -584,7 +595,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
       )}
 
       {/* 탭 컨텐츠 */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div data-tour="my-tools-list" className="flex-1 overflow-y-auto p-6">
         {tab === 'my' && (
           <>
             {tools.length === 0 ? (

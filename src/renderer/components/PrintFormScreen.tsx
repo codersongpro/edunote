@@ -1,11 +1,13 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { notifyToast } from '../lib/toast';
-import { FileDown, FileText, Printer, ChevronLeft, RotateCcw } from 'lucide-react';
+import { FileDown, FileText, HelpCircle, Printer, ChevronLeft, RotateCcw } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
+import { useTour } from '../TourContext';
 
 const CATEGORIES = Array.from(new Set(PRINT_FORMS.map(f => f.category)));
 
 export default function PrintFormScreen() {
+  const { startTour } = useTour();
   const [selectedForm, setSelectedForm] = useState<PrintForm | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [activeCategory, setActiveCategory] = useState<string>(CATEGORIES[0]);
@@ -171,7 +173,7 @@ export default function PrintFormScreen() {
           <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">{selectedForm.title}</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">{selectedForm.category}</span>
           <span className="text-xs text-[#78716C] dark:text-[#9C8F87]">양식 화면을 직접 클릭해서 수정하세요.</span>
-          <div className="ml-auto flex gap-2">
+          <div data-tour="print-form-save" className="ml-auto flex gap-2">
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
@@ -198,7 +200,7 @@ export default function PrintFormScreen() {
 
         {/* 본문 */}
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 overflow-auto bg-[#EDE8E1] dark:bg-[#171210] flex items-start justify-center p-6">
+          <div data-tour="print-form-editor" className="flex-1 overflow-auto bg-[#EDE8E1] dark:bg-[#171210] flex items-start justify-center p-6">
             <div className="bg-white shadow-xl shrink-0" style={{ width: '210mm', height: '297mm', padding: '0' }}>
               <iframe
                 ref={iframeRef}
@@ -216,16 +218,25 @@ export default function PrintFormScreen() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
-      <div className="shrink-0 px-5 pt-5 pb-3">
-        <h1 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
-          <FileText className="w-5 h-5 text-emerald-500" />
-          양식 인쇄 도구
-        </h1>
-        <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 학교 양식을 선택해 화면에서 바로 고치고 PDF 또는 HWPX로 저장하세요.</p>
+      <div className="shrink-0 px-5 pt-5 pb-3 flex items-center">
+        <div>
+          <h1 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
+            <FileText className="w-5 h-5 text-emerald-500" />
+            양식 인쇄 도구
+          </h1>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 학교 양식을 선택해 화면에서 바로 고치고 PDF 또는 HWPX로 저장하세요.</p>
+        </div>
+        <button
+          onClick={() => startTour('print-form')}
+          className="ml-auto flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+        >
+          <HelpCircle className="w-3 h-3" />
+          튜토리얼
+        </button>
       </div>
 
       {/* 카테고리 탭 */}
-      <div className="shrink-0 px-5 flex gap-2 border-b border-[#EDE8E1] dark:border-[#2E2822]">
+      <div data-tour="print-form-list" className="shrink-0 px-5 flex gap-2 border-b border-[#EDE8E1] dark:border-[#2E2822]">
         {CATEGORIES.map(cat => (
           <button
             key={cat}

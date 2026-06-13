@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { CustomTool } from '../types';
 import { generateHtmlApp } from '../services/geminiService';
-import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft, Plus, GripVertical, AlertTriangle } from 'lucide-react';
+import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft, Plus, GripVertical, AlertTriangle, HelpCircle } from 'lucide-react';
 import { useGlobalState } from '../GlobalStateContext';
+import { useTour } from '../TourContext';
 
 const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
   { value: 'lesson', label: '수업 자료' },
@@ -83,6 +84,7 @@ interface HtmlAppCreatorProps {
 
 const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCancel }) => {
   const { apiKeyAvailability } = useGlobalState();
+  const { startTour } = useTour();
   const parsed = parseDescription(initial?.description ?? '');
   const [appType, setAppType] = useState(parsed.appType);
   const [features, setFeatures] = useState<string[]>(parsed.features.length > 0 ? parsed.features : ['']);
@@ -191,6 +193,13 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             <h1 className="text-base font-extrabold text-[#1C1917] dark:text-[#F0EBE6]">HTML 앱 만들기</h1>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">원하는 앱을 설명하면 AI가 즉시 만들어드립니다</p>
           </div>
+          <button
+            onClick={() => startTour('html-app')}
+            className="ml-auto flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 dark:text-violet-400 px-2 py-1 rounded hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+          >
+            <HelpCircle className="w-3 h-3" />
+            튜토리얼
+          </button>
         </div>
       </div>
 
@@ -237,7 +246,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
         )}
 
         {/* 입력 필드 */}
-        <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-4">
+        <div data-tour="html-app-input" className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-4">
 
           {/* 앱 이름/종류 */}
           <div className="space-y-1.5">
@@ -316,6 +325,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
           {/* 생성 버튼 */}
           <div className="flex gap-2 pt-1">
             <button
+              data-tour="html-app-generate"
               onClick={handleGenerate}
               disabled={!canGenerate}
               className="flex items-center gap-2 px-4 py-2.5 bg-violet-500 hover:bg-violet-600 disabled:bg-[#EDE8E1] dark:disabled:bg-[#2E2822] text-white text-sm font-bold rounded-xl transition-colors"
@@ -339,7 +349,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
         {/* 미리보기 */}
         {htmlContent && (
-          <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] overflow-hidden flex flex-col" style={{ height: '420px' }}>
+          <div data-tour="html-app-preview" className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] overflow-hidden flex flex-col" style={{ height: '420px' }}>
             <div className="flex items-center justify-between px-4 py-2 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
               <span className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5" /> 미리보기
@@ -382,7 +392,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
         {/* 저장 */}
         {htmlContent && (
-          <div className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-3">
+          <div data-tour="html-app-save" className="bg-white dark:bg-[#171210] rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] p-4 space-y-3">
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="block text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-1">
