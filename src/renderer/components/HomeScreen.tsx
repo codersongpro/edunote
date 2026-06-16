@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle } from 'lucide-react';
 import iconPng from '../assets/icon.png';
+import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -25,9 +26,13 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [backupStatus, setBackupStatus] = useState('');
 
   useEffect(() => {
+    const refreshApiKeyState = () => {
+      window.electronAPI.hasApiKey().then((k: boolean) => setHasKey(k)).catch(() => setHasKey(false));
+    };
+
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
     window.electronAPI.checkUpdate().then((info: UpdateInfo) => setUpdateInfo(info)).catch(() => {});
-    window.electronAPI.hasApiKey().then((k: boolean) => setHasKey(k)).catch(() => setHasKey(false));
+    refreshApiKeyState();
     Promise.all([
       window.electronAPI.getConfig('appDataDir'),
       window.electronAPI.getConfig('saveDir'),
@@ -48,8 +53,10 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       setStorageInfo(prev => ({ ...prev, lastBackupAt: detail.lastBackupAt }));
     };
     window.addEventListener('edunote:backup-done', handleBackupDone);
+    window.addEventListener(API_KEY_UPDATED_EVENT, refreshApiKeyState);
     return () => {
       window.removeEventListener('edunote:backup-done', handleBackupDone);
+      window.removeEventListener(API_KEY_UPDATED_EVENT, refreshApiKeyState);
     };
   }, []);
 

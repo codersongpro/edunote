@@ -3,6 +3,7 @@ import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalL
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
+import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from '../lib/apiKeyGuide';
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
@@ -148,6 +149,7 @@ const SettingsScreen: React.FC = () => {
     // testApiKey가 이미 실제 생성 가능 여부를 확인했으므로 즉시 사용 가능 처리
     setApiKeyAvailability('usable');
     resetGenerationState();
+    window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT));
     playSuccessSound();
     showActivationModal();
   };
@@ -288,38 +290,22 @@ const SettingsScreen: React.FC = () => {
             <div className="px-4 pb-4">
               <div className="bg-white dark:bg-[#221E1B] rounded-md border border-blue-100 dark:border-blue-800 p-4 space-y-3">
                 <ol className="space-y-2.5 text-sm text-[#44403C] dark:text-[#C4B8B0]">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">1</span>
-                    <span>크롬 브라우저에서{' '}
-                      <button
-                        onClick={handleOpenAiStudio}
-                        className="text-blue-600 hover:underline font-medium inline-flex items-center gap-0.5"
-                      >
-                        aistudio.google.com <ExternalLink className="w-3 h-3" />
-                      </button>{' '}
-                      접속
-                    </span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">2</span>
-                    <span>구글 계정으로 로그인 <span className="text-[#78716C] dark:text-[#9C8F87]">(무료 Google 계정으로 충분)</span></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">3</span>
-                    <span>좌측 메뉴에서 <strong>"API 키"</strong> 클릭 <span className="text-[#78716C] dark:text-[#9C8F87]">(영문 메뉴인 경우 "Get API key")</span></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">4</span>
-                    <span>우측 상단 <strong>"API 키 만들기"</strong> 버튼 클릭 → 키 생성 <span className="text-[#78716C] dark:text-[#9C8F87]">(영문: "Create API key")</span></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">5</span>
-                    <span>키 생성 시 프로젝트 선택 화면이 나오면 <strong>"새 프로젝트에서 API 키 만들기"</strong>를 선택 <span className="text-[#78716C] dark:text-[#9C8F87]">(기존 GCP 프로젝트는 결제 계정이 연결되어 있을 수 있음)</span></span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">6</span>
-                    <span>생성된 키 <span className="bg-[#EDE8E1] dark:bg-[#2E2822] px-1.5 py-0.5 rounded font-mono text-xs">AIza...</span> 복사 → 아래 입력란에 붙여넣기</span>
-                  </li>
+                  {GEMINI_API_GUIDE_STEPS.map((step, index) => (
+                    <li key={step} className="flex gap-3">
+                      <span className="flex-shrink-0 w-5 h-5 bg-[#1E88E5] text-white text-xs rounded-full flex items-center justify-center font-bold">{index + 1}</span>
+                      <span>
+                        {step}
+                        {index === 0 && (
+                          <button
+                            onClick={handleOpenAiStudio}
+                            className="ml-1 text-blue-600 hover:underline font-medium inline-flex items-center gap-0.5"
+                          >
+                            열기 <ExternalLink className="w-3 h-3" />
+                          </button>
+                        )}
+                      </span>
+                    </li>
+                  ))}
                 </ol>
 
                 {/* 무료 등급 확인 강조 박스 — 결제 등급이 잘못되면 과금 우려가 있어 별도 안내 */}
@@ -338,45 +324,25 @@ const SettingsScreen: React.FC = () => {
                   </p>
                 </div>
 
-                {/* AI Studio가 발급을 거부하며 Google Cloud로 안내하는 경우의 대응 */}
-                <div className="mt-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-md p-3">
-                  <p className="text-xs font-bold text-rose-800 dark:text-rose-300 mb-1.5">
-                    🚫 키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나올 때
+                <div className="mt-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-md p-3">
+                  <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1.5">
+                    프로젝트가 하나도 없을 때
                   </p>
-                  <ol className="text-xs text-rose-700 dark:text-rose-400 space-y-1.5 leading-relaxed pl-4 list-decimal">
-                    <li>
-                      <strong>학교/기관 계정인지 먼저 확인</strong> — 학교 Google Workspace 계정은 기관 정책으로 발급이 막혀 있는 경우가 많습니다.
-                      개인 Gmail 계정(gmail.com)으로 로그아웃 후 다시 시도해 보세요.
-                    </li>
-                    <li>
-                      <strong>AI Studio에서 프로젝트 먼저 만들기 (가장 간단한 방법)</strong> — aistudio.google.com 좌측 메뉴에서
-                      {' '}<strong>"프로젝트"</strong>를 클릭해 새 프로젝트를 만든 뒤, 다시 <strong>"API 키" → "API 키 만들기"</strong>에서
-                      방금 만든 프로젝트를 선택하면 키가 생성됩니다.
-                    </li>
-                    <li>
-                      위 방법도 안 되면{' '}
-                      <button
-                        onClick={() => window.electronAPI.openExternal('https://console.cloud.google.com')}
-                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium inline-flex items-center gap-0.5"
-                      >
-                        console.cloud.google.com <ExternalLink className="w-3 h-3" />
-                      </button>
-                      에서 직접 발급할 수 있습니다:
-                      <span className="block mt-1">
-                        ① 같은 Google 계정으로 로그인 → ② 상단 프로젝트 선택에서 <strong>"새 프로젝트"</strong> 만들기 (이름 예: edunote)
-                        → ③ 상단 검색창에 <strong>"Generative Language API"</strong> 검색 후 <strong>"사용(Enable)"</strong> 클릭
-                        → ④ 왼쪽 메뉴 <strong>"API 및 서비스" → "사용자 인증 정보"</strong>에서 <strong>"사용자 인증 정보 만들기" → "API 키"</strong>
-                        → ⑤ 생성된 <span className="bg-rose-100 dark:bg-rose-900/40 px-1 py-0.5 rounded font-mono">AIza...</span> 키를 복사해 아래 입력란에 붙여넣기
-                      </span>
-                    </li>
-                    <li>
-                      <strong>결제 정보 등록을 요구하는 경우</strong> — 먼저 다른 개인 계정으로 시도해 보세요. 그래도 같다면 결제를 등록한 뒤 발급할 수 있지만,
-                      이 경우 유료 등급이 되므로 아래 <strong>API 키 등급</strong>에서 "유료"를 선택하고 사용량에 주의하세요.
-                    </li>
+                  <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+                    왼쪽 <strong>프로젝트</strong> 메뉴에서 <strong>프로젝트 만들기</strong>를 누르고 이름을 <strong>edunote</strong>로 입력하세요.
+                    만든 뒤에는 <strong>프로젝트 가져오기(Select a Cloud Project)</strong>에서 방금 만든 <strong>edunote</strong> 프로젝트를 선택하고, <strong>키 만들기</strong>로 API 키를 생성하면 됩니다.
+                  </p>
+                </div>
+
+                <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-slate-200 dark:border-[#2E2822] rounded-md p-3">
+                  <p className="text-xs font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1.5">
+                    두 번째 대안: Google Cloud에서 발급
+                  </p>
+                  <ol className="text-xs text-[#78716C] dark:text-[#9C8F87] space-y-1.5 leading-relaxed pl-4 list-decimal">
+                    {GEMINI_API_CLOUD_FALLBACK_STEPS.map(step => (
+                      <li key={step}>{step.replace(/^두 번째 대안: /, '')}</li>
+                    ))}
                   </ol>
-                  <p className="text-[11px] text-rose-600 dark:text-rose-500 mt-2">
-                    Cloud Console에서 발급한 키도 결제 계정을 연결하지 않은 새 프로젝트라면 무료 등급으로 동작합니다.
-                  </p>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
@@ -505,6 +471,7 @@ const SettingsScreen: React.FC = () => {
                 setTestStatus('idle');
                 setApiKeyAvailability('unknown');
                 setGuideExpanded(true);
+                window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT));
               }}
               className="w-full py-2 rounded-md text-sm font-semibold border border-red-200 dark:border-red-800 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >

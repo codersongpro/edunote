@@ -26,6 +26,7 @@ import UsageGuideScreen from './components/UsageGuideScreen';
 import AboutScreen from './components/AboutScreen';
 import { initAudioUnlock } from './lib/soundEffect';
 import { useEscapeKey } from './hooks/useEscapeKey';
+import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from './lib/apiKeyGuide';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
@@ -112,7 +113,8 @@ const App: React.FC = () => {
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [onboardingApiKey, setOnboardingApiKey] = useState('');
   const [onboardingApiTier, setOnboardingApiTier] = useState<'free' | 'paid'>('free');
-  const [onboardingApiStatus, setOnboardingApiStatus] = useState<'idle' | 'testing' | 'saved' | 'error'>('idle');
+  const [onboardingApiStatus, setOnboardingApiStatus] = useState<'idle' | 'testing' | 'tested' | 'warning' | 'saved' | 'error'>('idle');
+  const [onboardingApiMessage, setOnboardingApiMessage] = useState('');
   const [onboardingTeacherName, setOnboardingTeacherName] = useState('');
   const [onboardingInstitution, setOnboardingInstitution] = useState('');
   const [onboardingGradeClass, setOnboardingGradeClass] = useState('');
@@ -335,15 +337,41 @@ const App: React.FC = () => {
     goTo(AppMode.SETTINGS);
   };
 
-  const handleSaveOnboardingApiKey = async () => {
+  const handleTestOnboardingApiKey = async () => {
     const key = onboardingApiKey.trim();
-    if (!key) return;
+    if (!key) {
+      setOnboardingApiStatus('error');
+      setOnboardingApiMessage('API 키를 입력해 주세요.');
+      return null;
+    }
     setOnboardingApiStatus('testing');
+    setOnboardingApiMessage('');
     try {
       const result = await window.electronAPI.testApiKey(key, onboardingApiTier);
       if (!result.ok) {
         setOnboardingApiStatus('error');
-        showToast({ type: 'error', title: 'API 키 확인 실패', description: result.error || '키를 다시 확인해 주세요.' });
+        setOnboardingApiMessage(result.error || '키를 다시 확인해 주세요.');
+        return result;
+      }
+      setOnboardingApiStatus(result.warning ? 'warning' : 'tested');
+      setOnboardingApiMessage(result.warning || 'API 사용 가능!');
+      setApiKeyAvailability(result.wait ? 'wait' : 'usable');
+      if (!result.wait) resetGenerationState();
+      return result;
+    } catch {
+      setOnboardingApiStatus('error');
+      setOnboardingApiMessage('잠시 후 다시 시도해 주세요.');
+      return null;
+    }
+  };
+
+  const handleSaveOnboardingApiKey = async () => {
+    const key = onboardingApiKey.trim();
+    if (!key) return;
+    try {
+      const result = await handleTestOnboardingApiKey();
+      if (!result?.ok) {
+        showToast({ type: 'error', title: 'API 키 확인 실패', description: result?.error || '키를 다시 확인해 주세요.' });
         return;
       }
       await window.electronAPI.setApiKey(key, onboardingApiTier);
@@ -352,9 +380,12 @@ const App: React.FC = () => {
       setApiKeyAvailability(result.wait ? 'wait' : 'usable');
       setOnboardingApiKey('');
       setOnboardingApiStatus('saved');
+      setOnboardingApiMessage('API 키가 저장되었습니다.');
+      window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT));
       showToast({ type: 'success', title: 'API 키 저장 완료', description: 'EduNote에서 AI 기능을 사용할 수 있습니다.' });
     } catch {
       setOnboardingApiStatus('error');
+      setOnboardingApiMessage('잠시 후 다시 시도해 주세요.');
       showToast({ type: 'error', title: 'API 키 저장 실패', description: '잠시 후 다시 시도해 주세요.' });
     }
   };
@@ -746,7 +777,7 @@ const App: React.FC = () => {
                       <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-6">Gemini API 키를 입력하면 AI 기능을 모두 사용할 수 있습니다.</p>
                       <div className="grid grid-cols-2 gap-2 mb-4">
                         <button
-                          onClick={() => { setOnboardingApiTier('free'); setOnboardingApiStatus('idle'); }}
+                          onClick={() => { setOnboardingApiTier('free'); setOnboardingApiStatus('idle'); setOnboardingApiMessage(''); }}
                           className={`text-left rounded-lg border-2 px-4 py-3 ${
                             onboardingApiTier === 'free'
                               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
@@ -757,7 +788,7 @@ const App: React.FC = () => {
                           <p className="text-xs text-indigo-400 mt-1">분당 15회 무료</p>
                         </button>
                         <button
-                          onClick={() => { setOnboardingApiTier('paid'); setOnboardingApiStatus('idle'); }}
+                          onClick={() => { setOnboardingApiTier('paid'); setOnboardingApiStatus('idle'); setOnboardingApiMessage(''); }}
                           className={`text-left rounded-lg border-2 px-4 py-3 ${
                             onboardingApiTier === 'paid'
                               ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
@@ -777,17 +808,35 @@ const App: React.FC = () => {
                       <input
                         type="password"
                         value={onboardingApiKey}
-                        onChange={e => { setOnboardingApiKey(e.target.value); setOnboardingApiStatus('idle'); }}
+                        onChange={e => { setOnboardingApiKey(e.target.value); setOnboardingApiStatus('idle'); setOnboardingApiMessage(''); }}
                         className="w-full h-10 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] px-3 text-sm text-[#1C1917] dark:text-[#F0EBE6] outline-none focus:ring-2 focus:ring-indigo-500"
                         placeholder={hasApiKey ? '이미 저장된 API 키가 있습니다' : '개인 Gmail 무료 API 키를 붙여넣으세요'}
                       />
-                      <button
-                        onClick={handleSaveOnboardingApiKey}
-                        disabled={!onboardingApiKey.trim() || onboardingApiStatus === 'testing'}
-                        className="mt-3 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition-colors"
-                      >
-                        {onboardingApiStatus === 'testing' ? '키 확인 중...' : onboardingApiStatus === 'saved' ? '저장 완료' : '저장'}
-                      </button>
+                      {(onboardingApiStatus === 'tested' || onboardingApiStatus === 'warning' || onboardingApiStatus === 'saved' || onboardingApiStatus === 'error') && (
+                        <div className={`mt-3 rounded-lg border px-3 py-2 text-xs font-semibold ${
+                          onboardingApiStatus === 'error'
+                            ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'
+                        }`}>
+                          {onboardingApiMessage}
+                        </div>
+                      )}
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <button
+                          onClick={handleTestOnboardingApiKey}
+                          disabled={!onboardingApiKey.trim() || onboardingApiStatus === 'testing'}
+                          className="py-3 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {onboardingApiStatus === 'testing' ? '테스트 중...' : '키 테스트'}
+                        </button>
+                        <button
+                          onClick={handleSaveOnboardingApiKey}
+                          disabled={!onboardingApiKey.trim() || onboardingApiStatus === 'testing'}
+                          className="py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-lg text-sm transition-colors"
+                        >
+                          {onboardingApiStatus === 'testing' ? '확인 중...' : onboardingApiStatus === 'saved' ? '저장 완료' : '저장'}
+                        </button>
+                      </div>
                       <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                         API 키가 없어도 일부 기능은 사용할 수 있습니다.
                       </p>
@@ -795,7 +844,7 @@ const App: React.FC = () => {
                     <div className="bg-slate-50 dark:bg-[#171210] rounded-xl p-5">
                       <p className="text-sm font-black text-[#44403C] dark:text-[#F0EBE6] mb-4">무료 API 키 발급 방법</p>
                       <ol className="space-y-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
-                        {['Google AI Studio에 접속', 'Google 계정으로 로그인', '좌측 메뉴 API 키 클릭', 'API 키 만들기 클릭', '생성된 키 복사 후 붙여넣기'].map((text, index) => (
+                        {GEMINI_API_GUIDE_STEPS.map((text, index) => (
                           <li key={text} className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black flex items-center justify-center">{index + 1}</span>
                             <span>{text}</span>
@@ -809,10 +858,17 @@ const App: React.FC = () => {
                         발급 페이지 열기
                       </button>
                       <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
-                        <p className="font-bold">키 만들기가 거부될 때</p>
-                        <p>① AI Studio 좌측 메뉴 <strong>"프로젝트"</strong> 클릭 → 새 프로젝트 만들기</p>
-                        <p>② 다시 <strong>"API 키" → "API 키 만들기"</strong>에서 방금 만든 프로젝트 선택</p>
-                        <p className="text-amber-500 dark:text-amber-400">그래도 안 되면 설정 화면의 "Gemini API 키 무료 발급 방법" 가이드를 확인하세요.</p>
+                        <p className="font-bold">프로젝트가 보이지 않을 때</p>
+                        <p><strong>프로젝트</strong>에서 이름을 <strong>edunote</strong>로 새 프로젝트를 만든 뒤, <strong>프로젝트 가져오기</strong>에서 방금 만든 프로젝트를 선택하세요.</p>
+                        <p className="text-amber-500 dark:text-amber-400">그 다음 API 키 화면에서 키를 만들고 복사해 EduNote에 붙여넣으세요.</p>
+                      </div>
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white dark:border-[#2E2822] dark:bg-[#221E1B] px-3 py-2 text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+                        <p className="font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1">두 번째 대안: Google Cloud에서 발급</p>
+                        <ol className="space-y-1">
+                          {GEMINI_API_CLOUD_FALLBACK_STEPS.map((step, index) => (
+                            <li key={step}>{index + 1}. {step.replace(/^두 번째 대안: /, '')}</li>
+                          ))}
+                        </ol>
                       </div>
                     </div>
                   </div>
@@ -941,11 +997,11 @@ const App: React.FC = () => {
               <div className="rounded-xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 mb-4">
                 <p className="text-sm font-bold text-amber-900 dark:text-amber-200 mb-2">무료 API 키 발급 방법</p>
                 <ol className="space-y-1.5 text-xs text-amber-800 dark:text-amber-100 leading-relaxed">
-                  <li>1. Google AI Studio에 접속합니다.</li>
-                  <li>2. Google 계정으로 로그인합니다.</li>
-                  <li>3. 왼쪽 메뉴에서 API 키 또는 Get API key를 선택합니다.</li>
-                  <li>4. API 키 만들기를 누른 뒤 생성된 키를 EduNote 설정에 붙여넣습니다.</li>
+                  {GEMINI_API_GUIDE_STEPS.map((step, index) => (
+                    <li key={step}>{index + 1}. {step}</li>
+                  ))}
                 </ol>
+                <p className="mt-2 text-xs font-bold text-amber-900 dark:text-amber-100">두 번째 대안: Google Cloud에서 발급할 수도 있습니다.</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">

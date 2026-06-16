@@ -14,6 +14,7 @@ import {
   Upload,
   Wrench,
 } from 'lucide-react';
+import { GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from '../lib/apiKeyGuide';
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }> = ({
   title,
@@ -65,30 +66,36 @@ const UsageGuideScreen: React.FC = () => {
 
         <Section title="시작 전 준비 - Gemini API 키 발급" icon={<Key className="w-4 h-4 text-blue-500" />} defaultOpen>
           <ol className="space-y-2.5">
-            <Step n={1}>
-              <button onClick={() => handleOpenLink('https://aistudio.google.com')} className="text-blue-500 hover:underline inline-flex items-center gap-1">
-                aistudio.google.com <ExternalLink className="w-3 h-3" />
-              </button>
-              에 접속합니다.
-            </Step>
-            <Step n={2}>개인 Google 계정으로 로그인합니다. 무료 Gmail 계정으로도 사용할 수 있습니다.</Step>
-            <Step n={3}>왼쪽 메뉴에서 <strong>API 키</strong> 또는 <strong>Get API key</strong>를 선택합니다.</Step>
-            <Step n={4}><strong>API 키 만들기</strong>를 눌러 키를 생성합니다.</Step>
-            <Step n={5}>생성된 <span className="font-mono text-xs bg-[#EDE8E1] dark:bg-[#2E2822] px-1.5 py-0.5 rounded">AIza...</span> 키를 EduNote <strong>설정</strong> 화면에 붙여넣고 테스트 후 저장합니다.</Step>
+            {GEMINI_API_GUIDE_STEPS.map((step, index) => (
+              <Step key={step} n={index + 1}>
+                {index === 0 ? (
+                  <>
+                    {step}{' '}
+                    <button onClick={() => handleOpenLink('https://aistudio.google.com')} className="text-blue-500 hover:underline inline-flex items-center gap-1">
+                      열기 <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : step}
+              </Step>
+            ))}
           </ol>
           <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-xs text-amber-700 dark:text-amber-400">
             무료 API는 요청 제한이 있습니다. 토큰 소모나 잦은 요청으로 대기가 필요하면 앱이 안내합니다.
           </div>
-          <div className="mt-2 p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-lg text-xs text-rose-700 dark:text-rose-400 leading-relaxed">
-            <p className="font-bold mb-1">키 만들기가 거부되고 "Google Cloud에서 만들기" 안내가 나올 때</p>
+          <div className="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
+            <p className="font-bold mb-1">프로젝트가 하나도 없을 때</p>
             <p>
-              ① 학교/기관 계정이라면 개인 Gmail 계정으로 다시 시도하세요. ② 개인 계정에서도 같다면{' '}
-              <button onClick={() => handleOpenLink('https://console.cloud.google.com')} className="text-blue-500 hover:underline inline-flex items-center gap-0.5">
-                console.cloud.google.com <ExternalLink className="w-3 h-3" />
-              </button>
-              에서 <strong>새 프로젝트</strong> 만들기 → <strong>Generative Language API</strong> 사용 설정 → <strong>API 및 서비스 → 사용자 인증 정보 → API 키</strong> 순서로 직접 발급할 수 있습니다.
-              자세한 순서는 <strong>설정</strong> 화면의 "Gemini API 키 무료 발급 방법" 가이드를 참고하세요.
+              Google AI Studio의 <strong>프로젝트</strong> 메뉴에서 <strong>프로젝트 만들기</strong>를 누르고 이름을 <strong>edunote</strong>로 입력하세요.
+              만든 뒤 <strong>프로젝트 가져오기(Select a Cloud Project)</strong>에서 <strong>edunote</strong>를 선택하고 <strong>키 만들기</strong>로 API 키를 생성하면 됩니다.
             </p>
+          </div>
+          <div className="mt-2 p-3 bg-slate-50 dark:bg-[#171210] border border-slate-200 dark:border-[#2E2822] rounded-lg text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+            <p className="font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1">두 번째 대안: Google Cloud에서 발급</p>
+            <ol className="space-y-1.5 pl-4 list-decimal">
+              {GEMINI_API_CLOUD_FALLBACK_STEPS.map(step => (
+                <li key={step}>{step.replace(/^두 번째 대안: /, '')}</li>
+              ))}
+            </ol>
           </div>
         </Section>
 
