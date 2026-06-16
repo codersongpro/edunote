@@ -118,6 +118,7 @@ const App: React.FC = () => {
   const [onboardingTeacherName, setOnboardingTeacherName] = useState('');
   const [onboardingInstitution, setOnboardingInstitution] = useState('');
   const [onboardingGradeClass, setOnboardingGradeClass] = useState('');
+  const [onboardingShowCloudAlt, setOnboardingShowCloudAlt] = useState(false);
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
@@ -710,7 +711,7 @@ const App: React.FC = () => {
         {/* Onboarding Modal */}
         {showDisclaimerModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-100/85 dark:bg-black/70 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="onboarding-modal-title">
-            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden">
+            <div className="bg-white dark:bg-[#221E1B] rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[90vh] flex flex-col">
               <div className="bg-gradient-to-r from-indigo-600 to-violet-500 text-white px-8 py-6">
                 <div className="flex items-center justify-between mb-5">
                   <h2 id="onboarding-modal-title" className="text-lg font-black">EduNote 시작하기</h2>
@@ -738,7 +739,7 @@ const App: React.FC = () => {
                   ))}
                 </div>
               </div>
-              <div className="px-8 py-7 min-h-[330px]">
+              <div className="px-8 py-7 overflow-y-auto flex-1">
                 {onboardingStep === 1 && (
                   <div>
                     <h3 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">AI 활용 시 유의사항</h3>
@@ -843,17 +844,17 @@ const App: React.FC = () => {
                     </div>
                     <div className="bg-slate-50 dark:bg-[#171210] rounded-xl p-5">
                       <p className="text-sm font-black text-[#44403C] dark:text-[#F0EBE6] mb-4">무료 API 키 발급 방법</p>
-                      <ol className="space-y-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
+                      <ol className="space-y-2.5 text-xs text-[#78716C] dark:text-[#9C8F87]">
                         {GEMINI_API_GUIDE_STEPS.map((text, index) => (
-                          <li key={text} className="flex items-center gap-2">
-                            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black flex items-center justify-center">{index + 1}</span>
-                            <span>{text}</span>
+                          <li key={text} className="flex items-start gap-2">
+                            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">{index + 1}</span>
+                            <span className="leading-relaxed">{text}</span>
                           </li>
                         ))}
                       </ol>
                       <button
                         onClick={handleOpenApiGuide}
-                        className="mt-5 w-full py-2.5 rounded-lg border border-indigo-200 bg-white text-sm font-bold text-indigo-700 hover:bg-indigo-50 dark:bg-[#221E1B] dark:border-indigo-900 dark:text-indigo-300"
+                        className="mt-4 w-full py-2 rounded-lg border border-indigo-200 bg-white text-xs font-bold text-indigo-700 hover:bg-indigo-50 dark:bg-[#221E1B] dark:border-indigo-900 dark:text-indigo-300"
                       >
                         발급 페이지 열기
                       </button>
@@ -862,13 +863,21 @@ const App: React.FC = () => {
                         <p><strong>프로젝트</strong>에서 이름을 <strong>edunote</strong>로 새 프로젝트를 만든 뒤, <strong>프로젝트 가져오기</strong>에서 방금 만든 프로젝트를 선택하세요.</p>
                         <p className="text-amber-500 dark:text-amber-400">그 다음 API 키 화면에서 키를 만들고 복사해 EduNote에 붙여넣으세요.</p>
                       </div>
-                      <div className="mt-3 rounded-lg border border-slate-200 bg-white dark:border-[#2E2822] dark:bg-[#221E1B] px-3 py-2 text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                        <p className="font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1">두 번째 대안: Google Cloud에서 발급</p>
-                        <ol className="space-y-1">
-                          {GEMINI_API_CLOUD_FALLBACK_STEPS.map((step, index) => (
-                            <li key={step}>{index + 1}. {step.replace(/^두 번째 대안: /, '')}</li>
-                          ))}
-                        </ol>
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white dark:border-[#2E2822] dark:bg-[#221E1B] overflow-hidden">
+                        <button
+                          onClick={() => setOnboardingShowCloudAlt(v => !v)}
+                          className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-[#44403C] dark:text-[#F0EBE6] hover:bg-slate-50 dark:hover:bg-[#171210]"
+                        >
+                          <span>Google Cloud 대안 방법</span>
+                          <span className="text-[#A8A29E] dark:text-[#6B5E57] text-[10px]">{onboardingShowCloudAlt ? '▲ 접기' : '▼ 펼치기'}</span>
+                        </button>
+                        {onboardingShowCloudAlt && (
+                          <ol className="px-3 pb-3 space-y-1 text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed list-decimal list-inside">
+                            {GEMINI_API_CLOUD_FALLBACK_STEPS.map(step => (
+                              <li key={step}>{step}</li>
+                            ))}
+                          </ol>
+                        )}
                       </div>
                     </div>
                   </div>

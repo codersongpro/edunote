@@ -336,11 +336,11 @@ const SettingsScreen: React.FC = () => {
 
                 <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-slate-200 dark:border-[#2E2822] rounded-md p-3">
                   <p className="text-xs font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1.5">
-                    두 번째 대안: Google Cloud에서 발급
+                    Google Cloud 대안 방법
                   </p>
                   <ol className="text-xs text-[#78716C] dark:text-[#9C8F87] space-y-1.5 leading-relaxed pl-4 list-decimal">
                     {GEMINI_API_CLOUD_FALLBACK_STEPS.map(step => (
-                      <li key={step}>{step.replace(/^두 번째 대안: /, '')}</li>
+                      <li key={step}>{step}</li>
                     ))}
                   </ol>
                 </div>
