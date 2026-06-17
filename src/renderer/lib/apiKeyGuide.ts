@@ -1,5 +1,7 @@
 export const API_KEY_UPDATED_EVENT = 'edunote:api-key-updated';
 
+export const GEMINI_API_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1yvznEL-33VomTPeG4TnJY4Vz8X93LJnV/view?usp=drive_link';
+
 export const GEMINI_API_GUIDE_STEPS = [
   'aistudio.google.com에서 프로젝트를 만들어 API 키를 발급합니다.',
   '왼쪽 메뉴에서 API 키를 선택합니다.',

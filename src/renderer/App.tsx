@@ -26,7 +26,7 @@ import UsageGuideScreen from './components/UsageGuideScreen';
 import AboutScreen from './components/AboutScreen';
 import { initAudioUnlock } from './lib/soundEffect';
 import { useEscapeKey } from './hooks/useEscapeKey';
-import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from './lib/apiKeyGuide';
+import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from './lib/apiKeyGuide';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
@@ -34,7 +34,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -421,6 +421,10 @@ const App: React.FC = () => {
 
   const handleOpenApiGuide = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
+  };
+
+  const handleOpenApiGuideVideo = () => {
+    window.electronAPI.openExternal(GEMINI_API_GUIDE_VIDEO_URL);
   };
 
   const toggleDarkMode = async () => {
@@ -857,6 +861,12 @@ const App: React.FC = () => {
                         className="mt-4 w-full py-2 rounded-lg border border-indigo-200 bg-white text-xs font-bold text-indigo-700 hover:bg-indigo-50 dark:bg-[#221E1B] dark:border-indigo-900 dark:text-indigo-300"
                       >
                         발급 페이지 열기
+                      </button>
+                      <button
+                        onClick={handleOpenApiGuideVideo}
+                        className="mt-2 w-full py-2 rounded-lg border border-emerald-200 bg-white text-xs font-bold text-emerald-700 hover:bg-emerald-50 dark:bg-[#221E1B] dark:border-emerald-900 dark:text-emerald-300 flex items-center justify-center gap-1.5"
+                      >
+                        <Video className="w-3.5 h-3.5" /> 키 발급 도움받기 (영상)
                       </button>
                       <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-300 leading-relaxed space-y-1">
                         <p className="font-bold">프로젝트가 보이지 않을 때</p>

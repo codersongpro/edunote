@@ -12,9 +12,10 @@ import {
   Presentation,
   Settings,
   Upload,
+  Video,
   Wrench,
 } from 'lucide-react';
-import { GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from '../lib/apiKeyGuide';
+import { GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }> = ({
   title,
@@ -79,6 +80,12 @@ const UsageGuideScreen: React.FC = () => {
               </Step>
             ))}
           </ol>
+          <button
+            onClick={() => handleOpenLink(GEMINI_API_GUIDE_VIDEO_URL)}
+            className="w-full py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-[#221E1B] text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center justify-center gap-1.5"
+          >
+            <Video className="w-3.5 h-3.5" /> 키 발급 도움받기 (영상)
+          </button>
           <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-xs text-amber-700 dark:text-amber-400">
             무료 API는 요청 제한이 있습니다. 토큰 소모나 잦은 요청으로 대기가 필요하면 앱이 안내합니다.
           </div>
@@ -90,10 +97,10 @@ const UsageGuideScreen: React.FC = () => {
             </p>
           </div>
           <div className="mt-2 p-3 bg-slate-50 dark:bg-[#171210] border border-slate-200 dark:border-[#2E2822] rounded-lg text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-            <p className="font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1">두 번째 대안: Google Cloud에서 발급</p>
+            <p className="font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1">Google Cloud 대안 방법</p>
             <ol className="space-y-1.5 pl-4 list-decimal">
               {GEMINI_API_CLOUD_FALLBACK_STEPS.map(step => (
-                <li key={step}>{step.replace(/^두 번째 대안: /, '')}</li>
+                <li key={step}>{step}</li>
               ))}
             </ol>
           </div>

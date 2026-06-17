@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
-import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS } from '../lib/apiKeyGuide';
+import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
@@ -204,6 +204,10 @@ const SettingsScreen: React.FC = () => {
     window.electronAPI.openExternal('https://aistudio.google.com');
   };
 
+  const handleOpenApiGuideVideo = () => {
+    window.electronAPI.openExternal(GEMINI_API_GUIDE_VIDEO_URL);
+  };
+
   // 렌더러 localStorage 전체를 {키:값} 형태로 수집합니다. (공문 히스토리·메뉴 순서·즐겨찾기 등)
   const collectLocalStorage = (): Record<string, string> => {
     const dump: Record<string, string> = {};
@@ -307,6 +311,13 @@ const SettingsScreen: React.FC = () => {
                     </li>
                   ))}
                 </ol>
+
+                <button
+                  onClick={handleOpenApiGuideVideo}
+                  className="w-full py-2 rounded-md border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-[#221E1B] text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center justify-center gap-1.5"
+                >
+                  <Video className="w-3.5 h-3.5" /> 키 발급 도움받기 (영상)
+                </button>
 
                 {/* 무료 등급 확인 강조 박스 — 결제 등급이 잘못되면 과금 우려가 있어 별도 안내 */}
                 <div className="mt-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-3">
