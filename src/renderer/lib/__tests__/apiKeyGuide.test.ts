@@ -5,7 +5,6 @@ describe('GEMINI_API_GUIDE_STEPS', () => {
   it('guides users through the first option: create a project and issue an API key', () => {
     const guide = GEMINI_API_GUIDE_STEPS.join('\n');
 
-    expect(guide).toContain('첫 번째 방법');
     expect(guide).toContain('aistudio.google.com');
     expect(guide).toContain('API 키');
     expect(guide).toContain('프로젝트 만들기');
@@ -22,11 +21,11 @@ describe('GEMINI_API_GUIDE_STEPS', () => {
 });
 
 describe('GEMINI_API_CLOUD_FALLBACK_STEPS', () => {
-  it('documents Google Cloud as the second API key issuance option', () => {
+  it('documents Google Cloud as an alternative API key issuance option', () => {
     const guide = GEMINI_API_CLOUD_FALLBACK_STEPS.join('\n');
 
-    expect(guide).toContain('두 번째 대안');
-    expect(guide).not.toContain('세 번째 대안');
+    expect(guide).not.toContain('두 번째 방법');
+    expect(guide).not.toContain('두 번째 대안');
     expect(guide).toContain('console.cloud.google.com');
     expect(guide).toContain('Google Cloud');
     expect(guide).toContain('Generative Language API');
