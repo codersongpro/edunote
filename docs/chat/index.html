@@ -242,8 +242,12 @@
   // Firestore 보안 규칙은 쿼리 결과 전체가 항상 안전하다는 것을 쿼리 구조만으로 증명할 수 없으면
   // 쿼리 자체를 거부한다. 그래서 "공개 메시지"와 "나에게 온 귓속말"을 각각 규칙과 정확히 일치하는
   // 조건(where)으로 따로 구독한 뒤, 결과를 합쳐서 시간순으로 보여준다.
+  // 주의: where(필터)와 orderBy(다른 필드 정렬)를 함께 쓰면 복합 색인(composite index)이 필요해
+  // 색인이 없으면 쿼리가 통째로 실패한다. 그래서 정렬은 서버(orderBy)가 아니라 아래 renderAllMessages에서
+  // createdAt 기준으로 직접 하고, 쿼리에는 where 조건만 남겨 추가 색인 없이 동작하게 한다.
   var publicMessages = [];
   var whisperMessages = [];
+  var listenError = '';
 
   function messageSortKey(data) {
     return data.createdAt && typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : 0;
@@ -253,18 +257,33 @@
     var all = publicMessages.concat(whisperMessages);
     all.sort(function (a, b) { return messageSortKey(a) - messageSortKey(b); });
     messagesEl.innerHTML = '';
+    if (listenError) {
+      var errEl = document.createElement('div');
+      errEl.className = 'msg';
+      errEl.style.background = '#FEE2E2';
+      errEl.style.color = '#991B1B';
+      errEl.textContent = listenError;
+      messagesEl.appendChild(errEl);
+    }
     all.forEach(renderMessage);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
   function startListening() {
-    messagesRef.where('to', '==', null).orderBy('createdAt', 'asc').onSnapshot(function (snap) {
+    function onListenError(err) {
+      listenError = '메시지를 불러오지 못했습니다 (' + ((err && err.code) || '오류') + '). 선생님이 최신 Firebase 보안 규칙을 다시 게시했는지 확인해주세요.';
+      renderAllMessages();
+    }
+    messagesRef.where('to', '==', null).onSnapshot(function (snap) {
+      listenError = '';
       publicMessages = snap.docs.map(function (doc) { return doc.data(); });
       renderAllMessages();
-    });
-    messagesRef.where('to', 'array-contains', uid).orderBy('createdAt', 'asc').onSnapshot(function (snap) {
+    }, onListenError);
+    messagesRef.where('to', 'array-contains', uid).onSnapshot(function (snap) {
+      listenError = '';
       whisperMessages = snap.docs.map(function (doc) { return doc.data(); });
       renderAllMessages();
-    });
+    }, onListenError);
   }
 
   joinBtn.onclick = function () {
