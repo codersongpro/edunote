@@ -60,7 +60,7 @@ service cloud.firestore {
         // (to를 생략하지 않고 항상 null 또는 배열로 써야, 학생 쪽의 where('to','==',null) /
         //  where('to','array-contains',uid) 쿼리가 규칙과 정확히 맞아 거부되지 않는다.)
         allow read: if resource.data.to == null
-                    || (request.auth != null && resource.data.to is list && request.auth.uid in resource.data.to)
+                    || (request.auth != null && request.auth.uid in resource.data.to)
                     || isRoomOwner();
         allow create: if request.auth != null
                       && request.resource.data.keys().hasOnly(['sender', 'text', 'createdAt', 'senderUid', 'to'])

@@ -4,7 +4,7 @@ import { MessageCircle, Copy, Download, Trash2, Pin, PinOff } from 'lucide-react
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
 import {
-  getFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc, deleteDoc,
+  getFirestore, initializeFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch,
 } from 'firebase/firestore';
 // (참고) 학생 화면(docs/chat/index.html)은 보안 규칙 검증을 위해 공개 메시지/귓속말을 별도 쿼리로 나눠 구독하지만,
@@ -154,7 +154,9 @@ const ChatRoom: React.FC = () => {
   const ensureFirebase = (config: Record<string, string>) => {
     if (!appRef.current) {
       appRef.current = getApps().find(a => a.name === FIREBASE_APP_NAME) ?? initializeApp(config, FIREBASE_APP_NAME);
-      dbRef.current = getFirestore(appRef.current);
+      // 학교망 프록시가 실시간 스트리밍(WebChannel)을 버퍼링해 메시지가 즉시 전달되지 않는 문제가 있어,
+      // 변경마다 독립적인 요청/응답으로 주고받는 롱폴링을 강제해 실시간 수신이 끊기지 않게 한다.
+      dbRef.current = initializeFirestore(appRef.current, { experimentalForceLongPolling: true });
     }
     return { db: dbRef.current! };
   };

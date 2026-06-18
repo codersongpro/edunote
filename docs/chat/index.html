@@ -121,6 +121,9 @@
   firebase.initializeApp(config);
   var auth = firebase.auth();
   var db = firebase.firestore();
+  // 학교망 등 프록시가 실시간 스트리밍(WebChannel)을 버퍼링해 메시지가 즉시 도착하지 않는 문제가 있어,
+  // 변경마다 독립적인 요청/응답으로 주고받는 롱폴링을 강제한다. (다른 Firestore 작업보다 먼저 호출해야 한다.)
+  db.settings({ experimentalForceLongPolling: true });
   var roomRef = db.collection('rooms').doc(roomId);
   var messagesRef = roomRef.collection('messages');
 
@@ -247,7 +250,10 @@
   // createdAt 기준으로 직접 하고, 쿼리에는 where 조건만 남겨 추가 색인 없이 동작하게 한다.
   var publicMessages = [];
   var whisperMessages = [];
-  var listenError = '';
+  // 공개 메시지 구독과 귓속말 구독의 오류를 따로 추적한다. (하나가 성공할 때 다른 하나의 오류 안내가
+  // 지워져 가려지지 않도록 분리한다.)
+  var publicError = '';
+  var whisperError = '';
 
   function messageSortKey(data) {
     // 방금 보낸 메시지는 createdAt(서버 시각)이 아직 확정되지 않아 null이다. 이때 0을 쓰면 목록 맨 위로
@@ -260,6 +266,7 @@
     var all = publicMessages.concat(whisperMessages);
     all.sort(function (a, b) { return messageSortKey(a) - messageSortKey(b); });
     messagesEl.innerHTML = '';
+    var listenError = publicError || whisperError;
     if (listenError) {
       var errEl = document.createElement('div');
       errEl.className = 'msg';
@@ -273,20 +280,22 @@
   }
 
   function startListening() {
-    function onListenError(err) {
-      listenError = '메시지를 불러오지 못했습니다 (' + ((err && err.code) || '오류') + '). 선생님이 최신 Firebase 보안 규칙을 다시 게시했는지 확인해주세요.';
-      renderAllMessages();
-    }
     messagesRef.where('to', '==', null).onSnapshot(function (snap) {
-      listenError = '';
+      publicError = '';
       publicMessages = snap.docs.map(function (doc) { return doc.data(); });
       renderAllMessages();
-    }, onListenError);
+    }, function (err) {
+      publicError = '공개 메시지를 불러오지 못했습니다 (' + ((err && err.code) || '오류') + '). 선생님이 최신 Firebase 보안 규칙을 다시 게시했는지 확인해주세요.';
+      renderAllMessages();
+    });
     messagesRef.where('to', 'array-contains', uid).onSnapshot(function (snap) {
-      listenError = '';
+      whisperError = '';
       whisperMessages = snap.docs.map(function (doc) { return doc.data(); });
       renderAllMessages();
-    }, onListenError);
+    }, function (err) {
+      whisperError = '귓속말을 불러오지 못했습니다 (' + ((err && err.code) || '오류') + '). 선생님이 최신 Firebase 보안 규칙을 다시 게시했는지 확인해주세요.';
+      renderAllMessages();
+    });
   }
 
   joinBtn.onclick = function () {
