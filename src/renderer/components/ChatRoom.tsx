@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Copy } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import {
   getFirestore, type Firestore, collection, doc, setDoc, updateDoc, addDoc, getDoc,
@@ -47,6 +47,8 @@ const ChatRoom: React.FC = () => {
   const [configInput, setConfigInput] = useState('');
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [rulesCopied, setRulesCopied] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
@@ -113,23 +115,29 @@ const ChatRoom: React.FC = () => {
     if (!firebaseConfig) { setLoadingConfig(false); return; }
     let unsub: (() => void) | undefined;
     (async () => {
-      const { db } = ensureFirebase(firebaseConfig);
-      const activeId = await window.electronAPI.getConfig('chatActiveRoomId') as string | undefined;
-      if (activeId) {
-        const snap = await getDoc(doc(db, 'rooms', activeId));
-        if (snap.exists() && !snap.data()?.closed) {
-          setRoomId(activeId);
-          setClosed(false);
-          setJoinUrl(buildJoinUrl(activeId, firebaseConfig));
-          unsub = subscribeToRoom(activeId, db);
-          unsubscribeRef.current = unsub;
-          await window.electronAPI.notifyChatActive(true);
-        } else {
-          await window.electronAPI.setConfig({ chatActiveRoomId: '' });
+      try {
+        const { db } = ensureFirebase(firebaseConfig);
+        const activeId = await window.electronAPI.getConfig('chatActiveRoomId') as string | undefined;
+        if (activeId) {
+          const snap = await getDoc(doc(db, 'rooms', activeId));
+          if (snap.exists() && !snap.data()?.closed) {
+            setRoomId(activeId);
+            setClosed(false);
+            setJoinUrl(buildJoinUrl(activeId, firebaseConfig));
+            unsub = subscribeToRoom(activeId, db);
+            unsubscribeRef.current = unsub;
+            await window.electronAPI.notifyChatActive(true);
+          } else {
+            await window.electronAPI.setConfig({ chatActiveRoomId: '' });
+          }
         }
+        await loadPastRooms(db);
+        setChatError(null);
+      } catch (e) {
+        setChatError(`Firebase 연결에 실패했습니다: ${e instanceof Error ? e.message : String(e)}`);
+      } finally {
+        setLoadingConfig(false);
       }
-      await loadPastRooms(db);
-      setLoadingConfig(false);
     })();
     return () => { unsub?.(); };
   }, [firebaseConfig]);
@@ -161,6 +169,12 @@ const ChatRoom: React.FC = () => {
     });
     return unsubscribe;
   }, [roomId, closed]);
+
+  const handleCopyRules = async () => {
+    await navigator.clipboard.writeText(CHAT_FIRESTORE_RULES);
+    setRulesCopied(true);
+    setTimeout(() => setRulesCopied(false), 2000);
+  };
 
   const handleTestConnection = async () => {
     const parsed = parseFirebaseConfig(configInput) ?? firebaseConfig;
@@ -199,45 +213,62 @@ const ChatRoom: React.FC = () => {
 
   const startRoom = async () => {
     if (!firebaseConfig) return;
-    const { db } = ensureFirebase(firebaseConfig);
-    const id = generateRoomId();
-    await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false });
-    await window.electronAPI.setConfig({ chatActiveRoomId: id });
-    setRoomId(id);
-    setClosed(false);
-    setMessages([]);
-    setJoinUrl(buildJoinUrl(id, firebaseConfig));
-    unsubscribeRef.current?.();
-    unsubscribeRef.current = subscribeToRoom(id, db);
-    await window.electronAPI.notifyChatActive(true);
-    await loadPastRooms(db);
+    setChatError(null);
+    try {
+      const { db } = ensureFirebase(firebaseConfig);
+      const id = generateRoomId();
+      await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false });
+      await window.electronAPI.setConfig({ chatActiveRoomId: id });
+      setRoomId(id);
+      setClosed(false);
+      setMessages([]);
+      setJoinUrl(buildJoinUrl(id, firebaseConfig));
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = subscribeToRoom(id, db);
+      await window.electronAPI.notifyChatActive(true);
+      await loadPastRooms(db);
+    } catch (e) {
+      setChatError(`채팅방을 시작하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const handleCloseRoom = async () => {
     if (!roomId || !dbRef.current) return;
-    await updateDoc(doc(dbRef.current, 'rooms', roomId), { closed: true });
-    await window.electronAPI.setConfig({ chatActiveRoomId: '' });
-    await window.electronAPI.notifyChatActive(false);
-    await loadPastRooms(dbRef.current);
+    try {
+      await updateDoc(doc(dbRef.current, 'rooms', roomId), { closed: true });
+      await window.electronAPI.setConfig({ chatActiveRoomId: '' });
+      await window.electronAPI.notifyChatActive(false);
+      await loadPastRooms(dbRef.current);
+    } catch (e) {
+      setChatError(`채팅방을 종료하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const handleSend = async () => {
     const text = draft.trim();
     if (!text || !roomId || !dbRef.current || closed) return;
     setDraft('');
-    await addDoc(collection(dbRef.current, 'rooms', roomId, 'messages'), {
-      sender: teacherName || '선생님',
-      text,
-      createdAt: serverTimestamp(),
-    });
+    try {
+      await addDoc(collection(dbRef.current, 'rooms', roomId, 'messages'), {
+        sender: teacherName || '선생님',
+        text,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      setChatError(`메시지를 보내지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const handleExpandRoom = async (id: string) => {
     if (expandedRoomId === id) { setExpandedRoomId(null); return; }
     if (!dbRef.current) return;
-    const snap = await getDocs(query(collection(dbRef.current, 'rooms', id, 'messages'), orderBy('createdAt', 'asc')));
-    setExpandedMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ChatMessage, 'id'>) })));
-    setExpandedRoomId(id);
+    try {
+      const snap = await getDocs(query(collection(dbRef.current, 'rooms', id, 'messages'), orderBy('createdAt', 'asc')));
+      setExpandedMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ChatMessage, 'id'>) })));
+      setExpandedRoomId(id);
+    } catch (e) {
+      setChatError(`지난 채팅방을 불러오지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   if (loadingConfig) {
@@ -261,7 +292,13 @@ const ChatRoom: React.FC = () => {
             </ol>
           </div>
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
-            <p className="text-xs font-bold text-[#44403C]">Firestore 보안 규칙 (그대로 복사해 붙여넣으세요)</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-[#44403C]">Firestore 보안 규칙 (그대로 복사해 붙여넣으세요)</p>
+              <button onClick={handleCopyRules} className="flex items-center gap-1 text-xs px-2 py-1 border border-[#E7E5E4] rounded-lg hover:bg-[#FAF9F7] text-[#44403C]">
+                <Copy className="w-3 h-3" />
+                {rulesCopied ? '복사됨!' : '복사'}
+              </button>
+            </div>
             <pre className="bg-[#1C1917] text-[#D6D3D1] text-[11px] p-3 rounded-lg overflow-x-auto whitespace-pre">{CHAT_FIRESTORE_RULES}</pre>
           </div>
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
@@ -290,6 +327,12 @@ const ChatRoom: React.FC = () => {
   return (
     <div data-tour="class-tools-chat" className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
       <div className="max-w-2xl mx-auto space-y-4">
+        {chatError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2">
+            <span>{chatError}</span>
+            <button onClick={() => setChatError(null)} className="text-red-400 hover:text-red-600 shrink-0">✕</button>
+          </div>
+        )}
         {!roomId ? (
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
             <MessageCircle className="w-10 h-10 text-amber-500" />
