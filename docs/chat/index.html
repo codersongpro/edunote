@@ -102,6 +102,7 @@
     roomRef.onSnapshot(function (snap) {
       var data = snap.data();
       setClosedState(!!(data && data.closed));
+      if (data && data.title) document.querySelector('h1').textContent = data.title;
     });
     messagesRef.orderBy('createdAt', 'asc').onSnapshot(function (snap) {
       messagesEl.innerHTML = '';

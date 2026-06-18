@@ -17,6 +17,7 @@ interface ChatMessage {
 interface PastRoom {
   id: string;
   closed: boolean;
+  title?: string;
 }
 
 const FIREBASE_APP_NAME = 'edunote-chat';
@@ -51,6 +52,8 @@ const ChatRoom: React.FC = () => {
   const [rulesCopied, setRulesCopied] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomTitle, setRoomTitle] = useState('');
+  const [titleInput, setTitleInput] = useState('');
   const [joinUrl, setJoinUrl] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [closed, setClosed] = useState(false);
@@ -95,7 +98,7 @@ const ChatRoom: React.FC = () => {
 
   const loadPastRooms = async (db: Firestore) => {
     const snap = await getDocs(query(collection(db, 'rooms'), orderBy('createdAt', 'desc'), limit(20)));
-    setPastRooms(snap.docs.map(d => ({ id: d.id, closed: !!d.data().closed })));
+    setPastRooms(snap.docs.map(d => ({ id: d.id, closed: !!d.data().closed, title: d.data().title as string | undefined })));
   };
 
   // 설정 불러오기
@@ -122,6 +125,7 @@ const ChatRoom: React.FC = () => {
           const snap = await getDoc(doc(db, 'rooms', activeId));
           if (snap.exists() && !snap.data()?.closed) {
             setRoomId(activeId);
+            setRoomTitle((snap.data()?.title as string | undefined) ?? '');
             setClosed(false);
             setJoinUrl(buildJoinUrl(activeId, firebaseConfig));
             unsub = subscribeToRoom(activeId, db);
@@ -217,9 +221,11 @@ const ChatRoom: React.FC = () => {
     try {
       const { db } = ensureFirebase(firebaseConfig);
       const id = generateRoomId();
-      await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false });
+      const title = titleInput.trim();
+      await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false, title });
       await window.electronAPI.setConfig({ chatActiveRoomId: id });
       setRoomId(id);
+      setRoomTitle(title);
       setClosed(false);
       setMessages([]);
       setJoinUrl(buildJoinUrl(id, firebaseConfig));
@@ -346,13 +352,24 @@ const ChatRoom: React.FC = () => {
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
             <MessageCircle className="w-10 h-10 text-amber-500" />
             <p className="text-sm text-[#78716C]">학생들이 QR코드로 입장할 채팅방을 시작합니다.</p>
+            <input
+              type="text"
+              className="w-full max-w-xs border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-amber-500"
+              placeholder="채팅방 제목 (예: 3교시 모둠활동)"
+              maxLength={30}
+              value={titleInput}
+              onChange={e => setTitleInput(e.target.value)}
+            />
             <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
             <button onClick={() => setFirebaseConfig(null)} className="text-xs text-[#A8A29E] hover:underline">Firebase 연동 다시 설정하기</button>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-[#1C1917]">채팅방 {roomId}</h2>
+              <div>
+                <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
+                {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
+              </div>
               {!closed ? (
                 <button onClick={handleCloseRoom} className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">채팅방 종료</button>
               ) : (
@@ -398,7 +415,7 @@ const ChatRoom: React.FC = () => {
               {pastRooms.map(r => (
                 <div key={r.id}>
                   <button onClick={() => handleExpandRoom(r.id)} className="w-full flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
-                    <span className="font-mono">{r.id}</span>
+                    <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
                     <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
                   </button>
                   {expandedRoomId === r.id && (
