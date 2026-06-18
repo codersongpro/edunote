@@ -276,7 +276,7 @@ const LuckyDraw: React.FC = () => {
   const labelCls = 'block text-xs font-bold text-[#78716C] mb-1 uppercase tracking-wide';
 
   return (
-    <div data-tour="class-tools-lucky" className="flex flex-col h-full bg-[#FAF9F7] overflow-hidden relative">
+    <div className="flex flex-col h-full bg-[#FAF9F7] overflow-hidden relative">
       {/* Confetti canvas overlay */}
       <canvas
         ref={canvasRef}

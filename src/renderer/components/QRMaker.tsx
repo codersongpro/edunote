@@ -62,7 +62,7 @@ const QRMaker: React.FC = () => {
   };
 
   return (
-    <div data-tour="class-tools-qr" className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
       <div className="max-w-xl mx-auto w-full p-5 space-y-4">
 
         {/* Header */}

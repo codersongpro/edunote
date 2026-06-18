@@ -584,7 +584,7 @@ const ChatRoom: React.FC = () => {
   }
 
   return (
-    <div data-tour="class-tools-chat" className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
+    <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
       <div className="max-w-2xl mx-auto space-y-4">
         {chatError && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2">

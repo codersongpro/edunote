@@ -23,6 +23,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
     <div className="flex flex-col h-full">
       <div data-tour="class-tools-tabs" className="h-14 flex items-center border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <button
+          data-tour="class-tools-qr"
           onClick={() => setActiveTab('qr')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'qr'
@@ -34,6 +35,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           QR 메이커
         </button>
         <button
+          data-tour="class-tools-lucky"
           onClick={() => setActiveTab('lucky')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'lucky'
@@ -45,6 +47,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           럭키드로우
         </button>
         <button
+          data-tour="class-tools-chat"
           onClick={() => setActiveTab('chat')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'chat'
