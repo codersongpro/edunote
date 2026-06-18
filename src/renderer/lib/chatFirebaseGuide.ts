@@ -1,6 +1,7 @@
 export const CHAT_FIREBASE_GUIDE_STEPS: { text: string; link?: string }[] = [
   { text: 'console.firebase.google.com에 접속해 무료 프로젝트를 만듭니다 (신용카드 등록 불필요, Spark 무료 플랜).', link: 'https://console.firebase.google.com' },
   { text: '왼쪽 메뉴에서 Firestore Database를 선택하고 데이터베이스 만들기를 누릅니다.' },
+  { text: '왼쪽 메뉴 Authentication → 시작하기를 누른 뒤, Sign-in method 탭에서 "익명"을 선택해 사용 설정으로 켜고 저장합니다. (이 단계를 빠뜨리면 채팅방 개설 시 configuration-not-found 오류가 납니다.)' },
   { text: '프로젝트 설정(⚙) → 일반 → 내 앱에서 웹 앱 추가(</>) 아이콘을 누릅니다.' },
   { text: '앱 닉네임을 입력하고 앱 등록을 누르면 firebaseConfig 코드가 표시됩니다.' },
   { text: '표시된 firebaseConfig 코드 전체를 복사해 아래 입력란에 붙여넣고 저장합니다.' },

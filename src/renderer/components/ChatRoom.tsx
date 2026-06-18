@@ -47,6 +47,16 @@ function generateRoomId(): string {
   return Array.from(bytes, b => ROOM_ID_ALPHABET[b % ROOM_ID_ALPHABET.length]).join('');
 }
 
+// Firebase가 돌려주는 영어 오류 코드를 교사가 바로 조치할 수 있는 한국어 안내로 바꿔준다.
+function describeChatError(e: unknown): string {
+  const raw = e instanceof Error ? e.message : String(e);
+  // 익명 로그인이 꺼져 있을 때 나는 오류. 콘솔에서 익명 로그인을 켜면 해결된다.
+  if (raw.includes('auth/configuration-not-found') || raw.includes('auth/admin-restricted-operation')) {
+    return 'Firebase 콘솔에서 익명 로그인이 켜져 있지 않습니다. Authentication → Sign-in method → "익명"을 사용 설정으로 켠 뒤 다시 시도해주세요.';
+  }
+  return raw;
+}
+
 const URL_PATTERN = /((?:https?:\/\/|www\.)\S+)/gi;
 
 // 메시지에 적힌 웹 주소(http(s):// 또는 www.로 시작하는 부분)만 클릭 가능한 링크로 바꿔준다.
@@ -242,7 +252,7 @@ const ChatRoom: React.FC = () => {
         await loadPastRooms(db);
         setChatError(null);
       } catch (e) {
-        setChatError(`Firebase 연결에 실패했습니다: ${e instanceof Error ? e.message : String(e)}`);
+        setChatError(`Firebase 연결에 실패했습니다: ${describeChatError(e)}`);
       } finally {
         setLoadingConfig(false);
       }
@@ -357,7 +367,7 @@ const ChatRoom: React.FC = () => {
       await window.electronAPI.notifyChatActive(true);
       await loadPastRooms(db);
     } catch (e) {
-      setChatError(`채팅방을 시작하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+      setChatError(`채팅방을 시작하지 못했습니다: ${describeChatError(e)}`);
     }
   };
 
