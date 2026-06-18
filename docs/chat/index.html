@@ -41,6 +41,7 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 (function () {
@@ -67,16 +68,30 @@
   }
 
   firebase.initializeApp(config);
+  var auth = firebase.auth();
   var db = firebase.firestore();
   var roomRef = db.collection('rooms').doc(roomId);
   var messagesRef = roomRef.collection('messages');
 
   var nickname = '';
+  var uid = null;
   var closed = false;
   var messagesEl = document.getElementById('messages');
   var textInput = document.getElementById('textInput');
   var sendBtn = document.getElementById('sendBtn');
   var closedBanner = document.getElementById('closedBanner');
+
+  // 로그인 화면 없이 익명으로 인증해, 보안 규칙이 "나에게 온 귓속말"을 구분할 수 있게 한다.
+  joinBtn.disabled = true;
+  auth.onAuthStateChanged(function (user) {
+    if (user) {
+      uid = user.uid;
+      joinBtn.disabled = false;
+    }
+  });
+  auth.signInAnonymously().catch(function () {
+    joinError.textContent = '접속 인증에 실패했습니다. 새로고침 후 다시 시도해주세요.';
+  });
 
   var URL_PATTERN = /((?:https?:\/\/|www\.)\S+)/gi;
 
@@ -117,20 +132,24 @@
   }
 
   function renderMessage(data) {
+    // 귓속말(to 있음)은 보안 규칙이 받는 사람과 선생님에게만 전달해주지만,
+    // 혹시를 대비해 화면에서도 한 번 더 내 것이 아니면 표시하지 않는다.
+    if (data.to && data.to !== uid) return;
+    var isWhisper = !!data.to;
     var sender = data.sender || '익명';
-    var mine = !!nickname && sender === nickname;
+    var mine = !!nickname && sender === nickname && !isWhisper;
     var div = document.createElement('div');
     div.className = 'msg' + (mine ? ' mine' : '');
     if (mine) {
       div.style.background = '#F59E0B';
       div.style.color = '#fff';
     } else {
-      var c = colorForSender(sender);
+      var c = isWhisper ? { bg: '#FEF3C7', text: '#92400E' } : colorForSender(sender);
       div.style.background = c.bg;
       div.style.color = c.text;
       var senderEl = document.createElement('div');
       senderEl.className = 'sender';
-      senderEl.textContent = sender;
+      senderEl.textContent = isWhisper ? '🔒 ' + sender + ' (나에게만 보이는 귓속말)' : sender;
       div.appendChild(senderEl);
     }
     var textEl = document.createElement('div');
@@ -164,9 +183,21 @@
   joinBtn.onclick = function () {
     var val = document.getElementById('nickInput').value.trim();
     if (!val) { joinError.textContent = '닉네임을 입력해주세요.'; return; }
+    if (!uid) { joinError.textContent = '접속 인증 중입니다. 잠시 후 다시 시도해주세요.'; return; }
     nickname = val.slice(0, 20);
     document.getElementById('nickGate').style.display = 'none';
     document.getElementById('chatArea').style.display = 'flex';
+    roomRef.collection('participants').doc(uid).set({
+      nickname: nickname,
+      joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    // 선생님 화면에 "접속 중"으로 보이도록 주기적으로 접속 신호를 갱신한다.
+    setInterval(function () {
+      roomRef.collection('participants').doc(uid).update({
+        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    }, 20000);
     startListening();
   };
 
@@ -178,6 +209,7 @@
       sender: nickname,
       text: text,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      senderUid: uid,
     });
   }
 

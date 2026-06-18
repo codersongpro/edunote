@@ -11,28 +11,55 @@ export const CHAT_FIRESTORE_RULES = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /rooms/{roomId} {
+      function isRoomOwner() {
+        return request.auth != null
+               && request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerUid;
+      }
+
       // 방 코드를 정확히 아는 사람만 단건 조회 가능, 전체 목록 조회는 금지
       allow get: if true;
       allow list: if false;
-      // 방 생성: 필요한 필드만 허용하고 형식을 검증
-      allow create: if request.resource.data.keys().hasOnly(['createdAt', 'closed', 'title'])
+      // 방 생성: 만든 사람의 익명 인증 uid를 ownerUid로 함께 저장(귓속말·종료 권한 검증에 사용)
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['createdAt', 'closed', 'title', 'ownerUid'])
                     && request.resource.data.closed == false
                     && request.resource.data.title is string
-                    && request.resource.data.title.size() <= 50;
-      // 방 수정: closed 값만 바꿀 수 있음(제목·생성시각 변조 방지)
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed'])
+                    && request.resource.data.title.size() <= 50
+                    && request.resource.data.ownerUid == request.auth.uid;
+      // 방 수정(종료/재시작)은 방을 만든 사람만 가능, closed 값만 바꿀 수 있음
+      allow update: if isRoomOwner()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed'])
                     && request.resource.data.closed is bool;
       allow delete: if false;
 
-      match /messages/{messageId} {
-        // 방 코드를 알아야만 이 경로에 도달할 수 있음
+      match /participants/{participantId} {
+        // 방에 들어온 사람 목록(닉네임만 저장). 본인 문서만 만들고 갱신할 수 있음
         allow read: if true;
-        allow create: if request.resource.data.keys().hasOnly(['sender', 'text', 'createdAt'])
+        allow create: if request.auth != null && request.auth.uid == participantId
+                      && request.resource.data.keys().hasOnly(['nickname', 'joinedAt', 'lastSeen'])
+                      && request.resource.data.nickname is string
+                      && request.resource.data.nickname.size() <= 20;
+        // 접속 유지 신호(lastSeen)만 본인이 갱신 가능, 닉네임은 이후 변경 불가
+        allow update: if request.auth != null && request.auth.uid == participantId
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen']);
+        allow delete: if request.auth != null && request.auth.uid == participantId;
+      }
+
+      match /messages/{messageId} {
+        // 공개 메시지(to 없음)는 누구나 읽을 수 있고, 귓속말(to 있음)은 받는 사람과 방 주인(교사)만 읽을 수 있음
+        allow read: if resource.data.to == null
+                    || (request.auth != null && request.auth.uid == resource.data.to)
+                    || isRoomOwner();
+        allow create: if request.auth != null
+                      && request.resource.data.keys().hasOnly(['sender', 'text', 'createdAt', 'senderUid', 'to'])
+                      && request.resource.data.senderUid == request.auth.uid
                       && request.resource.data.sender is string
                       && request.resource.data.sender.size() <= 30
                       && request.resource.data.text is string
                       && request.resource.data.text.size() > 0
-                      && request.resource.data.text.size() <= 500;
+                      && request.resource.data.text.size() <= 500
+                      && (!('to' in request.resource.data)
+                          || (request.resource.data.to is string && isRoomOwner()));
         allow update, delete: if false;
       }
     }

@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { MessageCircle, Copy, Download, Trash2 } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
+import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
 import {
-  getFirestore, type Firestore, collection, doc, setDoc, updateDoc, addDoc, getDoc,
+  getFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc,
   onSnapshot, query, orderBy, serverTimestamp, getDocs,
 } from 'firebase/firestore';
 import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
@@ -12,6 +13,8 @@ interface ChatMessage {
   id: string;
   sender: string;
   text?: string;
+  senderUid?: string;
+  to?: string;
 }
 
 interface PastRoom {
@@ -19,6 +22,15 @@ interface PastRoom {
   closed: boolean;
   title?: string;
 }
+
+interface Participant {
+  id: string;
+  nickname: string;
+  lastSeen: Timestamp | null;
+}
+
+// 마지막 접속 신호(lastSeen)가 이 시간(ms) 안이면 "접속 중"으로 본다.
+const PRESENCE_TIMEOUT_MS = 40_000;
 
 const FIREBASE_APP_NAME = 'edunote-chat';
 const ROOM_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -105,9 +117,15 @@ const ChatRoom: React.FC = () => {
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [expandedMessages, setExpandedMessages] = useState<ChatMessage[]>([]);
 
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [whisperTarget, setWhisperTarget] = useState<{ id: string; nickname: string } | null>(null);
+  const [now, setNow] = useState(Date.now());
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<FirebaseApp | null>(null);
   const dbRef = useRef<Firestore | null>(null);
+  const authRef = useRef<Auth | null>(null);
+  const uidRef = useRef<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const ensureFirebase = (config: Record<string, string>) => {
@@ -116,6 +134,16 @@ const ChatRoom: React.FC = () => {
       dbRef.current = getFirestore(appRef.current);
     }
     return { db: dbRef.current! };
+  };
+
+  // 익명 인증으로 로그인 화면 없이 교사 PC에 고유한 uid를 부여한다.
+  // 이 uid가 있어야 보안 규칙에서 "방을 만든 사람(ownerUid)" 또는 "귓속말 받는 사람(to)"을 구분할 수 있다.
+  const ensureAuth = async (app: FirebaseApp): Promise<string> => {
+    if (!authRef.current) authRef.current = getAuth(app);
+    const auth = authRef.current;
+    if (auth.currentUser) return auth.currentUser.uid;
+    const cred = await signInAnonymously(auth);
+    return cred.user.uid;
   };
 
   const buildJoinUrl = (id: string, config: Record<string, string>) => {
@@ -133,7 +161,13 @@ const ChatRoom: React.FC = () => {
         setMessages(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ChatMessage, 'id'>) })));
       },
     );
-    return () => { unsubRoom(); unsubMessages(); };
+    const unsubParticipants = onSnapshot(
+      collection(db, 'rooms', id, 'participants'),
+      snap => {
+        setParticipants(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<Participant, 'id'>) })));
+      },
+    );
+    return () => { unsubRoom(); unsubMessages(); unsubParticipants(); };
   };
 
   // 보안 규칙이 rooms 컬렉션 전체 조회(list)를 막으므로, 내가 만든 방 목록은
@@ -182,6 +216,7 @@ const ChatRoom: React.FC = () => {
     (async () => {
       try {
         const { db } = ensureFirebase(firebaseConfig);
+        uidRef.current = await ensureAuth(appRef.current!);
         const activeId = await window.electronAPI.getConfig('chatActiveRoomId') as string | undefined;
         if (activeId) {
           const snap = await getDoc(doc(db, 'rooms', activeId));
@@ -219,6 +254,13 @@ const ChatRoom: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // 참여자의 "접속 중" 표시가 시간이 지나면 자동으로 "접속 끊김"으로 바뀌도록 주기적으로 갱신한다.
+  useEffect(() => {
+    if (!roomId || closed) return;
+    const timer = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, [roomId, closed]);
 
   // 창이 닫히기 전, 켜져 있던 채팅방을 종료 상태로 기록한다
   useEffect(() => {
@@ -285,9 +327,11 @@ const ChatRoom: React.FC = () => {
     setChatError(null);
     try {
       const { db } = ensureFirebase(firebaseConfig);
+      const uid = await ensureAuth(appRef.current!);
+      uidRef.current = uid;
       const id = generateRoomId();
       const title = titleInput.trim();
-      await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false, title });
+      await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false, title, ownerUid: uid });
       const history = await readRoomHistory();
       const nextHistory = [{ id, title }, ...history.filter(h => h.id !== id)].slice(0, 20);
       await window.electronAPI.setConfig({ chatActiveRoomId: id, chatRoomHistory: JSON.stringify(nextHistory) });
@@ -295,6 +339,8 @@ const ChatRoom: React.FC = () => {
       setRoomTitle(title);
       setClosed(false);
       setMessages([]);
+      setParticipants([]);
+      setWhisperTarget(null);
       setJoinUrl(buildJoinUrl(id, firebaseConfig));
       unsubscribeRef.current?.();
       unsubscribeRef.current = subscribeToRoom(id, db);
@@ -327,19 +373,23 @@ const ChatRoom: React.FC = () => {
     setTitleInput('');
     setClosed(false);
     setMessages([]);
+    setParticipants([]);
+    setWhisperTarget(null);
     setJoinUrl(null);
     setQrDataUrl(null);
   };
 
   const handleSend = async () => {
     const text = draft.trim();
-    if (!text || !roomId || !dbRef.current || closed) return;
+    if (!text || !roomId || !dbRef.current || closed || !uidRef.current) return;
     setDraft('');
     try {
       await addDoc(collection(dbRef.current, 'rooms', roomId, 'messages'), {
         sender: teacherName || '선생님',
         text,
         createdAt: serverTimestamp(),
+        senderUid: uidRef.current,
+        ...(whisperTarget ? { to: whisperTarget.id } : {}),
       });
     } catch (e) {
       setChatError(`메시지를 보내지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
@@ -526,13 +576,36 @@ const ChatRoom: React.FC = () => {
                 <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
               </div>
             )}
+            {participants.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 누르면 귓속말을 보낼 수 있어요</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {participants.map(p => {
+                    const online = !!p.lastSeen && (now - p.lastSeen.toMillis()) < PRESENCE_TIMEOUT_MS;
+                    const selected = whisperTarget?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setWhisperTarget(selected ? null : { id: p.id, nickname: p.nickname })}
+                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-amber-500 text-white border-amber-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1]'}`} />
+                        {p.nickname}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => {
                 const mine = m.sender === (teacherName || '선생님');
+                const whisperNickname = m.to ? (participants.find(p => p.id === m.to)?.nickname ?? '알 수 없음') : null;
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                     <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? 'bg-amber-500 text-white' : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
                       {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
+                      {whisperNickname && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNickname}</p>}
                       <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
                     </div>
                   </div>
@@ -540,11 +613,17 @@ const ChatRoom: React.FC = () => {
               })}
               <div ref={messagesEndRef} />
             </div>
+            {whisperTarget && (
+              <div className="flex items-center justify-between text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-1.5">
+                <span>🔒 {whisperTarget.nickname}님에게만 보이는 귓속말을 보내는 중입니다.</span>
+                <button onClick={() => setWhisperTarget(null)} className="hover:underline shrink-0 ml-2">취소</button>
+              </div>
+            )}
             <div className="flex gap-2">
               <input
                 type="text"
                 className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
-                placeholder={closed ? '채팅방이 종료되었습니다' : '메시지를 입력하세요'}
+                placeholder={closed ? '채팅방이 종료되었습니다' : whisperTarget ? `${whisperTarget.nickname}님에게 귓속말 보내기` : '메시지를 입력하세요'}
                 value={draft}
                 disabled={closed}
                 onChange={e => setDraft(e.target.value)}
