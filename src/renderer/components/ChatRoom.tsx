@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { MessageCircle, Copy, Download, Trash2, Pin, PinOff } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
+import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 import {
   getFirestore, initializeFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch,
@@ -164,8 +164,16 @@ const ChatRoom: React.FC = () => {
   // 익명 인증으로 로그인 화면 없이 교사 PC에 고유한 uid를 부여한다.
   // 이 uid가 있어야 보안 규칙에서 "방을 만든 사람(ownerUid)" 또는 "귓속말 받는 사람(to)"을 구분할 수 있다.
   const ensureAuth = async (app: FirebaseApp): Promise<string> => {
-    if (!authRef.current) authRef.current = getAuth(app);
+    if (!authRef.current) {
+      authRef.current = getAuth(app);
+      // 같은 PC에서 익명 uid가 유지되도록 로컬 지속성을 명시한다(방 소유권 유지에 필요).
+      await setPersistence(authRef.current, browserLocalPersistence);
+    }
     const auth = authRef.current;
+    // 앱 시작 직후에는 저장된 익명 계정의 복원이 끝나기 전이라 currentUser가 잠시 null이다.
+    // 복원을 기다리지 않고 signInAnonymously를 부르면 새 uid가 생겨 이전에 만든 방의 소유권을
+    // 잃게 되므로(종료·삭제 불가), 먼저 복원이 끝나길 기다린 뒤 판단한다.
+    await auth.authStateReady();
     if (auth.currentUser) return auth.currentUser.uid;
     const cred = await signInAnonymously(auth);
     return cred.user.uid;
@@ -385,13 +393,18 @@ const ChatRoom: React.FC = () => {
 
   const handleCloseRoom = async () => {
     if (!roomId || !dbRef.current) return;
+    if (!window.confirm('채팅방을 종료하면 모든 학생이 더 이상 참여할 수 없습니다(학생 화면이 종료 안내로 잠깁니다). 종료할까요?')) return;
     try {
       await updateDoc(doc(dbRef.current, 'rooms', roomId), { closed: true });
       await window.electronAPI.setConfig({ chatActiveRoomId: '' });
       await window.electronAPI.notifyChatActive(false);
       await loadPastRooms(dbRef.current);
     } catch (e) {
-      setChatError(`채팅방을 종료하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      const denied = /permission|insufficient/i.test(msg);
+      setChatError(denied
+        ? '이 채팅방은 다른 익명 계정(이전 설치·재설정 시점)으로 만들어져 종료 권한이 없습니다. 새 채팅방을 만들어 사용하시고, 이 방은 Firebase 콘솔에서 삭제해주세요.'
+        : `채팅방을 종료하지 못했습니다: ${msg}`);
     }
   };
 
