@@ -6,14 +6,14 @@
 <title>EduNote 채팅방</title>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, sans-serif; margin: 0; background: #FAF9F7; color: #1C1917; }
-  #app { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; }
+  #app { max-width: 480px; margin: 0 auto; padding: 16px; height: 100vh; height: 100dvh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
   h1 { font-size: 18px; margin: 0 0 12px; }
   #closedBanner { display: none; background: #FEF3C7; color: #92400E; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
   #pinnedBanner { display: none; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
   #pinnedBanner .pinnedSender { font-weight: bold; font-size: 11px; margin-bottom: 2px; }
   #nickGate { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
   #chatArea { display: none; flex: 1; flex-direction: column; min-height: 0; }
-  #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
+  #messages { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
   .msg { border: 1px solid #EDE8E1; border-radius: 10px; padding: 8px 12px; max-width: 80%; align-self: flex-start; }
   .msg.mine { border: none; align-self: flex-end; }
   .msg .sender { font-size: 11px; color: #A8A29E; margin-bottom: 2px; }
@@ -250,7 +250,10 @@
   var listenError = '';
 
   function messageSortKey(data) {
-    return data.createdAt && typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : 0;
+    // 방금 보낸 메시지는 createdAt(서버 시각)이 아직 확정되지 않아 null이다. 이때 0을 쓰면 목록 맨 위로
+    // 올라가 화면 밖으로 밀려서 "다음 메시지를 보내야 직전 메시지가 보이는" 현상이 생긴다. 그래서 현재
+    // 시각으로 취급해 맨 아래(가장 최신)에 바로 보이게 하고, 서버 시각이 확정되면 그 값으로 다시 정렬한다.
+    return data.createdAt && typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : Date.now();
   }
 
   function renderAllMessages() {

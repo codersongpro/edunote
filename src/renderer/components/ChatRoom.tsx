@@ -144,7 +144,7 @@ const ChatRoom: React.FC = () => {
   const [now, setNow] = useState(Date.now());
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<FirebaseApp | null>(null);
   const dbRef = useRef<Firestore | null>(null);
   const authRef = useRef<Auth | null>(null);
@@ -276,7 +276,10 @@ const ChatRoom: React.FC = () => {
   }, [joinUrl]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // 새 메시지가 오면 메시지 영역만 맨 아래로 스크롤한다. scrollIntoView는 바깥 패널까지 함께
+    // 스크롤해 입력창이 위로 밀려 올라가므로, 메시지 컨테이너의 scrollTop만 직접 조정한다.
+    const c = messagesContainerRef.current;
+    if (c) c.scrollTop = c.scrollHeight;
   }, [messages]);
 
   // 참여자의 "접속 중" 표시가 시간이 지나면 자동으로 "접속 끊김"으로 바뀌도록 주기적으로 갱신한다.
@@ -676,7 +679,7 @@ const ChatRoom: React.FC = () => {
                 </button>
               </div>
             )}
-            <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
+            <div ref={messagesContainerRef} className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => {
                 const mine = m.sender === (teacherName || '선생님');
                 const isWhisper = !!m.to && m.to.length > 0;
@@ -703,7 +706,6 @@ const ChatRoom: React.FC = () => {
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} />
             </div>
             {whisperTargets.length > 0 && (
               <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5">
