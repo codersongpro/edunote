@@ -58,6 +58,54 @@
     return;
   }
 
+  // 같은 기기(브라우저)에서 같은 채팅방에 중복으로 접속하는 것을 막는다.
+  // 탭끼리는 localStorage를 통해서만 서로를 알 수 있으므로, 다른 브라우저·다른 기기까지는 감지하지 못한다.
+  var DEVICE_LOCK_KEY = 'edunote-chat-lock-' + roomId;
+  var DEVICE_LOCK_TIMEOUT_MS = 8000;
+  var deviceTabId = Date.now() + '-' + Math.random().toString(36).slice(2);
+  var isPrimaryTab = false;
+  var lockHeartbeatTimer = null;
+
+  function readDeviceLock() {
+    try { return JSON.parse(localStorage.getItem(DEVICE_LOCK_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function claimDeviceLock() {
+    localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify({ tabId: deviceTabId, ts: Date.now() }));
+    isPrimaryTab = true;
+    lockHeartbeatTimer = setInterval(function () {
+      localStorage.setItem(DEVICE_LOCK_KEY, JSON.stringify({ tabId: deviceTabId, ts: Date.now() }));
+    }, 3000);
+  }
+
+  function blockDeviceAccess() {
+    isPrimaryTab = false;
+    if (lockHeartbeatTimer) clearInterval(lockHeartbeatTimer);
+    joinError.textContent = '이미 이 기기(같은 브라우저)에서 채팅방에 접속해 있습니다. 다른 탭이나 창을 닫고 새로고침해주세요.';
+    joinBtn.disabled = true;
+  }
+
+  var existingDeviceLock = readDeviceLock();
+  if (existingDeviceLock && existingDeviceLock.tabId !== deviceTabId && (Date.now() - existingDeviceLock.ts) < DEVICE_LOCK_TIMEOUT_MS) {
+    blockDeviceAccess();
+    return;
+  }
+  claimDeviceLock();
+
+  // 다른 탭이 거의 동시에 잠금을 가져가면(드문 경쟁 상황) storage 이벤트로 알아채고 이 탭을 막는다.
+  window.addEventListener('storage', function (e) {
+    if (e.key !== DEVICE_LOCK_KEY || !isPrimaryTab) return;
+    var lock = readDeviceLock();
+    if (lock && lock.tabId !== deviceTabId) blockDeviceAccess();
+  });
+
+  window.addEventListener('beforeunload', function () {
+    if (!isPrimaryTab) return;
+    clearInterval(lockHeartbeatTimer);
+    var lock = readDeviceLock();
+    if (lock && lock.tabId === deviceTabId) localStorage.removeItem(DEVICE_LOCK_KEY);
+  });
+
   var config;
   try {
     config = JSON.parse(atob(decodeURIComponent(cfgRaw)));
