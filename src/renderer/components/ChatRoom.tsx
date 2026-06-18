@@ -288,7 +288,16 @@ const ChatRoom: React.FC = () => {
               학교 망분리 등으로 교사 PC와 학생 기기가 직접 통신할 수 없는 경우가 많아, 무료 Firebase(구글)를 통해 채팅을 중계합니다. 한 번만 설정하면 계속 사용할 수 있습니다.
             </p>
             <ol className="list-decimal list-inside space-y-1.5 text-sm text-[#44403C]">
-              {CHAT_FIREBASE_GUIDE_STEPS.map((step, i) => <li key={i}>{step}</li>)}
+              {CHAT_FIREBASE_GUIDE_STEPS.map((step, i) => (
+                <li key={i}>
+                  {step.text}
+                  {step.link && (
+                    <button onClick={() => window.electronAPI.openExternal(step.link!)} className="ml-1 text-amber-600 hover:underline font-medium">
+                      바로가기
+                    </button>
+                  )}
+                </li>
+              ))}
             </ol>
           </div>
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
