@@ -14,7 +14,6 @@
   #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
   .msg { background: #fff; border: 1px solid #EDE8E1; border-radius: 10px; padding: 8px 12px; max-width: 80%; align-self: flex-start; }
   .msg .sender { font-size: 11px; color: #A8A29E; margin-bottom: 2px; }
-  .msg a { color: #B45309; word-break: break-all; }
   #composer { display: flex; gap: 6px; padding: 8px 0; border-top: 1px solid #EDE8E1; }
   input[type=text] { flex: 1; padding: 10px; border: 1px solid #E7E5E4; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
   button { background: #F59E0B; color: #fff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
@@ -35,8 +34,6 @@
     <div id="messages"></div>
     <div id="composer">
       <input type="text" id="textInput" placeholder="메시지를 입력하세요" maxlength="500">
-      <input type="file" id="fileInput" style="display:none">
-      <button id="fileBtn">📎</button>
       <button id="sendBtn">전송</button>
     </div>
   </div>
@@ -44,7 +41,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
 <script>
 (function () {
   var hash = location.hash.replace(/^#/, '');
@@ -71,7 +67,6 @@
 
   firebase.initializeApp(config);
   var db = firebase.firestore();
-  var storage = firebase.storage();
   var roomRef = db.collection('rooms').doc(roomId);
   var messagesRef = roomRef.collection('messages');
 
@@ -80,8 +75,6 @@
   var messagesEl = document.getElementById('messages');
   var textInput = document.getElementById('textInput');
   var sendBtn = document.getElementById('sendBtn');
-  var fileBtn = document.getElementById('fileBtn');
-  var fileInput = document.getElementById('fileInput');
   var closedBanner = document.getElementById('closedBanner');
 
   function renderMessage(data) {
@@ -91,18 +84,9 @@
     senderEl.className = 'sender';
     senderEl.textContent = data.sender || '익명';
     div.appendChild(senderEl);
-    if (data.fileUrl) {
-      var a = document.createElement('a');
-      a.href = data.fileUrl;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = '📎 ' + (data.fileName || '파일');
-      div.appendChild(a);
-    } else {
-      var textEl = document.createElement('div');
-      textEl.textContent = data.text || '';
-      div.appendChild(textEl);
-    }
+    var textEl = document.createElement('div');
+    textEl.textContent = data.text || '';
+    div.appendChild(textEl);
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
@@ -112,7 +96,6 @@
     closedBanner.style.display = closed ? 'block' : 'none';
     textInput.disabled = closed;
     sendBtn.disabled = closed;
-    fileBtn.disabled = closed;
   }
 
   function startListening() {
@@ -150,34 +133,6 @@
   textInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') sendText();
   });
-
-  fileBtn.onclick = function () {
-    if (!closed) fileInput.click();
-  };
-
-  fileInput.onchange = function (e) {
-    var file = e.target.files[0];
-    e.target.value = '';
-    if (!file || closed) return;
-    if (file.size > 20 * 1024 * 1024) {
-      alert('파일은 20MB 이하만 보낼 수 있습니다.');
-      return;
-    }
-    var path = 'rooms/' + roomId + '/files/' + Date.now() + '_' + file.name;
-    var ref = storage.ref(path);
-    ref.put(file).then(function () {
-      return ref.getDownloadURL();
-    }).then(function (url) {
-      messagesRef.add({
-        sender: nickname,
-        fileUrl: url,
-        fileName: file.name,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-    }).catch(function () {
-      alert('파일 업로드에 실패했습니다.');
-    });
-  };
 })();
 </script>
 </body>

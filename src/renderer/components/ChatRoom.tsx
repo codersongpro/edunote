@@ -6,15 +6,12 @@ import {
   getFirestore, type Firestore, collection, doc, setDoc, updateDoc, addDoc, getDoc,
   onSnapshot, query, orderBy, limit, serverTimestamp, getDocs,
 } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STORAGE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
+import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
 
 interface ChatMessage {
   id: string;
   sender: string;
   text?: string;
-  fileUrl?: string;
-  fileName?: string;
 }
 
 interface PastRoom {
@@ -25,7 +22,6 @@ interface PastRoom {
 const FIREBASE_APP_NAME = 'edunote-chat';
 const ROOM_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CONFIG_KEYS = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId'];
-const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 function generateRoomId(): string {
   const bytes = new Uint8Array(8);
@@ -64,20 +60,17 @@ const ChatRoom: React.FC = () => {
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [expandedMessages, setExpandedMessages] = useState<ChatMessage[]>([]);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<FirebaseApp | null>(null);
   const dbRef = useRef<Firestore | null>(null);
-  const storageInstanceRef = useRef<FirebaseStorage | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   const ensureFirebase = (config: Record<string, string>) => {
     if (!appRef.current) {
       appRef.current = getApps().find(a => a.name === FIREBASE_APP_NAME) ?? initializeApp(config, FIREBASE_APP_NAME);
       dbRef.current = getFirestore(appRef.current);
-      storageInstanceRef.current = getStorage(appRef.current);
     }
-    return { db: dbRef.current!, storage: storageInstanceRef.current! };
+    return { db: dbRef.current! };
   };
 
   const buildJoinUrl = (id: string, config: Record<string, string>) => {
@@ -199,7 +192,6 @@ const ChatRoom: React.FC = () => {
     if (existing) await deleteApp(existing);
     appRef.current = null;
     dbRef.current = null;
-    storageInstanceRef.current = null;
     await window.electronAPI.setConfig({ chatFirebaseConfig: JSON.stringify(parsed) });
     setTestResult(null);
     setFirebaseConfig(parsed);
@@ -240,24 +232,6 @@ const ChatRoom: React.FC = () => {
     });
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!roomId || !dbRef.current || !storageInstanceRef.current || closed) return;
-    if (file.size > MAX_UPLOAD_BYTES) {
-      alert('파일은 20MB 이하만 보낼 수 있습니다.');
-      return;
-    }
-    const path = `rooms/${roomId}/files/${Date.now()}_${file.name}`;
-    const fileRef = storageRef(storageInstanceRef.current, path);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    await addDoc(collection(dbRef.current, 'rooms', roomId, 'messages'), {
-      sender: teacherName || '선생님',
-      fileUrl: url,
-      fileName: file.name,
-      createdAt: serverTimestamp(),
-    });
-  };
-
   const handleExpandRoom = async (id: string) => {
     if (expandedRoomId === id) { setExpandedRoomId(null); return; }
     if (!dbRef.current) return;
@@ -289,8 +263,6 @@ const ChatRoom: React.FC = () => {
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
             <p className="text-xs font-bold text-[#44403C]">Firestore 보안 규칙 (그대로 복사해 붙여넣으세요)</p>
             <pre className="bg-[#1C1917] text-[#D6D3D1] text-[11px] p-3 rounded-lg overflow-x-auto whitespace-pre">{CHAT_FIRESTORE_RULES}</pre>
-            <p className="text-xs font-bold text-[#44403C]">Storage 보안 규칙</p>
-            <pre className="bg-[#1C1917] text-[#D6D3D1] text-[11px] p-3 rounded-lg overflow-x-auto whitespace-pre">{CHAT_STORAGE_RULES}</pre>
           </div>
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
             <label className="block text-sm font-bold text-[#44403C]">firebaseConfig 붙여넣기</label>
@@ -345,11 +317,7 @@ const ChatRoom: React.FC = () => {
               {messages.map(m => (
                 <div key={m.id} className="bg-white border border-[#EDE8E1] rounded-lg px-3 py-2 max-w-[85%]">
                   <p className="text-[11px] text-[#A8A29E] mb-0.5">{m.sender}</p>
-                  {m.fileUrl ? (
-                    <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="text-amber-700 text-sm underline break-all">📎 {m.fileName || '파일'}</a>
-                  ) : (
-                    <p className="text-sm text-[#1C1917] break-words">{m.text}</p>
-                  )}
+                  <p className="text-sm text-[#1C1917] break-words">{m.text}</p>
                 </div>
               ))}
               <div ref={messagesEndRef} />
@@ -364,13 +332,6 @@ const ChatRoom: React.FC = () => {
                 onChange={e => setDraft(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
               />
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) handleFileUpload(f); }}
-              />
-              <button onClick={() => fileInputRef.current?.click()} disabled={closed} className="px-3 py-2 border border-[#E7E5E4] rounded-lg text-sm disabled:opacity-50">📎</button>
               <button onClick={handleSend} disabled={closed} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50">전송</button>
             </div>
           </div>
@@ -395,7 +356,7 @@ const ChatRoom: React.FC = () => {
                       ) : expandedMessages.map(m => (
                         <div key={m.id} className="text-xs px-2">
                           <span className="text-[#A8A29E]">{m.sender}: </span>
-                          {m.fileUrl ? <a href={m.fileUrl} target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">📎 {m.fileName}</a> : <span>{m.text}</span>}
+                          <span>{m.text}</span>
                         </div>
                       ))}
                     </div>
