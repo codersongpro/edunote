@@ -4,9 +4,11 @@ import { MessageCircle, Copy, Download, Trash2, Pin, PinOff } from 'lucide-react
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
 import {
-  getFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc,
-  onSnapshot, query, orderBy, serverTimestamp, getDocs,
+  getFirestore, type Firestore, type Timestamp, collection, doc, setDoc, updateDoc, addDoc, getDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp, getDocs, writeBatch,
 } from 'firebase/firestore';
+// (참고) 학생 화면(docs/chat/index.html)은 보안 규칙 검증을 위해 공개 메시지/귓속말을 별도 쿼리로 나눠 구독하지만,
+// 교사 화면은 isRoomOwner() 권한으로 항상 전체를 읽을 수 있어 쿼리를 나눌 필요가 없다.
 import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
 
 interface ChatMessage {
@@ -14,7 +16,7 @@ interface ChatMessage {
   sender: string;
   text?: string;
   senderUid?: string;
-  to?: string;
+  to?: string[] | null;
 }
 
 interface PastRoom {
@@ -53,6 +55,10 @@ function describeChatError(e: unknown): string {
   // 익명 로그인이 꺼져 있을 때 나는 오류. 콘솔에서 익명 로그인을 켜면 해결된다.
   if (raw.includes('auth/configuration-not-found') || raw.includes('auth/admin-restricted-operation')) {
     return 'Firebase 콘솔에서 익명 로그인이 켜져 있지 않습니다. Authentication → Sign-in method → "익명"을 사용 설정으로 켠 뒤 다시 시도해주세요.';
+  }
+  // Firestore 보안 규칙이 최신 버전으로 게시되지 않았을 때 나는 오류.
+  if (raw.includes('permission-denied')) {
+    return 'Firebase 보안 규칙이 최신 버전이 아닙니다. "규칙 복사" 버튼으로 규칙을 다시 복사해 Firestore Database의 "규칙" 탭에 붙여넣고 게시한 뒤 다시 시도해주세요.';
   }
   return raw;
 }
@@ -131,9 +137,10 @@ const ChatRoom: React.FC = () => {
   const [pastRooms, setPastRooms] = useState<PastRoom[]>([]);
   const [expandedRoomId, setExpandedRoomId] = useState<string | null>(null);
   const [expandedMessages, setExpandedMessages] = useState<ChatMessage[]>([]);
+  const [deletingRoomId, setDeletingRoomId] = useState<string | null>(null);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [whisperTarget, setWhisperTarget] = useState<{ id: string; nickname: string } | null>(null);
+  const [whisperTargets, setWhisperTargets] = useState<{ id: string; nickname: string }[]>([]);
   const [now, setNow] = useState(Date.now());
   const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(null);
 
@@ -359,7 +366,7 @@ const ChatRoom: React.FC = () => {
       setClosed(false);
       setMessages([]);
       setParticipants([]);
-      setWhisperTarget(null);
+      setWhisperTargets([]);
       setPinnedMessage(null);
       setJoinUrl(buildJoinUrl(id, firebaseConfig));
       unsubscribeRef.current?.();
@@ -394,7 +401,7 @@ const ChatRoom: React.FC = () => {
     setClosed(false);
     setMessages([]);
     setParticipants([]);
-    setWhisperTarget(null);
+    setWhisperTargets([]);
     setPinnedMessage(null);
     setJoinUrl(null);
     setQrDataUrl(null);
@@ -410,7 +417,7 @@ const ChatRoom: React.FC = () => {
         text,
         createdAt: serverTimestamp(),
         senderUid: uidRef.current,
-        ...(whisperTarget ? { to: whisperTarget.id } : {}),
+        to: whisperTargets.length > 0 ? whisperTargets.map(t => t.id) : null,
       });
     } catch (e) {
       setChatError(`메시지를 보내지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
@@ -418,7 +425,7 @@ const ChatRoom: React.FC = () => {
   };
 
   const handlePinMessage = async (m: ChatMessage) => {
-    if (!roomId || !dbRef.current || m.to) return; // 귓속말은 모두에게 보이는 공지로 고정할 수 없다.
+    if (!roomId || !dbRef.current || (m.to && m.to.length > 0)) return; // 귓속말은 모두에게 보이는 공지로 고정할 수 없다.
     try {
       await updateDoc(doc(dbRef.current, 'rooms', roomId), { pinnedMessage: { sender: m.sender, text: m.text ?? '' } });
     } catch (e) {
@@ -457,16 +464,38 @@ const ChatRoom: React.FC = () => {
     }
   };
 
-  // 보안 규칙상 방 자체는 삭제할 수 없으므로(채팅 내용은 Firebase에 그대로 남음), 이 PC에 저장된
-  // "지난 채팅방" 목록에서만 제거한다.
+  // 메시지/참여자 문서를 모두 지운 뒤 방 문서 자체를 지운다. Firestore는 한 배치(batch)에
+  // 최대 500개 작업까지만 담을 수 있어, 안전하게 450개씩 나눠서 지운다.
+  const deleteRoomFromFirebase = async (db: Firestore, id: string) => {
+    const [messagesSnap, participantsSnap] = await Promise.all([
+      getDocs(collection(db, 'rooms', id, 'messages')),
+      getDocs(collection(db, 'rooms', id, 'participants')),
+    ]);
+    const refsToDelete = [...messagesSnap.docs, ...participantsSnap.docs].map(d => d.ref);
+    for (let i = 0; i < refsToDelete.length; i += 450) {
+      const batch = writeBatch(db);
+      refsToDelete.slice(i, i + 450).forEach(ref => batch.delete(ref));
+      await batch.commit();
+    }
+    await deleteDoc(doc(db, 'rooms', id));
+  };
+
   const handleDeleteFromHistory = async (id: string) => {
-    const ok = window.confirm('지난 채팅방 목록에서 삭제하시겠습니까?\n(대화 내용 자체는 Firebase에 그대로 남아있고, 이 목록에서만 사라집니다)');
+    const ok = window.confirm('이 채팅방을 Firebase에서 완전히 삭제하시겠습니까?\n대화 내용과 참여자 목록이 모두 삭제되며, 되돌릴 수 없습니다.');
     if (!ok) return;
-    const history = await readRoomHistory();
-    const nextHistory = history.filter(h => h.id !== id);
-    await window.electronAPI.setConfig({ chatRoomHistory: JSON.stringify(nextHistory) });
-    setPastRooms(prev => prev.filter(r => r.id !== id));
-    if (expandedRoomId === id) setExpandedRoomId(null);
+    setDeletingRoomId(id);
+    try {
+      if (dbRef.current) await deleteRoomFromFirebase(dbRef.current, id);
+      const history = await readRoomHistory();
+      const nextHistory = history.filter(h => h.id !== id);
+      await window.electronAPI.setConfig({ chatRoomHistory: JSON.stringify(nextHistory) });
+      setPastRooms(prev => prev.filter(r => r.id !== id));
+      if (expandedRoomId === id) setExpandedRoomId(null);
+    } catch (e) {
+      setChatError(`채팅방을 삭제하지 못했습니다: ${describeChatError(e)}`);
+    } finally {
+      setDeletingRoomId(null);
+    }
   };
 
   const handleExpandRoom = async (id: string) => {
@@ -617,16 +646,16 @@ const ChatRoom: React.FC = () => {
             )}
             {participants.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 누르면 귓속말을 보낼 수 있어요</p>
+                <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
                 <div className="flex flex-wrap gap-1.5">
                   {participants.map(p => {
                     const online = !!p.lastSeen && (now - p.lastSeen.toMillis()) < PRESENCE_TIMEOUT_MS;
-                    const selected = whisperTarget?.id === p.id;
+                    const selected = whisperTargets.some(t => t.id === p.id);
                     return (
                       <button
                         key={p.id}
-                        onClick={() => setWhisperTarget(selected ? null : { id: p.id, nickname: p.nickname })}
-                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-amber-500 text-white border-amber-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
+                        onClick={() => setWhisperTargets(prev => selected ? prev.filter(t => t.id !== p.id) : [...prev, { id: p.id, nickname: p.nickname }])}
+                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-violet-500 text-white border-violet-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1]'}`} />
                         {p.nickname}
@@ -650,20 +679,23 @@ const ChatRoom: React.FC = () => {
             <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => {
                 const mine = m.sender === (teacherName || '선생님');
-                const whisperNickname = m.to ? (participants.find(p => p.id === m.to)?.nickname ?? '알 수 없음') : null;
+                const isWhisper = !!m.to && m.to.length > 0;
+                const whisperNicknames = isWhisper
+                  ? m.to!.map(id => participants.find(p => p.id === id)?.nickname ?? '알 수 없음').join(', ')
+                  : null;
                 return (
                   <div key={m.id} className={`flex items-end gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
-                    {!mine && !m.to && (
+                    {!mine && !isWhisper && (
                       <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
                         <Pin className="w-3.5 h-3.5" />
                       </button>
                     )}
-                    <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? 'bg-amber-500 text-white' : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
+                    <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? (isWhisper ? 'bg-violet-500 text-white' : 'bg-amber-500 text-white') : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
                       {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
-                      {whisperNickname && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNickname}</p>}
+                      {whisperNicknames && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNicknames}</p>}
                       <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
                     </div>
-                    {mine && !m.to && (
+                    {mine && !isWhisper && (
                       <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
                         <Pin className="w-3.5 h-3.5" />
                       </button>
@@ -673,17 +705,17 @@ const ChatRoom: React.FC = () => {
               })}
               <div ref={messagesEndRef} />
             </div>
-            {whisperTarget && (
-              <div className="flex items-center justify-between text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-1.5">
-                <span>🔒 {whisperTarget.nickname}님에게만 보이는 귓속말을 보내는 중입니다.</span>
-                <button onClick={() => setWhisperTarget(null)} className="hover:underline shrink-0 ml-2">취소</button>
+            {whisperTargets.length > 0 && (
+              <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5">
+                <span>🔒 {whisperTargets.map(t => t.nickname).join(', ')}님에게만 보이는 귓속말을 보내는 중입니다.</span>
+                <button onClick={() => setWhisperTargets([])} className="hover:underline shrink-0 ml-2">취소</button>
               </div>
             )}
             <div className="flex gap-2">
               <input
                 type="text"
                 className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
-                placeholder={closed ? '채팅방이 종료되었습니다' : whisperTarget ? `${whisperTarget.nickname}님에게 귓속말 보내기` : '메시지를 입력하세요'}
+                placeholder={closed ? '채팅방이 종료되었습니다' : whisperTargets.length > 0 ? `${whisperTargets.map(t => t.nickname).join(', ')}님에게 귓속말 보내기` : '메시지를 입력하세요'}
                 value={draft}
                 disabled={closed}
                 onChange={e => setDraft(e.target.value)}
@@ -710,7 +742,7 @@ const ChatRoom: React.FC = () => {
                     <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
                       <Download className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => handleDeleteFromHistory(r.id)} title="목록에서 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
+                    <button onClick={() => handleDeleteFromHistory(r.id)} disabled={deletingRoomId === r.id} title="Firebase에서 완전히 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0 disabled:opacity-50">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>

@@ -37,7 +37,8 @@ service cloud.firestore {
                             && request.resource.data.pinnedMessage.sender is string
                             && request.resource.data.pinnedMessage.text is string
                             && request.resource.data.pinnedMessage.text.size() <= 500));
-      allow delete: if false;
+      // 방을 만든 사람(교사)만 방 자체를 삭제할 수 있음(지난 채팅방 목록의 "완전히 삭제" 기능에 사용)
+      allow delete: if isRoomOwner();
 
       match /participants/{participantId} {
         // 방에 들어온 사람 목록(닉네임만 저장). 본인 문서만 만들고 갱신할 수 있음
@@ -49,13 +50,17 @@ service cloud.firestore {
         // 접속 유지 신호(lastSeen)만 본인이 갱신 가능, 닉네임은 이후 변경 불가
         allow update: if request.auth != null && request.auth.uid == participantId
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeen']);
-        allow delete: if request.auth != null && request.auth.uid == participantId;
+        // 본인이거나, 방을 만든 사람(교사)이 방을 통째로 삭제할 때 함께 지울 수 있음
+        allow delete: if (request.auth != null && request.auth.uid == participantId) || isRoomOwner();
       }
 
       match /messages/{messageId} {
-        // 공개 메시지(to 없음)는 누구나 읽을 수 있고, 귓속말(to 있음)은 받는 사람과 방 주인(교사)만 읽을 수 있음
+        // 공개 메시지(to == null)는 누구나 읽을 수 있고, 귓속말(to, 받는 사람들의 uid 배열)은
+        // 그 배열에 포함된 사람들과 방 주인(교사)만 읽을 수 있음.
+        // (to를 생략하지 않고 항상 null 또는 배열로 써야, 학생 쪽의 where('to','==',null) /
+        //  where('to','array-contains',uid) 쿼리가 규칙과 정확히 맞아 거부되지 않는다.)
         allow read: if resource.data.to == null
-                    || (request.auth != null && request.auth.uid == resource.data.to)
+                    || (request.auth != null && resource.data.to is list && request.auth.uid in resource.data.to)
                     || isRoomOwner();
         allow create: if request.auth != null
                       && request.resource.data.keys().hasOnly(['sender', 'text', 'createdAt', 'senderUid', 'to'])
@@ -65,9 +70,14 @@ service cloud.firestore {
                       && request.resource.data.text is string
                       && request.resource.data.text.size() > 0
                       && request.resource.data.text.size() <= 500
-                      && (!('to' in request.resource.data)
-                          || (request.resource.data.to is string && isRoomOwner()));
-        allow update, delete: if false;
+                      && (request.resource.data.to == null
+                          || (request.resource.data.to is list
+                              && request.resource.data.to.size() > 0
+                              && request.resource.data.to.size() <= 50
+                              && isRoomOwner()));
+        allow update: if false;
+        // 방을 만든 사람(교사)만 메시지를 지울 수 있음(방 전체 삭제 시 함께 지움)
+        allow delete: if isRoomOwner();
       }
     }
   }

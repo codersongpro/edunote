@@ -183,10 +183,10 @@
   }
 
   function renderMessage(data) {
-    // 귓속말(to 있음)은 보안 규칙이 받는 사람과 선생님에게만 전달해주지만,
+    // 귓속말(to: 받는 사람들의 uid 배열)은 보안 규칙이 그 배열에 포함된 사람과 선생님에게만 전달해주지만,
     // 혹시를 대비해 화면에서도 한 번 더 내 것이 아니면 표시하지 않는다.
-    if (data.to && data.to !== uid) return;
-    var isWhisper = !!data.to;
+    var isWhisper = Array.isArray(data.to) && data.to.length > 0;
+    if (isWhisper && data.to.indexOf(uid) === -1) return;
     var sender = data.sender || '익명';
     var mine = !!nickname && sender === nickname && !isWhisper;
     var div = document.createElement('div');
@@ -195,7 +195,7 @@
       div.style.background = '#F59E0B';
       div.style.color = '#fff';
     } else {
-      var c = isWhisper ? { bg: '#FEF3C7', text: '#92400E' } : colorForSender(sender);
+      var c = isWhisper ? { bg: '#EDE9FE', text: '#5B21B6' } : colorForSender(sender);
       div.style.background = c.bg;
       div.style.color = c.text;
       var senderEl = document.createElement('div');
@@ -239,10 +239,31 @@
     if (data && data.title) document.querySelector('h1').textContent = data.title;
   });
 
+  // Firestore 보안 규칙은 쿼리 결과 전체가 항상 안전하다는 것을 쿼리 구조만으로 증명할 수 없으면
+  // 쿼리 자체를 거부한다. 그래서 "공개 메시지"와 "나에게 온 귓속말"을 각각 규칙과 정확히 일치하는
+  // 조건(where)으로 따로 구독한 뒤, 결과를 합쳐서 시간순으로 보여준다.
+  var publicMessages = [];
+  var whisperMessages = [];
+
+  function messageSortKey(data) {
+    return data.createdAt && typeof data.createdAt.toMillis === 'function' ? data.createdAt.toMillis() : 0;
+  }
+
+  function renderAllMessages() {
+    var all = publicMessages.concat(whisperMessages);
+    all.sort(function (a, b) { return messageSortKey(a) - messageSortKey(b); });
+    messagesEl.innerHTML = '';
+    all.forEach(renderMessage);
+  }
+
   function startListening() {
-    messagesRef.orderBy('createdAt', 'asc').onSnapshot(function (snap) {
-      messagesEl.innerHTML = '';
-      snap.forEach(function (doc) { renderMessage(doc.data()); });
+    messagesRef.where('to', '==', null).orderBy('createdAt', 'asc').onSnapshot(function (snap) {
+      publicMessages = snap.docs.map(function (doc) { return doc.data(); });
+      renderAllMessages();
+    });
+    messagesRef.where('to', 'array-contains', uid).orderBy('createdAt', 'asc').onSnapshot(function (snap) {
+      whisperMessages = snap.docs.map(function (doc) { return doc.data(); });
+      renderAllMessages();
     });
   }
 
@@ -276,6 +297,7 @@
       text: text,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       senderUid: uid,
+      to: null,
     });
   }
 
