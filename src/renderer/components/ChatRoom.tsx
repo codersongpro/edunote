@@ -323,6 +323,8 @@ const ChatRoom: React.FC = () => {
     if (existing) await deleteApp(existing);
     appRef.current = null;
     dbRef.current = null;
+    authRef.current = null;
+    uidRef.current = null;
     await window.electronAPI.setConfig({ chatFirebaseConfig: JSON.stringify(parsed) });
     setTestResult(null);
     setFirebaseConfig(parsed);
