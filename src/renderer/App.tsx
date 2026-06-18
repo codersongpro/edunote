@@ -195,7 +195,10 @@ const App: React.FC = () => {
 
   const goTo = (newMode: AppMode) => {
     setMode(newMode);
-    setMountedModes(prev => new Set([...prev, newMode]));
+    // 내 스킬·스킬마켓은 같은 MyToolsScreen 인스턴스를 공유해야 하므로 마운트 키를 하나로 합친다
+    // (분리하면 인스턴스가 두 개 생겨 한쪽에서 가져오기/삭제해도 다른 쪽 상태가 갱신되지 않는 버그가 생김)
+    const mountMode = newMode === AppMode.MY_AI_TOOLS_SHARED ? AppMode.MY_AI_TOOLS : newMode;
+    setMountedModes(prev => new Set([...prev, mountMode]));
     setGeneratingModes(prev => {
       if (prev.size > 0 && !concurrentNoticeDismissed.current) setShowConcurrentNotice(true);
       return prev;
@@ -1589,11 +1592,14 @@ const App: React.FC = () => {
             );
           })()}
           {/* Lazy-mounted views */}
-          {(Array.from(mountedModes) as AppMode[]).map(m => (
-            <div key={m} className={m === mode ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
-              {renderMode(m)}
-            </div>
-          ))}
+          {(Array.from(mountedModes) as AppMode[]).map(m => {
+            const isVisible = m === mode || (m === AppMode.MY_AI_TOOLS && mode === AppMode.MY_AI_TOOLS_SHARED);
+            return (
+              <div key={m} className={isVisible ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
+                {renderMode(m)}
+              </div>
+            );
+          })}
         </main>
 
       </div>
