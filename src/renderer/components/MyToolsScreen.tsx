@@ -329,7 +329,14 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
         const { tools: items, error } = parseImportedTools(raw);
         if (error) throw new Error(error);
         // 마켓 entry 이름으로 통일 (isAdded 체크와 일치시키기 위해)
-        imported = items.map(t => ({ ...t, id: crypto.randomUUID(), updatedAt: now, name: entry.name || t.name }));
+        imported = items.map(t => ({
+          ...t,
+          id: crypto.randomUUID(),
+          name: entry.name || t.name,
+          author: t.author || [entry.author, entry.authorSchool].filter(Boolean).join(' / ') || undefined,
+          createdAt: t.createdAt || entry.createdAt || now,
+          updatedAt: now,
+        }));
       } catch {
         if (entry.toolType === 'html-app' && raw.trim().startsWith('<')) {
           const htmlTool: CustomTool = {
@@ -357,9 +364,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
         notifyToast({ type: 'warning', title: `"${imported[0]?.name}" 스킬은 이미 내 스킬에 있습니다.` });
         return;
       }
-      saveTools([...tools, ...imported]);
-      setTab('my');
-      onTabChange?.('my');
+      await saveTools([...tools, ...imported]);
+      handleTabSwitch('my');
       notifyToast({ type: 'success', title: `"${imported[0]?.name ?? entry.name}" 스킬을 내 스킬에 추가했습니다.` });
     } catch (err: any) {
       notifyToast({ type: 'error', title: `도구를 가져오지 못했습니다.\n파일이 공개 설정인지 확인해 주세요.\n\n오류: ${err?.message ?? '알 수 없는 오류'}` });

@@ -81,7 +81,7 @@ export function validateImportedTool(value: unknown): { ok: true; tool: CustomTo
     }
   }
 
-  return { ok: true, tool: value as unknown as CustomTool };
+  return { ok: true, tool: { ...value, toolType } as unknown as CustomTool };
 }
 
 export function parseImportedTools(raw: string): { tools: CustomTool[]; error?: string } {

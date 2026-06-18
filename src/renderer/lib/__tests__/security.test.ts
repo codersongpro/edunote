@@ -69,6 +69,12 @@ describe('validateImportedTool', () => {
     expect(result.ok).toBe(true);
   });
 
+  it('프롬프트 도구 타입을 내부 표준값으로 정리한다', () => {
+    const result = validateImportedTool({ ...validTool, toolType: 'ai-skill' });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.tool.toolType).toBe('prompt');
+  });
+
   it('이름이 없으면 거부한다', () => {
     const result = validateImportedTool({ ...validTool, name: '' });
     expect(result.ok).toBe(false);
