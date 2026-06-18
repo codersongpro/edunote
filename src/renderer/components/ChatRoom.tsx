@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { MessageCircle, Copy } from 'lucide-react';
+import { MessageCircle, Copy, Download, Trash2 } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import {
   getFirestore, type Firestore, collection, doc, setDoc, updateDoc, addDoc, getDoc,
@@ -30,6 +30,45 @@ function generateRoomId(): string {
   return Array.from(bytes, b => ROOM_ID_ALPHABET[b % ROOM_ID_ALPHABET.length]).join('');
 }
 
+const URL_PATTERN = /((?:https?:\/\/|www\.)\S+)/gi;
+
+// 메시지에 적힌 웹 주소(http(s):// 또는 www.로 시작하는 부분)만 클릭 가능한 링크로 바꿔준다.
+function linkifyText(text: string, linkClassName = 'text-amber-600 hover:underline break-all'): React.ReactNode {
+  return text.split(URL_PATTERN).map((part, i) => {
+    if (!part) return null;
+    if (!/^(?:https?:\/\/|www\.)/i.test(part)) return part;
+    const href = part.startsWith('http') ? part : `https://${part}`;
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => window.electronAPI.openExternal(href)}
+        className={linkClassName}
+      >
+        {part}
+      </button>
+    );
+  });
+}
+
+// 보낸 사람 이름마다 같은 색이 나오도록(카카오톡처럼) 이름을 해시해 고정된 색을 골라준다.
+const BUBBLE_COLORS = [
+  'bg-blue-100 text-blue-900',
+  'bg-emerald-100 text-emerald-900',
+  'bg-purple-100 text-purple-900',
+  'bg-pink-100 text-pink-900',
+  'bg-cyan-100 text-cyan-900',
+  'bg-orange-100 text-orange-900',
+  'bg-lime-100 text-lime-900',
+  'bg-indigo-100 text-indigo-900',
+];
+
+function colorForSender(sender: string): string {
+  let hash = 0;
+  for (let i = 0; i < sender.length; i++) hash = (hash * 31 + sender.charCodeAt(i)) >>> 0;
+  return BUBBLE_COLORS[hash % BUBBLE_COLORS.length];
+}
+
 // Firebase 콘솔에서 그대로 복사한 JS 코드(따옴표 있는 키: 값 형태)에서 필요한 값만 안전하게 추출한다.
 // eval/Function을 쓰지 않아 붙여넣은 텍스트로 임의 코드가 실행될 위험이 없다.
 function parseFirebaseConfig(raw: string): Record<string, string> | null {
@@ -50,6 +89,7 @@ const ChatRoom: React.FC = () => {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [rulesCopied, setRulesCopied] = useState(false);
+  const [reconfiguring, setReconfiguring] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomTitle, setRoomTitle] = useState('');
@@ -215,7 +255,7 @@ const ChatRoom: React.FC = () => {
       const db = getFirestore(app);
       // 존재하지 않는 방을 단건 조회한다. 연결·규칙이 정상이면 "없음"으로 성공 응답이 오고,
       // 규칙이 잘못됐거나 연결이 안 되면 예외가 발생한다(목록 조회는 규칙상 금지이므로 사용하지 않는다).
-      await getDoc(doc(db, 'rooms', '__connectiontest__'));
+      await getDoc(doc(db, 'rooms', '_connectiontest'));
       setTestResult({ ok: true, message: '연결에 성공했습니다.' });
     } catch (e) {
       setTestResult({ ok: false, message: `연결 실패: ${e instanceof Error ? e.message : String(e)}` });
@@ -237,6 +277,7 @@ const ChatRoom: React.FC = () => {
     await window.electronAPI.setConfig({ chatFirebaseConfig: JSON.stringify(parsed) });
     setTestResult(null);
     setFirebaseConfig(parsed);
+    setReconfiguring(false);
   };
 
   const startRoom = async () => {
@@ -305,6 +346,40 @@ const ChatRoom: React.FC = () => {
     }
   };
 
+  const formatTranscript = (title: string, msgs: ChatMessage[]) =>
+    `${title}\n\n${msgs.map(m => `[${m.sender}] ${m.text ?? ''}`).join('\n')}`;
+
+  const sanitizeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_');
+
+  const handleDownloadActiveRoom = async () => {
+    const title = roomTitle || roomId || '채팅방';
+    await window.electronAPI.saveTxt(formatTranscript(title, messages), `${sanitizeFileName(title)}.txt`);
+  };
+
+  const handleDownloadPastRoom = async (r: PastRoom) => {
+    if (!dbRef.current) return;
+    try {
+      const snap = await getDocs(query(collection(dbRef.current, 'rooms', r.id, 'messages'), orderBy('createdAt', 'asc')));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ChatMessage, 'id'>) }));
+      const title = r.title || r.id;
+      await window.electronAPI.saveTxt(formatTranscript(title, msgs), `${sanitizeFileName(title)}.txt`);
+    } catch (e) {
+      setChatError(`채팅방을 다운로드하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  // 보안 규칙상 방 자체는 삭제할 수 없으므로(채팅 내용은 Firebase에 그대로 남음), 이 PC에 저장된
+  // "지난 채팅방" 목록에서만 제거한다.
+  const handleDeleteFromHistory = async (id: string) => {
+    const ok = window.confirm('지난 채팅방 목록에서 삭제하시겠습니까?\n(대화 내용 자체는 Firebase에 그대로 남아있고, 이 목록에서만 사라집니다)');
+    if (!ok) return;
+    const history = await readRoomHistory();
+    const nextHistory = history.filter(h => h.id !== id);
+    await window.electronAPI.setConfig({ chatRoomHistory: JSON.stringify(nextHistory) });
+    setPastRooms(prev => prev.filter(r => r.id !== id));
+    if (expandedRoomId === id) setExpandedRoomId(null);
+  };
+
   const handleExpandRoom = async (id: string) => {
     if (expandedRoomId === id) { setExpandedRoomId(null); return; }
     if (!dbRef.current) return;
@@ -321,10 +396,16 @@ const ChatRoom: React.FC = () => {
     return <div className="flex-1 flex items-center justify-center text-sm text-[#A8A29E]">불러오는 중...</div>;
   }
 
-  if (!firebaseConfig) {
+  if (!firebaseConfig || reconfiguring) {
     return (
       <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
         <div className="max-w-xl mx-auto space-y-4">
+          {firebaseConfig && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg p-3 flex items-center justify-between gap-2">
+              <span>Firebase 연동을 다시 설정합니다. 변경을 원치 않으면 취소를 눌러주세요.</span>
+              <button onClick={() => { setReconfiguring(false); setConfigInput(''); setTestResult(null); }} className="shrink-0 px-2 py-1 border border-amber-300 rounded-lg hover:bg-amber-100">취소</button>
+            </div>
+          )}
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4">
             <h2 className="font-bold text-[#1C1917] mb-2 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-amber-600" />
@@ -388,6 +469,15 @@ const ChatRoom: React.FC = () => {
             <button onClick={() => setChatError(null)} className="text-red-400 hover:text-red-600 shrink-0">✕</button>
           </div>
         )}
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg p-3 flex items-center justify-between gap-2">
+          <span>✓ 채팅방 설정이 완료되었습니다.</span>
+          <button
+            onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
+            className="shrink-0 px-2 py-1 border border-emerald-300 rounded-lg hover:bg-emerald-100"
+          >
+            다시 설정하기
+          </button>
+        </div>
         {!roomId ? (
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
             <MessageCircle className="w-10 h-10 text-amber-500" />
@@ -401,7 +491,12 @@ const ChatRoom: React.FC = () => {
               onChange={e => setTitleInput(e.target.value)}
             />
             <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
-            <button onClick={() => setFirebaseConfig(null)} className="text-xs text-[#A8A29E] hover:underline">Firebase 연동 다시 설정하기</button>
+            <button
+              onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
+              className="text-xs text-[#A8A29E] hover:underline"
+            >
+              Firebase 연동 다시 설정하기
+            </button>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-3">
@@ -410,14 +505,20 @@ const ChatRoom: React.FC = () => {
                 <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
                 {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
               </div>
-              {!closed ? (
-                <button onClick={handleCloseRoom} className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">채팅방 종료</button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] text-[#78716C] rounded-lg">종료됨</span>
-                  <button onClick={handleResetRoom} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">새 채팅방 만들기</button>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <button onClick={handleDownloadActiveRoom} className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] text-[#44403C] rounded-lg hover:bg-[#FAF9F7]">
+                  <Download className="w-3.5 h-3.5" />
+                  다운로드
+                </button>
+                {!closed ? (
+                  <button onClick={handleCloseRoom} className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">채팅방 종료</button>
+                ) : (
+                  <>
+                    <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] text-[#78716C] rounded-lg">종료됨</span>
+                    <button onClick={handleResetRoom} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">새 채팅방 만들기</button>
+                  </>
+                )}
+              </div>
             </div>
             {!closed && qrDataUrl && (
               <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4]">
@@ -426,12 +527,17 @@ const ChatRoom: React.FC = () => {
               </div>
             )}
             <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
-              {messages.map(m => (
-                <div key={m.id} className="bg-white border border-[#EDE8E1] rounded-lg px-3 py-2 max-w-[85%]">
-                  <p className="text-[11px] text-[#A8A29E] mb-0.5">{m.sender}</p>
-                  <p className="text-sm text-[#1C1917] break-words">{m.text}</p>
-                </div>
-              ))}
+              {messages.map(m => {
+                const mine = m.sender === (teacherName || '선생님');
+                return (
+                  <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? 'bg-amber-500 text-white' : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
+                      {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
+                      <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
+                    </div>
+                  </div>
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
             <div className="flex gap-2">
@@ -457,10 +563,18 @@ const ChatRoom: React.FC = () => {
             <div className="space-y-1.5">
               {pastRooms.map(r => (
                 <div key={r.id}>
-                  <button onClick={() => handleExpandRoom(r.id)} className="w-full flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
-                    <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
-                    <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => handleExpandRoom(r.id)} className="flex-1 flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
+                      <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
+                      <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
+                    </button>
+                    <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDeleteFromHistory(r.id)} title="목록에서 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   {expandedRoomId === r.id && (
                     <div className="bg-[#FAF9F7] rounded-lg p-2 mt-1 space-y-1.5 max-h-48 overflow-y-auto">
                       {expandedMessages.length === 0 ? (
@@ -468,7 +582,7 @@ const ChatRoom: React.FC = () => {
                       ) : expandedMessages.map(m => (
                         <div key={m.id} className="text-xs px-2">
                           <span className="text-[#A8A29E]">{m.sender}: </span>
-                          <span>{m.text}</span>
+                          <span>{linkifyText(m.text ?? '')}</span>
                         </div>
                       ))}
                     </div>

@@ -12,7 +12,8 @@
   #nickGate { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
   #chatArea { display: none; flex: 1; flex-direction: column; min-height: 0; }
   #messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
-  .msg { background: #fff; border: 1px solid #EDE8E1; border-radius: 10px; padding: 8px 12px; max-width: 80%; align-self: flex-start; }
+  .msg { border: 1px solid #EDE8E1; border-radius: 10px; padding: 8px 12px; max-width: 80%; align-self: flex-start; }
+  .msg.mine { border: none; align-self: flex-end; }
   .msg .sender { font-size: 11px; color: #A8A29E; margin-bottom: 2px; }
   #composer { display: flex; gap: 6px; padding: 8px 0; border-top: 1px solid #EDE8E1; }
   input[type=text] { flex: 1; padding: 10px; border: 1px solid #E7E5E4; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
@@ -77,15 +78,63 @@
   var sendBtn = document.getElementById('sendBtn');
   var closedBanner = document.getElementById('closedBanner');
 
+  var URL_PATTERN = /((?:https?:\/\/|www\.)\S+)/gi;
+
+  function appendLinkifiedText(container, text, mine) {
+    text.split(URL_PATTERN).forEach(function (part) {
+      if (!part) return;
+      if (/^(?:https?:\/\/|www\.)/i.test(part)) {
+        var a = document.createElement('a');
+        a.href = part.indexOf('http') === 0 ? part : 'https://' + part;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.style.color = mine ? '#fff' : '#D97706';
+        a.style.wordBreak = 'break-all';
+        a.textContent = part;
+        container.appendChild(a);
+      } else {
+        container.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  // 보낸 사람 이름마다 같은 색이 나오도록(카카오톡처럼) 이름을 해시해 고정된 색을 골라준다.
+  var BUBBLE_COLORS = [
+    { bg: '#DBEAFE', text: '#1E3A8A' },
+    { bg: '#D1FAE5', text: '#065F46' },
+    { bg: '#EDE9FE', text: '#5B21B6' },
+    { bg: '#FCE7F3', text: '#9D174D' },
+    { bg: '#CFFAFE', text: '#155E75' },
+    { bg: '#FFEDD5', text: '#9A3412' },
+    { bg: '#ECFCCB', text: '#3F6212' },
+    { bg: '#E0E7FF', text: '#3730A3' },
+  ];
+
+  function colorForSender(sender) {
+    var hash = 0;
+    for (var i = 0; i < sender.length; i++) hash = (hash * 31 + sender.charCodeAt(i)) >>> 0;
+    return BUBBLE_COLORS[hash % BUBBLE_COLORS.length];
+  }
+
   function renderMessage(data) {
+    var sender = data.sender || '익명';
+    var mine = !!nickname && sender === nickname;
     var div = document.createElement('div');
-    div.className = 'msg';
-    var senderEl = document.createElement('div');
-    senderEl.className = 'sender';
-    senderEl.textContent = data.sender || '익명';
-    div.appendChild(senderEl);
+    div.className = 'msg' + (mine ? ' mine' : '');
+    if (mine) {
+      div.style.background = '#F59E0B';
+      div.style.color = '#fff';
+    } else {
+      var c = colorForSender(sender);
+      div.style.background = c.bg;
+      div.style.color = c.text;
+      var senderEl = document.createElement('div');
+      senderEl.className = 'sender';
+      senderEl.textContent = sender;
+      div.appendChild(senderEl);
+    }
     var textEl = document.createElement('div');
-    textEl.textContent = data.text || '';
+    appendLinkifiedText(textEl, data.text || '', mine);
     div.appendChild(textEl);
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -98,12 +147,14 @@
     sendBtn.disabled = closed;
   }
 
+  // 닉네임 입력 전(입장 전)에도 방 제목을 바로 보여줄 수 있도록, 로그인 여부와 상관없이 즉시 구독한다.
+  roomRef.onSnapshot(function (snap) {
+    var data = snap.data();
+    setClosedState(!!(data && data.closed));
+    if (data && data.title) document.querySelector('h1').textContent = data.title;
+  });
+
   function startListening() {
-    roomRef.onSnapshot(function (snap) {
-      var data = snap.data();
-      setClosedState(!!(data && data.closed));
-      if (data && data.title) document.querySelector('h1').textContent = data.title;
-    });
     messagesRef.orderBy('createdAt', 'asc').onSnapshot(function (snap) {
       messagesEl.innerHTML = '';
       snap.forEach(function (doc) { renderMessage(doc.data()); });
