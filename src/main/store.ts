@@ -27,6 +27,8 @@ interface StoreSchema {
   naramarketApiKey: string;
   naverShoppingClientId: string;
   naverShoppingClientSecret: string;
+  chatFirebaseConfig: string;
+  chatActiveRoomId: string;
 }
 
 export const store = new Store<StoreSchema>({
@@ -57,5 +59,7 @@ export const store = new Store<StoreSchema>({
     naramarketApiKey: '',
     naverShoppingClientId: '',
     naverShoppingClientSecret: '',
+    chatFirebaseConfig: '',
+    chatActiveRoomId: '',
   },
 });

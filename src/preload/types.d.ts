@@ -57,6 +57,10 @@ export interface ElectronAPI {
   naramarketShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   naverShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   hasNaverShoppingSecret(): Promise<boolean>;
+
+  notifyChatActive(active: boolean): Promise<void>;
+  onBeforeChatClose(callback: () => void): () => void;
+  ackChatClose(): void;
 }
 
 declare global {

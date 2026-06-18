@@ -13,7 +13,14 @@ import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId'];
+
+// 채팅방이 열려 있는 동안에만 창 종료 시 Firestore에 종료 상태를 기록할 시간을 준다.
+let chatActive = false;
+
+export function isChatActive(): boolean {
+  return chatActive;
+}
 
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
@@ -304,6 +311,10 @@ export function registerIpcHandlers(): void {
     const target = apiTier || store.get('apiTier') || 'free';
     if (target === 'paid') store.set('geminiPaidApiKey', '');
     else store.set('geminiApiKey', '');
+  });
+
+  ipcMain.handle('chat:set-active', (_e, active: boolean) => {
+    chatActive = !!active;
   });
 
   ipcMain.handle('data:read-json', async (_e, name: string) => {

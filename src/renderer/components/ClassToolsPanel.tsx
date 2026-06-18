@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import QRMaker from './QRMaker';
 import LuckyDraw from './LuckyDraw';
-import { HelpCircle, QrCode } from 'lucide-react';
+import ChatRoom from './ChatRoom';
+import { HelpCircle, QrCode, MessageCircle } from 'lucide-react';
 import { useTour } from '../TourContext';
 
-type Tab = 'qr' | 'lucky';
+type Tab = 'qr' | 'lucky' | 'chat';
 
 interface Props {
   initialTab?: Tab;
@@ -44,6 +45,17 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           럭키드로우
         </button>
         <button
+          onClick={() => setActiveTab('chat')}
+          className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'chat'
+              ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+              : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:border-[#E7E5E4]'
+          }`}
+        >
+          <MessageCircle className="w-4 h-4" />
+          채팅방
+        </button>
+        <button
           onClick={() => startTour('class-tools')}
           className="ml-auto mr-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
         >
@@ -57,6 +69,9 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
         </div>
         <div className={activeTab === 'lucky' ? 'h-full' : 'hidden'}>
           <LuckyDraw />
+        </div>
+        <div className={activeTab === 'chat' ? 'h-full flex flex-col' : 'hidden'}>
+          <ChatRoom />
         </div>
       </div>
     </div>
