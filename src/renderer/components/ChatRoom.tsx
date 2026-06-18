@@ -288,7 +288,7 @@ const ChatRoom: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
+    <div data-tour="class-tools-chat" className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
       <div className="max-w-2xl mx-auto space-y-4">
         {!roomId ? (
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">

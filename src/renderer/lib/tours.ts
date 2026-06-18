@@ -209,7 +209,7 @@ export const TOURS: Record<string, Tour> = {
       {
         selector: '[data-tour="class-tools-tabs"]',
         title: '1. 수업 도구',
-        body: 'QR 메이커와 럭키드로우 두 가지 도구가 있습니다. 탭을 클릭해 전환하세요.',
+        body: 'QR 메이커, 럭키드로우, 채팅방 세 가지 도구가 있습니다. 탭을 클릭해 전환하세요.',
         placement: 'bottom',
       },
       {
@@ -222,6 +222,12 @@ export const TOURS: Record<string, Tour> = {
         selector: '[data-tour="class-tools-lucky"]',
         title: '3. 럭키드로우',
         body: '학생 이름을 입력하고 돌리기 버튼을 누르면 무작위로 한 명을 뽑아 줍니다.',
+        placement: 'bottom',
+      },
+      {
+        selector: '[data-tour="class-tools-chat"]',
+        title: '4. 채팅방',
+        body: '무료 Firebase 연동을 한 번 설정하면, QR코드로 학생들이 로그인 없이 바로 입장해 채팅할 수 있는 채팅방을 만들 수 있습니다.',
         placement: 'bottom',
       },
     ],
