@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { MessageCircle, Copy, Download, Trash2 } from 'lucide-react';
+import { MessageCircle, Copy, Download, Trash2, Pin, PinOff } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, type Auth } from 'firebase/auth';
 import {
@@ -27,6 +27,11 @@ interface Participant {
   id: string;
   nickname: string;
   lastSeen: Timestamp | null;
+}
+
+interface PinnedMessage {
+  sender: string;
+  text: string;
 }
 
 // 마지막 접속 신호(lastSeen)가 이 시간(ms) 안이면 "접속 중"으로 본다.
@@ -120,6 +125,7 @@ const ChatRoom: React.FC = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [whisperTarget, setWhisperTarget] = useState<{ id: string; nickname: string } | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [pinnedMessage, setPinnedMessage] = useState<PinnedMessage | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<FirebaseApp | null>(null);
@@ -154,6 +160,7 @@ const ChatRoom: React.FC = () => {
   const subscribeToRoom = (id: string, db: Firestore) => {
     const unsubRoom = onSnapshot(doc(db, 'rooms', id), snap => {
       setClosed(!!snap.data()?.closed);
+      setPinnedMessage((snap.data()?.pinnedMessage as PinnedMessage | undefined) ?? null);
     });
     const unsubMessages = onSnapshot(
       query(collection(db, 'rooms', id, 'messages'), orderBy('createdAt', 'asc')),
@@ -341,6 +348,7 @@ const ChatRoom: React.FC = () => {
       setMessages([]);
       setParticipants([]);
       setWhisperTarget(null);
+      setPinnedMessage(null);
       setJoinUrl(buildJoinUrl(id, firebaseConfig));
       unsubscribeRef.current?.();
       unsubscribeRef.current = subscribeToRoom(id, db);
@@ -375,6 +383,7 @@ const ChatRoom: React.FC = () => {
     setMessages([]);
     setParticipants([]);
     setWhisperTarget(null);
+    setPinnedMessage(null);
     setJoinUrl(null);
     setQrDataUrl(null);
   };
@@ -393,6 +402,24 @@ const ChatRoom: React.FC = () => {
       });
     } catch (e) {
       setChatError(`메시지를 보내지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const handlePinMessage = async (m: ChatMessage) => {
+    if (!roomId || !dbRef.current || m.to) return; // 귓속말은 모두에게 보이는 공지로 고정할 수 없다.
+    try {
+      await updateDoc(doc(dbRef.current, 'rooms', roomId), { pinnedMessage: { sender: m.sender, text: m.text ?? '' } });
+    } catch (e) {
+      setChatError(`공지로 설정하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
+
+  const handleUnpinMessage = async () => {
+    if (!roomId || !dbRef.current) return;
+    try {
+      await updateDoc(doc(dbRef.current, 'rooms', roomId), { pinnedMessage: null });
+    } catch (e) {
+      setChatError(`공지 고정을 해제하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
     }
   };
 
@@ -597,17 +624,38 @@ const ChatRoom: React.FC = () => {
                 </div>
               </div>
             )}
+            {pinnedMessage && (
+              <div className="flex items-start justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold text-amber-700 mb-0.5">📌 공지 · {pinnedMessage.sender}</p>
+                  <p className="text-sm text-amber-900 break-words">{linkifyText(pinnedMessage.text, 'text-amber-700 underline break-all')}</p>
+                </div>
+                <button onClick={handleUnpinMessage} title="공지 고정 해제" className="text-amber-400 hover:text-amber-700 shrink-0">
+                  <PinOff className="w-4 h-4" />
+                </button>
+              </div>
+            )}
             <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => {
                 const mine = m.sender === (teacherName || '선생님');
                 const whisperNickname = m.to ? (participants.find(p => p.id === m.to)?.nickname ?? '알 수 없음') : null;
                 return (
-                  <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                  <div key={m.id} className={`flex items-end gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
+                    {!mine && !m.to && (
+                      <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                        <Pin className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? 'bg-amber-500 text-white' : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
                       {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
                       {whisperNickname && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNickname}</p>}
                       <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
                     </div>
+                    {mine && !m.to && (
+                      <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                        <Pin className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 );
               })}

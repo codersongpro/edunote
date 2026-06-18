@@ -26,10 +26,16 @@ service cloud.firestore {
                     && request.resource.data.title is string
                     && request.resource.data.title.size() <= 50
                     && request.resource.data.ownerUid == request.auth.uid;
-      // 방 수정(종료/재시작)은 방을 만든 사람만 가능, closed 값만 바꿀 수 있음
+      // 방 수정(종료/재시작, 공지 고정)은 방을 만든 사람만 가능, closed·pinnedMessage 값만 바꿀 수 있음
       allow update: if isRoomOwner()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed'])
-                    && request.resource.data.closed is bool;
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['closed', 'pinnedMessage'])
+                    && request.resource.data.closed is bool
+                    && (!('pinnedMessage' in request.resource.data)
+                        || request.resource.data.pinnedMessage == null
+                        || (request.resource.data.pinnedMessage.keys().hasOnly(['sender', 'text'])
+                            && request.resource.data.pinnedMessage.sender is string
+                            && request.resource.data.pinnedMessage.text is string
+                            && request.resource.data.pinnedMessage.text.size() <= 500));
       allow delete: if false;
 
       match /participants/{participantId} {
