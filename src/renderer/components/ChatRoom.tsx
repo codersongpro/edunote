@@ -4,7 +4,7 @@ import { MessageCircle, Copy } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import {
   getFirestore, type Firestore, collection, doc, setDoc, updateDoc, addDoc, getDoc,
-  onSnapshot, query, orderBy, limit, serverTimestamp, getDocs,
+  onSnapshot, query, orderBy, serverTimestamp, getDocs,
 } from 'firebase/firestore';
 import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
 
@@ -96,9 +96,31 @@ const ChatRoom: React.FC = () => {
     return () => { unsubRoom(); unsubMessages(); };
   };
 
+  // 보안 규칙이 rooms 컬렉션 전체 조회(list)를 막으므로, 내가 만든 방 목록은
+  // 이 PC에 저장해 둔 기록(chatRoomHistory)에서 읽고 각 방을 단건 조회(get)한다.
+  const readRoomHistory = async (): Promise<{ id: string; title: string }[]> => {
+    const raw = await window.electronAPI.getConfig('chatRoomHistory') as string | undefined;
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
   const loadPastRooms = async (db: Firestore) => {
-    const snap = await getDocs(query(collection(db, 'rooms'), orderBy('createdAt', 'desc'), limit(20)));
-    setPastRooms(snap.docs.map(d => ({ id: d.id, closed: !!d.data().closed, title: d.data().title as string | undefined })));
+    const history = await readRoomHistory();
+    const rooms = await Promise.all(history.map(async (h): Promise<PastRoom | null> => {
+      try {
+        const snap = await getDoc(doc(db, 'rooms', h.id));
+        if (!snap.exists()) return null;
+        return { id: h.id, title: h.title || (snap.data()?.title as string | undefined), closed: !!snap.data()?.closed };
+      } catch {
+        return null;
+      }
+    }));
+    setPastRooms(rooms.filter((r): r is PastRoom => r !== null));
   };
 
   // 설정 불러오기
@@ -191,7 +213,9 @@ const ChatRoom: React.FC = () => {
       const existing = getApps().find(a => a.name === 'edunote-chat-test');
       const app = existing ?? initializeApp(parsed, 'edunote-chat-test');
       const db = getFirestore(app);
-      await getDocs(query(collection(db, 'rooms'), limit(1)));
+      // 존재하지 않는 방을 단건 조회한다. 연결·규칙이 정상이면 "없음"으로 성공 응답이 오고,
+      // 규칙이 잘못됐거나 연결이 안 되면 예외가 발생한다(목록 조회는 규칙상 금지이므로 사용하지 않는다).
+      await getDoc(doc(db, 'rooms', '__connectiontest__'));
       setTestResult({ ok: true, message: '연결에 성공했습니다.' });
     } catch (e) {
       setTestResult({ ok: false, message: `연결 실패: ${e instanceof Error ? e.message : String(e)}` });
@@ -223,7 +247,9 @@ const ChatRoom: React.FC = () => {
       const id = generateRoomId();
       const title = titleInput.trim();
       await setDoc(doc(db, 'rooms', id), { createdAt: serverTimestamp(), closed: false, title });
-      await window.electronAPI.setConfig({ chatActiveRoomId: id });
+      const history = await readRoomHistory();
+      const nextHistory = [{ id, title }, ...history.filter(h => h.id !== id)].slice(0, 20);
+      await window.electronAPI.setConfig({ chatActiveRoomId: id, chatRoomHistory: JSON.stringify(nextHistory) });
       setRoomId(id);
       setRoomTitle(title);
       setClosed(false);
@@ -248,6 +274,20 @@ const ChatRoom: React.FC = () => {
     } catch (e) {
       setChatError(`채팅방을 종료하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
     }
+  };
+
+  // 채팅방을 종료한 뒤 시작 화면으로 되돌려 새 채팅방을 만들 수 있게 한다.
+  // (handleCloseRoom에서 이미 chatActiveRoomId를 비웠으므로 화면 state만 초기화한다.)
+  const handleResetRoom = () => {
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+    setRoomId(null);
+    setRoomTitle('');
+    setTitleInput('');
+    setClosed(false);
+    setMessages([]);
+    setJoinUrl(null);
+    setQrDataUrl(null);
   };
 
   const handleSend = async () => {
@@ -373,7 +413,10 @@ const ChatRoom: React.FC = () => {
               {!closed ? (
                 <button onClick={handleCloseRoom} className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">채팅방 종료</button>
               ) : (
-                <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] text-[#78716C] rounded-lg">종료됨</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] text-[#78716C] rounded-lg">종료됨</span>
+                  <button onClick={handleResetRoom} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">새 채팅방 만들기</button>
+                </div>
               )}
             </div>
             {!closed && qrDataUrl && (
@@ -382,7 +425,7 @@ const ChatRoom: React.FC = () => {
                 <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
               </div>
             )}
-            <div className="h-64 overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
+            <div className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => (
                 <div key={m.id} className="bg-white border border-[#EDE8E1] rounded-lg px-3 py-2 max-w-[85%]">
                   <p className="text-[11px] text-[#A8A29E] mb-0.5">{m.sender}</p>

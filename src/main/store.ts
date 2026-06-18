@@ -29,6 +29,7 @@ interface StoreSchema {
   naverShoppingClientSecret: string;
   chatFirebaseConfig: string;
   chatActiveRoomId: string;
+  chatRoomHistory: string;
 }
 
 export const store = new Store<StoreSchema>({
@@ -61,5 +62,6 @@ export const store = new Store<StoreSchema>({
     naverShoppingClientSecret: '',
     chatFirebaseConfig: '',
     chatActiveRoomId: '',
+    chatRoomHistory: '',
   },
 });

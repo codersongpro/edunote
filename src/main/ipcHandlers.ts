@@ -13,7 +13,7 @@ import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
 // 채팅방이 열려 있는 동안에만 창 종료 시 Firestore에 종료 상태를 기록할 시간을 준다.
 let chatActive = false;
