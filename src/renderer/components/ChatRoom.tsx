@@ -613,15 +613,15 @@ const ChatRoom: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
-      <div className="max-w-2xl mx-auto space-y-4">
+    <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7]">
+      <div className="w-full max-w-2xl flex-1 flex flex-col min-h-0 p-5 gap-4">
         {chatError && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2">
+          <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2 shrink-0">
             <span>{chatError}</span>
             <button onClick={() => setChatError(null)} className="text-red-400 hover:text-red-600 shrink-0">✕</button>
           </div>
         )}
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg p-3 flex items-center justify-between gap-2">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg p-3 flex items-center justify-between gap-2 shrink-0">
           <span>✓ 채팅방 설정이 완료되었습니다.</span>
           <button
             onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
@@ -631,28 +631,67 @@ const ChatRoom: React.FC = () => {
           </button>
         </div>
         {!roomId ? (
-          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
-            <MessageCircle className="w-10 h-10 text-amber-500" />
-            <p className="text-sm text-[#78716C]">학생들이 QR코드로 입장할 채팅방을 시작합니다.</p>
-            <input
-              type="text"
-              className="w-full max-w-xs border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-amber-500"
-              placeholder="채팅방 제목 (예: 3교시 모둠활동)"
-              maxLength={30}
-              value={titleInput}
-              onChange={e => setTitleInput(e.target.value)}
-            />
-            <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
-            <button
-              onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
-              className="text-xs text-[#A8A29E] hover:underline"
-            >
-              Firebase 연동 다시 설정하기
-            </button>
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
+            <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
+              <MessageCircle className="w-10 h-10 text-amber-500" />
+              <p className="text-sm text-[#78716C]">학생들이 QR코드로 입장할 채팅방을 시작합니다.</p>
+              <input
+                type="text"
+                className="w-full max-w-xs border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-amber-500"
+                placeholder="채팅방 제목 (예: 3교시 모둠활동)"
+                maxLength={30}
+                value={titleInput}
+                onChange={e => setTitleInput(e.target.value)}
+              />
+              <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
+              <button
+                onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
+                className="text-xs text-[#A8A29E] hover:underline"
+              >
+                Firebase 연동 다시 설정하기
+              </button>
+            </div>
+            <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4">
+              <h3 className="text-sm font-bold text-[#44403C] mb-2">지난 채팅방</h3>
+              {pastRooms.length === 0 ? (
+                <p className="text-xs text-[#A8A29E]">아직 만든 채팅방이 없습니다.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {pastRooms.map(r => (
+                    <div key={r.id}>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleExpandRoom(r.id)} className="flex-1 flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
+                          <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
+                          <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
+                        </button>
+                        <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
+                          <Download className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDeleteFromHistory(r.id)} disabled={deletingRoomId === r.id} title="Firebase에서 완전히 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0 disabled:opacity-50">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {expandedRoomId === r.id && (
+                        <div className="bg-[#FAF9F7] rounded-lg p-2 mt-1 space-y-1.5 max-h-48 overflow-y-auto">
+                          {expandedMessages.length === 0 ? (
+                            <p className="text-xs text-[#A8A29E] px-2">메시지가 없습니다.</p>
+                          ) : expandedMessages.map(m => (
+                            <div key={m.id} className="text-xs px-2">
+                              <span className="text-[#A8A29E]">{m.sender}: </span>
+                              <span>{linkifyText(m.text ?? '')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="flex-1 min-h-0 bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between shrink-0">
               <div>
                 <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
                 {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
@@ -673,13 +712,13 @@ const ChatRoom: React.FC = () => {
               </div>
             </div>
             {!closed && qrDataUrl && (
-              <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4]">
+              <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] shrink-0">
                 <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1]" style={{ imageRendering: 'pixelated' }} />
                 <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
               </div>
             )}
             {participants.length > 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 shrink-0">
                 <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
                 <div className="flex flex-wrap gap-1.5">
                   {participants.map(p => {
@@ -700,7 +739,7 @@ const ChatRoom: React.FC = () => {
               </div>
             )}
             {pinnedMessage && (
-              <div className="flex items-start justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <div className="flex items-start justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 shrink-0">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold text-amber-700 mb-0.5">📌 공지 · {pinnedMessage.sender}</p>
                   <p className="text-sm text-amber-900 break-words">{linkifyText(pinnedMessage.text, 'text-amber-700 underline break-all')}</p>
@@ -710,7 +749,7 @@ const ChatRoom: React.FC = () => {
                 </button>
               </div>
             )}
-            <div ref={messagesContainerRef} className="h-[32rem] overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
+            <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
               {messages.map(m => {
                 const mine = m.sender === (teacherName || '선생님');
                 const isWhisper = !!m.to && m.to.length > 0;
@@ -739,12 +778,12 @@ const ChatRoom: React.FC = () => {
               })}
             </div>
             {whisperTargets.length > 0 && (
-              <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5">
+              <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5 shrink-0">
                 <span>🔒 {whisperTargets.map(t => t.nickname).join(', ')}님에게만 보이는 귓속말을 보내는 중입니다.</span>
                 <button onClick={() => setWhisperTargets([])} className="hover:underline shrink-0 ml-2">취소</button>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
               <input
                 type="text"
                 className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
@@ -758,44 +797,6 @@ const ChatRoom: React.FC = () => {
             </div>
           </div>
         )}
-
-        <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4">
-          <h3 className="text-sm font-bold text-[#44403C] mb-2">지난 채팅방</h3>
-          {pastRooms.length === 0 ? (
-            <p className="text-xs text-[#A8A29E]">아직 만든 채팅방이 없습니다.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {pastRooms.map(r => (
-                <div key={r.id}>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => handleExpandRoom(r.id)} className="flex-1 flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
-                      <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
-                      <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
-                    </button>
-                    <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => handleDeleteFromHistory(r.id)} disabled={deletingRoomId === r.id} title="Firebase에서 완전히 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0 disabled:opacity-50">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  {expandedRoomId === r.id && (
-                    <div className="bg-[#FAF9F7] rounded-lg p-2 mt-1 space-y-1.5 max-h-48 overflow-y-auto">
-                      {expandedMessages.length === 0 ? (
-                        <p className="text-xs text-[#A8A29E] px-2">메시지가 없습니다.</p>
-                      ) : expandedMessages.map(m => (
-                        <div key={m.id} className="text-xs px-2">
-                          <span className="text-[#A8A29E]">{m.sender}: </span>
-                          <span>{linkifyText(m.text ?? '')}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
