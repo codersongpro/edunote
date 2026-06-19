@@ -23,6 +23,7 @@
   .msg.mine { border: none; align-self: flex-end; }
   .msg .sender { font-size: 13px; color: #A8A29E; margin-bottom: 2px; }
   #composer { display: flex; gap: 8px; padding: 10px 0; border-top: 1px solid #EDE8E1; }
+  #spamNotice { display: none; color: #B45309; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 8px 12px; font-size: 14px; margin: 4px 0; }
   input[type=text] { flex: 1; padding: 14px; border: 1px solid #E7E5E4; border-radius: 8px; font-size: 17px; box-sizing: border-box; }
   button { background: #F59E0B; color: #fff; border: none; border-radius: 8px; padding: 14px 18px; font-size: 17px; cursor: pointer; }
   button:disabled { background: #D6D3D1; cursor: default; }
@@ -46,6 +47,7 @@
   </div>
   <div id="chatArea">
     <div id="messages"></div>
+    <div id="spamNotice"></div>
     <div id="composer">
       <input type="text" id="textInput" placeholder="메시지를 입력하세요" maxlength="500">
       <button id="sendBtn">전송</button>
@@ -170,6 +172,7 @@
   var nickGate = document.getElementById('nickGate');
   var chatArea = document.getElementById('chatArea');
   var endedScreen = document.getElementById('endedScreen');
+  var spamNotice = document.getElementById('spamNotice');
 
   // 로그인 화면 없이 익명으로 인증해, 보안 규칙이 "나에게 온 귓속말"을 구분할 수 있게 한다.
   joinBtn.disabled = true;
@@ -371,9 +374,47 @@
     startListening();
   };
 
+  // 도배 방지: 너무 빠르게(최소 간격) 또는 짧은 시간에 너무 많이 보내면 잠시 전송을 막는다.
+  var SEND_MIN_GAP_MS = 700;        // 연속 전송 최소 간격
+  var SEND_BURST_LIMIT = 5;         // 아래 시간 창 안에서 이 횟수를 넘기면 잠금
+  var SEND_BURST_WINDOW_MS = 6000;  // 연속 전송을 세는 시간 창
+  var SEND_COOLDOWN_MS = 6000;      // 초과 시 전송을 잠그는 시간
+  var lastSendAt = 0;
+  var recentSends = [];
+  var cooldownUntil = 0;
+  var spamNoticeTimer = null;
+
+  function showSpamNotice(msg) {
+    spamNotice.textContent = msg;
+    spamNotice.style.display = 'block';
+    if (spamNoticeTimer) clearTimeout(spamNoticeTimer);
+    spamNoticeTimer = setTimeout(function () { spamNotice.style.display = 'none'; }, 2500);
+  }
+
+  // 보낼 수 있으면 0, 막히면 남은 대기 시간(초, 1 이상)을 돌려준다.
+  function spamWaitSeconds() {
+    var now = Date.now();
+    if (now < cooldownUntil) return Math.ceil((cooldownUntil - now) / 1000);
+    if (now - lastSendAt < SEND_MIN_GAP_MS) return 1;
+    recentSends = recentSends.filter(function (t) { return now - t < SEND_BURST_WINDOW_MS; });
+    if (recentSends.length >= SEND_BURST_LIMIT) {
+      cooldownUntil = now + SEND_COOLDOWN_MS;
+      return Math.ceil(SEND_COOLDOWN_MS / 1000);
+    }
+    return 0;
+  }
+
   function sendText() {
     var text = textInput.value.trim();
     if (!text || closed) return;
+    var wait = spamWaitSeconds();
+    if (wait > 0) {
+      showSpamNotice('도배 방지: 잠시 후(약 ' + wait + '초) 다시 보낼 수 있어요.');
+      return;
+    }
+    var now = Date.now();
+    lastSendAt = now;
+    recentSends.push(now);
     textInput.value = '';
     messagesRef.add({
       sender: nickname,
