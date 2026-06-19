@@ -264,7 +264,9 @@
   // 닉네임 입력 전(입장 전)에도 방 제목을 바로 보여줄 수 있도록, 로그인 여부와 상관없이 즉시 구독한다.
   roomRef.onSnapshot(function (snap) {
     var data = snap.data();
-    setClosedState(!!(data && data.closed));
+    // 방이 종료(closed)됐거나 방 자체가 삭제돼 없어진 경우 모두 "종료" 상태로 잠가, 교사가 채팅방을
+    // 끝낸 뒤(또는 지운 뒤) 학생끼리 다시 대화하지 못하게 한다.
+    setClosedState(!snap.exists() || !!(data && data.closed));
     setPinnedState(data && data.pinnedMessage);
     if (data && data.title) document.querySelector('h1').textContent = data.title;
   });

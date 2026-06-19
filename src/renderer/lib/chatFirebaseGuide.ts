@@ -19,6 +19,13 @@ service cloud.firestore {
                && request.auth.uid == get(/databases/$(database)/documents/rooms/$(roomId)).data.ownerUid;
       }
 
+      // 종료된(closed) 방에는 교사·학생 누구도 메시지를 보낼 수 없게 해, 교사가 채팅방을 끝낸 뒤
+      // 학생끼리 계속 대화하는 것을 서버(보안 규칙) 차원에서 막는다. (방이 삭제돼 문서가 없으면 get이
+      // 실패해 규칙이 거부되므로, 삭제된 방에도 메시지를 쓸 수 없다.)
+      function isRoomOpen() {
+        return get(/databases/$(database)/documents/rooms/$(roomId)).data.closed == false;
+      }
+
       // 방 코드를 정확히 아는 사람만 단건 조회 가능, 전체 목록 조회는 금지
       allow get: if true;
       allow list: if false;
@@ -65,6 +72,7 @@ service cloud.firestore {
                     || (request.auth != null && request.auth.uid in resource.data.to)
                     || isRoomOwner();
         allow create: if request.auth != null
+                      && isRoomOpen()
                       && request.resource.data.keys().hasOnly(['sender', 'text', 'createdAt', 'senderUid', 'to'])
                       && request.resource.data.senderUid == request.auth.uid
                       && request.resource.data.sender is string
