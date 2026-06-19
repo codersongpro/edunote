@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 
+const USAGE_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1D1sdb3qvuxFv2BcrNPSILhMsjU0WgM9Q/view?usp=drive_link';
+
 const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }> = ({
   title,
   icon,
@@ -64,6 +66,13 @@ const UsageGuideScreen: React.FC = () => {
           <BookOpen className="w-5 h-5 text-purple-500" />
           <h2 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6]">사용 방법</h2>
         </div>
+
+        <button
+          onClick={() => handleOpenLink(USAGE_GUIDE_VIDEO_URL)}
+          className="w-full py-2.5 rounded-lg border border-purple-200 dark:border-purple-800 bg-white dark:bg-[#221E1B] text-sm font-bold text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/30 flex items-center justify-center gap-1.5"
+        >
+          <Video className="w-4 h-4" /> 에듀노트 전체 사용법 보기 (영상)
+        </button>
 
         <Section title="시작 전 준비 - Gemini API 키 발급" icon={<Key className="w-4 h-4 text-blue-500" />} defaultOpen>
           <ol className="space-y-2.5">

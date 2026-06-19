@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { MessageCircle, Copy, Download, Trash2, Pin, PinOff } from 'lucide-react';
+import { MessageCircle, Copy, Download, Trash2, Pin, PinOff, Video } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 import {
@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 // (참고) 학생 화면(docs/chat/index.html)은 보안 규칙 검증을 위해 공개 메시지/귓속말을 별도 쿼리로 나눠 구독하지만,
 // 교사 화면은 isRoomOwner() 권한으로 항상 전체를 읽을 수 있어 쿼리를 나눌 필요가 없다.
-import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL } from '../lib/chatFirebaseGuide';
+import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL, CHAT_SETUP_GUIDE_VIDEO_URL } from '../lib/chatFirebaseGuide';
 
 interface ChatMessage {
   id: string;
@@ -562,6 +562,12 @@ const ChatRoom: React.FC = () => {
                 </li>
               ))}
             </ol>
+            <button
+              onClick={() => window.electronAPI.openExternal(CHAT_SETUP_GUIDE_VIDEO_URL)}
+              className="w-full mt-3 py-2 rounded-lg border border-emerald-200 bg-white text-xs font-bold text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-1.5"
+            >
+              <Video className="w-3.5 h-3.5" /> 채팅방 설정 도움받기 (영상)
+            </button>
           </div>
           <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
             <div className="flex items-center justify-between">

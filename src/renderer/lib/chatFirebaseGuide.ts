@@ -1,3 +1,5 @@
+export const CHAT_SETUP_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1aj_UbREDKHqyEYfk6M7RB5psvBA7VeaJ/view?usp=drive_link';
+
 export const CHAT_FIREBASE_GUIDE_STEPS: { text: string; link?: string }[] = [
   { text: 'console.firebase.google.com에 접속해 무료 프로젝트를 만듭니다 (신용카드 등록 불필요, Spark 무료 플랜).', link: 'https://console.firebase.google.com' },
   { text: '왼쪽 메뉴에서 Firestore Database를 선택하고 데이터베이스 만들기를 누릅니다. 이때 위치(지역)는 "asia-northeast3 (서울)"로 선택하세요. 서버가 가까울수록 메시지가 빠르게 오갑니다. (지역은 한 번 만들면 바꿀 수 없으니, 미국 등으로 이미 만들었다면 새 프로젝트로 다시 만들어야 합니다.)' },
