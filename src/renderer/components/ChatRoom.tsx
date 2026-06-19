@@ -713,7 +713,7 @@ const ChatRoom: React.FC = () => {
             </div>
             {!closed && qrDataUrl && (
               <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] shrink-0">
-                <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1]" style={{ imageRendering: 'pixelated' }} />
+                <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1] w-[clamp(160px,40vh,300px)] h-[clamp(160px,40vh,300px)]" style={{ imageRendering: 'pixelated' }} />
                 <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
               </div>
             )}

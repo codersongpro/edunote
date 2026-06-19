@@ -14,6 +14,7 @@ import CreativeActivityGenerator from './components/CreativeActivityGenerator';
 import SchoolDocPanel from './components/SchoolDocPanel';
 import TeacherRecordPanel from './components/TeacherRecordPanel';
 import ClassToolsPanel from './components/ClassToolsPanel';
+import ChatRoom from './components/ChatRoom';
 import DemoSamplesScreen from './components/DemoSamplesScreen';
 import StudentMemoBoard from './components/StudentMemoBoard';
 import EducationAssistantQA from './components/EducationAssistantQA';
@@ -98,6 +99,7 @@ const restoreMenuOrder = (section: string, items: SidebarMenuItem[]) => {
 };
 
 const isDemoWindow = window.location.hash === '#demo';
+const isChatWindow = window.location.hash === '#chat';
 
 const App: React.FC = () => {
   const [state, setState] = useState<GlobalState>(initialGlobalState);
@@ -693,6 +695,16 @@ const App: React.FC = () => {
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh' }}>
         <div className="h-screen bg-white dark:bg-[#171210] overflow-hidden">
           <DemoSamplesScreen />
+        </div>
+      </div>
+    );
+  }
+
+  if (isChatWindow) {
+    return (
+      <div className={darkMode ? 'dark' : ''} style={{ height: '100vh' }}>
+        <div className="flex flex-col h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
+          <ChatRoom />
         </div>
       </div>
     );

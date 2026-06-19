@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Window
   openDemoWindow: () => ipcRenderer.invoke('window:open-demo'),
+  openChatWindow: () => ipcRenderer.invoke('window:open-chat'),
 
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),

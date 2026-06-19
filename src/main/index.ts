@@ -1,7 +1,7 @@
-import { app, BrowserWindow, nativeImage, Menu, shell, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { registerIpcHandlers, cleanupSessionTmpDir, isChatActive } from './ipcHandlers';
+import { registerIpcHandlers, cleanupSessionTmpDir } from './ipcHandlers';
 
 function getAppIcon() {
   try {
@@ -44,23 +44,6 @@ function createWindow(): void {
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'));
   }
-
-  // 채팅방이 켜져 있으면 창을 닫기 전에 렌더러가 Firestore에 종료 상태를 기록할 시간을 준다.
-  let closeConfirmed = false;
-  win.on('close', (event) => {
-    if (closeConfirmed || !isChatActive()) return;
-    event.preventDefault();
-    const finishClose = () => {
-      closeConfirmed = true;
-      win.close();
-    };
-    const timeout = setTimeout(finishClose, 3000);
-    ipcMain.once('chat:close-ack', () => {
-      clearTimeout(timeout);
-      finishClose();
-    });
-    win.webContents.send('chat:before-close');
-  });
 }
 
 registerIpcHandlers();

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRMaker from './QRMaker';
 import LuckyDraw from './LuckyDraw';
-import ChatRoom from './ChatRoom';
-import { HelpCircle, QrCode, MessageCircle } from 'lucide-react';
+import { HelpCircle, QrCode, MessageCircle, ExternalLink } from 'lucide-react';
 import { useTour } from '../TourContext';
 
 type Tab = 'qr' | 'lucky' | 'chat';
@@ -73,8 +72,19 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
         <div className={activeTab === 'lucky' ? 'h-full' : 'hidden'}>
           <LuckyDraw />
         </div>
-        <div className={activeTab === 'chat' ? 'h-full flex flex-col' : 'hidden'}>
-          <ChatRoom />
+        <div className={activeTab === 'chat' ? 'h-full flex flex-col items-center justify-center gap-4 text-center p-8 bg-[#FAF9F7] dark:bg-[#171210]' : 'hidden'}>
+          <MessageCircle className="w-12 h-12 text-amber-500" />
+          <div>
+            <p className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6]">채팅방은 별도 창에서 열립니다</p>
+            <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mt-1 max-w-md break-keep">넓은 화면에서 QR코드·메시지·입력창을 편하게 쓸 수 있도록 채팅방을 새 창으로 띄웁니다. 아래 버튼을 누르면 채팅방 창이 열립니다.</p>
+          </div>
+          <button
+            onClick={() => window.electronAPI.openChatWindow()}
+            className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold"
+          >
+            <ExternalLink className="w-4 h-4" />
+            채팅방 열기
+          </button>
         </div>
       </div>
     </div>
