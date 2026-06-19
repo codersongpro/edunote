@@ -58,6 +58,29 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <script>
 (function () {
+  // 입력창을 항상 화면 맨 아래(키보드 위)에 고정한다. 모바일은 키보드가 올라와도 100dvh가 줄지 않아
+  // 입력창이 키보드에 가려지거나, 일부 태블릿 브라우저에서 100dvh가 실제 보이는 높이와 달라 입력창이
+  // 화면 밖으로 밀려 스크롤해야 보이는 문제가 있다. 그래서 실제로 보이는 영역(visualViewport)의 높이·
+  // 위치에 맞춰 앱 높이를 직접 조정해, 입력창이 늘 화면 맨 아래에 보이도록 한다.
+  function fitAppHeight() {
+    var app = document.getElementById('app');
+    if (!app) return;
+    var vv = window.visualViewport;
+    if (vv) {
+      app.style.height = vv.height + 'px';
+      app.style.transform = 'translateY(' + vv.offsetTop + 'px)';
+    } else {
+      app.style.height = window.innerHeight + 'px';
+    }
+  }
+  fitAppHeight();
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', fitAppHeight);
+    window.visualViewport.addEventListener('scroll', fitAppHeight);
+  }
+  window.addEventListener('resize', fitAppHeight);
+  window.addEventListener('orientationchange', fitAppHeight);
+
   var hash = location.hash.replace(/^#/, '');
   var params = new URLSearchParams(hash);
   var roomId = params.get('room');
