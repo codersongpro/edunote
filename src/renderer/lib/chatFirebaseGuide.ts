@@ -1,4 +1,4 @@
-export const CHAT_SETUP_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1aj_UbREDKHqyEYfk6M7RB5psvBA7VeaJ/view?usp=drive_link';
+export const CHAT_SETUP_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1wY_husl7-Y-1L3xn34bWWIs45s24WudY/view?usp=drive_link';
 
 export const CHAT_FIREBASE_GUIDE_STEPS: { text: string; link?: string }[] = [
   { text: 'console.firebase.google.com에 접속해 무료 프로젝트를 만듭니다 (신용카드 등록 불필요, Spark 무료 플랜).', link: 'https://console.firebase.google.com' },
