@@ -2,30 +2,31 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title>EduNote 채팅방</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, sans-serif; margin: 0; background: #FAF9F7; color: #1C1917; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, sans-serif; margin: 0; background: #FAF9F7; color: #1C1917; overflow: hidden; font-size: 16px; }
   #app { max-width: 480px; margin: 0 auto; padding: 16px; height: 100vh; height: 100dvh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
-  h1 { font-size: 18px; margin: 0 0 12px; }
-  #closedBanner { display: none; background: #FEF3C7; color: #92400E; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
-  #pinnedBanner { display: none; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; padding: 8px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
-  #pinnedBanner .pinnedSender { font-weight: bold; font-size: 11px; margin-bottom: 2px; }
-  #nickGate { display: flex; flex-direction: column; gap: 10px; margin-top: 40px; }
+  h1 { font-size: 20px; margin: 0 0 12px; }
+  #closedBanner { display: none; background: #FEF3C7; color: #92400E; padding: 10px 14px; border-radius: 8px; font-size: 15px; margin-bottom: 8px; }
+  #pinnedBanner { display: none; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; padding: 10px 14px; border-radius: 8px; font-size: 15px; margin-bottom: 8px; }
+  #pinnedBanner .pinnedSender { font-weight: bold; font-size: 13px; margin-bottom: 2px; }
+  #nickGate { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; }
   #chatArea { display: none; flex: 1; flex-direction: column; min-height: 0; }
   #endedScreen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; padding: 24px; }
   #endedScreen .endedIcon { font-size: 40px; }
-  #endedScreen .endedTitle { font-size: 18px; font-weight: bold; color: #1C1917; }
-  #endedScreen .endedDesc { font-size: 14px; color: #78716C; line-height: 1.5; }
+  #endedScreen .endedTitle { font-size: 20px; font-weight: bold; color: #1C1917; }
+  #endedScreen .endedDesc { font-size: 16px; color: #78716C; line-height: 1.5; }
   #messages { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
-  .msg { border: 1px solid #EDE8E1; border-radius: 10px; padding: 8px 12px; max-width: 80%; align-self: flex-start; }
+  .msg { border: 1px solid #EDE8E1; border-radius: 10px; padding: 10px 14px; max-width: 80%; align-self: flex-start; font-size: 16px; line-height: 1.45; }
   .msg.mine { border: none; align-self: flex-end; }
-  .msg .sender { font-size: 11px; color: #A8A29E; margin-bottom: 2px; }
-  #composer { display: flex; gap: 6px; padding: 8px 0; border-top: 1px solid #EDE8E1; }
-  input[type=text] { flex: 1; padding: 10px; border: 1px solid #E7E5E4; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
-  button { background: #F59E0B; color: #fff; border: none; border-radius: 8px; padding: 10px 14px; font-size: 14px; cursor: pointer; }
+  .msg .sender { font-size: 13px; color: #A8A29E; margin-bottom: 2px; }
+  #composer { display: flex; gap: 8px; padding: 10px 0; border-top: 1px solid #EDE8E1; }
+  input[type=text] { flex: 1; padding: 14px; border: 1px solid #E7E5E4; border-radius: 8px; font-size: 17px; box-sizing: border-box; }
+  button { background: #F59E0B; color: #fff; border: none; border-radius: 8px; padding: 14px 18px; font-size: 17px; cursor: pointer; }
   button:disabled { background: #D6D3D1; cursor: default; }
-  #joinError { color: #DC2626; font-size: 13px; min-height: 16px; }
+  #joinError { color: #DC2626; font-size: 15px; min-height: 16px; }
 </style>
 </head>
 <body>
