@@ -82,6 +82,8 @@ const MyResourceLibrary: React.FC = () => {
 
   // 자료의 분류(카테고리)를 변경 중인 자료 ID — 드롭다운 메뉴 표시 제어용
   const [categoryEditId, setCategoryEditId] = useState<string | null>(null);
+  // 분류 드롭다운에서 새 주제를 바로 만들 때 쓰는 입력값
+  const [cardNewCatInput, setCardNewCatInput] = useState('');
 
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCatManagerInput, setNewCatManagerInput] = useState('');
@@ -324,6 +326,7 @@ const MyResourceLibrary: React.FC = () => {
       const target = e.target as HTMLElement;
       if (!target.closest('[data-category-dropdown]')) {
         setCategoryEditId(null);
+        setCardNewCatInput('');
       }
     };
     document.addEventListener('mousedown', handler);
@@ -704,7 +707,7 @@ const MyResourceLibrary: React.FC = () => {
                           {/* 분류 태그 — 클릭하면 드롭다운으로 분류 변경 가능 */}
                           <div className="relative" data-category-dropdown>
                             <button
-                              onClick={() => setCategoryEditId(categoryEditId === r.id ? null : r.id)}
+                              onClick={() => { setCategoryEditId(categoryEditId === r.id ? null : r.id); setCardNewCatInput(''); }}
                               className={`text-[10px] rounded-full px-2 py-0.5 font-semibold transition-colors cursor-pointer ${
                                 r.category
                                   ? 'bg-teal-100 text-teal-700 border border-teal-200 hover:bg-teal-200'
@@ -732,17 +735,31 @@ const MyResourceLibrary: React.FC = () => {
                                     {cat}
                                   </button>
                                 ))}
-                                {categories.length === 0 && (
-                                  <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] my-1" />
-                                )}
-                                {categories.length === 0 && (
+                                <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] my-1" />
+                                <div className="flex gap-1 px-2 py-1">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={cardNewCatInput}
+                                    onChange={e => setCardNewCatInput(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') {
+                                        const name = cardNewCatInput.trim();
+                                        if (name) { addCategory_save(name); handleCategoryChange(r.id, name); setCardNewCatInput(''); }
+                                      }
+                                    }}
+                                    placeholder="새 주제 입력"
+                                    className="flex-1 min-w-0 text-xs border border-[#E7E5E4] dark:border-[#3A332D] rounded px-2 py-1 outline-none focus:border-teal-400 bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6]"
+                                  />
                                   <button
-                                    onClick={() => { setCategoryEditId(null); setShowCatManager(true); }}
-                                    className="w-full text-left px-3 py-1.5 text-xs text-teal-600 dark:text-teal-400 hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]"
-                                  >
-                                    + 주제 만들기
-                                  </button>
-                                )}
+                                    onClick={() => {
+                                      const name = cardNewCatInput.trim();
+                                      if (name) { addCategory_save(name); handleCategoryChange(r.id, name); setCardNewCatInput(''); }
+                                    }}
+                                    disabled={!cardNewCatInput.trim()}
+                                    className="px-2 py-1 text-xs bg-teal-500 text-white rounded disabled:opacity-50 font-semibold shrink-0"
+                                  >추가</button>
+                                </div>
                               </div>
                             )}
                           </div>
