@@ -442,7 +442,7 @@ const LuckyDraw: React.FC = () => {
             {phase === 'idle' ? (
               <div className="flex flex-col items-center gap-3 text-center z-10">
                 <div className="text-8xl select-none">🎲</div>
-                <p className="text-[#A8A29E] text-sm leading-relaxed">이름과 주제를 입력하고<br />오늘의 주인공을 선정하세요!</p>
+                <p className="text-[#A8A29E] text-sm leading-relaxed break-keep">이름과 주제를 입력하고 오늘의 주인공을 선정하세요!</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-5 z-10 w-full">

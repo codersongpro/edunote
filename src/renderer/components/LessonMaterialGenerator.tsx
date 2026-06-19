@@ -1039,8 +1039,8 @@ li{margin-bottom:5pt;line-height:1.6;}
               {isGenerating ? (
                 <p className="text-sm text-[#A8A29E] max-w-xs">{loadingMessage}</p>
               ) : (
-                <p className="text-sm text-[#A8A29E] max-w-xs leading-relaxed">
-                  왼쪽에서 학년·교과·성취기준·주제와 자료 유형을 선택한 후<br />생성 버튼을 눌러주세요.
+                <p className="text-sm text-[#A8A29E] max-w-xs leading-relaxed break-keep">
+                  왼쪽에서 학년·교과·성취기준·주제와 자료 유형을 선택한 후 생성 버튼을 눌러주세요.
                 </p>
               )}
             </div>

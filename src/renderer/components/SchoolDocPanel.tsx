@@ -1176,8 +1176,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                     <FileText className="w-10 h-10 text-blue-400" />
                   </div>
                   <h3 className="text-base font-semibold text-[#44403C] dark:text-[#C4B8B0] mb-2">문서를 생성해 주세요</h3>
-                  <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57] max-w-xs">
-                    왼쪽 패널에서 필요한 정보를 입력한 후<br />생성 버튼을 눌러주세요.
+                  <p className="text-sm text-[#A8A29E] dark:text-[#6B5E57] max-w-xs break-keep">
+                    왼쪽 패널에서 필요한 정보를 입력한 후 생성 버튼을 눌러주세요.
                   </p>
                 </div>
               )}

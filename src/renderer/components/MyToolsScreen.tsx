@@ -683,9 +683,8 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               <div className="bg-pink-50 dark:bg-pink-950/30 border border-pink-100 dark:border-pink-800 rounded-xl p-6 text-center space-y-3">
                 <Share2 className="w-10 h-10 text-pink-300 dark:text-pink-600 mx-auto" />
                 <p className="text-sm font-semibold text-pink-700 dark:text-pink-300">공유 마켓 준비 중</p>
-                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                  곧 오픈됩니다.<br />
-                  지금은 아래 방법으로 도구를 주고받을 수 있어요.
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed break-keep">
+                  곧 오픈됩니다. 지금은 아래 방법으로 도구를 주고받을 수 있어요.
                 </p>
                 <div className="text-left bg-white dark:bg-[#221E1B] rounded-lg p-4 text-xs text-[#78716C] dark:text-[#C4B8B0] space-y-2 mt-2">
                   <p className="font-semibold text-[#44403C] dark:text-[#C4B8B0]">📤 도구 보내기</p>
@@ -1058,10 +1057,8 @@ const ShareModal: React.FC<{
           </button>
 
           {jsonSaved && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-              저장된 {isHtmlApp ? 'HTML' : 'JSON'} 파일을 <strong>구글 드라이브</strong>에 업로드하고,<br />
-              파일을 <strong>링크가 있는 모든 사용자</strong>에게 공유한 뒤<br />
-              공유 링크를 복사해 폼에 붙여넣어 주세요.
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-700 dark:text-amber-300 leading-relaxed break-keep">
+              저장된 {isHtmlApp ? 'HTML' : 'JSON'} 파일을 <strong>구글 드라이브</strong>에 업로드하고, 파일을 <strong>링크가 있는 모든 사용자</strong>에게 공유한 뒤 공유 링크를 복사해 폼에 붙여넣어 주세요.
             </div>
           )}
 

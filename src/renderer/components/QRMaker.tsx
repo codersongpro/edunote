@@ -152,7 +152,7 @@ const QRMaker: React.FC = () => {
         ) : (
           <div className="bg-white rounded-xl border border-dashed border-[#E7E5E4] p-12 flex flex-col items-center justify-center text-center gap-3">
             <QrCode className="w-14 h-14 text-[#EDE8E1]" />
-            <p className="text-sm text-[#A8A29E]">URL이나 텍스트를 입력하면<br />QR코드가 자동으로 생성됩니다.</p>
+            <p className="text-sm text-[#A8A29E] break-keep">URL이나 텍스트를 입력하면 QR코드가 자동으로 생성됩니다.</p>
           </div>
         )}
       </div>
