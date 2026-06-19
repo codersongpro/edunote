@@ -246,14 +246,23 @@ const ChatRoom: React.FC = () => {
   // Firebase 연동 + 진행 중이던 채팅방 복원
   useEffect(() => {
     if (!firebaseConfig) { setLoadingConfig(false); return; }
+    let cancelled = false;
     let unsub: (() => void) | undefined;
     (async () => {
       try {
         const { db } = ensureFirebase(firebaseConfig);
-        uidRef.current = await ensureAuth(appRef.current!);
+        // 느린 네트워크(학교망 등)에서 익명 인증·Firestore 복원이 20~30초씩 걸리는 동안 화면 전체가
+        // "불러오는 중..."으로 멈춰 채팅방 제목조차 입력할 수 없던 문제를 막는다. Firebase 앱을 초기화한
+        // 뒤 곧바로 로딩 표시를 끄고(시작 화면·제목 입력칸을 즉시 사용 가능하게), 익명 인증과 진행 중이던
+        // 방 복원은 화면을 막지 않고 백그라운드에서 진행한다.
+        setLoadingConfig(false);
         const activeId = await window.electronAPI.getConfig('chatActiveRoomId') as string | undefined;
+        if (cancelled) return;
+        uidRef.current = await ensureAuth(appRef.current!);
+        if (cancelled) return;
         if (activeId) {
           const snap = await getDoc(doc(db, 'rooms', activeId));
+          if (cancelled) return;
           if (snap.exists() && !snap.data()?.closed) {
             setRoomId(activeId);
             setRoomTitle((snap.data()?.title as string | undefined) ?? '');
@@ -267,14 +276,15 @@ const ChatRoom: React.FC = () => {
           }
         }
         await loadPastRooms(db);
-        setChatError(null);
+        if (!cancelled) setChatError(null);
       } catch (e) {
-        setChatError(`Firebase 연결에 실패했습니다: ${describeChatError(e)}`);
-      } finally {
-        setLoadingConfig(false);
+        if (!cancelled) {
+          setChatError(`Firebase 연결에 실패했습니다: ${describeChatError(e)}`);
+          setLoadingConfig(false);
+        }
       }
     })();
-    return () => { unsub?.(); };
+    return () => { cancelled = true; unsub?.(); };
   }, [firebaseConfig]);
 
   // QR 이미지 생성 (기존 QRMaker와 동일한 옵션)
