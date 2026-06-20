@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { MessageCircle, Copy, Download, Trash2, Pin, PinOff, Video } from 'lucide-react';
+import { MessageCircle, Copy, Download, Trash2, Pin, PinOff, Video, ExternalLink } from 'lucide-react';
 import { initializeApp, getApps, deleteApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, signInAnonymously, setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 import {
@@ -10,6 +10,14 @@ import {
 // (참고) 학생 화면(docs/chat/index.html)은 보안 규칙 검증을 위해 공개 메시지/귓속말을 별도 쿼리로 나눠 구독하지만,
 // 교사 화면은 isRoomOwner() 권한으로 항상 전체를 읽을 수 있어 쿼리를 나눌 필요가 없다.
 import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL, CHAT_SETUP_GUIDE_VIDEO_URL } from '../lib/chatFirebaseGuide';
+
+// 이 화면은 두 가지 모드로 동작한다.
+//  - 'manage'      : 에듀노트 본 창(학급도구 → 채팅방 탭). Firebase 설정·채팅방 시작·QR/접속주소·지난 채팅방 관리를 맡고,
+//                    대화 자체는 보여주지 않는다. 방을 시작하면 대화 창을 자동으로 띄운다.
+//  - 'conversation': 별도 새 창(#chat). 본 창에서 시작해 둔 활성 채팅방의 대화(참여자·메시지·입력창)만 보여준다.
+// 두 창은 같은 origin이라 익명 uid(방 소유권)를 공유하고, electron 저장소의 활성 방 ID·Firebase 설정을 함께 읽어
+// 같은 방을 각자 구독한다.
+type ChatView = 'manage' | 'conversation';
 
 interface ChatMessage {
   id: string;
@@ -114,7 +122,11 @@ function parseFirebaseConfig(raw: string): Record<string, string> | null {
   return result;
 }
 
-const ChatRoom: React.FC = () => {
+interface ChatRoomProps {
+  view?: ChatView;
+}
+
+const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [firebaseConfig, setFirebaseConfig] = useState<Record<string, string> | null>(null);
   const [configInput, setConfigInput] = useState('');
@@ -122,6 +134,7 @@ const ChatRoom: React.FC = () => {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [rulesCopied, setRulesCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
   const [reconfiguring, setReconfiguring] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -184,9 +197,19 @@ const ChatRoom: React.FC = () => {
     return `${CHAT_STUDENT_PAGE_URL}#room=${id}&cfg=${encodeURIComponent(cfgBase64)}`;
   };
 
+  // 본 창(manage)에서 쓰는 가벼운 구독 — 방의 종료 여부·제목만 추적한다(대화는 보여주지 않으므로
+  // 메시지·참여자는 구독하지 않는다). 다운로드는 필요할 때 그때그때 직접 읽어온다.
+  const subscribeRoomDoc = (id: string, db: Firestore) =>
+    onSnapshot(doc(db, 'rooms', id), snap => {
+      setClosed(!!snap.data()?.closed);
+      setRoomTitle((snap.data()?.title as string | undefined) ?? '');
+    });
+
+  // 대화 창(conversation)에서 쓰는 전체 구독 — 방 정보·메시지·참여자를 모두 실시간으로 받는다.
   const subscribeToRoom = (id: string, db: Firestore) => {
     const unsubRoom = onSnapshot(doc(db, 'rooms', id), snap => {
       setClosed(!!snap.data()?.closed);
+      setRoomTitle((snap.data()?.title as string | undefined) ?? '');
       setPinnedMessage((snap.data()?.pinnedMessage as PinnedMessage | undefined) ?? null);
     });
     const unsubMessages = onSnapshot(
@@ -267,15 +290,19 @@ const ChatRoom: React.FC = () => {
             setRoomId(activeId);
             setRoomTitle((snap.data()?.title as string | undefined) ?? '');
             setClosed(false);
-            setJoinUrl(buildJoinUrl(activeId, firebaseConfig));
-            unsub = subscribeToRoom(activeId, db);
+            if (view === 'manage') {
+              setJoinUrl(buildJoinUrl(activeId, firebaseConfig));
+              unsub = subscribeRoomDoc(activeId, db);
+            } else {
+              unsub = subscribeToRoom(activeId, db);
+            }
             unsubscribeRef.current = unsub;
-            await window.electronAPI.notifyChatActive(true);
-          } else {
+          } else if (view === 'manage') {
+            // 활성 방이 이미 종료·삭제됐다면 본 창에서만 기록을 비운다(공유 저장소를 대화 창이 건드리지 않게 한다).
             await window.electronAPI.setConfig({ chatActiveRoomId: '' });
           }
         }
-        await loadPastRooms(db);
+        if (view === 'manage') await loadPastRooms(db);
         if (!cancelled) setChatError(null);
       } catch (e) {
         if (!cancelled) {
@@ -285,9 +312,9 @@ const ChatRoom: React.FC = () => {
       }
     })();
     return () => { cancelled = true; unsub?.(); };
-  }, [firebaseConfig]);
+  }, [firebaseConfig, view]);
 
-  // QR 이미지 생성 (기존 QRMaker와 동일한 옵션)
+  // QR 이미지 생성 (기존 QRMaker와 동일한 옵션) — joinUrl은 본 창(manage)에서만 만들어지므로 본 창에서만 생성된다.
   useEffect(() => {
     if (!joinUrl) { setQrDataUrl(null); return; }
     QRCode.toDataURL(joinUrl, { width: 300, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#1a1a1a', light: '#ffffff' } })
@@ -309,26 +336,17 @@ const ChatRoom: React.FC = () => {
     return () => clearInterval(timer);
   }, [roomId, closed]);
 
-  // 창이 닫히기 전, 켜져 있던 채팅방을 종료 상태로 기록한다
-  useEffect(() => {
-    const unsubscribe = window.electronAPI.onBeforeChatClose(() => {
-      (async () => {
-        try {
-          if (roomId && dbRef.current && !closed) {
-            await updateDoc(doc(dbRef.current, 'rooms', roomId), { closed: true });
-          }
-        } finally {
-          window.electronAPI.ackChatClose();
-        }
-      })();
-    });
-    return unsubscribe;
-  }, [roomId, closed]);
-
   const handleCopyRules = async () => {
     await navigator.clipboard.writeText(CHAT_FIRESTORE_RULES);
     setRulesCopied(true);
     setTimeout(() => setRulesCopied(false), 2000);
+  };
+
+  const handleCopyUrl = async () => {
+    if (!joinUrl) return;
+    await navigator.clipboard.writeText(joinUrl);
+    setUrlCopied(true);
+    setTimeout(() => setUrlCopied(false), 2000);
   };
 
   const handleTestConnection = async () => {
@@ -393,8 +411,9 @@ const ChatRoom: React.FC = () => {
       setPinnedMessage(null);
       setJoinUrl(buildJoinUrl(id, firebaseConfig));
       unsubscribeRef.current?.();
-      unsubscribeRef.current = subscribeToRoom(id, db);
-      await window.electronAPI.notifyChatActive(true);
+      unsubscribeRef.current = subscribeRoomDoc(id, db);
+      // 활성 방 ID를 저장한 직후 대화 창을 새 창으로 띄운다(이미 떠 있던 창이 있으면 새 방으로 다시 불러오게 한다).
+      window.electronAPI.openChatWindow({ reload: true });
       await loadPastRooms(db);
     } catch (e) {
       setChatError(`채팅방을 시작하지 못했습니다: ${describeChatError(e)}`);
@@ -407,7 +426,6 @@ const ChatRoom: React.FC = () => {
     try {
       await updateDoc(doc(dbRef.current, 'rooms', roomId), { closed: true });
       await window.electronAPI.setConfig({ chatActiveRoomId: '' });
-      await window.electronAPI.notifyChatActive(false);
       await loadPastRooms(dbRef.current);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -475,9 +493,17 @@ const ChatRoom: React.FC = () => {
 
   const sanitizeFileName = (name: string) => name.replace(/[\\/:*?"<>|]/g, '_');
 
+  // 본 창에서는 대화를 실시간 구독하지 않으므로, 다운로드 시점에 메시지를 한 번 읽어 저장한다.
   const handleDownloadActiveRoom = async () => {
-    const title = roomTitle || roomId || '채팅방';
-    await window.electronAPI.saveTxt(formatTranscript(title, messages), `${sanitizeFileName(title)}.txt`);
+    if (!dbRef.current || !roomId) return;
+    try {
+      const snap = await getDocs(query(collection(dbRef.current, 'rooms', roomId, 'messages'), orderBy('createdAt', 'asc')));
+      const msgs = snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ChatMessage, 'id'>) }));
+      const title = roomTitle || roomId || '채팅방';
+      await window.electronAPI.saveTxt(formatTranscript(title, msgs), `${sanitizeFileName(title)}.txt`);
+    } catch (e) {
+      setChatError(`채팅방을 다운로드하지 못했습니다: ${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const handleDownloadPastRoom = async (r: PastRoom) => {
@@ -542,6 +568,127 @@ const ChatRoom: React.FC = () => {
     return <div className="flex-1 flex items-center justify-center text-sm text-[#A8A29E]">불러오는 중...</div>;
   }
 
+  // ── 대화 창(별도 새 창) ─────────────────────────────────────────────
+  // 대화 창은 설정·시작을 직접 하지 않는다. 설정 전이거나 진행 중인 방이 없으면 본 창으로 안내한다.
+  if (view === 'conversation') {
+    if (!firebaseConfig) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7]">
+          <MessageCircle className="w-10 h-10 text-amber-400" />
+          <p className="text-sm text-[#78716C] max-w-xs break-keep">먼저 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 Firebase 연동을 설정한 뒤 채팅방을 시작해주세요.</p>
+        </div>
+      );
+    }
+    if (!roomId) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7]">
+          <MessageCircle className="w-10 h-10 text-amber-400" />
+          <p className="text-sm text-[#78716C] max-w-xs break-keep">진행 중인 채팅방이 없습니다. 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 채팅방을 시작하면 이 창에 대화가 나타납니다.</p>
+        </div>
+      );
+    }
+    return (
+      <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7]">
+        <div className="w-full max-w-2xl flex-1 flex flex-col min-h-0 p-5 gap-3">
+          {chatError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2 shrink-0">
+              <span>{chatError}</span>
+              <button onClick={() => setChatError(null)} className="text-red-400 hover:text-red-600 shrink-0">✕</button>
+            </div>
+          )}
+          <div className="flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
+              {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
+            </div>
+            <span className={`text-xs px-3 py-1.5 rounded-lg ${closed ? 'bg-[#F5F5F4] text-[#78716C]' : 'bg-emerald-50 text-emerald-600'}`}>
+              {closed ? '종료됨' : '● 진행 중'}
+            </span>
+          </div>
+          {participants.length > 0 && (
+            <div className="space-y-1.5 shrink-0">
+              <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
+              <div className="flex flex-wrap gap-1.5">
+                {participants.map(p => {
+                  const online = !!p.lastSeen && (now - p.lastSeen.toMillis()) < PRESENCE_TIMEOUT_MS;
+                  const selected = whisperTargets.some(t => t.id === p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setWhisperTargets(prev => selected ? prev.filter(t => t.id !== p.id) : [...prev, { id: p.id, nickname: p.nickname }])}
+                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-violet-500 text-white border-violet-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1]'}`} />
+                      {p.nickname}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {pinnedMessage && (
+            <div className="flex items-start justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 shrink-0">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-amber-700 mb-0.5">📌 공지 · {pinnedMessage.sender}</p>
+                <p className="text-sm text-amber-900 break-words">{linkifyText(pinnedMessage.text, 'text-amber-700 underline break-all')}</p>
+              </div>
+              <button onClick={handleUnpinMessage} title="공지 고정 해제" className="text-amber-400 hover:text-amber-700 shrink-0">
+                <PinOff className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-white rounded-lg border border-[#EDE8E1] p-3 space-y-2">
+            {messages.map(m => {
+              const mine = m.sender === (teacherName || '선생님');
+              const isWhisper = !!m.to && m.to.length > 0;
+              const whisperNicknames = isWhisper
+                ? m.to!.map(id => participants.find(p => p.id === id)?.nickname ?? '알 수 없음').join(', ')
+                : null;
+              return (
+                <div key={m.id} className={`flex items-end gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
+                  {!mine && !isWhisper && (
+                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                      <Pin className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? (isWhisper ? 'bg-violet-500 text-white' : 'bg-amber-500 text-white') : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
+                    {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
+                    {whisperNicknames && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNicknames}</p>}
+                    <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
+                  </div>
+                  {mine && !isWhisper && (
+                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                      <Pin className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {whisperTargets.length > 0 && (
+            <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5 shrink-0">
+              <span>🔒 {whisperTargets.map(t => t.nickname).join(', ')}님에게만 보이는 귓속말을 보내는 중입니다.</span>
+              <button onClick={() => setWhisperTargets([])} className="hover:underline shrink-0 ml-2">취소</button>
+            </div>
+          )}
+          <div className="flex gap-2 shrink-0">
+            <input
+              type="text"
+              className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
+              placeholder={closed ? '채팅방이 종료되었습니다' : whisperTargets.length > 0 ? `${whisperTargets.map(t => t.nickname).join(', ')}님에게 귓속말 보내기` : '메시지를 입력하세요'}
+              value={draft}
+              disabled={closed}
+              onChange={e => setDraft(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+            />
+            <button onClick={handleSend} disabled={closed} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50">전송</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── 본 창(manage): Firebase 연동 설정 화면 ───────────────────────────
   if (!firebaseConfig || reconfiguring) {
     return (
       <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
@@ -612,6 +759,7 @@ const ChatRoom: React.FC = () => {
     );
   }
 
+  // ── 본 창(manage): 채팅방 시작 / QR·접속주소 / 지난 채팅방 ───────────
   return (
     <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7]">
       <div className="w-full max-w-2xl flex-1 flex flex-col min-h-0 p-5 gap-4">
@@ -644,6 +792,7 @@ const ChatRoom: React.FC = () => {
                 onChange={e => setTitleInput(e.target.value)}
               />
               <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
+              <p className="text-[11px] text-[#A8A29E] text-center break-keep">채팅방을 시작하면 대화창이 새 창으로 열립니다.</p>
               <button
                 onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
                 className="text-xs text-[#A8A29E] hover:underline"
@@ -690,7 +839,7 @@ const ChatRoom: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 flex flex-col gap-3">
+          <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between shrink-0">
               <div>
                 <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
@@ -711,90 +860,31 @@ const ChatRoom: React.FC = () => {
                 )}
               </div>
             </div>
+            {!closed && (
+              <button
+                onClick={() => window.electronAPI.openChatWindow()}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold shrink-0"
+              >
+                <ExternalLink className="w-4 h-4" />
+                대화창 열기
+              </button>
+            )}
             {!closed && qrDataUrl && (
               <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] shrink-0">
                 <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1] w-[clamp(160px,40vh,300px)] h-[clamp(160px,40vh,300px)]" style={{ imageRendering: 'pixelated' }} />
                 <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
-              </div>
-            )}
-            {participants.length > 0 && (
-              <div className="space-y-1.5 shrink-0">
-                <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {participants.map(p => {
-                    const online = !!p.lastSeen && (now - p.lastSeen.toMillis()) < PRESENCE_TIMEOUT_MS;
-                    const selected = whisperTargets.some(t => t.id === p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => setWhisperTargets(prev => selected ? prev.filter(t => t.id !== p.id) : [...prev, { id: p.id, nickname: p.nickname }])}
-                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-violet-500 text-white border-violet-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1]'}`} />
-                        {p.nickname}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            {pinnedMessage && (
-              <div className="flex items-start justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 shrink-0">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-bold text-amber-700 mb-0.5">📌 공지 · {pinnedMessage.sender}</p>
-                  <p className="text-sm text-amber-900 break-words">{linkifyText(pinnedMessage.text, 'text-amber-700 underline break-all')}</p>
-                </div>
-                <button onClick={handleUnpinMessage} title="공지 고정 해제" className="text-amber-400 hover:text-amber-700 shrink-0">
-                  <PinOff className="w-4 h-4" />
+                <button
+                  onClick={handleCopyUrl}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] text-[#44403C] rounded-lg hover:bg-[#FAF9F7]"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {urlCopied ? '주소 복사됨!' : '접속 주소 복사'}
                 </button>
               </div>
             )}
-            <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-[#FAF9F7] rounded-lg p-3 space-y-2">
-              {messages.map(m => {
-                const mine = m.sender === (teacherName || '선생님');
-                const isWhisper = !!m.to && m.to.length > 0;
-                const whisperNicknames = isWhisper
-                  ? m.to!.map(id => participants.find(p => p.id === id)?.nickname ?? '알 수 없음').join(', ')
-                  : null;
-                return (
-                  <div key={m.id} className={`flex items-end gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
-                    {!mine && !isWhisper && (
-                      <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
-                        <Pin className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? (isWhisper ? 'bg-violet-500 text-white' : 'bg-amber-500 text-white') : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
-                      {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
-                      {whisperNicknames && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNicknames}</p>}
-                      <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
-                    </div>
-                    {mine && !isWhisper && (
-                      <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
-                        <Pin className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {whisperTargets.length > 0 && (
-              <div className="flex items-center justify-between text-xs bg-violet-50 border border-violet-200 text-violet-800 rounded-lg px-3 py-1.5 shrink-0">
-                <span>🔒 {whisperTargets.map(t => t.nickname).join(', ')}님에게만 보이는 귓속말을 보내는 중입니다.</span>
-                <button onClick={() => setWhisperTargets([])} className="hover:underline shrink-0 ml-2">취소</button>
-              </div>
+            {closed && (
+              <p className="text-sm text-[#78716C] text-center py-6 shrink-0">채팅방이 종료되었습니다. 새 채팅방을 만들어 다시 시작할 수 있습니다.</p>
             )}
-            <div className="flex gap-2 shrink-0">
-              <input
-                type="text"
-                className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
-                placeholder={closed ? '채팅방이 종료되었습니다' : whisperTargets.length > 0 ? `${whisperTargets.map(t => t.nickname).join(', ')}님에게 귓속말 보내기` : '메시지를 입력하세요'}
-                value={draft}
-                disabled={closed}
-                onChange={e => setDraft(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-              />
-              <button onClick={handleSend} disabled={closed} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50">전송</button>
-            </div>
           </div>
         )}
       </div>

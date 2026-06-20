@@ -704,7 +704,7 @@ const App: React.FC = () => {
     return (
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh' }}>
         <div className="flex flex-col h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
-          <ChatRoom />
+          <ChatRoom view="conversation" />
         </div>
       </div>
     );

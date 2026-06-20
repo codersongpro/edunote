@@ -47,7 +47,7 @@ export interface ElectronAPI {
   screenshotUrl(url: string): Promise<string | null>;
   fetchSlideImage(keyword: string): Promise<string | null>;
   openDemoWindow(): Promise<void>;
-  openChatWindow(): Promise<void>;
+  openChatWindow(opts?: { reload?: boolean }): Promise<void>;
   getVersion(): Promise<string>;
   checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 
@@ -58,10 +58,6 @@ export interface ElectronAPI {
   naramarketShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   naverShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   hasNaverShoppingSecret(): Promise<boolean>;
-
-  notifyChatActive(active: boolean): Promise<void>;
-  onBeforeChatClose(callback: () => void): () => void;
-  ackChatClose(): void;
 }
 
 declare global {

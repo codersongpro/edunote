@@ -86,7 +86,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Window
   openDemoWindow: () => ipcRenderer.invoke('window:open-demo'),
-  openChatWindow: () => ipcRenderer.invoke('window:open-chat'),
+  openChatWindow: (opts?: { reload?: boolean }) => ipcRenderer.invoke('window:open-chat', opts),
 
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),
@@ -109,13 +109,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   naverShoppingSearch: (keyword: string, pageNo?: number) =>
     ipcRenderer.invoke('api:naver-shopping-search', { keyword, pageNo }),
   hasNaverShoppingSecret: (): Promise<boolean> => ipcRenderer.invoke('config:has-naver-shopping-secret'),
-
-  // 채팅방 (QR 채팅방 — 창 닫힘 시 Firestore에 종료 상태를 기록할 시간을 벌기 위한 신호)
-  notifyChatActive: (active: boolean) => ipcRenderer.invoke('chat:set-active', active),
-  onBeforeChatClose: (callback: () => void) => {
-    const listener = () => callback();
-    ipcRenderer.on('chat:before-close', listener);
-    return () => ipcRenderer.removeListener('chat:before-close', listener);
-  },
-  ackChatClose: () => ipcRenderer.send('chat:close-ack'),
 });

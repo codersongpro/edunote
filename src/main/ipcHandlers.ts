@@ -15,10 +15,6 @@ import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
-// 채팅방이 열려 있는 동안에만 창 종료 시 Firestore에 종료 상태를 기록할 시간을 준다.
-// (채팅방은 별도 창에서 실행되며, 그 창을 닫을 때 이 값으로 종료 기록 여부를 판단한다.)
-let chatActive = false;
-
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
   const freeKey = store.get('geminiApiKey');
@@ -308,10 +304,6 @@ export function registerIpcHandlers(): void {
     const target = apiTier || store.get('apiTier') || 'free';
     if (target === 'paid') store.set('geminiPaidApiKey', '');
     else store.set('geminiApiKey', '');
-  });
-
-  ipcMain.handle('chat:set-active', (_e, active: boolean) => {
-    chatActive = !!active;
   });
 
   ipcMain.handle('data:read-json', async (_e, name: string) => {
@@ -607,11 +599,16 @@ export function registerIpcHandlers(): void {
     }
   });
 
-  // 채팅방을 별도 창으로 띄운다(같은 렌더러를 '#chat'로 로드). 넓은 화면에서 QR·메시지·입력창을
-  // 편하게 쓰기 위함이며, 이미 열려 있으면 그 창을 앞으로 가져온다.
-  ipcMain.handle('window:open-chat', () => {
+  // 채팅방의 대화 창을 별도 창으로 띄운다(같은 렌더러를 '#chat'로 로드). QR·접속주소는 본 창에 두고
+  // 이 창에는 대화만 표시한다. 이미 열려 있으면 그 창을 앞으로 가져오며, reload가 true면(새 방을 시작한 경우)
+  // 그 창을 다시 불러와 새 방의 대화를 보여준다. 이 창을 닫아도 채팅방은 종료되지 않는다(본 창의 "채팅방 종료"로만 종료).
+  ipcMain.handle('window:open-chat', (_e, opts?: { reload?: boolean }) => {
     const existing = BrowserWindow.getAllWindows().find(w => w.title === 'EduNote 채팅방');
-    if (existing) { existing.focus(); return; }
+    if (existing) {
+      if (opts?.reload) existing.webContents.reload();
+      existing.focus();
+      return;
+    }
 
     const win = new BrowserWindow({
       width: 760,
@@ -627,17 +624,6 @@ export function registerIpcHandlers(): void {
       },
     });
     win.setMenuBarVisibility(false);
-
-    // 채팅방이 켜져 있으면 이 창을 닫기 전에 렌더러가 Firestore에 종료 상태를 기록할 시간을 준다.
-    let closeConfirmed = false;
-    win.on('close', (event) => {
-      if (closeConfirmed || !chatActive) return;
-      event.preventDefault();
-      const finishClose = () => { closeConfirmed = true; win.close(); };
-      const timeout = setTimeout(finishClose, 3000);
-      ipcMain.once('chat:close-ack', () => { clearTimeout(timeout); finishClose(); });
-      win.webContents.send('chat:before-close');
-    });
 
     if (process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#chat');
