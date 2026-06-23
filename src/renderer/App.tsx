@@ -35,7 +35,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -124,7 +124,7 @@ const App: React.FC = () => {
   const [hasEnteredStudentSection, setHasEnteredStudentSection] = useState(false);
   const [studentSectionOpen, setStudentSectionOpen] = useState(false);
   const [adminSectionOpen, setAdminSectionOpen] = useState(false);
-  const classToolsInitialTab: 'qr' | 'lucky' = 'qr';
+  const [classToolsInitialTab, setClassToolsInitialTab] = useState<'qr' | 'lucky' | 'chat'>('qr');
   const [teacherRecordInitialTab, setTeacherRecordInitialTab] = useState<'observation' | 'counseling' | 'class'>('observation');
   const [activeDocType, setActiveDocType] = useState<DocType>(DocType.GONGMUN);
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -504,6 +504,15 @@ const App: React.FC = () => {
     else if (target === 'admin') { goTo(AppMode.EDUCATION_QA); setAdminSectionOpen(true); }
   };
 
+  // 홈 화면의 "빠른 시작" 타일에서 자주 쓰는 기능으로 바로 이동한다(학년 선택이 필요한 기능은 handleModeChange가 처리).
+  const handleHomeQuickStart = (key: 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'schoolDoc') => {
+    if (key === 'chat') { setClassToolsInitialTab('chat'); setLessonSectionOpen(true); handleModeChange(AppMode.CLASS_TOOLS); }
+    else if (key === 'record') handleModeChange(AppMode.GENERATOR);
+    else if (key === 'lesson') { setLessonSectionOpen(true); handleModeChange(AppMode.LESSON_MATERIAL); }
+    else if (key === 'docAnalyze') { setAdminSectionOpen(true); handleModeChange(AppMode.OFFICIAL_DOC_ANALYZER); }
+    else if (key === 'schoolDoc') { setAdminSectionOpen(true); handleModeChange(AppMode.SCHOOL_DOC); }
+  };
+
   const studentNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
       mode === m
@@ -530,6 +539,13 @@ const App: React.FC = () => {
       mode === m
         ? 'bg-pink-600 text-white font-semibold shadow-sm'
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-700 dark:hover:text-pink-300'
+    }`;
+
+  const favNavClass = (m: AppMode) =>
+    `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
+      mode === m
+        ? 'bg-amber-500 text-white font-semibold shadow-sm'
+        : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
 
   const defaultStudentMenuItems: SidebarMenuItem[] = [
@@ -592,6 +608,38 @@ const App: React.FC = () => {
     if (!draggedMenu || draggedMenu.section !== section) return;
     reorderMenuItem(section, draggedMenu.mode, targetMode);
     setDraggedMenu(null);
+  };
+
+  // 즐겨찾기(수동 고정) — 사이드바 각 메뉴의 ☆ 버튼으로 고정하면 상단 "즐겨찾기" 섹션에 모인다. 이 PC에 저장된다.
+  const FAVORITES_KEY = 'edunote_menu_favorites_v1';
+  const [favorites, setFavorites] = useState<AppMode[]>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+      return Array.isArray(stored) ? stored.filter((m): m is AppMode => Object.values(AppMode).includes(m)) : [];
+    } catch {
+      return [];
+    }
+  });
+  const isFavorite = (m: AppMode) => favorites.includes(m);
+  const toggleFavorite = (m: AppMode) => {
+    setFavorites(prev => {
+      const next = prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m];
+      safeSetItem(FAVORITES_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+  // 즐겨찾기 항목의 아이콘·라벨을 찾는 표(기본 메뉴 정의 기준).
+  const menuItemByMode = new Map<AppMode, SidebarMenuItem>(
+    [...defaultStudentMenuItems, ...defaultLessonMenuItems, ...defaultAdminMenuItems, ...defaultMyToolsMenuItems].map(it => [it.mode, it]),
+  );
+  // 즐겨찾기에서 모드별로 알맞은 이동 처리(그룹·특수 패널은 사이드바와 동일한 핸들러를 쓴다).
+  const navigateMode = (m: AppMode) => {
+    if (m === AppMode.STUDENT_RECORD_GROUP) handleModeChange(AppMode.GENERATOR);
+    else if (m === AppMode.TEACHER_RECORD) handleTeacherRecordParent();
+    else if (m === AppMode.SCHOOL_DOC) handleSchoolDocParent();
+    else if (m === AppMode.CLASS_TOOLS) handleClassToolsParent();
+    else if (m === AppMode.MY_AI_TOOLS || m === AppMode.MY_AI_TOOLS_SHARED) handleMyToolsTabChange(m === AppMode.MY_AI_TOOLS_SHARED ? 'market' : 'my');
+    else handleModeChange(m);
   };
 
   const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR];
@@ -659,7 +707,7 @@ const App: React.FC = () => {
 
   const renderMode = (m: AppMode): React.ReactNode => {
     switch (m) {
-      case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} darkMode={darkMode} />;
+      case AppMode.HOME: return <HomeScreen onNavigate={handleHomeNavigate} onQuickStart={handleHomeQuickStart} darkMode={darkMode} />;
       case AppMode.USAGE_GUIDE: return <UsageGuideScreen />;
       case AppMode.RECORD_CHATBOT: return <RecordChatbot schoolLevel={schoolLevel} />;
       case AppMode.GENERATOR: return <OpinionGenerator schoolLevel={schoolLevel} />;
@@ -1255,6 +1303,37 @@ const App: React.FC = () => {
 
             <div className="h-px bg-[#EDE8E1] dark:bg-[#2E2822] my-1" />
 
+            {/* ── 즐겨찾기 ── */}
+            {favorites.length > 0 && (
+              <>
+                <div className="rounded-xl overflow-hidden border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <Star className="w-3.5 h-3.5 shrink-0 fill-amber-400 text-amber-400" />
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-300 tracking-wide truncate">즐겨찾기</span>
+                  </div>
+                  <div className="px-1.5 pb-1.5 space-y-0.5">
+                    {favorites.map(m => {
+                      const item = menuItemByMode.get(m);
+                      if (!item) return null;
+                      const Icon = item.icon;
+                      return (
+                        <div key={m} className="flex items-center gap-1 rounded-md">
+                          <button onClick={() => navigateMode(m)} title={item.label} className={`min-w-0 flex-1 ${favNavClass(m)}`}>
+                            {Icon && <Icon className="w-4 h-4 shrink-0" />}
+                            <span className="flex-1 text-left truncate">{item.label}</span>
+                          </button>
+                          <button onClick={() => toggleFavorite(m)} title="즐겨찾기 해제" className="shrink-0 p-1 text-amber-400 hover:text-amber-600">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="h-1.5" />
+              </>
+            )}
+
             {/* ── 교무행정AI ── */}
             <div className="rounded-xl overflow-hidden border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20">
               <button
@@ -1282,6 +1361,9 @@ const App: React.FC = () => {
                       className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'admin' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-emerald-400 cursor-grab mt-2.5" />
+                      <button onClick={() => toggleFavorite(m)} title={isFavorite(m) ? '즐겨찾기 해제' : '즐겨찾기에 추가'} className="shrink-0 mt-2 text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-500">
+                        <Star className={`w-3.5 h-3.5 ${isFavorite(m) ? 'fill-amber-400 text-amber-400' : ''}`} />
+                      </button>
                       {m === AppMode.SCHOOL_DOC ? (
                         <button onClick={handleSchoolDocParent} className={`min-w-0 flex-1 ${adminNavClass(AppMode.SCHOOL_DOC, true)}`}>
                           {Icon && <Icon className="w-4 h-4 shrink-0" />}
@@ -1338,6 +1420,9 @@ const App: React.FC = () => {
                       className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'lesson' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-amber-400 cursor-grab mt-2.5" />
+                      <button onClick={() => toggleFavorite(m)} title={isFavorite(m) ? '즐겨찾기 해제' : '즐겨찾기에 추가'} className="shrink-0 mt-2 text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-500">
+                        <Star className={`w-3.5 h-3.5 ${isFavorite(m) ? 'fill-amber-400 text-amber-400' : ''}`} />
+                      </button>
                       {m === AppMode.CLASS_TOOLS ? (
                         <button onClick={handleClassToolsParent} className={`min-w-0 flex-1 ${lessonNavClass(AppMode.CLASS_TOOLS, true)}`}>
                           {Icon ? <Icon className="w-4 h-4 shrink-0" /> : <span className="w-4 h-4 shrink-0 flex items-center justify-center text-sm">🎲</span>}
@@ -1398,6 +1483,9 @@ const App: React.FC = () => {
                       className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'student' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-indigo-400 cursor-grab mt-2.5" />
+                      <button onClick={() => toggleFavorite(m)} title={isFavorite(m) ? '즐겨찾기 해제' : '즐겨찾기에 추가'} className="shrink-0 mt-2 text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-500">
+                        <Star className={`w-3.5 h-3.5 ${isFavorite(m) ? 'fill-amber-400 text-amber-400' : ''}`} />
+                      </button>
                       {m === AppMode.STUDENT_RECORD_GROUP ? (
                         <button
                           onClick={() => handleModeChange(AppMode.GENERATOR)}
@@ -1457,6 +1545,9 @@ const App: React.FC = () => {
                       className={`flex items-start gap-1 rounded-md ${draggedMenu?.section === 'myTools' && draggedMenu.mode === m ? 'opacity-50' : ''}`}
                     >
                       <GripVertical className="w-3.5 h-3.5 shrink-0 text-pink-400 cursor-grab mt-2.5" />
+                      <button onClick={() => toggleFavorite(m)} title={isFavorite(m) ? '즐겨찾기 해제' : '즐겨찾기에 추가'} className="shrink-0 mt-2 text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-500">
+                        <Star className={`w-3.5 h-3.5 ${isFavorite(m) ? 'fill-amber-400 text-amber-400' : ''}`} />
+                      </button>
                       <button
                         onClick={() => handleMyToolsTabChange(m === AppMode.MY_AI_TOOLS_SHARED ? 'market' : 'my')}
                         className={`min-w-0 flex-1 ${myToolsNavClass(m)}`}
@@ -1506,6 +1597,7 @@ const App: React.FC = () => {
               <button
                 onClick={() => changeFontSize(-5)}
                 title="글씨 축소"
+                aria-label="글씨 축소"
                 className="h-7 w-7 flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
               >
                 <ZoomOut className="w-3.5 h-3.5" />
@@ -1514,6 +1606,7 @@ const App: React.FC = () => {
               <button
                 onClick={() => changeFontSize(5)}
                 title="글씨 확대"
+                aria-label="글씨 확대"
                 className="h-7 w-7 flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
               >
                 <ZoomIn className="w-3.5 h-3.5" />

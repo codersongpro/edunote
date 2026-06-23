@@ -87,6 +87,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window
   openDemoWindow: () => ipcRenderer.invoke('window:open-demo'),
   openChatWindow: (opts?: { reload?: boolean }) => ipcRenderer.invoke('window:open-chat', opts),
+  isChatWindowOpen: (): Promise<boolean> => ipcRenderer.invoke('window:is-chat-open'),
+  onChatWindowState: (callback: (open: boolean) => void) => {
+    const listener = (_e: unknown, open: boolean) => callback(!!open);
+    ipcRenderer.on('chat:window-state', listener as never);
+    return () => ipcRenderer.removeListener('chat:window-state', listener as never);
+  },
 
   // App
   getVersion: () => ipcRenderer.invoke('app:get-version'),

@@ -613,11 +613,22 @@ export function registerIpcHandlers(): void {
   // 채팅방의 대화 창을 별도 창으로 띄운다(같은 렌더러를 '#chat'로 로드). QR·접속주소는 본 창에 두고
   // 이 창에는 대화만 표시한다. 이미 열려 있으면 그 창을 앞으로 가져오며, reload가 true면(새 방을 시작한 경우)
   // 그 창을 다시 불러와 새 방의 대화를 보여준다. 이 창을 닫아도 채팅방은 종료되지 않는다(본 창의 "채팅방 종료"로만 종료).
+  // 대화 창의 열림/닫힘 상태를 모든 창에 알려, 본 창(채팅방 관리 화면)이 "대화창 열림" 여부를 표시할 수 있게 한다.
+  const broadcastChatWindowState = (open: boolean) => {
+    for (const w of BrowserWindow.getAllWindows()) {
+      if (!w.isDestroyed()) w.webContents.send('chat:window-state', open);
+    }
+  };
+
+  ipcMain.handle('window:is-chat-open', () =>
+    BrowserWindow.getAllWindows().some(w => w.title === 'EduNote 채팅방'));
+
   ipcMain.handle('window:open-chat', (_e, opts?: { reload?: boolean }) => {
     const existing = BrowserWindow.getAllWindows().find(w => w.title === 'EduNote 채팅방');
     if (existing) {
       if (opts?.reload) existing.webContents.reload();
       existing.focus();
+      broadcastChatWindowState(true);
       return;
     }
 
@@ -635,12 +646,14 @@ export function registerIpcHandlers(): void {
       },
     });
     win.setMenuBarVisibility(false);
+    win.on('closed', () => broadcastChatWindowState(false));
 
     if (process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#chat');
     } else {
       win.loadFile(path.join(__dirname, '../renderer/index.html'), { hash: 'chat' });
     }
+    broadcastChatWindowState(true);
   });
 
   // ── App ───────────────────────────────────────────────────────────

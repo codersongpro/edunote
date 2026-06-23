@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
 
@@ -10,12 +10,23 @@ interface UpdateInfo {
   releaseUrl: string;
 }
 
+type QuickStartKey = 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'schoolDoc';
+
 interface Props {
   onNavigate: (target: 'settings' | 'student' | 'admin' | 'guide') => void;
+  onQuickStart: (key: QuickStartKey) => void;
   darkMode: boolean;
 }
 
-const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
+const QUICK_TILES: { key: QuickStartKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { key: 'chat', label: '채팅방', icon: MessageCircle },
+  { key: 'record', label: '생기부', icon: GraduationCap },
+  { key: 'lesson', label: '수업자료', icon: Presentation },
+  { key: 'docAnalyze', label: '공문요약', icon: ClipboardList },
+  { key: 'schoolDoc', label: '문서작성', icon: FileText },
+];
+
+const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
   const [version, setVersion] = useState('1.0.0');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [hasKey, setHasKey] = useState<boolean | null>(null);
@@ -275,6 +286,23 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
               </div>
               <ChevronRight className="w-4 h-4 text-purple-400 shrink-0 group-hover:translate-x-1 transition-transform" />
             </button>
+          </div>
+
+          {/* 빠른 시작 */}
+          <div>
+            <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] mb-1.5 px-0.5">빠른 시작</p>
+            <div className="grid grid-cols-5 gap-2">
+              {QUICK_TILES.map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => onQuickStart(t.key)}
+                  className="flex flex-col items-center gap-1.5 p-2.5 bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-sm transition-all"
+                >
+                  <t.icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-[11px] font-medium text-[#44403C] dark:text-[#C4B8B0] text-center leading-tight break-keep">{t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 앱 만족도 설문 */}

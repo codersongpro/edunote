@@ -48,6 +48,8 @@ export interface ElectronAPI {
   fetchSlideImage(keyword: string): Promise<string | null>;
   openDemoWindow(): Promise<void>;
   openChatWindow(opts?: { reload?: boolean }): Promise<void>;
+  isChatWindowOpen(): Promise<boolean>;
+  onChatWindowState(callback: (open: boolean) => void): () => void;
   getVersion(): Promise<string>;
   checkUpdate(): Promise<{ currentVersion: string; latestVersion: string | null; hasUpdate: boolean; releaseUrl: string }>;
 

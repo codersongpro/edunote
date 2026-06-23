@@ -135,6 +135,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   const [chatError, setChatError] = useState<string | null>(null);
   const [rulesCopied, setRulesCopied] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [convWindowOpen, setConvWindowOpen] = useState(false);
   const [reconfiguring, setReconfiguring] = useState(false);
 
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -340,6 +341,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
     const timer = setInterval(() => setNow(Date.now()), 5000);
     return () => clearInterval(timer);
   }, [roomId, closed]);
+
+  // 본 창(manage)에서 대화 창(별도 새 창)이 열려 있는지 추적해 버튼/표시에 반영한다.
+  useEffect(() => {
+    if (view !== 'manage') return;
+    let active = true;
+    window.electronAPI.isChatWindowOpen().then(open => { if (active) setConvWindowOpen(!!open); }).catch(() => {});
+    const unsub = window.electronAPI.onChatWindowState(open => setConvWindowOpen(open));
+    return () => { active = false; unsub(); };
+  }, [view]);
 
   const handleCopyRules = async () => {
     await navigator.clipboard.writeText(CHAT_FIRESTORE_RULES);
@@ -866,13 +876,20 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               </div>
             </div>
             {!closed && (
-              <button
-                onClick={() => window.electronAPI.openChatWindow()}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold shrink-0"
-              >
-                <ExternalLink className="w-4 h-4" />
-                대화창 열기
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => window.electronAPI.openChatWindow()}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {convWindowOpen ? '대화창 앞으로 가져오기' : '대화창 열기'}
+                </button>
+                {convWindowOpen && (
+                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 대화창 열림
+                  </span>
+                )}
+              </div>
             )}
             {!closed && qrDataUrl && (
               <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] dark:border-[#2E2822] shrink-0">
