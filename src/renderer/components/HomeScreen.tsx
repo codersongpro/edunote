@@ -24,6 +24,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
   const [hasStudentInfo, setHasStudentInfo] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
+  const [infoLoaded, setInfoLoaded] = useState(false);
 
   useEffect(() => {
     const refreshApiKeyState = () => {
@@ -47,6 +48,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       });
       setHasUserInfo(!!String(teacherName || '').trim());
       setHasStudentInfo(!!String(studentNames || '').trim());
+      setInfoLoaded(true);
     }).catch(() => {});
     const handleBackupDone = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -89,6 +91,11 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
       setIsBackingUp(false);
     }
   };
+
+  // 마지막 백업이 없거나 14일 이상 지났으면 백업을 권한다(데이터 분실 예방).
+  const BACKUP_STALE_DAYS = 14;
+  const lastBackupMs = storageInfo.lastBackupAt ? Date.parse(storageInfo.lastBackupAt) : 0;
+  const isBackupStale = !lastBackupMs || (Date.now() - lastBackupMs) > BACKUP_STALE_DAYS * 24 * 60 * 60 * 1000;
 
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden">
@@ -199,6 +206,27 @@ const HomeScreen: React.FC<Props> = ({ onNavigate }) => {
                   설정에서 무료 Gemini API 키를 입력해야 AI 기능을 사용할 수 있습니다.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* 백업 권장 안내 (백업이 없거나 오래된 경우) */}
+          {infoLoaded && isBackupStale && (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                  {storageInfo.lastBackupAt
+                    ? '마지막 백업이 2주 이상 지났습니다. 자료를 백업해 두세요.'
+                    : '아직 백업한 적이 없습니다. 백업해 두면 PC 교체·재설치 시 안전합니다.'}
+                </p>
+              </div>
+              <button
+                onClick={handleExportBackup}
+                disabled={isBackingUp}
+                className="shrink-0 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                {isBackingUp ? '백업 중' : '지금 백업'}
+              </button>
             </div>
           )}
 

@@ -570,7 +570,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   };
 
   if (loadingConfig) {
-    return <div className="flex-1 flex items-center justify-center text-sm text-[#A8A29E]">불러오는 중...</div>;
+    return <div className="flex-1 flex items-center justify-center text-sm text-[#A8A29E] dark:text-[#9C8F87]">불러오는 중...</div>;
   }
 
   // ── 대화 창(별도 새 창) ─────────────────────────────────────────────
@@ -578,22 +578,22 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   if (view === 'conversation') {
     if (!firebaseConfig) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7]">
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7] dark:bg-[#171210]">
           <MessageCircle className="w-10 h-10 text-amber-400" />
-          <p className="text-sm text-[#78716C] max-w-xs break-keep">먼저 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 Firebase 연동을 설정한 뒤 채팅방을 시작해주세요.</p>
+          <p className="text-sm text-[#78716C] dark:text-[#9C8F87] max-w-xs break-keep">먼저 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 Firebase 연동을 설정한 뒤 채팅방을 시작해주세요.</p>
         </div>
       );
     }
     if (!roomId) {
       return (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7]">
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-[#FAF9F7] dark:bg-[#171210]">
           <MessageCircle className="w-10 h-10 text-amber-400" />
-          <p className="text-sm text-[#78716C] max-w-xs break-keep">진행 중인 채팅방이 없습니다. 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 채팅방을 시작하면 이 창에 대화가 나타납니다.</p>
+          <p className="text-sm text-[#78716C] dark:text-[#9C8F87] max-w-xs break-keep">진행 중인 채팅방이 없습니다. 에듀노트 본 창의 <b>학급도구 → 채팅방</b>에서 채팅방을 시작하면 이 창에 대화가 나타납니다.</p>
         </div>
       );
     }
     return (
-      <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7]">
+      <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7] dark:bg-[#171210]">
         <div className="w-full max-w-2xl flex-1 flex flex-col min-h-0 p-5 gap-3">
           {chatError && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2 shrink-0">
@@ -603,16 +603,16 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
           )}
           <div className="flex items-center justify-between shrink-0">
             <div>
-              <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
-              {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
+              <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">{roomTitle || `채팅방 ${roomId}`}</h2>
+              {roomTitle && <p className="text-[11px] text-[#A8A29E] dark:text-[#9C8F87]">{roomId}</p>}
             </div>
-            <span className={`text-xs px-3 py-1.5 rounded-lg ${closed ? 'bg-[#F5F5F4] text-[#78716C]' : 'bg-emerald-50 text-emerald-600'}`}>
+            <span className={`text-xs px-3 py-1.5 rounded-lg ${closed ? 'bg-[#F5F5F4] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87]' : 'bg-emerald-50 text-emerald-600'}`}>
               {closed ? '종료됨' : '● 진행 중'}
             </span>
           </div>
           {participants.length > 0 && (
             <div className="space-y-1.5 shrink-0">
-              <p className="text-xs font-bold text-[#44403C]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
+              <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">참여자 ({participants.length}) · 이름을 눌러 귓속말 받을 사람을 고르세요 (여러 명 선택 가능)</p>
               <div className="flex flex-wrap gap-1.5">
                 {participants.map(p => {
                   const online = !!p.lastSeen && (now - p.lastSeen.toMillis()) < PRESENCE_TIMEOUT_MS;
@@ -621,9 +621,9 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
                     <button
                       key={p.id}
                       onClick={() => setWhisperTargets(prev => selected ? prev.filter(t => t.id !== p.id) : [...prev, { id: p.id, nickname: p.nickname }])}
-                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-violet-500 text-white border-violet-500' : 'bg-white border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]'}`}
+                      className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border ${selected ? 'bg-violet-500 text-white border-violet-500' : 'bg-white dark:bg-[#221E1B] border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B]'}`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1]'}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-[#D6D3D1] dark:bg-[#6B5E57]'}`} />
                       {p.nickname}
                     </button>
                   );
@@ -642,7 +642,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               </button>
             </div>
           )}
-          <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-white rounded-lg border border-[#EDE8E1] p-3 space-y-2">
+          <div ref={messagesContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] p-3 space-y-2">
             {messages.map(m => {
               const mine = m.sender === (teacherName || '선생님');
               const isWhisper = !!m.to && m.to.length > 0;
@@ -652,17 +652,17 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               return (
                 <div key={m.id} className={`flex items-end gap-1 ${mine ? 'justify-end' : 'justify-start'}`}>
                   {!mine && !isWhisper && (
-                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-600 shrink-0 mb-1">
                       <Pin className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? (isWhisper ? 'bg-violet-500 text-white' : 'bg-amber-500 text-white') : `border border-[#EDE8E1] ${colorForSender(m.sender)}`}`}>
+                  <div className={`rounded-lg px-3 py-2 max-w-[85%] ${mine ? (isWhisper ? 'bg-violet-500 text-white' : 'bg-amber-500 text-white') : `border border-[#EDE8E1] dark:border-[#2E2822] ${colorForSender(m.sender)}`}`}>
                     {!mine && <p className="text-[11px] opacity-70 mb-0.5">{m.sender}</p>}
                     {whisperNicknames && <p className="text-[11px] opacity-80 mb-0.5">🔒 귓속말 → {whisperNicknames}</p>}
                     <p className="text-sm break-words">{linkifyText(m.text ?? '', mine ? 'text-white underline break-all' : 'text-amber-600 hover:underline break-all')}</p>
                   </div>
                   {mine && !isWhisper && (
-                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] hover:text-amber-600 shrink-0 mb-1">
+                    <button onClick={() => handlePinMessage(m)} title="공지로 고정" className="text-[#D6D3D1] dark:text-[#6B5E57] hover:text-amber-600 shrink-0 mb-1">
                       <Pin className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -679,7 +679,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
           <div className="flex gap-2 shrink-0">
             <input
               type="text"
-              className="flex-1 border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
+              className="flex-1 border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-500"
               placeholder={closed ? '채팅방이 종료되었습니다' : whisperTargets.length > 0 ? `${whisperTargets.map(t => t.nickname).join(', ')}님에게 귓속말 보내기` : '메시지를 입력하세요'}
               value={draft}
               disabled={closed}
@@ -696,7 +696,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   // ── 본 창(manage): Firebase 연동 설정 화면 ───────────────────────────
   if (!firebaseConfig || reconfiguring) {
     return (
-      <div className="flex-1 overflow-y-auto bg-[#FAF9F7] p-5">
+      <div className="flex-1 overflow-y-auto bg-[#FAF9F7] dark:bg-[#171210] p-5">
         <div className="max-w-xl mx-auto space-y-4">
           {firebaseConfig && (
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg p-3 flex items-center justify-between gap-2">
@@ -704,15 +704,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               <button onClick={() => { setReconfiguring(false); setConfigInput(''); setTestResult(null); }} className="shrink-0 px-2 py-1 border border-amber-300 rounded-lg hover:bg-amber-100">취소</button>
             </div>
           )}
-          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4">
-            <h2 className="font-bold text-[#1C1917] mb-2 flex items-center gap-2">
+          <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
+            <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] mb-2 flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-amber-600" />
               채팅방을 시작하려면 먼저 Firebase 연동이 필요합니다
             </h2>
-            <p className="text-xs text-[#78716C] mb-3">
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mb-3">
               학교 망분리 등으로 교사 PC와 학생 기기가 직접 통신할 수 없는 경우가 많아, 무료 Firebase(구글)를 통해 채팅을 중계합니다. 한 번만 설정하면 계속 사용할 수 있습니다.
             </p>
-            <ol className="list-decimal list-inside space-y-1.5 text-sm text-[#44403C]">
+            <ol className="list-decimal list-inside space-y-1.5 text-sm text-[#44403C] dark:text-[#C4B8B0]">
               {CHAT_FIREBASE_GUIDE_STEPS.map((step, i) => (
                 <li key={i}>
                   {step.text}
@@ -726,25 +726,25 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
             </ol>
             <button
               onClick={() => window.electronAPI.openExternal(CHAT_SETUP_GUIDE_VIDEO_URL)}
-              className="w-full mt-3 py-2 rounded-lg border border-emerald-200 bg-white text-xs font-bold text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-1.5"
+              className="w-full mt-3 py-2 rounded-lg border border-emerald-200 bg-white dark:bg-[#221E1B] text-xs font-bold text-emerald-700 hover:bg-emerald-50 flex items-center justify-center gap-1.5"
             >
               <Video className="w-3.5 h-3.5" /> 채팅방 설정 도움받기 (영상)
             </button>
           </div>
-          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
+          <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold text-[#44403C]">Firestore 보안 규칙 (그대로 복사해 붙여넣으세요)</p>
-              <button onClick={handleCopyRules} className="flex items-center gap-1 text-xs px-2 py-1 border border-[#E7E5E4] rounded-lg hover:bg-[#FAF9F7] text-[#44403C]">
+              <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0]">Firestore 보안 규칙 (그대로 복사해 붙여넣으세요)</p>
+              <button onClick={handleCopyRules} className="flex items-center gap-1 text-xs px-2 py-1 border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] text-[#44403C] dark:text-[#C4B8B0]">
                 <Copy className="w-3 h-3" />
                 {rulesCopied ? '복사됨!' : '복사'}
               </button>
             </div>
             <pre className="bg-[#1C1917] text-[#D6D3D1] text-[11px] p-3 rounded-lg overflow-x-auto whitespace-pre">{CHAT_FIRESTORE_RULES}</pre>
           </div>
-          <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 space-y-2">
-            <label className="block text-sm font-bold text-[#44403C]">firebaseConfig 붙여넣기</label>
+          <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-2">
+            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">firebaseConfig 붙여넣기</label>
             <textarea
-              className="w-full h-32 text-xs font-mono border border-[#E7E5E4] rounded-lg p-2 outline-none focus:border-amber-500"
+              className="w-full h-32 text-xs font-mono border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg p-2 outline-none focus:border-amber-500"
               placeholder={'const firebaseConfig = {\n  apiKey: "...",\n  projectId: "...",\n  ...\n};'}
               value={configInput}
               onChange={e => setConfigInput(e.target.value)}
@@ -753,7 +753,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               <p className={`text-xs ${testResult.ok ? 'text-emerald-600' : 'text-red-600'}`}>{testResult.message}</p>
             )}
             <div className="flex gap-2">
-              <button onClick={handleTestConnection} disabled={testing} className="px-3 py-1.5 text-sm border border-[#E7E5E4] rounded-lg hover:bg-[#FAF9F7] disabled:opacity-50">
+              <button onClick={handleTestConnection} disabled={testing} className="px-3 py-1.5 text-sm border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] disabled:opacity-50">
                 {testing ? '테스트 중...' : '연동 테스트'}
               </button>
               <button onClick={handleSaveConfig} className="px-3 py-1.5 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">저장</button>
@@ -766,7 +766,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
 
   // ── 본 창(manage): 채팅방 시작 / QR·접속주소 / 지난 채팅방 ───────────
   return (
-    <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7]">
+    <div className="flex-1 flex flex-col min-h-0 items-center bg-[#FAF9F7] dark:bg-[#171210]">
       <div className="w-full max-w-2xl flex-1 flex flex-col min-h-0 p-5 gap-4">
         {chatError && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3 flex items-start justify-between gap-2 shrink-0">
@@ -785,53 +785,53 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
         </div>
         {!roomId ? (
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
-            <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-6 flex flex-col items-center gap-3">
+            <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-6 flex flex-col items-center gap-3">
               <MessageCircle className="w-10 h-10 text-amber-500" />
-              <p className="text-sm text-[#78716C]">학생들이 QR코드로 입장할 채팅방을 시작합니다.</p>
+              <p className="text-sm text-[#78716C] dark:text-[#9C8F87]">학생들이 QR코드로 입장할 채팅방을 시작합니다.</p>
               <input
                 type="text"
-                className="w-full max-w-xs border border-[#E7E5E4] rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-amber-500"
+                className="w-full max-w-xs border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg px-3 py-2 text-sm text-center outline-none focus:border-amber-500"
                 placeholder="채팅방 제목 (예: 3교시 모둠활동)"
                 maxLength={30}
                 value={titleInput}
                 onChange={e => setTitleInput(e.target.value)}
               />
               <button onClick={startRoom} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">채팅방 시작</button>
-              <p className="text-[11px] text-[#A8A29E] text-center break-keep">채팅방을 시작하면 대화창이 새 창으로 열립니다.</p>
+              <p className="text-[11px] text-[#A8A29E] dark:text-[#9C8F87] text-center break-keep">채팅방을 시작하면 대화창이 새 창으로 열립니다.</p>
               <button
                 onClick={() => { setConfigInput(JSON.stringify(firebaseConfig, null, 2)); setTestResult(null); setReconfiguring(true); }}
-                className="text-xs text-[#A8A29E] hover:underline"
+                className="text-xs text-[#A8A29E] dark:text-[#9C8F87] hover:underline"
               >
                 Firebase 연동 다시 설정하기
               </button>
             </div>
-            <div className="bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4">
-              <h3 className="text-sm font-bold text-[#44403C] mb-2">지난 채팅방</h3>
+            <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
+              <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">지난 채팅방</h3>
               {pastRooms.length === 0 ? (
-                <p className="text-xs text-[#A8A29E]">아직 만든 채팅방이 없습니다.</p>
+                <p className="text-xs text-[#A8A29E] dark:text-[#9C8F87]">아직 만든 채팅방이 없습니다.</p>
               ) : (
                 <div className="space-y-1.5">
                   {pastRooms.map(r => (
                     <div key={r.id}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleExpandRoom(r.id)} className="flex-1 flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7]">
+                        <button onClick={() => handleExpandRoom(r.id)} className="flex-1 flex items-center justify-between text-left text-sm px-2 py-1.5 rounded-md hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B]">
                           <span className={r.title ? '' : 'font-mono'}>{r.title || r.id}</span>
-                          <span className={`text-xs ${r.closed ? 'text-[#A8A29E]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
+                          <span className={`text-xs ${r.closed ? 'text-[#A8A29E] dark:text-[#9C8F87]' : 'text-emerald-600'}`}>{r.closed ? '종료됨' : '진행 중'}</span>
                         </button>
-                        <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] shrink-0">
+                        <button onClick={() => handleDownloadPastRoom(r)} title="다운로드" className="p-1.5 text-[#A8A29E] dark:text-[#9C8F87] hover:text-amber-600 rounded-md hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] shrink-0">
                           <Download className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDeleteFromHistory(r.id)} disabled={deletingRoomId === r.id} title="Firebase에서 완전히 삭제" className="p-1.5 text-[#A8A29E] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] shrink-0 disabled:opacity-50">
+                        <button onClick={() => handleDeleteFromHistory(r.id)} disabled={deletingRoomId === r.id} title="Firebase에서 완전히 삭제" className="p-1.5 text-[#A8A29E] dark:text-[#9C8F87] hover:text-red-600 rounded-md hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] shrink-0 disabled:opacity-50">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       {expandedRoomId === r.id && (
-                        <div className="bg-[#FAF9F7] rounded-lg p-2 mt-1 space-y-1.5 max-h-48 overflow-y-auto">
+                        <div className="bg-[#FAF9F7] dark:bg-[#171210] rounded-lg p-2 mt-1 space-y-1.5 max-h-48 overflow-y-auto">
                           {expandedMessages.length === 0 ? (
-                            <p className="text-xs text-[#A8A29E] px-2">메시지가 없습니다.</p>
+                            <p className="text-xs text-[#A8A29E] dark:text-[#9C8F87] px-2">메시지가 없습니다.</p>
                           ) : expandedMessages.map(m => (
                             <div key={m.id} className="text-xs px-2">
-                              <span className="text-[#A8A29E]">{m.sender}: </span>
+                              <span className="text-[#A8A29E] dark:text-[#9C8F87]">{m.sender}: </span>
                               <span>{linkifyText(m.text ?? '')}</span>
                             </div>
                           ))}
@@ -844,14 +844,14 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
             </div>
           </div>
         ) : (
-          <div className="flex-1 min-h-0 overflow-y-auto bg-white rounded-xl border border-[#EDE8E1] shadow-sm p-4 flex flex-col gap-3">
+          <div className="flex-1 min-h-0 overflow-y-auto bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between shrink-0">
               <div>
-                <h2 className="font-bold text-[#1C1917]">{roomTitle || `채팅방 ${roomId}`}</h2>
-                {roomTitle && <p className="text-[11px] text-[#A8A29E]">{roomId}</p>}
+                <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">{roomTitle || `채팅방 ${roomId}`}</h2>
+                {roomTitle && <p className="text-[11px] text-[#A8A29E] dark:text-[#9C8F87]">{roomId}</p>}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={handleDownloadActiveRoom} className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] text-[#44403C] rounded-lg hover:bg-[#FAF9F7]">
+                <button onClick={handleDownloadActiveRoom} className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B]">
                   <Download className="w-3.5 h-3.5" />
                   다운로드
                 </button>
@@ -859,7 +859,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
                   <button onClick={handleCloseRoom} className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg hover:bg-red-50">채팅방 종료</button>
                 ) : (
                   <>
-                    <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] text-[#78716C] rounded-lg">종료됨</span>
+                    <span className="text-xs px-3 py-1.5 bg-[#F5F5F4] dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] rounded-lg">종료됨</span>
                     <button onClick={handleResetRoom} className="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 font-semibold">새 채팅방 만들기</button>
                   </>
                 )}
@@ -875,12 +875,12 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               </button>
             )}
             {!closed && qrDataUrl && (
-              <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] shrink-0">
-                <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1] w-[clamp(160px,40vh,300px)] h-[clamp(160px,40vh,300px)]" style={{ imageRendering: 'pixelated' }} />
-                <p className="text-[11px] text-[#A8A29E] break-all max-w-xs text-center">{joinUrl}</p>
+              <div className="flex flex-col items-center gap-2 py-3 border-y border-[#F5F5F4] dark:border-[#2E2822] shrink-0">
+                <img src={qrDataUrl} alt="채팅방 QR 코드" className="rounded-lg shadow-md border border-[#EDE8E1] dark:border-[#2E2822] w-[clamp(160px,40vh,300px)] h-[clamp(160px,40vh,300px)]" style={{ imageRendering: 'pixelated' }} />
+                <p className="text-[11px] text-[#A8A29E] dark:text-[#9C8F87] break-all max-w-xs text-center">{joinUrl}</p>
                 <button
                   onClick={handleCopyUrl}
-                  className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] text-[#44403C] rounded-lg hover:bg-[#FAF9F7]"
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B]"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {urlCopied ? '주소 복사됨!' : '접속 주소 복사'}
@@ -888,7 +888,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               </div>
             )}
             {closed && (
-              <p className="text-sm text-[#78716C] text-center py-6 shrink-0">채팅방이 종료되었습니다. 새 채팅방을 만들어 다시 시작할 수 있습니다.</p>
+              <p className="text-sm text-[#78716C] dark:text-[#9C8F87] text-center py-6 shrink-0">채팅방이 종료되었습니다. 새 채팅방을 만들어 다시 시작할 수 있습니다.</p>
             )}
           </div>
         )}

@@ -109,12 +109,14 @@ const LessonMaterialGenerator: React.FC = () => {
   const selectedStandard = currentStandards.find(s => s.code === selectedStandardCode) ?? null;
 
   useEffect(() => {
+    let cancelled = false;
     window.electronAPI.readJsonData('resource-library')
-      .then((data: unknown) => setLibraryResources(Array.isArray(data) ? data.slice(0, 30) as LibraryResource[] : []))
-      .catch(() => setLibraryResources([]));
+      .then((data: unknown) => { if (!cancelled) setLibraryResources(Array.isArray(data) ? data.slice(0, 30) as LibraryResource[] : []); })
+      .catch(() => { if (!cancelled) setLibraryResources([]); });
     window.electronAPI.readJsonData('saved-worksheets')
-      .then((data: unknown) => setSavedWorksheets(Array.isArray(data) ? data as SavedWorksheet[] : []))
-      .catch(() => setSavedWorksheets([]));
+      .then((data: unknown) => { if (!cancelled) setSavedWorksheets(Array.isArray(data) ? data as SavedWorksheet[] : []); })
+      .catch(() => { if (!cancelled) setSavedWorksheets([]); });
+    return () => { cancelled = true; };
   }, []);
 
   const appendResourceToDetails = (resourceId: string) => {

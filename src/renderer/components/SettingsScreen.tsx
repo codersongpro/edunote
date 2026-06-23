@@ -32,6 +32,7 @@ const SettingsScreen: React.FC = () => {
   const [cautionTerms, setCautionTerms] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList, autoBackup] = await Promise.all([
         window.electronAPI.hasApiKey(),
@@ -50,6 +51,7 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('cautionTerms'),
         window.electronAPI.getConfig('autoBackupInterval'),
       ]);
+      if (cancelled) return;
       setHasKey(hn as boolean);
       setTeacherName(tn as string || '');
       setInstitution(inst as string || '');
@@ -68,6 +70,7 @@ const SettingsScreen: React.FC = () => {
       setGuideExpanded(!(hn as boolean));
     };
     load();
+    return () => { cancelled = true; };
   }, []);
 
   const handleTestKey = async () => {

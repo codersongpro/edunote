@@ -781,9 +781,11 @@ const MyResourceLibrary: React.FC = () => {
           <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-dashed border-[#E7E5E4] dark:border-[#2E2822] p-12 flex flex-col items-center justify-center text-center gap-3">
             <BookMarked className="w-14 h-14 text-[#EDE8E1]" />
             <p className="text-sm text-[#A8A29E] whitespace-pre-line">
-              {search || activeCategory !== '전체'
-                ? '검색 결과가 없습니다.'
-                : '아직 저장된 자료가 없습니다.\n위의 추가 버튼으로 자료를 모아보세요.'}
+              {!loadedFromFolder
+                ? '자료를 불러오는 중입니다...'
+                : search || activeCategory !== '전체'
+                  ? '검색 결과가 없습니다.'
+                  : '아직 저장된 자료가 없습니다.\n위의 추가 버튼으로 자료를 모아보세요.'}
             </p>
           </div>
         )}
