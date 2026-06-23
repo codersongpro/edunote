@@ -153,6 +153,12 @@
     return;
   }
 
+  // 접속 URL을 짧게(QR 스캔이 쉽게) 유지하려고 새 버전 앱은 authDomain을 URL에서 빼고 projectId로부터 유도한다.
+  // 예전 전체 config가 담긴 주소는 authDomain이 이미 있어 그대로 쓰이고, 빠진 경우(새 축소형)에만 채운다.
+  if (config && !config.authDomain && config.projectId) {
+    config.authDomain = config.projectId + '.firebaseapp.com';
+  }
+
   firebase.initializeApp(config);
   var auth = firebase.auth();
   var db = firebase.firestore();

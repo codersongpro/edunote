@@ -3,6 +3,14 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { registerIpcHandlers, cleanupSessionTmpDir } from './ipcHandlers';
 
+// 예기치 못한 메인 프로세스 오류를 조용히 흘려보내지 않고 로그로 남겨 진단을 돕는다(동작 변경 없음).
+process.on('uncaughtException', (err) => {
+  console.error('[main] uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[main] unhandledRejection:', reason);
+});
+
 function getAppIcon() {
   try {
     const iconPath = [

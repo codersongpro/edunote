@@ -193,7 +193,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   };
 
   const buildJoinUrl = (id: string, config: Record<string, string>) => {
-    const cfgBase64 = btoa(JSON.stringify(config));
+    // 접속 URL이 너무 길어 QR이 빽빽해지지 않도록, 학생 화면 연결에 꼭 필요한 값(apiKey·projectId·appId)만
+    // 담는다. authDomain은 `<projectId>.firebaseapp.com`으로 유도 가능하고, storageBucket·messagingSenderId·
+    // measurementId는 Firestore+익명 인증 채팅에 필요 없어 제외한다(학생 페이지가 빠진 authDomain을 보완한다).
+    const minimalConfig = { apiKey: config.apiKey, projectId: config.projectId, appId: config.appId };
+    const cfgBase64 = btoa(JSON.stringify(minimalConfig));
     return `${CHAT_STUDENT_PAGE_URL}#room=${id}&cfg=${encodeURIComponent(cfgBase64)}`;
   };
 
@@ -314,10 +318,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
     return () => { cancelled = true; unsub?.(); };
   }, [firebaseConfig, view]);
 
-  // QR 이미지 생성 (기존 QRMaker와 동일한 옵션) — joinUrl은 본 창(manage)에서만 만들어지므로 본 창에서만 생성된다.
+  // QR 이미지 생성 — joinUrl은 본 창(manage)에서만 만들어지므로 본 창에서만 생성된다.
   useEffect(() => {
     if (!joinUrl) { setQrDataUrl(null); return; }
-    QRCode.toDataURL(joinUrl, { width: 300, margin: 2, errorCorrectionLevel: 'H', color: { dark: '#1a1a1a', light: '#ffffff' } })
+    // 화면에 띄우는 QR이라 오류정정은 M(15%)이면 충분하며, H(30%)보다 모듈이 커져 휴대폰 스캔이 쉬워진다.
+    QRCode.toDataURL(joinUrl, { width: 300, margin: 2, errorCorrectionLevel: 'M', color: { dark: '#1a1a1a', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
   }, [joinUrl]);

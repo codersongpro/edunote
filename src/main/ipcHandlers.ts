@@ -309,7 +309,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('data:read-json', async (_e, name: string) => {
     const file = safeDataFile(name);
     if (!fs.existsSync(file)) return null;
-    return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf-8'));
+    } catch (e) {
+      // 손상된 JSON 파일은 없는 것처럼 null을 돌려줘 호출부가 안전하게 처리하도록 한다.
+      console.warn(`[ipc:data:read-json] 손상된 데이터 파일: ${name}`, e);
+      return null;
+    }
   });
 
   ipcMain.handle('data:write-json', async (_e, name: string, data: unknown) => {
@@ -408,7 +414,12 @@ export function registerIpcHandlers(): void {
     });
     if (result.canceled || result.filePaths.length === 0) return null;
 
-    const backup = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
+    let backup;
+    try {
+      backup = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
+    } catch {
+      throw new Error('백업 파일이 손상되어 읽을 수 없습니다.');
+    }
     if (backup?.app !== 'EduNote' || !backup.settings || !backup.dataFiles) {
       throw new Error('EduNote 백업 파일 형식이 아닙니다.');
     }
