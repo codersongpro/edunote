@@ -19,6 +19,25 @@ export function isPathInside(resolved: string, root: string): boolean {
 }
 
 /**
+ * 대화상자 없이 저장 폴더(saveDir)에 바로 쓰는 자동 저장 경로를 검증한다.
+ * - 파일명에서 경로 구분자·예약 문자를 제거해 `../` 같은 탈출을 차단한다.
+ * - 정규화 결과가 saveDir 내부의 파일 경로인지 확인한다.
+ * 통과하면 절대 경로를, 아니면 null(대화상자 폴백)을 반환한다.
+ */
+export function resolveAutoSavePath(saveDir: string, suggestedName: string): string | null {
+  if (typeof saveDir !== 'string' || !saveDir.trim()) return null;
+  if (typeof suggestedName !== 'string') return null;
+  // 경로 구분자·예약 문자를 제거하면 남는 이름에는 폴더 구분자가 없어 탈출이 불가능하다.
+  const safeName = suggestedName.replace(/[\\/:*?"<>|]/g, '').trim();
+  if (!safeName || safeName === '.' || safeName === '..') return null;
+  const root = path.resolve(saveDir);
+  const resolved = path.join(root, safeName);
+  // 방어적 이중 확인: 결합 결과의 부모가 정확히 saveDir여야 한다.
+  if (path.dirname(resolved) !== root) return null;
+  return resolved;
+}
+
+/**
  * 폴더 열기(shell.openPath) 요청 경로를 검증한다.
  * - 허용된 루트(홈, userData, 저장 폴더 등) 하위여야 한다.
  * - 실제로 존재하는 "디렉터리"여야 한다. (파일을 openPath로 열면 실행될 수 있음)

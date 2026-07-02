@@ -10,7 +10,7 @@ import { sanitizeConfigEntry } from './configValidation';
 import { isBlockedHostname } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
-import { resolveDialogPath, resolveOpenableDir } from './pathSafety';
+import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
@@ -113,8 +113,11 @@ export function registerIpcHandlers(): void {
     let savePath: string | undefined;
 
     if (!alwaysAsk && saveDir && fs.existsSync(saveDir)) {
-      savePath = path.join(saveDir, suggestedName);
-    } else {
+      // 렌더러가 준 파일명으로 폴더를 벗어나지 못하도록 검증하고, 실패 시 대화상자로 폴백한다.
+      savePath = resolveAutoSavePath(saveDir, suggestedName) ?? undefined;
+    }
+
+    if (!savePath) {
       const result = await dialog.showSaveDialog({
         defaultPath: path.join(saveDir || app.getPath('documents'), suggestedName),
         filters: [{ name: ext.toUpperCase(), extensions: [ext.replace('.', '')] }],

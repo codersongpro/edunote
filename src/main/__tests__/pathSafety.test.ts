@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import * as path from 'path';
-import { isPathInside, resolveOpenableDir, resolveDialogPath } from '../pathSafety';
+import { isPathInside, resolveOpenableDir, resolveDialogPath, resolveAutoSavePath } from '../pathSafety';
 
 const ROOT = path.resolve('/home/user/edunote-data');
 
@@ -53,6 +53,37 @@ describe('resolveOpenableDir', () => {
     expect(resolveOpenableDir('   ', [ROOT], dirStat)).toBeNull();
     expect(resolveOpenableDir(undefined as unknown as string, [ROOT], dirStat)).toBeNull();
     expect(resolveOpenableDir(path.join(ROOT, 'docs'), [undefined, ''], dirStat)).toBeNull();
+  });
+});
+
+describe('resolveAutoSavePath', () => {
+  it('정상 파일명은 saveDir 안의 절대 경로를 반환한다', () => {
+    expect(resolveAutoSavePath(ROOT, '홍길동_행발.txt')).toBe(path.join(ROOT, '홍길동_행발.txt'));
+  });
+
+  it('경로 구분자·예약 문자를 제거해 폴더 탈출을 막는다', () => {
+    expect(resolveAutoSavePath(ROOT, '../../etc/cron.d/x')).toBe(path.join(ROOT, '....etccron.dx'));
+    const resolved = resolveAutoSavePath(ROOT, '../../etc/passwd');
+    expect(resolved).not.toBeNull();
+    expect(path.dirname(resolved as string)).toBe(ROOT);
+    const windowsStyle = resolveAutoSavePath(ROOT, '..\\..\\boot.ini');
+    expect(windowsStyle).not.toBeNull();
+    expect(path.dirname(windowsStyle as string)).toBe(ROOT);
+  });
+
+  it('제거 후 남는 이름이 없거나 . / .. 뿐이면 거부한다', () => {
+    expect(resolveAutoSavePath(ROOT, '')).toBeNull();
+    expect(resolveAutoSavePath(ROOT, '   ')).toBeNull();
+    expect(resolveAutoSavePath(ROOT, '///')).toBeNull();
+    expect(resolveAutoSavePath(ROOT, '..')).toBeNull();
+    expect(resolveAutoSavePath(ROOT, '.')).toBeNull();
+    // '../..'는 구분자 제거 후 '....'(saveDir 안의 무해한 파일명)로 남아 탈출이 아니다.
+    expect(path.dirname(resolveAutoSavePath(ROOT, '../..') as string)).toBe(ROOT);
+  });
+
+  it('saveDir가 비어 있으면 거부한다', () => {
+    expect(resolveAutoSavePath('', 'a.txt')).toBeNull();
+    expect(resolveAutoSavePath('   ', 'a.txt')).toBeNull();
   });
 });
 
