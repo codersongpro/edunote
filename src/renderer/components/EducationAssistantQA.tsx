@@ -52,10 +52,12 @@ const EducationAssistantQA: React.FC = () => {
       const answer = await askEducationQuestion(userMsg.text, history);
       setMessages(prev => [...prev, { role: 'model', text: answer, timestamp: Date.now() }]);
       playSuccessSound();
-    } catch {
+    } catch (error) {
       setMessages(prev => [...prev, {
         role: 'model',
-        text: '오류가 발생했습니다. API 키 설정을 확인해 주세요.',
+        text: error instanceof Error && error.message
+          ? error.message
+          : '오류가 발생했습니다. API 키 설정을 확인해 주세요.',
         timestamp: Date.now(),
       }]);
     } finally {

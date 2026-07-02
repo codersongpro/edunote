@@ -423,7 +423,7 @@ export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: s
     return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Gemini QA Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -442,7 +442,7 @@ export const askRecordChatbot = async (
     return await aiGenerate(fullPrompt, RECORD_CHATBOT_SYSTEM_PROMPT(schoolLevel), { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Record Chatbot Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -487,7 +487,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -538,7 +538,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -578,7 +578,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -660,7 +660,7 @@ ${avoidInstruction}`;
     return privacy.restore(result);
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 
@@ -1175,7 +1175,7 @@ export const askEducationQuestion = async (
     return await aiGenerate(fullPrompt, EDUCATION_QA_SYSTEM_PROMPT, { temperature: 0.7, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
   } catch (error: any) {
     console.error('Education QA Error:', error);
-    return describeGenerationError(error);
+    throw new Error(describeGenerationError(error));
   }
 };
 

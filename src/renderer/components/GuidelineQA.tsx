@@ -72,7 +72,9 @@ const GuidelineQA: React.FC<Props> = ({ schoolLevel }) => {
       console.error(error);
       const errorMsg: ChatMessage = {
         role: 'model',
-        text: "죄송합니다. 오류가 발생하여 답변을 가져올 수 없습니다.",
+        text: error instanceof Error && error.message
+          ? error.message
+          : "죄송합니다. 오류가 발생하여 답변을 가져올 수 없습니다.",
         timestamp: Date.now()
       };
       setMessages((prev) => [...prev, errorMsg]);

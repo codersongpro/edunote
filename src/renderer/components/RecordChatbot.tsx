@@ -70,10 +70,12 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
       const answer = await askRecordChatbot(schoolLevel, history, userMsg.text);
       setMessages(prev => [...prev, { role: 'model', text: answer, timestamp: Date.now() }]);
       playSuccessSound();
-    } catch {
+    } catch (error) {
       setMessages(prev => [...prev, {
         role: 'model',
-        text: '죄송합니다. 오류가 발생했습니다. API 키 설정을 확인해 주세요.',
+        text: error instanceof Error && error.message
+          ? error.message
+          : '죄송합니다. 오류가 발생했습니다. API 키 설정을 확인해 주세요.',
         timestamp: Date.now(),
       }]);
     } finally {
