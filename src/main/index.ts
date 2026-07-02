@@ -124,6 +124,33 @@ app.on('web-contents-created', (_event, contents) => {
     }
   });
 
+  // 앱 본 창(webview 게스트 제외)이 외부 오리진으로 이동하면 preload가 다시 붙어
+  // electronAPI가 외부 콘텐츠에 노출된다. 앱 자신(file: 또는 개발 서버) 외 이동을 막고
+  // http(s) 주소는 기본 브라우저로 넘긴다. (자료실 webview는 임의 사이트 탐색이 목적이므로 제외)
+  if (contents.getType() === 'window') {
+    contents.on('will-navigate', (event, url) => {
+      const devUrl = process.env['ELECTRON_RENDERER_URL'];
+      let isAppOrigin = false;
+      try {
+        const target = new URL(url);
+        if (target.protocol === 'file:') {
+          isAppOrigin = true;
+        } else if (devUrl) {
+          isAppOrigin = target.origin === new URL(devUrl).origin;
+        }
+      } catch {
+        // 파싱 실패 시 앱 오리진이 아닌 것으로 간주한다.
+      }
+      if (isAppOrigin) return;
+      event.preventDefault();
+      try {
+        if (new URL(url).protocol.startsWith('http')) shell.openExternal(url);
+      } catch {
+        // 잘못된 URL은 무시한다.
+      }
+    });
+  }
+
   // webview 안에서 새 창을 띄우려 하면 https 주소만 기본 브라우저로 연다.
   contents.setWindowOpenHandler(({ url }) => {
     try {

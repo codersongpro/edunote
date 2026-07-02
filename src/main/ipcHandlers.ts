@@ -915,7 +915,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
-    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true } });
+    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true } });
     try {
       await win.loadFile(tmpFile);
       const pdfData = await win.webContents.printToPDF({
