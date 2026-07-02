@@ -310,16 +310,15 @@ export async function generateContentMultipartStream(
 
 // API 키 유효성 검증 (설정 화면에서 호출)
 //
-// 검증 전략:
-//   1. 여러 모델을 순서대로 시도하여 "한 모델이라도 성공"하면 키 유효 판정
-//   2. 403 발생 시 즉시 종료하지 않고 다음 모델도 시도 (모델별로 활성화 상태가 다를 수 있음)
-//   3. 모든 모델이 403일 때만 원인 분석 후 정확한 안내 제공
-//      - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
-//      - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
-//      - 그 외 → 원본 에러 메시지와 함께 일반 안내
+// 검증 전략: 현재 요금제(free/paid)의 대표 모델 한 개로 실제 호출을 시도하고,
+// 실패 시 오류를 원인별로 분류해 정확한 안내를 제공한다.
+//   - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
+//   - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
+//   - 쿼터 초과 → 키는 유효, 잠시 후 재시도 안내
+//   - 그 외 → 원본 에러 메시지와 함께 일반 안내
 export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }> {
   const ai = new GoogleGenAI({ apiKey });
-  const testModels = [apiTier === 'paid' ? PAID_MODEL : FREE_MODEL];
+  const testModel = apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
   const TIMEOUT_MS = 10_000;
 
   type ErrKind = 'invalid_key' | 'network' | 'timeout' | 'permission' | 'quota' | 'model_unavailable' | 'other';
@@ -390,26 +389,7 @@ export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Pro
       ),
     ]).catch((error: unknown) => classifyError(error, model));
 
-  const results = await new Promise<ModelResult[]>((resolve) => {
-    const collected: ModelResult[] = [];
-    let settled = false;
-
-    testModels.forEach((model) => {
-      tryModel(model).then((result) => {
-        if (settled) return;
-        collected.push(result);
-        if (result.ok) {
-          settled = true;
-          resolve([result]);
-          return;
-        }
-        if (collected.length === testModels.length) {
-          settled = true;
-          resolve(collected);
-        }
-      });
-    });
-  });
+  const results: ModelResult[] = [await tryModel(testModel)];
 
   // 디버그 로그 — 실제로 테스트가 이뤄졌는지 확인 가능
   console.log('[API키 테스트]', results.map((r) => `${r.model}: ${r.ok ? '✓' : r.kind}(${r.status})`).join(' | '));
