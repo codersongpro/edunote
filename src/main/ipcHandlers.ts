@@ -11,6 +11,7 @@ import { isBlockedHostname } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
+import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
@@ -551,7 +552,7 @@ export function registerIpcHandlers(): void {
   // Generate slide image via Gemini image generation
   ipcMain.handle('resource:slide-image', async (_e, imagePrompt: string) => {
     try {
-      const apiKey = store.get('geminiApiKey');
+      const { apiKey } = getActiveApi();
       if (!apiKey) return null;
       return await generateSlideImage(apiKey, imagePrompt);
     } catch (e) {
@@ -662,16 +663,6 @@ export function registerIpcHandlers(): void {
   // ── App ───────────────────────────────────────────────────────────
   ipcMain.handle('app:get-version', () => app.getVersion());
 
-  function semverGt(a: string, b: string): boolean {
-    const pa = a.split('.').map(Number);
-    const pb = b.split('.').map(Number);
-    for (let i = 0; i < 3; i++) {
-      const d = (pa[i] || 0) - (pb[i] || 0);
-      if (d !== 0) return d > 0;
-    }
-    return false;
-  }
-
   ipcMain.handle('app:check-update', async () => {
     try {
       const res = await net.fetch(
@@ -750,6 +741,10 @@ export function registerIpcHandlers(): void {
     const encodeUrl = (s: string): string =>
       s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
 
+    // 리다이렉트를 포함한 전체 요청에 하나의 마감 시각을 둔다(홉마다 리셋되지 않음).
+    const TOTAL_TIMEOUT_MS = 20000;
+    const deadline = Date.now() + TOTAL_TIMEOUT_MS;
+
     const fetchUrl = (targetUrl: string, redirectsLeft: number): Promise<string> =>
       new Promise((resolve, reject) => {
         if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
@@ -759,11 +754,25 @@ export function registerIpcHandlers(): void {
           reject(e);
           return;
         }
-        let settled = false;
-        const done = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) { reject(new Error('연결 시간이 초과되었습니다 (20초)')); return; }
 
         const req = net.request({ url: encodeUrl(targetUrl), redirect: 'manual' });
         req.setHeader('User-Agent', 'Mozilla/5.0 edunote-app');
+
+        let settled = false;
+        // 어떤 경로로 종료되든(응답·리다이렉트·오류·타임아웃) 타이머를 반드시 정리한다.
+        const done = (fn: () => void) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          fn();
+        };
+
+        const timer = setTimeout(() => {
+          done(() => reject(new Error('연결 시간이 초과되었습니다 (20초)')));
+          req.abort();
+        }, remaining);
 
         req.on('redirect', (_code, _method, redirectUrl) => {
           done(() => resolve(fetchUrl(redirectUrl, redirectsLeft - 1)));
@@ -782,12 +791,6 @@ export function registerIpcHandlers(): void {
         });
 
         req.on('error', (e) => done(() => reject(e)));
-
-        const timer = setTimeout(() => {
-          done(() => reject(new Error('연결 시간이 초과되었습니다 (20초)')));
-          req.abort();
-        }, 20000);
-        req.on('response', () => clearTimeout(timer));
 
         req.end();
       });
