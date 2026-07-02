@@ -31,12 +31,14 @@ export function extractPlainText(html: string): string {
 export function markdownOrHtmlToHtml(content: string): string {
   const stripped = stripGeneratedCodeFences(content);
 
-  // 이미 HTML 태그로 시작하거나 <table>, <ul>, <ol> 등이 포함된 경우 그대로 반환
-  if (/^<[a-z][\s\S]*>/i.test(stripped) || /<(table|ul|ol|h[1-6]|p|div|span|br)\b/i.test(stripped)) {
+  // 문서가 HTML 태그로 시작하면 완전한 HTML로 보고 그대로 정제한다.
+  if (/^<[a-z][\s\S]*>/i.test(stripped)) {
     return sanitizeHtml(stripped);
   }
 
-  // 마크다운 문법이 포함되어 있으면 unified 파이프라인으로 HTML 변환
+  // 마크다운 문법이 포함되어 있으면 마크다운으로 처리한다.
+  // (본문 중간에 <br>·<span> 같은 인라인 태그가 섞여 있어도 마크다운을 우선한다 —
+  //  인라인 태그 하나만으로 전체를 HTML로 오판해 마크다운이 그대로 노출되던 문제를 막는다.)
   const hasMarkdown =
     /\*\*.*?\*\*|\*[^*]+\*/.test(stripped) ||        // bold / italic
     /^\#{1,6}\s/m.test(stripped) ||                   // heading
@@ -56,6 +58,11 @@ export function markdownOrHtmlToHtml(content: string): string {
     } catch {
       return sanitizeHtml(stripped);
     }
+  }
+
+  // 마크다운이 아니면서 구조적 블록 태그를 포함하면 HTML로 본다.
+  if (/<(table|ul|ol|h[1-6]|div|p)\b/i.test(stripped)) {
+    return sanitizeHtml(stripped);
   }
 
   return sanitizeHtml(stripped);

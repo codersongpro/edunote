@@ -49,6 +49,17 @@ describe('markdownOrHtmlToHtml', () => {
     const result = markdownOrHtmlToHtml('```html\n<table><tr><td>셀</td></tr></table>\n```');
     expect(result).toContain('<td>셀</td>');
   });
+
+  it('인라인 <br>이 섞인 마크다운도 마크다운으로 처리한다', () => {
+    // 이전에는 <br> 하나 때문에 전체가 HTML로 오판되어 **굵게**가 그대로 노출됐다.
+    const result = markdownOrHtmlToHtml('**중요**<br>다음 줄');
+    expect(result).toContain('<strong>중요</strong>');
+  });
+
+  it('마크다운 리스트에 <span>이 있어도 리스트로 변환한다', () => {
+    const result = markdownOrHtmlToHtml('- 첫째 <span>표시</span>\n- 둘째');
+    expect(result).toMatch(/<li[^>]*>/);
+  });
 });
 
 describe('extractPlainText', () => {

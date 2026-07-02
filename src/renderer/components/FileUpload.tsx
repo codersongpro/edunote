@@ -26,8 +26,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [isDragging, setIsDragging] = React.useState(false);
   const handleFileArrayRef = React.useRef<(fileArr: File[]) => Promise<void>>(undefined);
 
+  // 파일당 크기 상한(15MB). 초과 파일은 메모리·API 요청 폭주를 막기 위해 제외한다.
+  const MAX_FILE_SIZE = 15 * 1024 * 1024;
+
   const handleFileArray = async (fileArray: File[]) => {
     if (fileArray.length > 0) {
+      const oversized = fileArray.filter(f => f.size > MAX_FILE_SIZE);
+      if (oversized.length > 0) {
+        notifyToast({
+          type: 'warning',
+          title: `파일 하나당 최대 15MB까지 업로드할 수 있습니다.`,
+          description: `${oversized.map(f => f.name).join(', ')} 파일이 너무 커서 제외됐습니다.`,
+        });
+      }
+      fileArray = fileArray.filter(f => f.size <= MAX_FILE_SIZE);
+      if (fileArray.length === 0) return;
       const currentCount = multiple ? files.length : 0;
       const remaining = maxFiles ? Math.max(0, maxFiles - currentCount) : fileArray.length;
       if (remaining === 0) {

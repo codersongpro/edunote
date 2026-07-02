@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { TourProvider } from './TourContext';
@@ -138,62 +138,74 @@ const App: React.FC = () => {
   const [fontSize, setFontSize] = useState(100);
   const [appVersion, setAppVersion] = useState('');
   const [generatingModes, setGeneratingModes] = useState<Map<string, number>>(new Map());
-  const setGeneratingMode = (modeKey: string, progress: number | null) => {
+  const setGeneratingMode = useCallback((modeKey: string, progress: number | null) => {
     setGeneratingModes(prev => {
       const next = new Map(prev);
       if (progress === null) next.delete(modeKey);
       else next.set(modeKey, progress);
       return next;
     });
-  };
+  }, []);
   const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
 
   // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
   const [apiKeyAvailability, setApiKeyAvailability] = useState<'unknown' | 'usable' | 'wait'>('unknown');
-  const showActivationModal = () => {
-    showToast({
-      type: 'success',
-      title: 'API 사용 가능!',
-      description: 'Gemini API로 결과물을 생성할 수 있습니다.',
-    });
-  };
-
-  // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
-  const cancelFlagsRef = useRef<Set<string>>(new Set());
-  // 중단 신호 — 화면(modeKey)별로 분리해 한 화면의 중단이 다른 화면 생성에 영향을 주지 않는다
-  const cancellationRef = useRef<CancellationRegistry>(new CancellationRegistry());
-  const requestCancel = (modeKey: string) => {
-    cancelFlagsRef.current.add(modeKey);
-    cancellationRef.current.cancel(modeKey);
-    // 즉시 진행바 숨김 — useRef 변경은 리렌더를 유발하지 않으므로 state도 함께 업데이트
-    setIsGlobalGenerating(false);
-    setGlobalProgress(0);
-  };
-  const isCancelled = (modeKey: string): boolean => cancelFlagsRef.current.has(modeKey);
-  const resetGenerationState = () => {
-    cancelFlagsRef.current.clear();
-    cancellationRef.current.cancelAll();
-    setIsGlobalGenerating(false);
-    setGlobalProgress(0);
-    setGeneratingModes(new Map());
-    window.dispatchEvent(new CustomEvent('edunote-generation-reset'));
-  };
-  const clearCancel = (modeKey: string) => { cancelFlagsRef.current.delete(modeKey); };
-  const getCancelSignal = (modeKey: string) => cancellationRef.current.signalFor(modeKey);
 
   // 토스트 알림 큐
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const showToast = (toast: Omit<ToastMessage, 'id'>) => {
+  const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setToasts(prev => [...prev, { ...toast, id }]);
     // 5초 후 자동 제거
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 5000);
-  };
+  }, []);
+
+  const showActivationModal = useCallback(() => {
+    showToast({
+      type: 'success',
+      title: 'API 사용 가능!',
+      description: 'Gemini API로 결과물을 생성할 수 있습니다.',
+    });
+  }, [showToast]);
+
+  // 생성 중단 플래그 관리 — modeKey별로 cancel 요청 여부 추적
+  const cancelFlagsRef = useRef<Set<string>>(new Set());
+  // 중단 신호 — 화면(modeKey)별로 분리해 한 화면의 중단이 다른 화면 생성에 영향을 주지 않는다
+  const cancellationRef = useRef<CancellationRegistry>(new CancellationRegistry());
+  const requestCancel = useCallback((modeKey: string) => {
+    cancelFlagsRef.current.add(modeKey);
+    cancellationRef.current.cancel(modeKey);
+    // 즉시 진행바 숨김 — useRef 변경은 리렌더를 유발하지 않으므로 state도 함께 업데이트
+    setIsGlobalGenerating(false);
+    setGlobalProgress(0);
+  }, []);
+  const isCancelled = useCallback((modeKey: string): boolean => cancelFlagsRef.current.has(modeKey), []);
+  const resetGenerationState = useCallback(() => {
+    cancelFlagsRef.current.clear();
+    cancellationRef.current.cancelAll();
+    setIsGlobalGenerating(false);
+    setGlobalProgress(0);
+    setGeneratingModes(new Map());
+    window.dispatchEvent(new CustomEvent('edunote-generation-reset'));
+  }, []);
+  const clearCancel = useCallback((modeKey: string) => { cancelFlagsRef.current.delete(modeKey); }, []);
+  const getCancelSignal = useCallback((modeKey: string) => cancellationRef.current.signalFor(modeKey), []);
   const dismissToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  // 컨텍스트 value를 메모이제이션해 생성 진행(600ms 간격) 중 불필요한 전역 리렌더를 줄인다.
+  const globalStateValue = useMemo(() => ({
+    state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress,
+    generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
+    apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState,
+  }), [
+    state, isGlobalGenerating, globalProgress, generatingModes, apiKeyAvailability,
+    setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
+    showActivationModal, showToast, resetGenerationState,
+  ]);
 
   const goTo = (newMode: AppMode) => {
     setMode(newMode);
@@ -771,7 +783,7 @@ const App: React.FC = () => {
 
   return (
     <TourProvider>
-    <GlobalStateContext.Provider value={{ state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState }}>
+    <GlobalStateContext.Provider value={globalStateValue}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
 
