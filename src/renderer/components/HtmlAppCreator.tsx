@@ -5,6 +5,14 @@ import { Monitor, Sparkles, RefreshCw, Save, Code, ExternalLink, X, ChevronLeft,
 import { useGlobalState } from '../GlobalStateContext';
 import { useTour } from '../TourContext';
 
+// 미리보기 iframe 리마운트 판정용 간단 해시(djb2). 길이만으로는 같은 길이·다른 내용을
+// 구분하지 못해 이전 앱의 스크립트·오디오 상태가 남던 문제를 막는다.
+function hashString(s: string): number {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h >>> 0;
+}
+
 const CATEGORY_OPTIONS: { value: CustomTool['category']; label: string }[] = [
   { value: 'lesson', label: '수업 자료' },
   { value: 'admin', label: '교무 행정' },
@@ -377,7 +385,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
               />
             ) : (
               <iframe
-                key={htmlContent.length}
+                key={hashString(htmlContent)}
                 // sandbox에 allow-same-origin을 추가하면 AI가 만든 HTML이 앱 컨텍스트(localStorage 등)에
                 // 접근할 수 있게 되므로 절대 추가하면 안 된다.
                 sandbox="allow-scripts allow-forms allow-modals"

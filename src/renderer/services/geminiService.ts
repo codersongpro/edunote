@@ -1880,16 +1880,23 @@ export const runCustomTool = async (
   schoolLevel?: string,
 ): Promise<string> => {
   const withTimeout = <T>(p: Promise<T>): Promise<T> => {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('요청 시간이 초과되었습니다. (90초) 다시 시도해 주세요.')), 90_000),
-    );
+    let timer: ReturnType<typeof setTimeout>;
+    let onAbort: (() => void) | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('요청 시간이 초과되었습니다. (90초) 다시 시도해 주세요.')), 90_000);
+    });
     const abort = signal
       ? new Promise<never>((_, reject) => {
-          if (signal.aborted) reject(new Error('취소되었습니다.'));
-          signal.addEventListener('abort', () => reject(new Error('취소되었습니다.')), { once: true });
+          if (signal.aborted) { reject(new Error('취소되었습니다.')); return; }
+          onAbort = () => reject(new Error('취소되었습니다.'));
+          signal.addEventListener('abort', onAbort, { once: true });
         })
       : null;
-    return Promise.race([p, timeout, ...(abort ? [abort] : [])]);
+    // 승리 경로와 상관없이 타이머·리스너를 정리한다(누수 방지).
+    return Promise.race([p, timeout, ...(abort ? [abort] : [])]).finally(() => {
+      clearTimeout(timer);
+      if (onAbort) signal?.removeEventListener('abort', onAbort);
+    });
   };
 
   const schoolLevelCtx = schoolLevel ? `[대상 학교급: ${schoolLevel}]\n` : '';
@@ -2053,14 +2060,22 @@ export const generateHtmlApp = async (
 8. 한국어 UI, 반응형 디자인 (모바일·PC 모두 동작)
 9. HTML 코드만 출력 (마크다운 코드블록·설명 없이)`;
 
+  let onAbort: (() => void) | undefined;
   const abortPromise = signal
-    ? new Promise<never>((_, reject) => signal.addEventListener('abort', () => reject(new Error('취소되었습니다.'))))
+    ? new Promise<never>((_, reject) => {
+        if (signal.aborted) { reject(new Error('취소되었습니다.')); return; }
+        onAbort = () => reject(new Error('취소되었습니다.'));
+        signal.addEventListener('abort', onAbort, { once: true });
+      })
     : null;
 
   const generatePromise = aiGenerate(prompt, '', { temperature: 0.7 });
-  const raw = abortPromise
-    ? await Promise.race([generatePromise, abortPromise])
-    : await generatePromise;
-
-  return raw.replace(/^```html\n?/i, '').replace(/\n?```\s*$/, '').trim();
+  try {
+    const raw = abortPromise
+      ? await Promise.race([generatePromise, abortPromise])
+      : await generatePromise;
+    return raw.replace(/^```html\n?/i, '').replace(/\n?```\s*$/, '').trim();
+  } finally {
+    if (onAbort) signal?.removeEventListener('abort', onAbort);
+  }
 };

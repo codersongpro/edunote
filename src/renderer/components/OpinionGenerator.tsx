@@ -148,8 +148,9 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // --- Selection Handlers ---
   const toggleSelection = (index: number) => {
     if (isGlobalGenerating) return;
-    const newStudents = [...opState.students];
-    newStudents[index].selected = !newStudents[index].selected;
+    const newStudents = opState.students.map((s, i) =>
+      i === index ? { ...s, selected: !s.selected } : s
+    );
     updateOpState({ students: newStudents });
   };
 
@@ -164,28 +165,28 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const toggleTag = (tag: string, type: 'positive' | 'negative') => {
     if (isGlobalGenerating) return;
-    const newStudents = [...opState.students];
-    const student = newStudents[opState.currentStudentIndex];
-    
-    if (type === 'positive') {
-      if (student.positiveTags.includes(tag)) {
-        student.positiveTags = student.positiveTags.filter(t => t !== tag);
-      } else {
-        student.positiveTags.push(tag);
+    const idx = opState.currentStudentIndex;
+    const newStudents = opState.students.map((s, i) => {
+      if (i !== idx) return s;
+      if (type === 'positive') {
+        const positiveTags = s.positiveTags.includes(tag)
+          ? s.positiveTags.filter(t => t !== tag)
+          : [...s.positiveTags, tag];
+        return { ...s, positiveTags };
       }
-    } else {
-      if (student.negativeTags.includes(tag)) {
-        student.negativeTags = student.negativeTags.filter(t => t !== tag);
-      } else {
-        student.negativeTags.push(tag);
-      }
-    }
+      const negativeTags = s.negativeTags.includes(tag)
+        ? s.negativeTags.filter(t => t !== tag)
+        : [...s.negativeTags, tag];
+      return { ...s, negativeTags };
+    });
     updateOpState({ students: newStudents });
   };
 
   const handleContextChange = (text: string) => {
-    const newStudents = [...opState.students];
-    newStudents[opState.currentStudentIndex].additionalContext = text;
+    const idx = opState.currentStudentIndex;
+    const newStudents = opState.students.map((s, i) =>
+      i === idx ? { ...s, additionalContext: text } : s
+    );
     updateOpState({ students: newStudents });
   };
 

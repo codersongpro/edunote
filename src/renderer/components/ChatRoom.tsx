@@ -694,7 +694,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
               value={draft}
               disabled={closed}
               onChange={e => setDraft(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleSend(); }}
             />
             <button onClick={handleSend} disabled={closed} className="px-4 py-2 bg-amber-500 text-white rounded-lg text-sm font-semibold disabled:opacity-50">전송</button>
           </div>
