@@ -144,7 +144,7 @@ app.on('web-contents-created', (_event, contents) => {
       if (isAppOrigin) return;
       event.preventDefault();
       try {
-        if (new URL(url).protocol.startsWith('http')) shell.openExternal(url);
+        if (['http:', 'https:'].includes(new URL(url).protocol)) shell.openExternal(url);
       } catch {
         // 잘못된 URL은 무시한다.
       }

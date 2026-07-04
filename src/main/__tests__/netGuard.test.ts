@@ -26,6 +26,21 @@ describe('isBlockedHostname', () => {
     expect(isBlockedHostname('[::ffff:127.0.0.1]')).toBe(true);
   });
 
+  it('16진 그룹 형태의 IPv4 매핑 주소도 차단한다', () => {
+    expect(isBlockedHostname('[::ffff:7f00:1]')).toBe(true);    // 127.0.0.1
+    expect(isBlockedHostname('[::ffff:a9fe:a9fe]')).toBe(true); // 169.254.169.254
+    expect(isBlockedHostname('[::ffff:0:0]')).toBe(true);       // 0.0.0.0
+  });
+
+  it('16진 그룹 형태라도 공인 IP 매핑은 허용한다', () => {
+    expect(isBlockedHostname('[::ffff:808:808]')).toBe(false); // 8.8.8.8
+  });
+
+  it('일반 공인 IPv6 주소는 허용한다', () => {
+    expect(isBlockedHostname('[2606:4700::1]')).toBe(false);
+    expect(isBlockedHostname('[2001:4860:4860::8888]')).toBe(false);
+  });
+
   it('빈 호스트명을 차단한다', () => {
     expect(isBlockedHostname('')).toBe(true);
   });

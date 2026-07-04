@@ -1,4 +1,5 @@
 import { stripGeneratedCodeFences } from './generatedContent';
+import { sanitizeHtml } from './security';
 
 // 다문화 가정에서 많이 쓰는 언어 목록 (가정통신문·메시지 번역, 간단 번역 공용)
 export const TRANSLATION_LANGUAGES = [
@@ -36,7 +37,8 @@ export async function translateHtml(html: string, language: TranslationLanguage)
     html,
   ].join('\n');
   const result = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0.2 });
-  return stripGeneratedCodeFences(result).trim();
+  // 모델 출력이 그대로 미리보기·저장에 쓰이므로 스크립트 등 활성 콘텐츠를 제거한다.
+  return sanitizeHtml(stripGeneratedCodeFences(result).trim());
 }
 
 // 평문을 번역한다 (간단 번역 도구용). targetLabel 예: '한국어', '러시아어(Русский)'

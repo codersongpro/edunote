@@ -26,6 +26,15 @@ function isBlockedIpv6(hostname: string): boolean {
   // IPv4 매핑(::ffff:127.0.0.1) 형태도 확인한다.
   const v4 = host.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
   if (v4) return isBlockedIpv4(v4[1]);
+  // 16진 그룹 형태의 IPv4 매핑(::ffff:7f00:1 = 127.0.0.1)은 URL 파서가
+  // dotted 형식으로 정규화해 주지 않으므로 직접 IPv4로 환산해 검사한다.
+  const hexV4 = host.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (hexV4) {
+    const hi = parseInt(hexV4[1], 16);
+    const lo = parseInt(hexV4[2], 16);
+    const dotted = `${hi >> 8}.${hi & 0xff}.${lo >> 8}.${lo & 0xff}`;
+    return isBlockedIpv4(dotted);
+  }
   return false;
 }
 
