@@ -26,8 +26,9 @@ export function initAudioUnlock(): void {
     const ctx = getCtx();
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
   };
+  // once: 첫 상호작용에서 깨운 뒤 리스너가 스스로 제거되도록 한다.
   ['pointerdown', 'keydown', 'touchstart'].forEach((ev) =>
-    window.addEventListener(ev, unlock, { passive: true }),
+    window.addEventListener(ev, unlock, { passive: true, once: true }),
   );
 }
 
