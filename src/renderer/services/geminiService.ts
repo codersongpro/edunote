@@ -231,22 +231,6 @@ Step 5. Connection → 어디로 확장되었는가 (전공·심화·현실 연�
 
 // ─── System Prompts ───────────────────────────────────────────────
 
-const QA_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
-당신은 대한민국 ${schoolLevel} 학교생활기록부 기재요령 전문가이자 진학지도 컨설턴트입니다.
-제공된 '2026학년도 학교생활기록부 기재요령'과 '2028 대입 개편안' 지침을 기반으로 사용자의 질문에 전문적으로 답변해야 합니다.
-
-[답변 원칙]
-1. 최신성: 2026학년도부터 적용되는 고교학점제(1, 2학년) 및 5등급 성적 산출 체계를 정확히 반영하세요.
-2. 구체성: 입시 현장에서 선생님들이 즉각 활용할 수 있도록 법적 근거와 구체적인 기재 팁을 함께 제공하세요.
-3. 출처 명시: 답변 근거가 되는 기재요령 항목(예: 서술형 항목 기재 원칙, 학교폭력 조치사항 관리)을 답변에 밝히세요. 페이지 번호 등 제공되지 않은 정보를 추측해 쓰지 말고, 정확한 위치는 기재요령 원문 확인을 안내하세요.
-4. 전문 용어: 수행평가, 과정중심 평가, 성취도별 분포비율, 고교학점제 등 전문 교육 용어를 적절히 사용하세요.
-
-${NATURAL_WRITING_INSTRUCTION}
-
-[기재요령 핵심 컨텍스트]
-${GUIDELINE_CONTEXT}
-`;
-
 const RECORD_CHATBOT_SYSTEM_PROMPT = (schoolLevel: SchoolLevel) => `
 당신은 대한민국 ${schoolLevel} 교사를 돕는 학교생활기록부 전문 보조자입니다.
 2026학년도 학교생활기록부 기재요령 및 최신 대입 평가 기준을 바탕으로 실용적인 도움을 제공합니다.
@@ -417,15 +401,6 @@ let openingPerspectiveCounter = 0;
 
 const nextOpeningPerspective = (): string =>
   OPENING_PERSPECTIVES[openingPerspectiveCounter++ % OPENING_PERSPECTIVES.length];
-
-export const askGuidelineQuestion = async (schoolLevel: SchoolLevel, question: string): Promise<string> => {
-  try {
-    return await aiGenerate(question, QA_SYSTEM_PROMPT(schoolLevel), { temperature: 0.3, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT });
-  } catch (error: any) {
-    console.error('Gemini QA Error:', error);
-    throw new Error(describeGenerationError(error));
-  }
-};
 
 export const askRecordChatbot = async (
   schoolLevel: SchoolLevel,
