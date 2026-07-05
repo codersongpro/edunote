@@ -396,25 +396,24 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     if (isGlobalGenerating) return;
     const newStudents = [...creativeState.activeStudents];
     const student = newStudents[creativeState.currentStudentIndex];
-    
-    if (student.selectedTags.includes(tag)) {
-      student.selectedTags = student.selectedTags.filter(t => t !== tag);
-    } else {
-      student.selectedTags.push(tag);
-    }
+    const selectedTags = student.selectedTags.includes(tag)
+      ? student.selectedTags.filter(t => t !== tag)
+      : [...student.selectedTags, tag];
+    newStudents[creativeState.currentStudentIndex] = { ...student, selectedTags };
     updateCreativeState({ activeStudents: newStudents });
   };
 
   const handleIndividualContextChange = (text: string) => {
     const newStudents = [...creativeState.activeStudents];
-    newStudents[creativeState.currentStudentIndex].additionalContext = text;
+    const idx = creativeState.currentStudentIndex;
+    newStudents[idx] = { ...newStudents[idx], additionalContext: text };
     updateCreativeState({ activeStudents: newStudents });
   };
 
   const toggleSelection = (index: number) => {
     if (isGlobalGenerating) return;
     const newStudents = [...creativeState.activeStudents];
-    newStudents[index].selected = !newStudents[index].selected;
+    newStudents[index] = { ...newStudents[index], selected: !newStudents[index].selected };
     updateCreativeState({ activeStudents: newStudents });
   };
 
@@ -453,7 +452,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: creativeState.lengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
+              newStudents[i] = { ...newStudents[i], generatedContent: result };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
@@ -521,7 +520,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: creativeState.lengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
+              newStudents[index] = { ...newStudents[index], generatedContent: result };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('creative', student.name, result);
               completedCount++;
@@ -576,7 +575,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
       
       const newStudents = [...creativeState.activeStudents];
-      newStudents[index].generatedContent = result;
+      newStudents[index] = { ...newStudents[index], generatedContent: result };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('creative', creativeState.activeStudents[index].name, result);
       updateCreativeState({ activeStudents: newStudents });
@@ -597,7 +596,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...creativeState.activeStudents];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateCreativeState({ activeStudents: newStudents });
   };
 

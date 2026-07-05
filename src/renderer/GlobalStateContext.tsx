@@ -2,7 +2,6 @@ import React, { createContext, useContext } from 'react';
 import { GlobalState, GlobalStateContextType } from './types';
 
 export const initialGlobalState: GlobalState = {
-  guidelineQA: { messages: [] },
   recordChatbot: { messages: [] },
   opinion: {
     step: 'SETUP',

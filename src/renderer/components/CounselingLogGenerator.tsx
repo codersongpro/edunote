@@ -89,23 +89,23 @@ const CounselingLogGenerator: React.FC = () => {
     await window.electronAPI.saveTxt(result, `상담일지_${studentName || '학생'}_${date || new Date().toISOString().slice(0, 10)}.txt`);
   };
 
-  const inputClass = 'w-full bg-white rounded-md border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
-  const labelClass = 'block text-sm font-bold text-[#44403C] mb-1.5';
+  const inputClass = 'w-full bg-white dark:bg-[#2E2822] rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] dark:placeholder-[#6B5E57] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
+  const labelClass = 'block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5';
 
   return (
-    <div className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto transition-colors">
       <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
           <div className="flex items-center gap-2 mb-1">
-            <div className="bg-purple-100 p-1.5 rounded-lg">
-              <MessageCircle className="w-4 h-4 text-purple-600" />
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-1.5 rounded-lg">
+              <MessageCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
             </div>
-            <h2 className="font-bold text-[#1C1917]">상담일지 생성</h2>
+            <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">상담일지 생성</h2>
           </div>
-          <p className="text-xs text-[#78716C]">상담 내용을 입력하면 형식에 맞는 상담일지를 생성합니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">상담 내용을 입력하면 형식에 맞는 상담일지를 생성합니다.</p>
         </div>
 
-        <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-4">
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-4">
           <div>
             <label className={labelClass}>상담 유형</label>
             <div className="flex flex-wrap gap-2">
@@ -115,8 +115,8 @@ const CounselingLogGenerator: React.FC = () => {
                   onClick={() => setCounselingType(type)}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
                     counselingType === type
-                      ? 'bg-purple-100 border-purple-400 text-purple-700 font-bold'
-                      : 'bg-white border-[#E7E5E4] text-[#78716C] hover:bg-[#FAF9F7]'
+                      ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-400 dark:border-purple-700 text-purple-700 dark:text-purple-300 font-bold'
+                      : 'bg-white dark:bg-[#2E2822] border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D]'
                   }`}
                 >
                   {type}
@@ -162,7 +162,7 @@ const CounselingLogGenerator: React.FC = () => {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md border border-red-100 text-sm">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -185,16 +185,16 @@ const CounselingLogGenerator: React.FC = () => {
         </div>
 
         {result && (
-          <div className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+          <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-[#1C1917] text-sm">생성 결과</h3>
+                <h3 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">생성 결과</h3>
                 {result === EXAMPLE_RESULT && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
                 )}
               </div>
               <div className="flex gap-2">
-                <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-[#78716C] hover:text-[#1C1917] border border-[#EDE8E1] rounded px-3 py-1.5 hover:bg-[#FAF9F7]">
+                <button onClick={handleCopy} className="flex items-center gap-1 text-xs text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#F0EBE6] border border-[#EDE8E1] dark:border-[#2E2822] rounded px-3 py-1.5 hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822]">
                   <Copy className="w-3.5 h-3.5" />
                   {copied ? '복사됨!' : '복사'}
                 </button>
@@ -204,7 +204,7 @@ const CounselingLogGenerator: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-[#78716C]' : 'bg-[#FAF9F7] border-[#EDE8E1] text-[#1C1917]'}`}>
+            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-[#78716C]' : 'bg-[#FAF9F7] dark:bg-[#171210] border-[#EDE8E1] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6]'}`}>
               {result}
             </div>
           </div>

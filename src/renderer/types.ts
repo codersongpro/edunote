@@ -229,7 +229,6 @@ export interface CreativeActivityGenerationRequest {
 
 // ─── Global State ─────────────────────────────────────────────────
 export interface GlobalState {
-  guidelineQA: { messages: ChatMessage[] };
   recordChatbot: { messages: ChatMessage[] };
   opinion: {
     step: 'SETUP' | 'CONFIG' | 'RESULT';

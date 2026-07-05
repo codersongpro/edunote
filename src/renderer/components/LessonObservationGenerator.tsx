@@ -97,34 +97,34 @@ const LessonObservationGenerator: React.FC = () => {
     await window.electronAPI.saveTxt(result, `수업관찰기록_${subject}_${date || new Date().toISOString().slice(0, 10)}.txt`);
   };
 
-  const inputClass = 'w-full bg-white rounded-md border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
-  const labelClass = 'block text-sm font-bold text-[#44403C] mb-1.5';
+  const inputClass = 'w-full bg-white dark:bg-[#2E2822] rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] dark:placeholder-[#6B5E57] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
+  const labelClass = 'block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5';
 
   return (
-    <div className="flex flex-col h-full bg-[#FAF9F7] overflow-y-auto">
+    <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-y-auto transition-colors">
       <div className="max-w-2xl mx-auto w-full p-4 space-y-4">
         {/* Header */}
-        <div data-tour="teacher-record-header" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+        <div data-tour="teacher-record-header" className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <div className="bg-blue-100 p-1.5 rounded-lg">
-                <ClipboardList className="w-4 h-4 text-blue-600" />
+              <div className="bg-blue-100 dark:bg-blue-900/30 p-1.5 rounded-lg">
+                <ClipboardList className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
-              <h2 className="font-bold text-[#1C1917]">수업관찰기록 생성</h2>
+              <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">수업관찰기록 생성</h2>
             </div>
             <button
               onClick={() => startTour('teacher-record')}
-              className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+              className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               <HelpCircle className="w-3 h-3" />
               튜토리얼
             </button>
           </div>
-          <p className="text-xs text-[#78716C]">수업 관찰 내용을 입력하면 정형화된 수업관찰기록을 생성합니다.</p>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">수업 관찰 내용을 입력하면 정형화된 수업관찰기록을 생성합니다.</p>
         </div>
 
         {/* Form */}
-        <div data-tour="teacher-record-input" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4 space-y-4">
+        <div data-tour="teacher-record-input" className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>교과 <span className="text-red-500">*</span></label>
@@ -160,7 +160,7 @@ const LessonObservationGenerator: React.FC = () => {
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md border border-red-100 text-sm">
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md border border-red-100 dark:border-red-800 text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -185,10 +185,10 @@ const LessonObservationGenerator: React.FC = () => {
 
         {/* Result */}
         {result && (
-          <div data-tour="teacher-record-output" className="bg-white rounded-lg border border-[#EDE8E1] shadow-sm p-4">
+          <div data-tour="teacher-record-output" className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-[#1C1917] text-sm">생성 결과</h3>
+                <h3 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">생성 결과</h3>
                 {result === EXAMPLE_RESULT && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
                 )}
@@ -196,7 +196,7 @@ const LessonObservationGenerator: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleCopy}
-                  className="flex items-center gap-1 text-xs text-[#78716C] hover:text-[#1C1917] border border-[#EDE8E1] rounded px-3 py-1.5 hover:bg-[#FAF9F7]"
+                  className="flex items-center gap-1 text-xs text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#F0EBE6] border border-[#EDE8E1] dark:border-[#2E2822] rounded px-3 py-1.5 hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822]"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   {copied ? '복사됨!' : '복사'}
@@ -210,7 +210,7 @@ const LessonObservationGenerator: React.FC = () => {
                 </button>
               </div>
             </div>
-            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-[#78716C]' : 'bg-[#FAF9F7] border-[#EDE8E1] text-[#1C1917]'}`}>
+            <div className={`rounded-md border p-4 text-sm whitespace-pre-wrap leading-relaxed ${result === EXAMPLE_RESULT ? 'bg-amber-50 border-amber-200 text-[#78716C]' : 'bg-[#FAF9F7] dark:bg-[#171210] border-[#EDE8E1] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6]'}`}>
               {result}
             </div>
           </div>

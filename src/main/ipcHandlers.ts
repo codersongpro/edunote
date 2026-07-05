@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, app, BrowserWindow, net } from 'electron';
+import { ipcMain, dialog, shell, app, BrowserWindow, net, safeStorage } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -13,13 +13,33 @@ import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
+import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey } from './secretStore';
 
 const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
+// API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
+const secretCrypto: SecretCrypto = {
+  isEncryptionAvailable: () => safeStorage.isEncryptionAvailable(),
+  encryptString: (plain: string) => safeStorage.encryptString(plain),
+  decryptString: (encrypted: Buffer) => safeStorage.decryptString(encrypted),
+};
+const getSecret = (key: SecretKey) => readSecret(store, secretCrypto, key);
+const setSecret = (key: SecretKey, value: string) => writeSecret(store, secretCrypto, key, value);
+
+// 앱 시작 시 1회 호출 — 기존 평문 키를 암호화 저장으로 이관한다. (app ready 이후에만 호출할 것)
+export function migrateApiKeysToSafeStorage(): void {
+  try {
+    const migrated = migrateSecrets(store, secretCrypto);
+    if (migrated > 0) console.log(`[secretStore] API 키 ${migrated}개를 암호화 저장으로 이관했습니다.`);
+  } catch (e) {
+    console.warn('[secretStore] API 키 이관 실패 (기존 방식으로 계속 동작):', e);
+  }
+}
+
 function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
-  const freeKey = store.get('geminiApiKey');
-  const paidKey = store.get('geminiPaidApiKey');
+  const freeKey = getSecret('geminiApiKey');
+  const paidKey = getSecret('geminiPaidApiKey');
   const apiKey = apiTier === 'paid' ? (paidKey || freeKey) : (freeKey || paidKey);
   return { apiKey, apiTier };
 }
@@ -250,7 +270,7 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'naverShoppingClientSecret') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret') return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
@@ -262,7 +282,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safe } = all;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safe } = all;
     return safe;
   });
 
@@ -281,7 +301,7 @@ export function registerIpcHandlers(): void {
         store.set(key as any, safeValue as any);
       }
     }
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
     } catch (e) {
@@ -292,22 +312,22 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('config:set-api-key', (_e, key: string, apiTier: ApiTier = 'free') => {
     if (typeof key !== 'string') return;
-    if (apiTier === 'paid') store.set('geminiPaidApiKey', key.trim());
-    else store.set('geminiApiKey', key.trim());
+    if (apiTier === 'paid') setSecret('geminiPaidApiKey', key);
+    else setSecret('geminiApiKey', key);
     store.set('apiTier', apiTier);
     resetModelCache();
   });
 
   ipcMain.handle('config:has-api-key', () => {
-    const freeKey = store.get('geminiApiKey');
-    const paidKey = store.get('geminiPaidApiKey');
-    return [freeKey, paidKey].some(key => typeof key === 'string' && key.trim().length > 0);
+    const freeKey = getSecret('geminiApiKey');
+    const paidKey = getSecret('geminiPaidApiKey');
+    return [freeKey, paidKey].some(key => key.trim().length > 0);
   });
 
   ipcMain.handle('config:delete-api-key', (_e, apiTier?: ApiTier) => {
     const target = apiTier || store.get('apiTier') || 'free';
-    if (target === 'paid') store.set('geminiPaidApiKey', '');
-    else store.set('geminiApiKey', '');
+    if (target === 'paid') setSecret('geminiPaidApiKey', '');
+    else setSecret('geminiApiKey', '');
   });
 
   ipcMain.handle('data:read-json', async (_e, name: string) => {
@@ -332,7 +352,7 @@ export function registerIpcHandlers(): void {
 
   // 백업 페이로드(설정·데이터 파일·localStorage)를 만든다 — 수동/자동 백업 공용.
   const buildBackupPayload = (localStorageDump?: Record<string, string>) => {
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
     for (const fileName of fs.readdirSync(dataDir)) {

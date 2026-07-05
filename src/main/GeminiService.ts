@@ -56,7 +56,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 let availableModelsCache: { keyId: string; names: string[] | null } | null = null;
 
 async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<string[] | null> {
-  const keyId = apiKey.slice(-12);
+  const keyId = apiKey;
   if (availableModelsCache && availableModelsCache.keyId === keyId) return availableModelsCache.names;
 
   try {

@@ -3,6 +3,9 @@ import Store from 'electron-store';
 interface StoreSchema {
   geminiApiKey: string;
   geminiPaidApiKey: string;
+  // safeStorage로 암호화한 API 키(base64). 암호화 가능 환경에서는 평문 대신 이 키에 저장한다.
+  geminiApiKeyEnc: string;
+  geminiPaidApiKeyEnc: string;
   apiTier: 'free' | 'paid';
   appDataDir: string;
   saveDir: string;
@@ -36,6 +39,8 @@ export const store = new Store<StoreSchema>({
   defaults: {
     geminiApiKey: '',
     geminiPaidApiKey: '',
+    geminiApiKeyEnc: '',
+    geminiPaidApiKeyEnc: '',
     apiTier: 'free',
     appDataDir: '',
     saveDir: '',

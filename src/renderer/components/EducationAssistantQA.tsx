@@ -82,28 +82,28 @@ const EducationAssistantQA: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div data-tour="education-qa-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] bg-white shrink-0">
+    <div className="flex flex-col h-full bg-white dark:bg-[#221E1B] transition-colors">
+      <div data-tour="education-qa-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <div className="flex items-center gap-2">
           <div className="bg-green-100 p-1.5 rounded-lg">
             <GraduationCap className="w-4 h-4 text-green-600" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#1C1917]">교무행정AI 챗봇</h2>
-            <p className="text-xs text-[#78716C]">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
+            <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">교무행정AI 챗봇</h2>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => startTour('education-qa')}
-            className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+            className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 dark:hover:text-green-400 px-2 py-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼
           </button>
           <button
             onClick={handleClear}
-            className="flex items-center gap-1 text-xs text-[#A8A29E] hover:text-[#78716C] px-2 py-1 rounded hover:bg-[#FAF9F7] transition-colors"
+            className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
           >
             <Trash2 className="w-3 h-3" />
             초기화
@@ -114,13 +114,13 @@ const EducationAssistantQA: React.FC = () => {
       <div data-tour="education-qa-messages" className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         {messages.length <= 1 && (
           <div data-tour="education-qa-suggestions" className="pt-2">
-            <p className="text-xs text-[#A8A29E] text-center mb-3">자주 묻는 질문</p>
+            <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] text-center mb-3">자주 묻는 질문</p>
             <div className="flex flex-wrap gap-2">
               {suggestedQuestions.map((q, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(q)}
-                  className="text-xs bg-green-50 text-green-700 border border-green-100 rounded-full px-3 py-1.5 hover:bg-green-100 transition-colors"
+                  className="text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-100 dark:border-green-800 rounded-full px-3 py-1.5 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
                 >
                   {q}
                 </button>
@@ -134,7 +134,7 @@ const EducationAssistantQA: React.FC = () => {
             <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
               msg.role === 'user'
                 ? 'bg-green-600 text-white rounded-br-none'
-                : 'bg-[#EDE8E1] text-[#1C1917] rounded-bl-none border border-[#EDE8E1]'
+                : 'bg-[#EDE8E1] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] rounded-bl-none border border-[#E7E5E4] dark:border-[#2E2822]'
             }`}>
               {msg.role === 'model' ? (
                 <div className="prose prose-sm max-w-none">
@@ -149,7 +149,7 @@ const EducationAssistantQA: React.FC = () => {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-[#EDE8E1] rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-1.5">
+            <div className="bg-[#EDE8E1] dark:bg-[#2E2822] rounded-2xl rounded-bl-none px-4 py-3 flex items-center space-x-1.5">
               <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
               <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
               <div className="w-2 h-2 bg-[#A8A29E] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -159,20 +159,20 @@ const EducationAssistantQA: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div data-tour="education-qa-input" className="p-4 border-t border-[#EDE8E1] bg-white shrink-0">
+      <div data-tour="education-qa-input" className="p-4 border-t border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="교육 관련 질문을 자유롭게 입력하세요..."
-            className="flex-1 px-4 py-3 bg-[#FAF9F7] border border-[#EDE8E1] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-[#1C1917] text-sm"
+            className="flex-1 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="px-5 py-3 bg-green-600 hover:bg-green-700 disabled:bg-[#E7E5E4] text-white font-bold rounded-xl transition-colors shadow-sm"
+            className="px-5 py-3 bg-green-600 hover:bg-green-700 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white font-bold rounded-xl transition-colors shadow-sm disabled:shadow-none"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
