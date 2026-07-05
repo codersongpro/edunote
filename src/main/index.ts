@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { registerIpcHandlers, cleanupSessionTmpDir } from './ipcHandlers';
+import { registerIpcHandlers, cleanupSessionTmpDir, migrateApiKeysToSafeStorage } from './ipcHandlers';
 
 // 예기치 못한 메인 프로세스 오류를 조용히 흘려보내지 않고 로그로 남겨 진단을 돕는다(동작 변경 없음).
 process.on('uncaughtException', (err) => {
@@ -163,6 +163,8 @@ app.on('web-contents-created', (_event, contents) => {
 });
 
 app.whenReady().then(() => {
+  // safeStorage는 app ready 이후에만 쓸 수 있으므로 여기서 평문 키를 암호화 저장으로 이관한다.
+  migrateApiKeysToSafeStorage();
   buildAppMenu();
   createWindow();
 
