@@ -6,16 +6,17 @@ import * as https from 'https';
 import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
-import { sanitizeConfigEntry } from './configValidation';
+import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
 import { isBlockedHostname } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
-import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey } from './secretStore';
+import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, SECRET_STORE_KEYS, isSecretKey, stripSecrets } from './secretStore';
 
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naramarketApiKey', 'naverShoppingClientId', 'naverShoppingClientSecret', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
+// 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {
@@ -270,7 +271,7 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret' || key === 'naverShoppingClientSecretEnc' || key === 'naramarketApiKey' || key === 'naramarketApiKeyEnc') return undefined;
+    if (SECRET_STORE_KEYS.includes(key)) return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
@@ -284,9 +285,7 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('config:get-all', () => {
-    const all = store.store;
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safe } = all;
-    return safe;
+    return stripSecrets(store.store);
   });
 
   ipcMain.handle('config:set', (_e, data: Record<string, unknown>) => {
@@ -295,9 +294,9 @@ export function registerIpcHandlers(): void {
         // API key is set via dedicated channel only
         continue;
       }
-      if (key === 'naramarketApiKey' || key === 'naverShoppingClientSecret') {
-        // 시크릿은 평문 store.set 대신 safeStorage 암호화 저장을 거친다.
-        if (typeof value === 'string') setSecret(key, value);
+      if (isSecretKey(key)) {
+        // 시크릿은 평문 store.set 대신 safeStorage 암호화 저장을 거친다. 길이 상한은 일반 설정값과 동일.
+        if (typeof value === 'string' && value.length <= MAX_STRING_VALUE_CHARS) setSecret(key, value);
         continue;
       }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
@@ -309,7 +308,7 @@ export function registerIpcHandlers(): void {
         store.set(key as any, safeValue as any);
       }
     }
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safeSettings } = store.store;
+    const safeSettings = stripSecrets(store.store);
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
     } catch (e) {
@@ -360,7 +359,7 @@ export function registerIpcHandlers(): void {
 
   // 백업 페이로드(설정·데이터 파일·localStorage)를 만든다 — 수동/자동 백업 공용.
   const buildBackupPayload = (localStorageDump?: Record<string, string>) => {
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safeSettings } = store.store;
+    const safeSettings = stripSecrets(store.store);
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
     for (const fileName of fs.readdirSync(dataDir)) {
@@ -457,9 +456,13 @@ export function registerIpcHandlers(): void {
     }
 
     for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
-      if (key === 'naramarketApiKey' || key === 'naverShoppingClientSecret') {
-        // 구버전 백업에 평문으로 남아 있던 시크릿은 암호화 저장으로 복원한다.
-        if (typeof value === 'string' && value.trim()) setSecret(key, value);
+      if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') {
+        // Gemini 키는 백업에 포함된 적이 없고, 백업 파일로도 설정할 수 없다.
+        continue;
+      }
+      if (isSecretKey(key)) {
+        // 구버전 백업에 평문으로 남아 있던 시크릿은 암호화 저장으로 복원한다. 길이 상한은 일반 설정값과 동일.
+        if (typeof value === 'string' && value.trim() && value.length <= MAX_STRING_VALUE_CHARS) setSecret(key, value);
         continue;
       }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {

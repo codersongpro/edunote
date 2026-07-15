@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readSecret, writeSecret, migrateSecrets, encKeyOf, SecretBackend, SecretCrypto } from '../secretStore';
+import { readSecret, writeSecret, migrateSecrets, encKeyOf, SecretBackend, SecretCrypto, SECRET_KEYS, SECRET_STORE_KEYS, isSecretKey, stripSecrets } from '../secretStore';
 
 // XOR 기반의 단순 가짜 암호화 — 실제 safeStorage를 대신해 왕복 동작만 검증한다.
 function makeCrypto(available = true): SecretCrypto {
@@ -120,5 +120,37 @@ describe('secretStore', () => {
     expect(backend.data['naramarketApiKey']).toBe('');
     expect(backend.data[encKeyOf('naramarketApiKey')]).not.toContain('new-nara');
     expect(readSecret(backend, crypto, 'naramarketApiKey')).toBe('new-nara');
+  });
+
+  it('SECRET_STORE_KEYS는 모든 시크릿의 평문·암호문 키를 포함한다', () => {
+    for (const key of SECRET_KEYS) {
+      expect(SECRET_STORE_KEYS).toContain(key);
+      expect(SECRET_STORE_KEYS).toContain(encKeyOf(key));
+    }
+  });
+
+  it('isSecretKey는 시크릿 키만 참으로 판별한다', () => {
+    expect(isSecretKey('naramarketApiKey')).toBe(true);
+    expect(isSecretKey('naverShoppingClientSecret')).toBe(true);
+    expect(isSecretKey('geminiApiKey')).toBe(true);
+    expect(isSecretKey('teacherName')).toBe(false);
+    expect(isSecretKey('naramarketApiKeyEnc')).toBe(false);
+  });
+
+  it('stripSecrets는 평문·암호문 시크릿을 모두 제거하고 나머지는 보존한다', () => {
+    const settings = {
+      teacherName: '김교사',
+      geminiApiKey: 'g1',
+      geminiApiKeyEnc: 'enc1',
+      naramarketApiKey: 'n1',
+      naramarketApiKeyEnc: 'enc2',
+      naverShoppingClientSecret: 's1',
+      naverShoppingClientSecretEnc: 'enc3',
+      naverShoppingClientId: 'public-id',
+    };
+    const safe = stripSecrets(settings);
+    expect(safe).toEqual({ teacherName: '김교사', naverShoppingClientId: 'public-id' });
+    // 원본은 변형되지 않는다
+    expect(settings.geminiApiKey).toBe('g1');
   });
 });

@@ -21,6 +21,21 @@ export function encKeyOf(key: SecretKey): string {
   return `${key}Enc`;
 }
 
+// 평문 키와 암호문 키 전체 목록 — 렌더러 조회·설정 파일 동기화·백업에서 항상 제외해야 하는 키들.
+// 시크릿이 추가되면 SECRET_KEYS만 늘리면 되고, 이 목록과 아래 헬퍼는 자동으로 따라온다.
+export const SECRET_STORE_KEYS: readonly string[] = [...SECRET_KEYS, ...SECRET_KEYS.map(encKeyOf)];
+
+export function isSecretKey(key: string): key is SecretKey {
+  return (SECRET_KEYS as readonly string[]).includes(key);
+}
+
+// 설정 객체에서 시크릿(평문·암호문)을 모두 제거한 사본을 돌려준다.
+export function stripSecrets(settings: object): Record<string, unknown> {
+  const safe: Record<string, unknown> = { ...settings };
+  for (const key of SECRET_STORE_KEYS) delete safe[key];
+  return safe;
+}
+
 export function readSecret(backend: SecretBackend, crypto: SecretCrypto, key: SecretKey): string {
   const enc = backend.get(encKeyOf(key));
   if (typeof enc === 'string' && enc) {
