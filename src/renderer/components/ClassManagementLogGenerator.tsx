@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { generateClassManagementLog } from '../services/geminiService';
+import { getRosterGenerationExtras } from '../lib/generationSafety';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -63,6 +64,8 @@ const ClassManagementLogGenerator: React.FC = () => {
     setIsLoading(true);
     startGeneration();
     try {
+      // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
+      const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
       const generated = await generateClassManagementLog({
         week,
         dateRange,
@@ -70,6 +73,8 @@ const ClassManagementLogGenerator: React.FC = () => {
         keyActivities,
         studentIssues,
         teacherNotes,
+        privacyModeEnabled,
+        rosterNames,
       });
       setResult(generated);
       playSuccessSound();
@@ -169,12 +174,12 @@ const ClassManagementLogGenerator: React.FC = () => {
 
           <div>
             <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5">
-              학생 특이사항 <span className="text-xs font-normal text-[#A8A29E]">(선택)</span>
+              학생 특이사항 <span className="text-xs font-normal text-[#A8A29E]">(선택)</span> <span className="text-xs text-orange-500 font-normal">(개인정보 주의 — 설정의 학생 명단에 있는 이름만 보호 모드로 가려집니다)</span>
             </label>
             <textarea
               value={studentIssues}
               onChange={(e) => setStudentIssues(e.target.value)}
-              placeholder="이번 주 특이 사항이 있었던 학생 관련 내용을 입력하세요. (선택 사항)"
+              placeholder="이번 주 특이 사항이 있었던 학생 관련 내용을 입력하세요. (학생 실명 대신 이니셜 사용 권장)"
               className="w-full px-4 py-3 border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl bg-[#FAF9F7] dark:bg-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-none min-h-[80px]"
             />
           </div>

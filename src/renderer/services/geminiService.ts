@@ -18,7 +18,7 @@ import {
 } from '../types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
-import { formatStudentMemos, withStudentPrivacy } from '../lib/generationSafety';
+import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
 import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
 
 // ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
@@ -980,6 +980,8 @@ export const generateLessonObservation = async (inputs: {
   grade: string;
   observationNotes: string;
   teacherName: string;
+  privacyModeEnabled?: boolean;
+  rosterNames?: string[];
 }): Promise<string> => {
   const prompt = `
 ${getDateContext()}
@@ -1000,11 +1002,13 @@ ${getDateContext()}
 4. 분량: A4 1~2장 내외.
 5. 문서 내용만 출력하세요. 작성 경위·안내 문구·설명 문장을 문서 앞뒤에 절대 추가하지 마세요.`;
 
-  return await aiGenerate(
-    prompt,
+  const privacy = withStudentListPrivacy(prompt, inputs.rosterNames ?? [], inputs.privacyModeEnabled);
+  const result = await aiGenerate(
+    privacy.prompt,
     '당신은 교사의 수업관찰기록 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
+  return privacy.restore(result);
 };
 
 export const generateCounselingLog = async (inputs: {
@@ -1050,6 +1054,8 @@ export const generateClassManagementLog = async (inputs: {
   keyActivities: string;
   studentIssues: string;
   teacherNotes: string;
+  privacyModeEnabled?: boolean;
+  rosterNames?: string[];
 }): Promise<string> => {
   const prompt = `
 ${getDateContext()}
@@ -1069,11 +1075,13 @@ ${getDateContext()}
 2. 주요 학급 활동, 학생 특이사항, 학부모 소통, 다음 주 계획 순으로 구성.
 3. 각 항목은 개조식(~함., ~임., ~였음.)으로 작성하세요.`;
 
-  return await aiGenerate(
-    prompt,
+  const privacy = withStudentListPrivacy(prompt, inputs.rosterNames ?? [], inputs.privacyModeEnabled);
+  const result = await aiGenerate(
+    privacy.prompt,
     '당신은 담임교사의 학급경영일지 문서 작성을 보조하는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
+  return privacy.restore(result);
 };
 
 export const analyzeOfficialDocument = async (inputs: {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, HelpCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateLessonObservation } from '../services/geminiService';
+import { getRosterGenerationExtras } from '../lib/generationSafety';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -76,7 +77,9 @@ const LessonObservationGenerator: React.FC = () => {
     setResult('');
     startGeneration();
     try {
-      const output = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName });
+      // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
+      const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
+      const output = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
       setResult(output);
       playSuccessSound();
     } catch (e) {
@@ -150,10 +153,10 @@ const LessonObservationGenerator: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className={labelClass}>관찰 내용 <span className="text-red-500">*</span></label>
+            <label className={labelClass}>관찰 내용 <span className="text-red-500">*</span> <span className="text-xs text-orange-500 font-normal">(개인정보 주의 — 설정의 학생 명단에 있는 이름만 보호 모드로 가려집니다)</span></label>
             <textarea
               className={`${inputClass} min-h-[150px] resize-y`}
-              placeholder="수업 중 관찰한 교수·학습 활동, 학생 반응, 특이사항 등을 자유롭게 입력하세요."
+              placeholder="수업 중 관찰한 교수·학습 활동, 학생 반응, 특이사항 등을 자유롭게 입력하세요. (학생 실명 대신 이니셜 사용 권장)"
               value={observationNotes}
               onChange={e => setObservationNotes(e.target.value)}
             />

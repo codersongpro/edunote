@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { withStudentPrivacy, formatStudentMemos, pickUnusedToken } from '../generationSafety';
+import { withStudentPrivacy, withStudentListPrivacy, formatStudentMemos, pickUnusedToken } from '../generationSafety';
 
 describe('withStudentPrivacy', () => {
   it('활성화 시 학생 이름을 토큰으로 치환하고 복원한다', () => {
@@ -38,6 +38,50 @@ describe('withStudentPrivacy', () => {
     expect(prompt).toBe('학생1과 학생2이 함께 발표함');
     // 복원 시 원래 있던 "학생1"은 그대로 두고 토큰만 이름으로 되돌린다
     expect(restore(prompt)).toBe('학생1과 홍길동이 함께 발표함');
+  });
+});
+
+describe('withStudentListPrivacy', () => {
+  it('명단의 여러 이름을 각각 다른 토큰으로 치환하고 복원한다', () => {
+    const { prompt, restore } = withStudentListPrivacy(
+      '김민수는 발표를 잘했고 이지은은 지각함',
+      ['김민수', '이지은'],
+      true,
+    );
+    expect(prompt).not.toContain('김민수');
+    expect(prompt).not.toContain('이지은');
+    // 왕복 복원: 마스킹한 프롬프트를 복원하면 원문과 동일해야 한다
+    expect(restore(prompt)).toBe('김민수는 발표를 잘했고 이지은은 지각함');
+  });
+
+  it('겹치는 이름은 긴 이름부터 치환한다', () => {
+    const original = '김민수와 김민이 함께 활동함';
+    const { prompt, restore } = withStudentListPrivacy(original, ['김민', '김민수'], true);
+    expect(prompt).not.toContain('김민수');
+    expect(prompt).not.toContain('김민');
+    expect(restore(prompt)).toBe(original);
+  });
+
+  it('본문에 "학생1"이 이미 있으면 해당 토큰을 피한다', () => {
+    const original = '학생1 모둠에서 김민수가 발표함';
+    const { prompt, restore } = withStudentListPrivacy(original, ['김민수'], true);
+    expect(prompt).toBe('학생1 모둠에서 학생2가 발표함');
+    expect(restore(prompt)).toBe(original);
+  });
+
+  it('비활성화이거나 명단이 비어 있으면 그대로 둔다', () => {
+    expect(withStudentListPrivacy('김민수 발표', ['김민수'], false).prompt).toBe('김민수 발표');
+    expect(withStudentListPrivacy('김민수 발표', [], true).prompt).toBe('김민수 발표');
+  });
+
+  it('본문에 없는 이름과 한 글자 이름은 건너뛴다', () => {
+    const { prompt } = withStudentListPrivacy('김민수가 발표함', ['이지은', '수'], true);
+    expect(prompt).toBe('김민수가 발표함');
+  });
+
+  it('번호가 붙은 명단 이름("3. 김민수")도 정규화해 매칭한다', () => {
+    const { prompt } = withStudentListPrivacy('김민수가 발표함', ['3. 김민수'], true);
+    expect(prompt).not.toContain('김민수');
   });
 });
 
