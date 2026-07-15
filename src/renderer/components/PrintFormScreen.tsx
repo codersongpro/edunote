@@ -6,6 +6,9 @@ import { useTour } from '../TourContext';
 
 const CATEGORIES = Array.from(new Set(PRINT_FORMS.map(f => f.category)));
 
+// 사용자 입력이 HTML로 해석되지 않도록 이스케이프한다 (템플릿 치환 공용)
+const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 export default function PrintFormScreen() {
   const { startTour } = useTour();
   const [selectedForm, setSelectedForm] = useState<PrintForm | null>(null);
@@ -21,7 +24,7 @@ export default function PrintFormScreen() {
     for (const field of selectedForm.fields) {
       if (field.type === 'participants') {
         // 참가자 목록 → 20명 단위로 표를 나눠 페이지가 자동으로 넘어가게 한다.
-        const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escape = escapeHtml;
         const names = (values[field.key] ?? '').split('\n').map(n => n.trim()).filter(Boolean);
         const perPage = 20;
         // 한 페이지 분량의 행을 받아 표 한 개를 만든다. pageBreak가 true면 표 앞에서 페이지를 넘긴다.
@@ -61,7 +64,7 @@ export default function PrintFormScreen() {
         html = html.replaceAll('{{참가자행}}', tableHtml);
       } else if (field.type === 'table') {
         // 한 줄에 한 행, '/'로 칸을 나눠 columns 머리글의 표를 만든다. 빈 행은 minRows까지 채운다.
-        const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escape = escapeHtml;
         const cols = field.columns ?? [];
         const dataRows = (values[field.key] ?? '')
           .split('\n')
@@ -86,7 +89,8 @@ export default function PrintFormScreen() {
         html = html.replaceAll(`{{${field.key}}}`, tableHtml);
       } else {
         // 빈 값은 빈 문자열 — placeholder 텍스트 표시 안 함
-        const val = (values[field.key] ?? '').replace(/\n/g, '<br>');
+        // 이스케이프를 먼저 하고 줄바꿈을 <br>로 바꾼다 (순서를 바꾸면 <br>이 깨짐)
+        const val = escapeHtml(values[field.key] ?? '').replace(/\n/g, '<br>');
         html = html.replaceAll(`{{${field.key}}}`, val);
       }
     }
@@ -206,6 +210,8 @@ export default function PrintFormScreen() {
                 ref={iframeRef}
                 srcDoc={rendered}
                 onLoad={handleEditableFrameLoad}
+                // 화면 직접 편집(designMode)에는 동일 출처 접근만 필요하므로 스크립트 실행은 차단한다
+                sandbox="allow-same-origin"
                 style={{ width: '100%', height: '297mm', border: 'none', display: 'block' }}
                 title="양식 편집"
               />

@@ -1,6 +1,6 @@
 appId: com.edunote.app
 productName: EduNote
-copyright: Copyright 2026
+copyright: Copyright © 2026 Dustin
 
 directories:
   buildResources: build
@@ -14,6 +14,8 @@ extraResources:
     to: build/icon.ico
   - from: build/icon.png
     to: build/icon.png
+  - from: THIRD-PARTY-NOTICES.md
+    to: THIRD-PARTY-NOTICES.md
 
 win:
   icon: build/icon.ico

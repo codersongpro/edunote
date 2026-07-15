@@ -60,6 +60,7 @@ export interface ElectronAPI {
   naramarketShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   naverShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
   hasNaverShoppingSecret(): Promise<boolean>;
+  hasNaramarketKey(): Promise<boolean>;
 }
 
 declare global {

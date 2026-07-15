@@ -1008,7 +1008,9 @@ export default function BudgetPlannerScreen() {
   const [totalBudget, setTotalBudget] = useState('');
   const [planTitle, setPlanTitle] = useState('');
 
+  // 나라장터 인증키 원문은 앱에서 다시 받아오지 않는다. 입력칸 값과 저장 여부만 관리한다.
   const [apiKey, setApiKey] = useState('');
+  const [hasSavedNaramarketKey, setHasSavedNaramarketKey] = useState(false);
   const [naverClientId, setNaverClientId] = useState('');
   // Client Secret 원문은 앱에서 다시 받아오지 않는다. 입력칸 값과 저장 여부만 관리한다.
   const [naverClientSecret, setNaverClientSecret] = useState('');
@@ -1046,8 +1048,8 @@ export default function BudgetPlannerScreen() {
   const [previewImages, setPreviewImages] = useState<Record<string, string>>({}); // 이미지 URL → data URI 캐시
 
   useEffect(() => {
-    window.electronAPI.getConfig('naramarketApiKey').then((key: unknown) => {
-      if (typeof key === 'string') setApiKey(key);
+    window.electronAPI.hasNaramarketKey().then(saved => {
+      setHasSavedNaramarketKey(!!saved);
     }).catch(() => {});
     window.electronAPI.getConfig('naverShoppingClientId').then((key: unknown) => {
       if (typeof key === 'string') setNaverClientId(key);
@@ -1149,14 +1151,17 @@ export default function BudgetPlannerScreen() {
     setNaverClientId(naverClientId.trim());
     setNaverClientSecret(naverClientSecret.trim());
     const payload: Record<string, string> = {
-      naramarketApiKey: apiKey.trim(),
       naverShoppingClientId: naverClientId.trim(),
     };
-    // Secret 입력칸이 비어 있으면 저장된 기존 Secret을 지우지 않도록 보낼 항목에서 제외한다.
+    // 인증키·Secret 입력칸이 비어 있으면 저장된 기존 값을 지우지 않도록 보낼 항목에서 제외한다.
+    if (apiKey.trim()) {
+      payload.naramarketApiKey = apiKey.trim();
+    }
     if (naverClientSecret.trim()) {
       payload.naverShoppingClientSecret = naverClientSecret.trim();
     }
     await window.electronAPI.setConfig(payload);
+    if (apiKey.trim()) setHasSavedNaramarketKey(true);
     if (naverClientSecret.trim()) setHasSavedNaverSecret(true);
   };
 
@@ -1252,7 +1257,7 @@ export default function BudgetPlannerScreen() {
   const runPriceSearch = async (page: number, append: boolean) => {
     const query = priceSearchQuery.trim();
     if (!query) return;
-    const hasNaraKey = !!apiKey.trim();
+    const hasNaraKey = !!apiKey.trim() || hasSavedNaramarketKey;
     const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
     if (!hasNaraKey && !hasNaverKey) {
       setPriceSearchStatus('error');
@@ -1329,7 +1334,7 @@ export default function BudgetPlannerScreen() {
   };
 
   // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
-  const hasPriceLookupKey = !!apiKey.trim() || (!!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret));
+  const hasPriceLookupKey = !!apiKey.trim() || hasSavedNaramarketKey || (!!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret));
   const priceSearchTooltip = hasPriceLookupKey
     ? '키워드로 실제 상품과 단가를 조회합니다.'
     : '먼저 왼쪽 \'가격 조회 정보 선택 입력\'에서 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해 주세요. 키가 없으면 조회되지 않습니다.';
@@ -1393,7 +1398,7 @@ export default function BudgetPlannerScreen() {
       업무추진비: [...localCandidates.업무추진비],
     };
 
-    const hasNaraKey = !!apiKey.trim();
+    const hasNaraKey = !!apiKey.trim() || hasSavedNaramarketKey;
     const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
     if (!hasNaraKey && !hasNaverKey) return candidates;
     for (const category of CATEGORIES) {
@@ -1669,10 +1674,10 @@ export default function BudgetPlannerScreen() {
               </div>
             )}
             <div className="flex gap-2">
-              <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="인증키 붙여넣기" className={inputCls} />
+              <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={hasSavedNaramarketKey ? '인증키 저장됨 (변경할 때만 입력)' : '인증키 붙여넣기'} className={inputCls} />
               <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>나라장터 키 저장</button>
             </div>
-            {apiKey && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
+            {(apiKey || hasSavedNaramarketKey) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
               나라장터 API 키와 인터넷 가격조회 Client 정보는 선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
             </p>
