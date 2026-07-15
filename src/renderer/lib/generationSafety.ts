@@ -53,6 +53,16 @@ export function formatStudentMemos(memos?: string[]): string {
   return `\n[학생 메모 참고자료]\n${memos.map((memo, index) => `${index + 1}. ${memo}`).join('\n')}\n`;
 }
 
+// 본문에 이미 등장하지 않는 토큰을 고른다. includes('학생1') 검사는 '학생10'도 함께 걸러
+// 복원 시 기존 문자열을 잘못 되돌리는 부분 겹침을 보수적으로 막는다.
+export function pickUnusedToken(text: string, used: Set<string> = new Set()): string {
+  for (let i = 1; i <= 99; i++) {
+    const candidate = `학생${i}`;
+    if (!used.has(candidate) && !text.includes(candidate)) return candidate;
+  }
+  return '학생0';
+}
+
 export function withStudentPrivacy(
   prompt: string,
   studentName: string,
@@ -60,7 +70,7 @@ export function withStudentPrivacy(
 ): { prompt: string; restore: (text: string) => string } {
   const cleanName = normalizeName(studentName);
   if (!enabled || !cleanName) return { prompt, restore: text => text };
-  const token = '학생1';
+  const token = pickUnusedToken(prompt);
   const escaped = cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const namePattern = new RegExp(escaped, 'g');
   return {
