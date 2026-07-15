@@ -270,7 +270,7 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret' || key === 'naramarketApiKey') return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
@@ -280,9 +280,14 @@ export function registerIpcHandlers(): void {
     return typeof secret === 'string' && secret.trim().length > 0;
   });
 
+  ipcMain.handle('config:has-naramarket-key', () => {
+    const key = store.get('naramarketApiKey');
+    return typeof key === 'string' && key.trim().length > 0;
+  });
+
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safe } = all;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safe } = all;
     return safe;
   });
 
@@ -301,7 +306,7 @@ export function registerIpcHandlers(): void {
         store.set(key as any, safeValue as any);
       }
     }
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
     } catch (e) {
@@ -352,7 +357,7 @@ export function registerIpcHandlers(): void {
 
   // 백업 페이로드(설정·데이터 파일·localStorage)를 만든다 — 수동/자동 백업 공용.
   const buildBackupPayload = (localStorageDump?: Record<string, string>) => {
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safeSettings } = store.store;
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
     for (const fileName of fs.readdirSync(dataDir)) {

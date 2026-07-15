@@ -115,4 +115,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   naverShoppingSearch: (keyword: string, pageNo?: number) =>
     ipcRenderer.invoke('api:naver-shopping-search', { keyword, pageNo }),
   hasNaverShoppingSecret: (): Promise<boolean> => ipcRenderer.invoke('config:has-naver-shopping-secret'),
+  hasNaramarketKey: (): Promise<boolean> => ipcRenderer.invoke('config:has-naramarket-key'),
 });
