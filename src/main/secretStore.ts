@@ -14,7 +14,7 @@ export interface SecretBackend {
   set(key: string, value: string): void;
 }
 
-export const SECRET_KEYS = ['geminiApiKey', 'geminiPaidApiKey'] as const;
+export const SECRET_KEYS = ['geminiApiKey', 'geminiPaidApiKey', 'naramarketApiKey', 'naverShoppingClientSecret'] as const;
 export type SecretKey = (typeof SECRET_KEYS)[number];
 
 export function encKeyOf(key: SecretKey): string {

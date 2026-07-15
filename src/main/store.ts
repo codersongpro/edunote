@@ -30,6 +30,9 @@ interface StoreSchema {
   naramarketApiKey: string;
   naverShoppingClientId: string;
   naverShoppingClientSecret: string;
+  // safeStorage로 암호화한 값(base64). 암호화 가능 환경에서는 평문 대신 이 키에 저장한다.
+  naramarketApiKeyEnc: string;
+  naverShoppingClientSecretEnc: string;
   chatFirebaseConfig: string;
   chatActiveRoomId: string;
   chatRoomHistory: string;
@@ -65,6 +68,8 @@ export const store = new Store<StoreSchema>({
     naramarketApiKey: '',
     naverShoppingClientId: '',
     naverShoppingClientSecret: '',
+    naramarketApiKeyEnc: '',
+    naverShoppingClientSecretEnc: '',
     chatFirebaseConfig: '',
     chatActiveRoomId: '',
     chatRoomHistory: '',

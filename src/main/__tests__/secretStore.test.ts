@@ -105,4 +105,20 @@ describe('secretStore', () => {
     expect(migrateSecrets(backend, crypto)).toBe(0);
     expect(readSecret(backend, crypto, 'geminiApiKey')).toBe('free-key');
   });
+
+  it('나라장터 인증키·네이버 Secret도 암호화 저장·이관 대상이다', () => {
+    const backend = makeBackend({ naramarketApiKey: 'nara-key', naverShoppingClientSecret: 'naver-secret' });
+    const crypto = makeCrypto();
+    expect(migrateSecrets(backend, crypto)).toBe(2);
+    expect(backend.data['naramarketApiKey']).toBe('');
+    expect(backend.data['naverShoppingClientSecret']).toBe('');
+    expect(readSecret(backend, crypto, 'naramarketApiKey')).toBe('nara-key');
+    expect(readSecret(backend, crypto, 'naverShoppingClientSecret')).toBe('naver-secret');
+
+    // 새로 저장하는 값도 암호문만 남는다
+    writeSecret(backend, crypto, 'naramarketApiKey', 'new-nara');
+    expect(backend.data['naramarketApiKey']).toBe('');
+    expect(backend.data[encKeyOf('naramarketApiKey')]).not.toContain('new-nara');
+    expect(readSecret(backend, crypto, 'naramarketApiKey')).toBe('new-nara');
+  });
 });

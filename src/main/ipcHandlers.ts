@@ -270,24 +270,22 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret' || key === 'naramarketApiKey') return undefined;
+    if (key === 'geminiApiKey' || key === 'geminiPaidApiKey' || key === 'geminiApiKeyEnc' || key === 'geminiPaidApiKeyEnc' || key === 'naverShoppingClientSecret' || key === 'naverShoppingClientSecretEnc' || key === 'naramarketApiKey' || key === 'naramarketApiKeyEnc') return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
   // 시크릿 원문은 렌더러로 보내지 않고 저장 여부만 알려준다.
   ipcMain.handle('config:has-naver-shopping-secret', () => {
-    const secret = store.get('naverShoppingClientSecret');
-    return typeof secret === 'string' && secret.trim().length > 0;
+    return getSecret('naverShoppingClientSecret').trim().length > 0;
   });
 
   ipcMain.handle('config:has-naramarket-key', () => {
-    const key = store.get('naramarketApiKey');
-    return typeof key === 'string' && key.trim().length > 0;
+    return getSecret('naramarketApiKey').trim().length > 0;
   });
 
   ipcMain.handle('config:get-all', () => {
     const all = store.store;
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safe } = all;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safe } = all;
     return safe;
   });
 
@@ -295,6 +293,11 @@ export function registerIpcHandlers(): void {
     for (const [key, value] of Object.entries(data)) {
       if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') {
         // API key is set via dedicated channel only
+        continue;
+      }
+      if (key === 'naramarketApiKey' || key === 'naverShoppingClientSecret') {
+        // 시크릿은 평문 store.set 대신 safeStorage 암호화 저장을 거친다.
+        if (typeof value === 'string') setSecret(key, value);
         continue;
       }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
@@ -306,7 +309,7 @@ export function registerIpcHandlers(): void {
         store.set(key as any, safeValue as any);
       }
     }
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safeSettings } = store.store;
     try {
       fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
     } catch (e) {
@@ -357,7 +360,7 @@ export function registerIpcHandlers(): void {
 
   // 백업 페이로드(설정·데이터 파일·localStorage)를 만든다 — 수동/자동 백업 공용.
   const buildBackupPayload = (localStorageDump?: Record<string, string>) => {
-    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, ...safeSettings } = store.store;
+    const { geminiApiKey: _free, geminiPaidApiKey: _paid, geminiApiKeyEnc: _freeEnc, geminiPaidApiKeyEnc: _paidEnc, naverShoppingClientSecret: _naverSecret, naramarketApiKey: _naraKey, naverShoppingClientSecretEnc: _naverSecretEnc, naramarketApiKeyEnc: _naraKeyEnc, ...safeSettings } = store.store;
     const dataDir = getDataDir();
     const dataFiles: Record<string, unknown> = {};
     for (const fileName of fs.readdirSync(dataDir)) {
@@ -454,6 +457,11 @@ export function registerIpcHandlers(): void {
     }
 
     for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
+      if (key === 'naramarketApiKey' || key === 'naverShoppingClientSecret') {
+        // 구버전 백업에 평문으로 남아 있던 시크릿은 암호화 저장으로 복원한다.
+        if (typeof value === 'string' && value.trim()) setSecret(key, value);
+        continue;
+      }
       if (ALLOWED_CONFIG_KEYS.includes(key)) {
         const safeValue = sanitizeConfigEntry(key, value);
         if (safeValue === undefined) {
@@ -826,7 +834,7 @@ export function registerIpcHandlers(): void {
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
   // 자격증명(인증키·Client Secret)은 렌더러에서 받지 않고 메인 프로세스 저장소에서 직접 읽는다.
   function getNaramarketKey(): string {
-    const serviceKey = String(store.get('naramarketApiKey') || '').trim();
+    const serviceKey = getSecret('naramarketApiKey').trim();
     if (!serviceKey) throw new Error('나라장터 인증키가 저장되어 있지 않습니다. 예산안작성 화면에서 키를 먼저 저장해주세요.');
     return serviceKey;
   }
@@ -913,7 +921,7 @@ export function registerIpcHandlers(): void {
   }) => {
     const trimmedKeyword = String(keyword || '').trim();
     const trimmedId = String(store.get('naverShoppingClientId') || '').trim();
-    const trimmedSecret = String(store.get('naverShoppingClientSecret') || '').trim();
+    const trimmedSecret = getSecret('naverShoppingClientSecret').trim();
     if (!trimmedKeyword || !trimmedId || !trimmedSecret) {
       return { items: [] };
     }
