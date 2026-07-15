@@ -72,7 +72,7 @@ EduNote는 Windows 환경에서 교사가 별도 서버 구축 없이 실행할 
 
 | 영역 | 사용 기술 | 적용 목적 |
 | --- | --- | --- |
-| 데스크톱 앱 | Electron 30 | Windows 실행파일 제공, 로컬 파일 저장, PDF 출력, 외부 브라우저 열기 등 운영체제 기능 연동 |
+| 데스크톱 앱 | Electron 43 | Windows 실행파일 제공, 로컬 파일 저장, PDF 출력, 외부 브라우저 열기 등 운영체제 기능 연동 |
 | 빌드 도구 | electron-vite, Vite | Electron main, preload, renderer 빌드 구성 및 빠른 개발 환경 제공 |
 | 프론트엔드 | React 19, TypeScript | 화면 컴포넌트 구성, 상태 관리, 생성 결과 편집 및 미리보기 구현 |
 | 스타일 | Tailwind CSS, PostCSS | 다크모드, 반응형 레이아웃, 버튼·카드·폼 UI 구성 |
@@ -92,7 +92,7 @@ EduNote는 Windows 환경에서 교사가 별도 서버 구축 없이 실행할 
 
 ### 2.4 데스크톱 앱 구조
 
-앱은 Electron 30 기반으로 구성하였다. Electron의 main process는 파일 저장, 폴더 선택, PDF 생성, 웹페이지 메타데이터 수집, 로컬 데이터 백업 같은 운영체제 연동 기능을 담당한다. renderer process는 React 화면과 사용자 상호작용을 담당하며, preload script를 통해 안전하게 Electron IPC 기능에 접근하도록 구성하였다.
+앱은 Electron 43 기반으로 구성하였다. Electron의 main process는 파일 저장, 폴더 선택, PDF 생성, 웹페이지 메타데이터 수집, 로컬 데이터 백업 같은 운영체제 연동 기능을 담당한다. renderer process는 React 화면과 사용자 상호작용을 담당하며, preload script를 통해 안전하게 Electron IPC 기능에 접근하도록 구성하였다.
 
 ### 2.5 AI 및 생성 서비스
 
