@@ -36,7 +36,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Electron 43은 설치에 Node 22.12 이상을 요구한다
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies

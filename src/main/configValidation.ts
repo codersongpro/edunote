@@ -4,7 +4,7 @@ import * as path from 'path';
 // 백업 파일이 임의로 수정되었거나 렌더러가 잘못된 값을 보내도
 // electron-store에 비정상 타입이 저장되지 않도록 막는다.
 
-const MAX_STRING_VALUE_CHARS = 10_000;
+export const MAX_STRING_VALUE_CHARS = 10_000;
 
 const BOOLEAN_KEYS = new Set([
   'alwaysAskPath',
