@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench } from 'lucide-react';
+import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench, Scale, ChevronDown } from 'lucide-react';
 import iconPng from '../assets/icon.png';
+
+// 배포물에 포함되는 주요 오픈소스 구성요소 고지. 전체 목록·라이선스 전문은
+// 앱과 함께 배포되는 THIRD-PARTY-NOTICES.md 파일에 담겨 있다.
+const OPEN_SOURCE_NOTICES: { name: string; license: string; holder: string }[] = [
+  { name: '@google/genai', license: 'Apache-2.0', holder: 'Google LLC' },
+  { name: 'firebase', license: 'Apache-2.0', holder: 'Google LLC' },
+  { name: 'hwpxlib (HWPX 빈 문서 골격)', license: 'Apache-2.0', holder: 'Neolord0 외' },
+  { name: 'react · react-dom', license: 'MIT', holder: 'Meta Platforms, Inc.' },
+  { name: 'electron-store', license: 'MIT', holder: 'Sindre Sorhus' },
+  { name: 'qrcode', license: 'MIT', holder: 'Ryan Day' },
+  { name: '@xmldom/xmldom', license: 'MIT', holder: 'Christopher J. Brody 외' },
+  { name: 'react-markdown · remark · rehype', license: 'MIT', holder: 'Titus Wormer 외' },
+  { name: 'jszip (MIT 선택)', license: 'MIT', holder: 'Stuart Knightley 외' },
+  { name: 'pako', license: 'MIT AND Zlib', holder: 'Vitaly Puzrin · Andrei Tuputcyn' },
+  { name: 'lucide-react', license: 'ISC', holder: 'Lucide Contributors' },
+  { name: 'Pretendard 글꼴', license: 'OFL-1.1', holder: 'Kil Hyung-jin' },
+];
 
 interface UpdateInfo {
   currentVersion: string;
@@ -12,6 +29,7 @@ interface UpdateInfo {
 const AboutScreen: React.FC = () => {
   const [version, setVersion] = useState('');
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [showOpenSource, setShowOpenSource] = useState(false);
 
   useEffect(() => {
     window.electronAPI.getVersion().then((v: string) => setVersion(v)).catch(() => {});
@@ -162,6 +180,36 @@ const AboutScreen: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Open source notices */}
+        <div className="bg-white dark:bg-[#221E1B] rounded-2xl border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm overflow-hidden">
+          <button
+            onClick={() => setShowOpenSource(v => !v)}
+            className="w-full flex items-center gap-2 p-6 text-left"
+          >
+            <Scale className="w-4 h-4 text-slate-500" />
+            <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">오픈소스 라이선스</h2>
+            <ChevronDown className={`w-4 h-4 ml-auto text-[#A8A29E] transition-transform ${showOpenSource ? 'rotate-180' : ''}`} />
+          </button>
+          {showOpenSource && (
+            <div className="px-6 pb-6 space-y-3">
+              <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+                EduNote는 아래 오픈소스 소프트웨어를 사용합니다. 각 구성요소는 해당 라이선스 조건에 따라 배포되며, 전체 목록과 라이선스 전문은 앱과 함께 배포되는 <span className="font-semibold">THIRD-PARTY-NOTICES.md</span> 파일에서 확인할 수 있습니다.
+              </p>
+              <div className="border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl divide-y divide-[#EDE8E1] dark:divide-[#2E2822] max-h-64 overflow-y-auto">
+                {OPEN_SOURCE_NOTICES.map(({ name, license, holder }) => (
+                  <div key={name} className="flex items-center justify-between gap-3 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] truncate">{name}</p>
+                      <p className="text-[11px] text-[#A8A29E] dark:text-[#6B5E57] truncate">{holder}</p>
+                    </div>
+                    <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">{license}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* License */}
