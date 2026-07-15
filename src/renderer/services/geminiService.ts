@@ -1014,6 +1014,7 @@ export const generateCounselingLog = async (inputs: {
   studentName: string;
   counselingContent: string;
   followUpPlan: string;
+  privacyModeEnabled?: boolean;
 }): Promise<string> => {
   const prompt = `
 ${getDateContext()}
@@ -1033,11 +1034,13 @@ ${getDateContext()}
 3. 각 항목은 개조식(~함., ~임., ~하기로 함.)으로 작성하세요.
 4. 문서 내용만 출력하세요. 작성 경위·안내 문구·설명 문장을 문서 앞뒤에 절대 추가하지 마세요.`;
 
-  return await aiGenerate(
-    prompt,
+  const privacy = withStudentPrivacy(prompt, inputs.studentName, inputs.privacyModeEnabled);
+  const result = await aiGenerate(
+    privacy.prompt,
     '당신은 교사의 상담일지 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
   );
+  return privacy.restore(result);
 };
 
 export const generateClassManagementLog = async (inputs: {

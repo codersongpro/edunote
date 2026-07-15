@@ -68,7 +68,9 @@ const CounselingLogGenerator: React.FC = () => {
     setResult('');
     startGeneration();
     try {
-      const output = await generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan });
+      // 개인정보 보호 모드(기본 켜짐): 학생 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
+      const privacyMode = await window.electronAPI.getConfig('privacyModeEnabled').catch(() => true);
+      const output = await generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan, privacyModeEnabled: privacyMode !== false });
       setResult(output);
       playSuccessSound();
     } catch (e) {
