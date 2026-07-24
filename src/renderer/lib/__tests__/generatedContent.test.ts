@@ -77,6 +77,30 @@ describe('markdownOrHtmlToHtml', () => {
     const result = markdownOrHtmlToHtml('- 첫째 <span>표시</span>\n- 둘째');
     expect(result).toMatch(/<li[^>]*>/);
   });
+
+  it('HTML 안에서 <br> 없이 줄바꿈 문자만으로 구분된 개조식 항목은 <br>로 보정한다', () => {
+    // 계획서·보고서에서 AI가 가./나./다. 항목을 <br> 태그 없이 실제 줄바꿈 문자만으로
+    // 구분해 보낼 때가 있었다. HWPX 저장은 원문 줄바꿈을 그대로 문단으로 나눠 정상 출력됐지만,
+    // 브라우저 미리보기는 일반 HTML 흐름에서 줄바꿈을 한 칸으로 접어버려 모든 항목이 한 줄로
+    // 붙어 보였다.
+    const doc = [
+      '<div>',
+      '1. 추진배경',
+      '가. 첫째 이유',
+      '나. 둘째 이유',
+      '2. 목적',
+      '</div>',
+    ].join('\n');
+    const result = markdownOrHtmlToHtml(doc);
+    expect(result).toContain('1. 추진배경<br>가. 첫째 이유<br>나. 둘째 이유<br>2. 목적');
+  });
+
+  it('표 태그 사이의 서식용 줄바꿈에는 <br>를 끼워 넣지 않는다', () => {
+    const doc = '<table>\n<tr>\n<td>셀1</td>\n</tr>\n</table>';
+    const result = markdownOrHtmlToHtml(doc);
+    expect(result).not.toContain('<br>');
+    expect(result).toContain('<td>셀1</td>');
+  });
 });
 
 describe('extractPlainText', () => {
