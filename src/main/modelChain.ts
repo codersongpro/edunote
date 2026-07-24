@@ -5,7 +5,11 @@
 // 이번에는 키로 실제 조회한 모델 목록과 선호 순서의 교집합만 폴백 후보로 쓴다.
 
 // 선호 순서 — 무료 키는 분당 허용량이 큰 경량 모델을 앞에 둔다.
+// gemini-3.1-flash-lite(무료 티어 제공, 안정판)를 최우선으로 두고, 프로젝트에 아직
+// 3세대 모델이 열리지 않은 키를 위해 2.5/2.0 계열을 그대로 폴백으로 남겨둔다.
+// (buildModelChain이 키로 실제 조회한 모델과 교집합만 쓰므로, 없는 이름은 안전하게 건너뛴다.)
 export const FREE_MODEL_PREFERENCE = [
+  'gemini-3.1-flash-lite',
   'gemini-2.5-flash-lite',
   'gemini-2.5-flash',
   'gemini-2.0-flash',

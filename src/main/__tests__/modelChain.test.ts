@@ -21,12 +21,12 @@ describe('buildModelChain', () => {
   });
 
   it('목록 조회 실패(null) 시 기본 모델 1개로 동작한다', () => {
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, null)).toEqual(['gemini-2.5-flash-lite']);
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, [])).toEqual(['gemini-2.5-flash-lite']);
+    expect(buildModelChain(FREE_MODEL_PREFERENCE, null)).toEqual([FREE_MODEL_PREFERENCE[0]]);
+    expect(buildModelChain(FREE_MODEL_PREFERENCE, [])).toEqual([FREE_MODEL_PREFERENCE[0]]);
   });
 
   it('선호 모델이 하나도 없으면 기본 모델 1개로 동작한다', () => {
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, ['models/some-unknown-model'])).toEqual(['gemini-2.5-flash-lite']);
+    expect(buildModelChain(FREE_MODEL_PREFERENCE, ['models/some-unknown-model'])).toEqual([FREE_MODEL_PREFERENCE[0]]);
   });
 
   it('폴백 체인은 최대 3개로 제한한다', () => {
