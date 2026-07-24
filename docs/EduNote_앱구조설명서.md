@@ -1,7 +1,7 @@
 # EduNote 앱 구조 및 메커니즘 설명서
 
-작성 기준: 2026년 6월 12일
-대상 버전: EduNote v1.14.0
+작성 기준: 2026년 7월 24일
+대상 버전: EduNote v1.18.4
 목적: 다른 AI 또는 개발자가 EduNote의 구조, 기능, 동작 방식을 빠르게 이해하기 위한 기술 설명 자료
 
 ---
@@ -20,6 +20,7 @@ EduNote는 교사의 학생기록 작성, 교무행정 문서 작성, 수업자�
 
 ```
 EduNote
+├─ [즐겨찾기]                   ← 각 메뉴 항목의 ☆ 버튼으로 고정한 메뉴만 모아 상단에 표시 (localStorage, 이 PC 전용)
 ├─ 홈
 ├─ 사용 방법
 ├─ 도움말 / 정보
@@ -37,9 +38,10 @@ EduNote
 │
 ├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
-│  ├─ 수업 도구                ← 트리 서브메뉴
+│  ├─ 수업 도구                ← 탭 전환 (ClassToolsPanel)
 │  │  ├─ QR 메이커
-│  │  └─ 럭키드로우
+│  │  ├─ 럭키드로우
+│  │  └─ 채팅방                ← Firebase 기반 QR 참여방 개설·관리(ChatRoom, manage 모드). 방 시작 시 대화 전용 새 창(#chat)이 자동으로 열림
 │  └─ 나만의 자료실
 │
 ├─ [학생기록AI]
@@ -59,8 +61,10 @@ EduNote
    ├─ 내 스킬                  ← 스킬 목록·실행·수정·공유, HTML 앱 만들기(HtmlAppCreator) (MY_AI_TOOLS)
    └─ 스킬마켓             ← 마켓에서 가져오기 (MY_AI_TOOLS_SHARED)
 
-사이드바 하단: Demo (별도 창으로 열림)
+사이드바 하단: Demo (별도 창으로 열림, #demo)
 ```
+
+생기부도우미 4개 생성기(행발생성·교과 세특·학교스포츠클럽·창체 특기사항)는 모두 관찰 내용 입력칸 옆에 "📷 학생 기록물 업로드(사진/스캔 자동 분석)" 버튼을 제공하며, 결과 카드에는 글자수·바이트수와 실제 생성에 사용된 AI 모델명 배지가 함께 표시된다(9.1·9.6절 참고).
 
 ---
 
@@ -68,17 +72,20 @@ EduNote
 
 | 영역 | 사용 기술 | 역할 |
 | --- | --- | --- |
-| 데스크톱 런타임 | Electron 30 | Windows 앱 창, 파일 저장, PDF 출력, 외부 브라우저 열기, 로컬 데이터 접근 |
+| 데스크톱 런타임 | Electron 43 | Windows 앱 창, 파일 저장, PDF 출력, 외부 브라우저 열기, 로컬 데이터 접근, safeStorage 암호화 |
 | 프론트엔드 | React 19, TypeScript, TSX | 앱 화면 구성, 메뉴 전환, 생성 결과 표시, 입력 폼 처리 |
 | 빌드 도구 | electron-vite, Vite | main, preload, renderer 빌드 |
+| 테스트 | Vitest, jsdom | 순수 로직·화면 렌더링 단위 테스트 (2026-07 기준 약 190건) |
 | 스타일 | Tailwind CSS, PostCSS | 화면 레이아웃, 다크모드, 버튼, 카드, 입력창 스타일 |
-| AI SDK | @google/genai | Gemini API 호출, 텍스트·이미지·파일 입력 처리 |
+| AI SDK | @google/genai | Gemini API 호출, 텍스트·이미지·파일 입력 처리, 모델 폴백 체인 |
 | 로컬 저장 | electron-store, JSON 파일 | 사용자 설정, 학생 명단, 자료실, 학생 메모, 백업 데이터 저장 |
+| 시크릿 저장 | Electron safeStorage | Gemini·나라장터·네이버 API 키를 OS 자격 증명 저장소로 암호화 보관 |
 | 문서 처리 | HTML, CSS, Electron printToPDF | 공문서, 수업자료, 워크시트, PDF 저장 |
-| HWPX 저장 | JSZip, @xmldom/xmldom | HWPX 내부 XML 생성·분석, 줄 배치 정보(lineseg)와 기본 문서 포맷 구성 |
-| 마크다운 렌더링 | react-markdown | 챗봇 응답 마크다운 렌더링 |
+| HWPX 저장 | JSZip, @xmldom/xmldom | HWPX 내부 XML 생성·분석, 줄 배치 정보(lineseg), 표(hp:tbl)·서식 변환, 골격 기반 재포장 |
+| 마크다운 렌더링 | react-markdown, remark, remark-gfm, remark-rehype, rehype-stringify | 챗봇·생성 결과의 마크다운·HTML 렌더링 판별 및 변환 |
+| 실시간 채팅 | firebase (Firestore, Auth) | 채팅방(수업 참여방) 메시지·참여자 실시간 동기화, 교사 계정 없이 익명 인증 |
 | 아이콘 | lucide-react | 메뉴 및 버튼 아이콘 |
-| QR 생성 | qrcode | QR 메이커 기능 |
+| QR 생성 | qrcode | QR 메이커, 채팅방 참여 QR 코드 |
 | 배포 | electron-builder, GitHub Actions, GitHub Releases | Windows portable EXE 자동 빌드 및 배포 |
 
 ---
@@ -92,6 +99,13 @@ edunote
 ├─ electron.vite.config.ts
 ├─ electron-builder.yml
 ├─ RELEASE_NOTES.md
+├─ THIRD-PARTY-NOTICES.md
+├─ docs
+│  ├─ EduNote_개발일지.md
+│  ├─ EduNote_앱구조설명서.md
+│  ├─ EduNote_사용자매뉴얼.md
+│  └─ chat
+│     └─ index.html          ← 학생용 채팅방 접속 페이지 (교사 앱과 별도로 정적 호스팅)
 ├─ build
 │  ├─ icon.ico
 │  ├─ icon.png
@@ -100,9 +114,20 @@ edunote
 │  ├─ main
 │  │  ├─ index.ts
 │  │  ├─ ipcHandlers.ts
+│  │  ├─ ipcValidation.ts
 │  │  ├─ GeminiService.ts
+│  │  ├─ modelChain.ts
+│  │  ├─ requestPacer.ts
+│  │  ├─ streamGuard.ts
 │  │  ├─ HwpxGenerator.ts
-│  │  └─ store.ts
+│  │  ├─ hwpxSkeleton.ts
+│  │  ├─ secretStore.ts
+│  │  ├─ configValidation.ts
+│  │  ├─ netGuard.ts
+│  │  ├─ pathSafety.ts
+│  │  ├─ versionCompare.ts
+│  │  ├─ store.ts
+│  │  └─ __tests__/           ← 위 모듈별 단위 테스트
 │  ├─ preload
 │  │  ├─ index.ts
 │  │  └─ types.d.ts
@@ -113,6 +138,8 @@ edunote
 │     ├─ types.ts
 │     ├─ constants.ts
 │     ├─ GlobalStateContext.tsx
+│     ├─ TourContext.tsx
+│     ├─ assets.d.ts
 │     ├─ index.css
 │     ├─ assets
 │     │  └─ icon.png
@@ -122,7 +149,6 @@ edunote
 │     │  ├─ AboutScreen.tsx
 │     │  ├─ SettingsScreen.tsx
 │     │  ├─ RecordChatbot.tsx
-│     │  ├─ GuidelineQA.tsx
 │     │  ├─ OpinionGenerator.tsx
 │     │  ├─ SubjectGenerator.tsx
 │     │  ├─ SportsClubGenerator.tsx
@@ -130,34 +156,61 @@ edunote
 │     │  ├─ EducationAssistantQA.tsx
 │     │  ├─ OfficialDocAnalyzer.tsx
 │     │  ├─ SchoolDocPanel.tsx
+│     │  ├─ DocArchivePanel.tsx
+│     │  ├─ DocTodoPanel.tsx
+│     │  ├─ PrintFormScreen.tsx
+│     │  ├─ BudgetPlannerScreen.tsx
+│     │  ├─ TranslatorScreen.tsx
 │     │  ├─ LessonMaterialGenerator.tsx
+│     │  ├─ ClassToolsPanel.tsx
+│     │  ├─ TeacherRecordPanel.tsx
 │     │  ├─ LessonObservationGenerator.tsx
 │     │  ├─ CounselingLogGenerator.tsx
 │     │  ├─ ClassManagementLogGenerator.tsx
 │     │  ├─ StudentMemoBoard.tsx
 │     │  ├─ QRMaker.tsx
-│     │  ├─ MyResourceLibrary.tsx
 │     │  ├─ LuckyDraw.tsx
+│     │  ├─ ChatRoom.tsx
+│     │  ├─ MyResourceLibrary.tsx
 │     │  ├─ GeneratedDisplay.tsx
 │     │  ├─ FileUpload.tsx
 │     │  ├─ MyToolsScreen.tsx
 │     │  ├─ MyToolEditor.tsx
 │     │  ├─ MyToolRunner.tsx
 │     │  ├─ MyToolChatCreator.tsx
-│     │  └─ SchoolLevelSelector.tsx
+│     │  ├─ HtmlAppCreator.tsx
+│     │  ├─ DemoSamplesScreen.tsx
+│     │  └─ TourOverlay.tsx
 │     ├─ data
-│     │  └─ sampleTools.ts
+│     │  ├─ sampleTools.ts
+│     │  └─ printForms.ts
 │     ├─ constants
 │     │  ├─ curriculum2022.ts
 │     │  └─ curriculumStandards.ts
 │     ├─ hooks
-│     │  └─ useGenerationTracker.ts
+│     │  ├─ useGenerationTracker.ts
+│     │  └─ useEscapeKey.ts
 │     ├─ lib
 │     │  ├─ generatedContent.ts
 │     │  ├─ generationHistory.ts
+│     │  ├─ generationErrors.ts
+│     │  ├─ generationSafety.ts
+│     │  ├─ guidelineCompliance.ts
+│     │  ├─ security.ts
+│     │  ├─ safeStorage.ts
+│     │  ├─ textLength.ts
+│     │  ├─ translation.ts
+│     │  ├─ apiKeyGuide.ts
+│     │  ├─ chatFirebaseGuide.ts
+│     │  ├─ cancellation.ts
+│     │  ├─ aiJson.ts
+│     │  ├─ a4Check.ts
+│     │  ├─ toast.ts
+│     │  ├─ tours.ts
 │     │  ├─ hwpx-parser.ts
 │     │  ├─ hwpx-template.ts
-│     │  └─ soundEffect.ts
+│     │  ├─ soundEffect.ts
+│     │  └─ __tests__/        ← 위 모듈별 단위 테스트
 │     └─ services
 │        └─ geminiService.ts
 └─ dist
@@ -172,17 +225,47 @@ edunote
 | --- | --- |
 | `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
 | `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
-| `src/main/GeminiService.ts` | Gemini API 실제 호출, 모델 선택, 무료·유료 API 등급 처리, 이미지 생성 |
-| `src/main/HwpxGenerator.ts` | HWPX 파일 생성 기능. 제목·본문·표 포맷과 줄 배치 정보를 구성한다. |
+| `src/main/GeminiService.ts` | Gemini API 실제 호출, 무료·유료 API 등급별 모델 폴백 체인 실행, 429/일일한도 재시도, 이미지 생성. `generateContent`류 함수는 `{text, model}` 형태로 실제 사용된 모델명을 함께 반환한다 |
+| `src/main/modelChain.ts` | 모델 폴백 체인 순수 로직 — 선호 모델 목록(`FREE_MODEL_PREFERENCE`/`PAID_MODEL_PREFERENCE`)과 키로 실제 조회한 모델 목록의 교집합 계산, 429 재시도 대기시간(retryDelay) 파싱, 일일 한도 오류 판별 |
+| `src/main/requestPacer.ts` | 무료 키 분당 요청 한도(15회)에 맞춰 AI 호출 간 최소 간격을 자동으로 띄우는 로직 |
+| `src/main/streamGuard.ts` | 스트리밍 생성이 빈 마크업만 무한 반복하거나 청크가 오래 끊기는 비정상 상황을 감지해 다음 모델로 폴백시키는 로직 |
+| `src/main/secretStore.ts` | Gemini·나라장터·네이버 API 키를 safeStorage로 암호화 저장·복호화, 시크릿 키 목록(`SECRET_KEYS`)을 렌더러 노출 차단·백업 제외·설정 동기화 전 구간에서 공통 파생 |
+| `src/main/configValidation.ts`, `src/main/ipcValidation.ts` | 설정 저장·백업 복원 값과 AI 생성 IPC 요청의 형식·크기를 main process에서 한 번 더 검증 |
+| `src/main/netGuard.ts` | 인터넷 가격조회 등 외부 URL 요청에서 localhost·사설 IP(IPv4 매핑 IPv6 포함) 접근을 막는 SSRF 가드 |
+| `src/main/pathSafety.ts` | 자동 저장 경로가 지정된 저장 폴더 밖으로 벗어나지 않도록 검증 |
+| `src/main/versionCompare.ts` | `-beta` 등 접미사가 붙은 릴리즈 태그도 안전하게 비교하는 버전 비교 로직 |
+| `src/main/hwpxSkeleton.ts` | 한글이 실제로 여는 빈 HWPX 문서 골격(Apache-2.0 픽스처)을 내장해 HWPX 생성 시 재사용 |
+| `src/main/HwpxGenerator.ts` | HWPX 파일 생성 기능. 제목·본문·표 포맷과 줄 배치 정보(lineseg)를 골격 기반으로 구성한다 |
 | `src/main/store.ts` | electron-store 인스턴스 관리 |
 | `src/preload/index.ts` | preload (화면과 앱 본체를 안전하게 연결하는 중간 다리)가 renderer에 노출하는 `window.electronAPI` 정의 |
-| `src/preload/types.d.ts` | `window.electronAPI` 타입 정의 |
+| `src/preload/types.d.ts` | `window.electronAPI` 타입 정의. `aiGenerate`/`aiGenerateMultipart`/`aiGenerateMultipartStream`은 `Promise<{text: string; model: string}>`을 반환한다 |
 | `src/renderer/App.tsx` | 전체 화면 라우팅, 사이드바 메뉴, 메뉴 드래그 재정렬, 전역 상태, 다크모드, 생성 중단, 토스트 처리, 메인 사이드바 접기 |
 | `src/renderer/types.ts` | AppMode, DocType, 학생 데이터, 생성 요청, 파일 데이터 등 핵심 타입 정의 |
 | `src/renderer/constants.ts` | 공통 상수, 공문서 시스템 지침, 로딩 문구, 학생기록 예시 등 |
-| `src/renderer/services/geminiService.ts` | renderer 쪽 AI 프롬프트 생성, 메뉴별 생성 함수, 결과 후처리 |
+| `src/renderer/services/geminiService.ts` | renderer 쪽 AI 프롬프트 생성, 메뉴별 생성 함수, 결과 후처리. 저수준 `aiGenerate`류는 선택적 `onModel` 콜백으로 실제 생성 모델명을 상위에 전달하고, 상위 생성 함수 중 결과를 화면에 그대로 노출하는 함수들만 반환 타입을 `{text, model}`로 바꿔 그 모델명을 함께 반환한다 |
+| `src/renderer/lib/generatedContent.ts` | 생성 결과가 마크다운인지 완성된 HTML 문서(`<!DOCTYPE html>` 포함)인지 판별해 알맞은 방식으로 HTML로 변환. HTML 문서를 마크다운으로 오판하면 remark가 원시 HTML 블록을 제거해 미리보기가 비거나 태그가 그대로 노출된다 |
+| `src/renderer/lib/security.ts` | `sanitizeHtml`(script·on* 속성·iframe 등 제거, 전체 HTML 문서는 `<style>`+`<body>`만 추출), 가져온 도구(JSON) 유효성 검증, https 링크 검증 |
+| `src/renderer/lib/safeStorage.ts` | main process의 safeStorage 암·복호화를 주입식으로 감싸 electron 의존 없이 단위 테스트 가능하게 분리 |
+| `src/renderer/lib/textLength.ts` | `getByteLength` — 나이스(NEIS) 기준과 동일한 UTF-8 바이트 수 계산(TextEncoder 기반, 한글 1자=3바이트) |
+| `src/renderer/lib/translation.ts` | 가정통신문·메시지·간단 번역이 공유하는 번역 대상 언어 목록과 번역 프롬프트 |
+| `src/renderer/lib/generationErrors.ts` | API 키 없음·키 오류·사용량 초과·시간 초과·네트워크 오류를 구분해 사용자에게 안내하는 오류 분류 |
+| `src/renderer/lib/generationSafety.ts` | 학생기록 결과에서 기재요령 주의 표현(교외 대회·수상, 공인어학시험 등)을 자동 감지해 경고하는 안전망 |
+| `src/renderer/lib/guidelineCompliance.ts` | 생기부 기재요령 위반 여부를 판단하는 규칙 모음 |
+| `src/renderer/lib/apiKeyGuide.ts` | Google AI Studio 발급 거부 등 상황별 API 키 발급 안내 문구 |
+| `src/renderer/lib/chatFirebaseGuide.ts` | 채팅방 기능에 필요한 Firebase 프로젝트 설정 단계·Firestore 보안 규칙 안내 텍스트 |
+| `src/renderer/lib/cancellation.ts` | 화면별로 분리된 생성 중단 신호 처리 |
+| `src/renderer/lib/aiJson.ts` | Gemini JSON 응답 모드 결과를 안전하게 파싱하는 공용 유틸 |
+| `src/renderer/lib/tours.ts` | 인터랙티브 튜토리얼(TourOverlay) 단계 정의 |
 | `src/renderer/GlobalStateContext.tsx` | 생성 중에도 화면 상태를 유지하기 위한 전역 상태 컨텍스트 |
-| `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장 |
+| `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장. 선택적 `model` prop을 헤더에 배지로만 표시하고 저장·복사·인쇄에 쓰이는 `content`와는 분리되어 있어 결과물에는 섞이지 않는다 |
+| `src/renderer/components/ClassToolsPanel.tsx` | 수업 도구 탭 컨테이너 — QR 메이커·럭키드로우·채팅방(ChatRoom) 세 탭 전환 |
+| `src/renderer/components/TeacherRecordPanel.tsx` | 우리반기록 탭 컨테이너 — 수업관찰기록·상담일지·학급경영일지 세 탭 전환 |
+| `src/renderer/components/ChatRoom.tsx` | Firebase(Firestore+Auth) 기반 실시간 채팅방. `manage` 모드(본 창, 방 개설·QR/주소 관리)와 `conversation` 모드(별도 창 `#chat`, 대화만 표시) 두 가지로 동작 |
+| `src/renderer/components/DocArchivePanel.tsx` | 공문 캡처 이미지·첨부 파일 저장 및 검색 |
+| `src/renderer/components/DocTodoPanel.tsx` | 공문요약·업무추출에서 저장한 할일의 마감일·완료 상태 관리, D-day 배지 |
+| `src/renderer/components/TranslatorScreen.tsx` | 한국어↔외국어 양방향 간단 번역 화면 |
+| `src/renderer/components/DemoSamplesScreen.tsx` | Demo 별도 창(`#demo`)에서 보여주는 기능별 샘플 입력값 모음 |
+| `src/renderer/components/TourOverlay.tsx` | 화면 요소를 단계별로 하이라이트하는 인터랙티브 튜토리얼 오버레이 |
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |
 | `src/renderer/components/MyToolsScreen.tsx` | 내 스킬 메인 화면 — 스킬 목록·카드·공유 모달, 마켓 탭·CSV 파싱 |
 | `src/renderer/components/HtmlAppCreator.tsx` | HTML 앱 만들기 화면 — 앱 설명·기능 목록 입력, AI 생성, 미리보기, 내 스킬 저장 (어휘 플래시카드 예시는 단어/뜻 쌍이 미리 채워짐) |
@@ -214,10 +297,12 @@ edunote
 | 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
 | 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
 | 교무행정AI | `DOC_ARCHIVE` | `DocArchivePanel` | 공문 캡처 이미지·첨부 저장 및 검색 |
+| 교무행정AI | `DOC_TODO` | `DocTodoPanel` | 공문요약·업무추출에서 저장한 할일의 마감일·완료 상태 관리 |
 | 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 10종 A4 출력·PDF 저장 |
 | 교무행정AI | `BUDGET_PLANNER` | `BudgetPlannerScreen` | 과목별 비율 방식 또는 일반 작성 방식의 예산안 작성, 단가·수량 조합, 0원 맞추기, CSV 입출력 |
+| 교무행정AI | `TRANSLATOR` | `TranslatorScreen` | 한국어↔외국어 양방향 간단 번역 |
 | 수업자료AI | `LESSON_MATERIAL` | `LessonMaterialGenerator` | 슬라이드, 워크시트, 퀴즈, 수업계획서 생성 |
-| 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우) |
+| 수업자료AI | `CLASS_TOOLS` | `ClassToolsPanel` | 수업 도구 탭 컨테이너 (QR 메이커 / 럭키드로우 / 채팅방) |
 | 수업자료AI | `MY_RESOURCES` | `MyResourceLibrary` | 자료 링크·파일 관리 |
 | 학생기록AI | `RECORD_CHATBOT` | `RecordChatbot` | 생활기록부 기재 상담 챗봇 |
 | 학생기록AI | `STUDENT_RECORD_GROUP` | (트리 토글) | 생기부도우미 서브메뉴 펼침/접기 |
@@ -229,6 +314,8 @@ edunote
 | 학생기록AI | `STUDENT_MEMO` | `StudentMemoBoard` | 학생 메모 등록·필터링 |
 | 내 스킬 | `MY_AI_TOOLS` | `MyToolsScreen` (내 스킬 탭) | 스킬 목록, 실행, 수정, 공유 |
 | 내 스킬 | `MY_AI_TOOLS_SHARED` | `MyToolsScreen` (스킬마켓 탭) | 마켓에서 도구 가져오기 |
+
+`GUIDELINE_QA`, `QR_MAKER`, `LUCKY_DRAW`는 `AppMode`에 값만 남아 있고 `App.tsx`의 `renderMode`나 메뉴 배열 어디에서도 참조되지 않는 미사용 항목이다(QR 메이커·럭키드로우는 `CLASS_TOOLS` 탭 안의 컴포넌트로 흡수되었고, `GuidelineQA.tsx` 컴포넌트 자체는 삭제됨). 새 화면을 추가할 때 이 이름들을 재사용하지 않도록 주의한다.
 
 ---
 
@@ -252,17 +339,22 @@ edunote
 
 ## 8. Gemini 모델 구성
 
-`src/main/GeminiService.ts`에서 API 등급에 따라 모델을 선택한다.
+고정된 모델 하나를 쓰지 않고, `src/main/modelChain.ts`의 선호 순서 목록과 API 키로 실제 조회한(`ai.models.list()`, 세션당 1회 캐시) 사용 가능 모델 목록의 **교집합**만 폴백 체인으로 사용한다. 목록에 없는 이름은 애초에 후보에서 빠지므로, 하드코딩한 모델명이 그 키에서 지원되지 않아 요청을 낭비하는 일이 없다.
 
-| 등급 | 모델 | 특징 |
-| --- | --- | --- |
-| 무료 (Free) | `gemini-2.5-flash-lite` | 빠른 응답, 분당 요청 한도 있음 |
-| 유료 (Paid) | `gemini-2.5-pro` | 더 높은 품질, 높은 사용 한도 |
+| 등급 | 선호 순서 (`FREE_MODEL_PREFERENCE` / `PAID_MODEL_PREFERENCE`) |
+| --- | --- |
+| 무료 (Free) | `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` |
+| 유료 (Paid) | `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.5-flash-lite` |
 
-오류 처리:
-- 429/503 (쿼터 초과): 60초 임시 차단 후 재시도
-- 403 (권한 거부): 1시간 차단 후 상위 모델 재시도
-- 타임아웃: 최대 90초 대기
+모델 폴백·오류 처리(`GeminiService.ts`):
+- 분당 요청 한도(429)로 재시도 대기시간(`retryDelay`)이 응답에 포함된 경우, 그 시간만큼 기다린 뒤 **같은 모델로** 재시도해 문체 일관성을 유지한다.
+- 일일 한도(PerDay) 소진이면 해당 모델을 10분간 차단하고 폴백 체인의 다음 모델로 넘어간다.
+- 모델 목록 조회 자체가 실패하면 선호 순서의 첫 번째 모델 하나로만 동작한다(기존 방식과 동일하게 안전하게 저하).
+- 모든 시도가 막히면 분당 제한/일일 한도를 구분해 안내한다.
+- 무료 키는 분당 요청 한도(15회)에 맞춰 호출 간 최소 4초 간격을 자동 적용한다(`requestPacer.ts`).
+- 스트리밍 생성이 빈 마크업만 반복하거나 45초 이상 응답이 없으면 다음 모델로 폴백한다(`streamGuard.ts`).
+
+생성 결과에는 실제로 응답한 모델명이 함께 반환되며(`{text, model}`), 생기부 도우미·문서작성기·수업자료·AI스킬즈 등 사용자가 보는 결과 화면에는 이 모델명이 작은 배지로 표시된다(9.6절 참고). 배지는 화면 표시용이며 저장·복사·인쇄되는 실제 결과물 텍스트에는 포함되지 않는다.
 
 ---
 
@@ -272,13 +364,15 @@ edunote
 
 | 기능 | 입력 | 처리 | 출력 |
 | --- | --- | --- | --- |
-| 행동특성 및 종합의견 | 학교급, 학생명, 긍정·보완 태그, 추가 맥락 | 생활기록부 문체 지침과 예시를 반영해 생성 | 학생별 종합의견 문장 |
-| 교과세특 | 학생명, 교과, 과제·수행평가, 성취수준, 관찰 내용 | 성취수준별 표현과 사고 과정 중심 프롬프트 적용 | 교과별 세특 문장 |
-| 스포츠클럽 | 학생명, 종목, 관찰 내용 | 공동체역량, 역할, 협력 방식 중심 생성 | 스포츠클럽 특기사항 |
-| 창의적 체험활동 | 활동 영역, 태그, 추가 맥락 | 활동-탐구-진로 연결 구조로 생성 | 창체 특기사항 |
-| 상담일지 | 상담 관련 내용 | 학교 상담 양식 기반 생성 | 상담일지 |
-| 학급경영일지 | 학급 운영 내용 | 학급경영 기록 양식 생성 | 학급경영일지 |
+| 행동특성 및 종합의견 | 학교급, 학생명, 긍정·보완 태그, 추가 맥락, (선택) 학생 기록물 사진/스캔 파일 | 생활기록부 문체 지침과 예시를 반영해 생성 | 학생별 종합의견 문장 + 글자수/바이트수 + 생성 모델 배지 |
+| 교과세특 | 학생명, 교과, 과제·수행평가, 성취수준, 관찰 내용, (선택) 학생 기록물 사진/스캔 파일 | 성취수준별 표현과 사고 과정 중심 프롬프트 적용 | 교과별 세특 문장 + 글자수/바이트수 + 생성 모델 배지 |
+| 스포츠클럽 | 학생명, 종목, 관찰 내용, (선택) 학생 기록물 사진/스캔 파일 | 공동체역량, 역할, 협력 방식 중심 생성 | 스포츠클럽 특기사항 + 글자수/바이트수 + 생성 모델 배지 |
+| 창의적 체험활동 | 활동 영역, 태그, 추가 맥락, (선택) 학생 기록물 사진/스캔 파일 | 활동-탐구-진로 연결 구조로 생성 | 창체 특기사항 + 글자수/바이트수 + 생성 모델 배지 |
+| 상담일지 | 상담 관련 내용 | 학교 상담 양식 기반 생성, 학생 명단 기준 개인정보 보호 모드 적용 | 상담일지 + 생성 모델 배지 |
+| 학급경영일지 | 학급 운영 내용 | 학급경영 기록 양식 생성, 학생 명단 기준 개인정보 보호 모드 적용 | 학급경영일지 + 생성 모델 배지 |
 | 생활기록부 상담 | 질문, 학교급 | 기재요령 컨텍스트 기반 응답 | 기재 방법 안내 |
+
+생기부 도우미 4개 화면(행동특성·교과세특·스포츠클럽·창의적 체험활동)은 결과 하단에 나이스(NEIS) 기준과 동일한 UTF-8 바이트 수를 "000자/000바이트" 형식으로 함께 표시한다(`getByteLength`, textLength.ts). 또한 관찰 내용을 직접 타이핑하는 대신, 학생의 활동지·수행평가 결과물·관찰일지 등을 스캔하거나 촬영한 파일(이미지·PDF, 여러 장 가능)을 업로드하면 `parseStudentObservationFromFiles`가 파일 속 글자를 옮기는 OCR이 아니라 학생이 수행한 활동 과정·완성도·태도까지 이미지 전체를 분석해 관찰 내용 입력칸을 자동으로 채운다. 분석 결과에는 학생 이름을 포함하지 않으며, 업로드한 파일은 분석에만 쓰이고 저장되지 않는다.
 
 ### 9.2 교무행정 AI
 
@@ -309,12 +403,13 @@ edunote
 
 ### 9.4 수업 운영 도구
 
-수업 도구(CLASS_TOOLS)는 탭 컨테이너로, QR 메이커와 럭키드로우를 탭 방식으로 전환한다. 사이드바에서는 수업 도구 항목 클릭 시 서브메뉴가 트리로 펼쳐진다.
+수업 도구(CLASS_TOOLS)는 탭 컨테이너로, QR 메이커·럭키드로우·채팅방을 탭 방식으로 전환한다.
 
 | 기능 | 역할 |
 | --- | --- |
 | QR 메이커 | 수업 링크나 자료 링크를 QR 코드로 변환 |
 | 럭키드로우 | 발표, 칭찬 주인공 등 긍정 주제로 학생 추첨 |
+| 채팅방 | Firebase(Firestore+Auth) 기반 QR 참여방 개설. 교사가 방을 시작하면 학생은 QR 코드나 주소로 입장해 익명 닉네임으로 대화하고, 교사는 대화 전용 새 창(`#chat`)에서 참여자·메시지·귓속말·핀 고정을 관리한다. 방을 열려면 사용자가 자신의 Firebase 프로젝트 설정값을 직접 입력해야 한다(chatFirebaseGuide.ts 안내) |
 | 나만의 자료실 | URL, 유튜브, 파일 자료를 주제별로 저장·검색 |
 | 학생 메모 보드 | 제목, 학생 여러 명, 내용을 기록하고 학생·키워드로 필터링 |
 
@@ -329,6 +424,13 @@ edunote
 | 생성 히스토리 | 이전 생성 결과 재활용 |
 | 전체 자료 백업 | 설정과 자료 데이터를 JSON으로 내보내기 |
 | 백업 불러오기 | 다른 PC에서 기존 자료 복원 |
+
+### 9.6 생성 모델 표시(모델 배지)
+
+모델 폴백 체인 도입 이후 실제로 어떤 Gemini 모델이 응답을 만들었는지 사용자가 알 수 없었던 문제를 해결한 기능이다. 생기부 도우미 4종, 문서작성기(9종 문서), 공문요약(업무추출), 상담일지·학급경영일지·수업관찰기록, 수업자료 4종(워크시트·퀴즈·수업계획서·슬라이드), AI스킬즈(HTML 앱 만들기, 도구 테스트·실행)까지 사용자가 결과를 저장·인쇄하는 거의 모든 화면에 적용되어 있다.
+
+- 파일에서 값을 추출해 입력 폼을 채우는 중간 단계(NEIS 성적 파일 분석, 연간 지도 계획 분석, 학생 기록물 사진 분석 등)와, 대화형 챗봇(메시지 버블 목록 구조)에는 적용하지 않는다 — 최종 "결과물" 화면이 아니거나 카드 하나로 표현되는 구조가 아니기 때문이다.
+- 배지는 공용 컴포넌트 `GeneratedDisplay`의 `model` prop 또는 각 화면 헤더에 작은 태그로만 표시되며, 복사·저장·PDF/HWPX 내보내기·인쇄에 쓰이는 실제 본문 텍스트(`content`)와는 완전히 분리되어 있다. 즉 화면에는 보이지만 저장·인쇄되는 문서에는 절대 섞이지 않는다.
 
 ---
 
@@ -377,19 +479,22 @@ renderer 컴포넌트 (화면에서 입력값 수집)
   ↓
 src/renderer/services/geminiService.ts (프롬프트 구성)
   ↓
-window.electronAPI.aiGenerate 또는 aiGenerateMultipart (안전한 호출 통로)
+window.electronAPI.aiGenerate 또는 aiGenerateMultipart(Stream) (안전한 호출 통로)
   ↓
 preload/index.ts (중간 다리 역할)
   ↓
 ipcHandlers.ts (요청 수신 및 전달)
   ↓
-main/GeminiService.ts (실제 Gemini API 호출)
+main/GeminiService.ts → modelChain.ts로 모델 폴백 체인 실행, 실제 Gemini API 호출
   ↓
 Gemini API (구글 AI 서버)
   ↓
-응답 텍스트 반환
+{ text, model } 형태로 반환 (실제 응답한 모델명 포함)
   ↓
-후처리 및 화면 표시
+geminiService.ts가 text만 꺼내 반환하거나(대부분), 결과 화면에 모델 배지가 필요한 함수는
+{ text, model } 그대로 반환
+  ↓
+후처리 및 화면 표시 (모델명은 GeneratedDisplay 등의 배지로만 표시, 저장·인쇄용 본문과는 분리)
 ```
 
 ### 10.5 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 메커니즘
@@ -421,7 +526,7 @@ IPC는 Electron 앱에서 화면(renderer)과 앱 본체(main process)가 서로
 
 | 데이터 | 저장 방식 | 관련 IPC |
 | --- | --- | --- |
-| API 키 | electron-store (앱 전용 설정 저장소) | `config:set-api-key`, `config:has-api-key` |
+| API 키·시크릿 | safeStorage 암호화(secretStore.ts), 미지원 환경은 electron-store 평문 폴백 | `config:set-api-key`, `config:has-api-key` |
 | 학교 정보 | electron-store | `config:get`, `config:set` |
 | 학생 명단 | electron-store 및 JSON | `config:get`, `data:write-json` |
 | 자료실 | JSON 파일 | `data:read-json`, `data:write-json` |
@@ -475,6 +580,7 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 | 보고서 | 완료된 결과 중심, 추진실적과 예산정산은 표 활용 |
 | 수업자료 | 학년 수준, 성취기준, 실제 수업 활용성 반영 |
 | 퀴즈 앱 | AI는 JSON 데이터만 생성하고, HTML 구조는 고정 템플릿이 담당 |
+| 학생 기록물 사진 분석 | 파일 속 글자를 옮기는 OCR이 아니라 활동 과정·완성도·태도까지 이미지 전체를 분석하도록 지시. 결과 텍스트에 학생 이름 포함 금지 |
 
 ---
 
@@ -482,13 +588,16 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 
 | 항목 | 설계 방향 |
 | --- | --- |
-| API 키 | main process와 electron-store 중심으로 관리 |
-| 백업 | API 키는 백업 제외 |
+| API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능 |
+| 백업 | API 키·시크릿은 백업 파일에서 제외 |
 | 학생 명단 | 필요한 기능에서만 명시적으로 불러오기 |
+| 개인정보 보호 모드 | AI 요청 시 학생 이름을 임시 토큰으로 치환 후 응답에서 복원. 이름 입력칸이 있는 화면은 해당 이름만, 자유 서술형인 수업관찰기록·학급경영일지는 설정에 저장된 우리 반 학생 명단 기준으로 본문에 등장하는 이름을 치환한다 |
 | 공문서 | 우리 반 학생 명단 자동 반영 금지 |
-| 파일 업로드 | 로컬에서 base64 (파일을 텍스트 형태로 변환하는 방식) 변환 후 필요한 경우에만 Gemini로 전송 |
+| 파일 업로드 | 로컬에서 base64 (파일을 텍스트 형태로 변환하는 방식) 변환 후 필요한 경우에만 Gemini로 전송, 15MB 크기 상한 |
 | 외부 링크 | `openExternal`로 브라우저 열기 |
-| renderer 보안 | `contextIsolation: true`, `nodeIntegration: false` |
+| 외부 URL 요청 | `electron.net.fetch` 경유, localhost·사설 IP 접근을 막는 SSRF 가드(netGuard.ts) |
+| renderer 보안 | `contextIsolation: true`, `nodeIntegration: false`, 본 창·PDF 변환 창 모두 샌드박스 적용, 외부 오리진 이동(`will-navigate`) 차단 |
+| 생성 결과 HTML | `sanitizeHtml`로 script·on* 속성·iframe 등을 제거한 뒤 화면에 표시 |
 
 ---
 
@@ -499,22 +608,24 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 ```text
 소스 수정
   ↓
-package.json, package-lock.json 버전 확인
+package.json 버전(version 필드) 갱신
   ↓
-RELEASE_NOTES.md 작성
+RELEASE_NOTES.md 최신 버전 섹션 작성 (--- 구분선으로 분리)
   ↓
 Git commit
   ↓
-Git tag 생성
+main 브랜치 push (Pull Request 병합 포함)
   ↓
-main 브랜치 push
+.github/workflows/build-win.yml 자동 실행
   ↓
-GitHub Actions 자동 실행
-  ↓
-  ├─ Windows EXE 자동 빌드 (electron-builder)
-  └─ GitHub Release 자동 생성 및 portable EXE 업로드
+  ├─ npm ci → 타입체크 → 테스트 (품질 게이트 — 실패 시 릴리즈되지 않음)
+  ├─ npm run build:win (electron-builder로 Windows portable EXE 빌드)
+  └─ package.json 버전을 읽어 태그 v${version}으로 GitHub Release 생성/갱신
+     (RELEASE_NOTES.md 최상단 섹션을 릴리즈 노트 본문으로 사용, EXE 업로드)
      (https://github.com/codersongpro/edunote/releases)
 ```
+
+Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로, 별도로 `git tag`를 만들어 push할 필요가 없다.
 
 ---
 
@@ -529,9 +640,12 @@ GitHub Actions 자동 실행
 - 퀴즈 앱은 외부 CDN 없이 단일 HTML로 동작해야 하며, AI는 JSON 데이터만 생성하고 HTML 구조는 고정 템플릿을 사용해야 한다.
 - 인터넷 데이터를 가져올 때는 Node.js `https` 모듈이 아닌 `electron.net.fetch`를 사용해야 한다.
 - `index.css`의 prose 스타일(마크다운 렌더링용)은 `dark-prose-area` 클래스로 범위가 한정되어 있다. 문서 미리보기나 챗봇 응답 영역에 prose를 적용할 때 다크모드에서 배경색과 텍스트 색상이 충돌하지 않도록 적용 범위를 확인해야 한다.
-- 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하지 않는다.
-- 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다.
-- Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다. 공문요약·업무추출 샘플에는 일정, 마감일, 참고 웹사이트 주소가 포함된다.
+- 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하거나 Git 태그를 직접 만들 필요가 없다(13절 참고).
+- 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다. `AppMode`에는 실제로 어디에서도 참조되지 않는 값(`GUIDELINE_QA`, `QR_MAKER`, `LUCKY_DRAW`)이 남아 있으니 6절을 참고해 혼동하지 않는다.
+- Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다. 공문요약·업무추출 샘플에는 일정, 마감일, 참고 웹사이트 주소가 포함된다. 채팅방(`#chat`)도 같은 방식으로 별도 창을 판별한다.
+- API 키·시크릿(Gemini·나라장터·네이버)을 다루는 코드를 추가할 때는 `secretStore.ts`의 `SECRET_KEYS`에서 파생되는 헬퍼(`SECRET_STORE_KEYS`·`isSecretKey`·`stripSecrets`)를 사용해야 한다. 렌더러 조회 차단·설정 파일 동기화·백업 제외 대상 목록을 각 위치에 따로 나열하면, 새 시크릿을 추가할 때 어느 한 곳이라도 빠뜨려 평문이 유출될 수 있다.
+- AI가 완성된 `<!DOCTYPE html>` 문서를 반환하는 기능(문서작성기, 워크시트 등)을 만지거나 비슷한 기능을 추가할 때는 `generatedContent.ts`의 HTML 판별 정규식과 `security.ts`의 `sanitizeHtml`이 전체 문서 입력을 어떻게 다루는지 먼저 확인해야 한다. `<div>`로 감싸 파싱하면 중첩된 `<head>`/`<body>`가 브라우저 트리 구성 규칙에 따라 흐트러진다(10.4·12절, v1.18.4 참고).
+- 여러 화면에 걸친 기능(예: 생성 모델 배지, 바이트 수 표시)을 추가할 때는 저수준 `aiGenerate`류 함수의 반환 타입을 바꾸기보다, 필요한 곳에만 선택적 콜백이나 별도 반환 타입을 추가해 TypeScript 컴파일러가 영향받는 호출부를 오류로 잡아내게 하는 방식을 우선 검토한다 — 이 저장소는 이 패턴으로 회귀 위험을 최소화해 왔다(8절·9.6절 참고).
 
 ---
 
@@ -540,6 +654,9 @@ GitHub Actions 자동 실행
 | 기능 | 검토 내용 |
 | --- | --- |
 | 상담 녹음 분석 | Gemini 오디오 입력으로 녹음파일 전사와 상담 요약 가능. 개인정보와 API tier 정책 검토 필요 |
-| 수업 참여방 | 교사 PC 로컬 서버와 QR 입장 구조 가능. 교사망·학생망 분리 환경에서는 외부 서버 방식 검토 필요 |
+| 슬라이드 전체 이미지 생성 | `LessonMaterialGenerator`에 버튼은 있으나 "구현중"으로 비활성화. 안정적인 이미지 생성 흐름 확보 필요 |
+| 업무추출 정밀도 개선 | 업무 종류별로 캘린더 제목·날짜를 더 정밀하게 추출하도록 계속 개선 |
 | 파일 제출방 | 학생이 QR로 접속해 파일을 제출하고 교사 PC에 저장하는 구조 가능. 인증, 용량 제한, 확장자 제한 필요 |
-| HWPX 저장 개선 | 한글 호환성, lineseg 생성, 표·본문 포맷 유지, 양식 인쇄 등 추가 화면 적용 범위 확대 |
+| 학생 서술 생성기 리팩터링 | 교과·창체·스포츠클럽·생기부 등 4개 컴포넌트에 중복된 생성 흐름 로직(사진 분석·모델 배지 포함)을 공용 훅으로 추출하고, 거대 컴포넌트(예산안작성·교과세특·창의적 체험활동·문서작성기)를 기능 단위로 분할하는 리팩터링 검토. 변경 범위가 커서 작업 전 별도 합의 필요 |
+
+수업 참여방(QR 채팅방)은 v1.14.0에서 Firebase(Firestore+Auth) 기반 구조로 이미 정식 기능으로 도입되었다(9.4절 참고). HWPX 저장 역시 한글 원본 파일과의 바이트 단위 비교로 골격·서식 문제를 순차적으로 해결해 v1.14.0부터 안정적인 정식 기능으로 전환되었다(자세한 경과는 개발일지 참고).
