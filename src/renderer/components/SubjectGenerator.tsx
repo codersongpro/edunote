@@ -3,7 +3,7 @@ import { notifyToast } from '../lib/toast';
 import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTour } from '../TourContext';
 import { SchoolLevel, AssessmentTask, LengthOption, LengthUnit, StudentSubjectData, ObservationDetails, AppMode } from '../types';
-import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles } from '../services/geminiService';
+import { generateSubjectReport, parseAssessmentTasks, parseNeisGradeFiles, parseStudentObservationFromFiles } from '../services/geminiService';
 import { ELEMENTARY_SUBJECT_LIST, SECONDARY_SUBJECT_LIST } from '../constants';
 import { useGlobalState } from '../GlobalStateContext';
 import { queueViolationWarning } from '../lib/guidelineCompliance';
@@ -41,6 +41,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   }, [generatingIds.size]);
   const [uploadedFile, setUploadedFile] = useState<{data: string, type: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isAnalyzingObservation, setIsAnalyzingObservation] = useState(false);
+  const observationFileInputRef = useRef<HTMLInputElement>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -568,6 +570,57 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     if (details.example) parts.push(`[구체적 사례]: ${details.example}`);
     student.additionalContext = parts.join('\n\n');
     updateSubjectState({ activeStudents: newStudents });
+  };
+
+  const handleObservationFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    const invalid = files.find(f => !f.type.startsWith('image/') && f.type !== 'application/pdf');
+    if (invalid) {
+      notifyToast({ type: 'warning', title: '이미지 파일 또는 PDF 파일만 업로드 가능합니다.' });
+      if (observationFileInputRef.current) observationFileInputRef.current.value = '';
+      return;
+    }
+
+    setIsAnalyzingObservation(true);
+    try {
+      const filesToAnalyze = await Promise.all(files.map(file => new Promise<{ data: string; mimeType: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ data: (reader.result as string).split(',')[1], mimeType: file.type });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      })));
+
+      const extractedText = await parseStudentObservationFromFiles(filesToAnalyze, `${subjectState.currentSubject} 교과세특 - 구체적 사례`);
+      if (!extractedText.trim()) {
+        notifyToast({ type: 'warning', title: '파일에서 관찰 내용을 분석하지 못했습니다.' });
+        return;
+      }
+
+      const newStudents = [...subjectState.activeStudents];
+      const student = newStudents[subjectState.currentStudentIndex];
+      if (!student.observationDetails) student.observationDetails = { process: '', attitude: '', skill: '', example: '' };
+      student.observationDetails.example = student.observationDetails.example
+        ? `${student.observationDetails.example}\n\n${extractedText.trim()}`
+        : extractedText.trim();
+      const details = student.observationDetails;
+      const parts = [];
+      if (details.process) parts.push(`[개별 학습 과정]: ${details.process}`);
+      if (details.attitude) parts.push(`[태도 및 참여]: ${details.attitude}`);
+      if (details.skill) parts.push(`[기능 발달]: ${details.skill}`);
+      if (details.example) parts.push(`[구체적 사례]: ${details.example}`);
+      student.additionalContext = parts.join('\n\n');
+      updateSubjectState({ activeStudents: newStudents });
+      notifyToast({ type: 'success', title: '학생 기록물 분석이 완료되었습니다. 내용을 확인해주세요.' });
+    } catch (err: any) {
+      console.error('Observation File Analysis Error:', err);
+      notifyToast({ type: 'error', title: '파일 분석 중 오류가 발생했습니다.' });
+    } finally {
+      setIsAnalyzingObservation(false);
+      if (observationFileInputRef.current) observationFileInputRef.current.value = '';
+    }
   };
 
   const handleLevelChange = (taskId: string, level: '상' | '중' | '하') => {
@@ -1511,9 +1564,35 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </div>
 
                             <div className="mb-6">
-                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-3">
-                                    추가 관찰 내용 <span className="text-xs font-normal text-[#A8A29E] ml-1">(선택 사항)</span>
-                                </label>
+                                <div className="flex justify-between items-center mb-3">
+                                    <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">
+                                        추가 관찰 내용 <span className="text-xs font-normal text-[#A8A29E] ml-1">(선택 사항)</span>
+                                    </label>
+                                    <input
+                                        type="file"
+                                        ref={observationFileInputRef}
+                                        className="hidden"
+                                        accept="image/*,.pdf"
+                                        multiple
+                                        onChange={handleObservationFileUpload}
+                                    />
+                                    <button
+                                        onClick={() => observationFileInputRef.current?.click()}
+                                        disabled={isAnalyzingObservation || isGlobalGenerating}
+                                        className="px-3 py-1 bg-white dark:bg-[#2E2822] text-purple-600 dark:text-purple-400 rounded-lg text-xs font-bold shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isAnalyzingObservation ? (
+                                            <>
+                                                <svg className="animate-spin -ml-1 mr-1.5 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                분석 중...
+                                            </>
+                                        ) : '📷 학생 기록물 업로드 (사진/스캔 자동 분석)'}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-[#A8A29E] -mt-2 mb-3">※ 학생의 활동지·결과물을 스캔하거나 촬영해 업로드하면 AI가 내용을 분석해 "4. 구체적 사례"에 채워줍니다. 업로드된 파일은 분석에만 사용되며 저장되지 않습니다.</p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-purple-600 dark:text-purple-400 mb-1">1. 개별 학생의 실제 학습 과정</label>

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { notifyToast } from '../lib/toast';
 import { HelpCircle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTour } from '../TourContext';
 import { SchoolLevel, LengthOption, LengthUnit, StudentOpinionData, AppMode } from '../types';
 import { POSITIVE_TAGS, NEGATIVE_TAGS } from '../constants';
-import { generateOpinion } from '../services/geminiService';
+import { generateOpinion, parseStudentObservationFromFiles } from '../services/geminiService';
 import { useGlobalState } from '../GlobalStateContext';
 import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -36,6 +36,8 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
   const [studentPanelCollapsed, setStudentPanelCollapsed] = useState(false);
+  const [isAnalyzingObservation, setIsAnalyzingObservation] = useState(false);
+  const observationFileInputRef = useRef<HTMLInputElement>(null);
 
   // Helper to update opinion state
   const updateOpState = (updates: Partial<typeof state.opinion>) => {
@@ -189,6 +191,45 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       i === idx ? { ...s, additionalContext: text } : s
     );
     updateOpState({ students: newStudents });
+  };
+
+  const handleObservationFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+
+    const files = Array.from(fileList);
+    const invalid = files.find(f => !f.type.startsWith('image/') && f.type !== 'application/pdf');
+    if (invalid) {
+      notifyToast({ type: 'warning', title: '이미지 파일 또는 PDF 파일만 업로드 가능합니다.' });
+      if (observationFileInputRef.current) observationFileInputRef.current.value = '';
+      return;
+    }
+
+    setIsAnalyzingObservation(true);
+    try {
+      const filesToAnalyze = await Promise.all(files.map(file => new Promise<{ data: string; mimeType: string }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ data: (reader.result as string).split(',')[1], mimeType: file.type });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      })));
+
+      const extractedText = await parseStudentObservationFromFiles(filesToAnalyze, '행동특성 및 종합의견 - 추가 관찰 내용');
+      if (!extractedText.trim()) {
+        notifyToast({ type: 'warning', title: '파일에서 관찰 내용을 분석하지 못했습니다.' });
+        return;
+      }
+
+      const current = opState.students[opState.currentStudentIndex]?.additionalContext || '';
+      handleContextChange(current ? `${current}\n\n${extractedText.trim()}` : extractedText.trim());
+      notifyToast({ type: 'success', title: '학생 기록물 분석이 완료되었습니다. 내용을 확인해주세요.' });
+    } catch (err: any) {
+      console.error('Observation File Analysis Error:', err);
+      notifyToast({ type: 'error', title: '파일 분석 중 오류가 발생했습니다.' });
+    } finally {
+      setIsAnalyzingObservation(false);
+      if (observationFileInputRef.current) observationFileInputRef.current.value = '';
+    }
   };
 
   // --- Generation Handlers ---
@@ -664,7 +705,33 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
                         {/* Additional Context */}
                         <div>
-                            <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">추가 관찰 내용</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">추가 관찰 내용</label>
+                                <input
+                                    type="file"
+                                    ref={observationFileInputRef}
+                                    className="hidden"
+                                    accept="image/*,.pdf"
+                                    multiple
+                                    onChange={handleObservationFileUpload}
+                                />
+                                <button
+                                    onClick={() => observationFileInputRef.current?.click()}
+                                    disabled={isAnalyzingObservation || isGlobalGenerating}
+                                    className="px-3 py-1 bg-white dark:bg-[#2E2822] text-emerald-600 dark:text-emerald-400 rounded-lg text-xs font-bold shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isAnalyzingObservation ? (
+                                        <>
+                                            <svg className="animate-spin -ml-1 mr-1.5 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            분석 중...
+                                        </>
+                                    ) : '📷 학생 기록물 업로드 (사진/스캔 자동 분석)'}
+                                </button>
+                            </div>
+                            <p className="text-xs text-[#A8A29E] mb-2">※ 학생의 활동지·결과물을 스캔하거나 촬영해 업로드하면 AI가 내용을 분석해 채워줍니다. 업로드된 파일은 분석에만 사용되며 저장되지 않습니다.</p>
                             <textarea
                                 value={currentStudent.additionalContext}
                                 onChange={(e) => handleContextChange(e.target.value)}

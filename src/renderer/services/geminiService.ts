@@ -1213,6 +1213,29 @@ export const parseNeisGradeFiles = async (files: { data: string; mimeType: strin
   return Array.isArray(parsed) ? parsed : [parsed];
 };
 
+// 학생 개인의 활동 결과물·기록물(활동지, 수행평가 결과물, 실험/작품 사진, 관찰일지, 포트폴리오 등)을
+// 스캔하거나 촬영한 파일을 분석해 학생기록 작성에 참고할 관찰 내용을 정리한다.
+// 글자만 옮겨 적는 OCR이 아니라 결과물의 내용·완성도·드러나는 태도와 역량까지 이미지 전체를 분석하도록 지시한다.
+export const parseStudentObservationFromFiles = async (
+  files: Array<{ data: string; mimeType: string }>,
+  hint?: string,
+): Promise<string> => {
+  if (files.length === 0) return '';
+  const prompt = `이 파일들은 한 학생의 활동 결과물이나 관찰 기록(활동지, 수행평가 결과물, 실험·작품 사진, 관찰일지, 포트폴리오 등)을 스캔하거나 촬영한 자료입니다.
+단순히 파일 속 글자를 그대로 옮겨 적지 말고, 이미지 전체를 분석하세요. 학생이 수행한 활동 과정과 방법, 결과물의 내용과 완성도, 그 안에서 드러나는 태도·역량·성장을 파악해 학교생활기록부 작성에 참고할 수 있는 구체적인 관찰 내용을 서술형 텍스트로 정리해주세요.
+${hint ? `[참고 - 현재 작성 중인 항목]: ${hint}` : ''}
+[요구사항]
+1. 글자가 있다면 참고하되 그대로 옮겨 적지 말고, 내용을 이해해서 관찰 내용으로 재구성하세요.
+2. 결과물의 완성도, 사용한 방법이나 접근 방식, 드러나는 강점이나 보완점을 구체적으로 서술하세요.
+3. 파일에 학생 이름이 보이더라도 이름은 결과 텍스트에 절대 포함하지 마세요.
+4. 과장하거나 추측하지 말고, 파일에서 실제로 확인 가능한 내용만 서술하세요.
+5. 오직 정리된 관찰 내용 텍스트만 출력하세요.`;
+  const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [];
+  files.forEach((f) => parts.push({ inlineData: f }));
+  parts.push({ text: prompt });
+  return await aiGenerateMultipart(parts, undefined, { temperature: 0.2 });
+};
+
 // ─── 수업 AI — 수업자료 생성 ──────────────────────────────────────
 
 export interface LessonSlide {
