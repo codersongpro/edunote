@@ -50,6 +50,23 @@ describe('markdownOrHtmlToHtml', () => {
     expect(result).toContain('<td>셀</td>');
   });
 
+  it('<!DOCTYPE html>로 시작하는 전체 문서는 본문에 번호 목록(1. ~)이 있어도 HTML로 처리한다', () => {
+    // 이전에는 <!DOCTYPE의 '!' 때문에 HTML 시작 판별을 통과하지 못하고 마크다운으로 새어 나가,
+    // 본문의 "1. 문제" 같은 번호 목록 텍스트 때문에 마크다운으로 오판되어
+    // remark가 원시 HTML을 통째로 버리거나(빈 결과) 일부만 태그를 그대로 노출시켰다.
+    const doc = [
+      '<!DOCTYPE html>',
+      '<html><head><title>워크시트</title></head><body>',
+      '<table><tr><td>1. 문제 내용</td></tr></table>',
+      '<p>2. 다음 문제</p>',
+      '</body></html>',
+    ].join('\n');
+    const result = markdownOrHtmlToHtml(doc);
+    expect(result).toContain('<table');
+    expect(result).toContain('1. 문제 내용');
+    expect(result).not.toContain('&lt;table');
+  });
+
   it('인라인 <br>이 섞인 마크다운도 마크다운으로 처리한다', () => {
     // 이전에는 <br> 하나 때문에 전체가 HTML로 오판되어 **굵게**가 그대로 노출됐다.
     const result = markdownOrHtmlToHtml('**중요**<br>다음 줄');

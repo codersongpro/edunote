@@ -32,7 +32,11 @@ export function markdownOrHtmlToHtml(content: string): string {
   const stripped = stripGeneratedCodeFences(content);
 
   // 문서가 HTML 태그로 시작하면 완전한 HTML로 보고 그대로 정제한다.
-  if (/^<[a-z][\s\S]*>/i.test(stripped)) {
+  // <!DOCTYPE html>은 '!' 때문에 위 [a-z] 패턴에 걸리지 않아 별도로 검사한다 —
+  // 이 검사가 없으면 AI가 만든 전체 HTML 문서(문서작성기·워크시트 등)가 아래 마크다운
+  // 판별로 새어 나가고, 본문 중 "1. ~" 같은 번호 목록 텍스트 때문에 마크다운으로 오판되어
+  // remark가 원시 HTML을 통째로 버리거나(빈 화면) 일부만 escape해 태그가 그대로 노출된다.
+  if (/^<[a-z][\s\S]*>/i.test(stripped) || /^<!DOCTYPE\s+html/i.test(stripped)) {
     return sanitizeHtml(stripped);
   }
 

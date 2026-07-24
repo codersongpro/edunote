@@ -50,6 +50,28 @@ describe('sanitizeHtml', () => {
     expect(result).not.toContain('<iframe');
     expect(result).toContain('<p>본문</p>');
   });
+
+  it('<!DOCTYPE html>·<html>·<head>가 있는 전체 문서는 <style>과 <body> 내용만 추출한다', () => {
+    // <div>로 그대로 감싸 파싱하면 <title>이 낱개 요소로 새어 나오는 등 구조가 흐트러졌다.
+    const doc = [
+      '<!DOCTYPE html>',
+      '<html><head><title>제목</title><style>table{border:1px solid}</style></head>',
+      '<body><table><tr><td>내용</td></tr></table></body></html>',
+    ].join('\n');
+    const result = sanitizeHtml(doc);
+    expect(result).toContain('<style>table{border:1px solid}</style>');
+    expect(result).toContain('<table>');
+    expect(result).toContain('<td>내용</td>');
+    expect(result).not.toContain('<title>');
+  });
+
+  it('전체 문서 안의 script·on* 속성도 동일하게 제거한다', () => {
+    const doc = '<!DOCTYPE html><html><body><script>alert(1)</script><p onclick="x()">본문</p></body></html>';
+    const result = sanitizeHtml(doc);
+    expect(result).not.toContain('<script>');
+    expect(result).not.toContain('onclick');
+    expect(result).toContain('본문');
+  });
 });
 
 // validateImportedTool가 통과시키는 최소 유효 도구

@@ -29,22 +29,38 @@ export function sanitizeHtml(html: string): string {
   }
 
   const parser = new DOMParser();
-  const doc = parser.parseFromString(`<div>${source}</div>`, 'text/html');
-  doc.querySelectorAll('script, iframe, object, embed, link, meta').forEach(node => node.remove());
-
-  doc.querySelectorAll('*').forEach((node) => {
-    Array.from(node.attributes).forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      const value = attr.value.trim().toLowerCase();
-      if (
-        name.startsWith('on') ||
-        ((name === 'href' || name === 'src' || name === 'xlink:href') &&
-          (value.startsWith('javascript:') || value.startsWith('data:text/html')))
-      ) {
-        node.removeAttribute(attr.name);
-      }
+  const stripUnsafe = (root: ParentNode) => {
+    root.querySelectorAll('script, iframe, object, embed, link, meta').forEach(node => node.remove());
+    root.querySelectorAll('*').forEach((node) => {
+      Array.from(node.attributes).forEach((attr) => {
+        const name = attr.name.toLowerCase();
+        const value = attr.value.trim().toLowerCase();
+        if (
+          name.startsWith('on') ||
+          ((name === 'href' || name === 'src' || name === 'xlink:href') &&
+            (value.startsWith('javascript:') || value.startsWith('data:text/html')))
+        ) {
+          node.removeAttribute(attr.name);
+        }
+      });
     });
-  });
+  };
+
+  // AI가 <!DOCTYPE html>·<html>·<head>·<body>를 포함한 전체 문서를 만든 경우, 이를
+  // <div>로 감싸 파싱하면 브라우저가 중첩된 html/head/body 태그를 일반 자식 요소로 넣지 않고
+  // 특수 처리해 버려(예: <title>이 본문에 낱개 요소로 새어 나옴) 구조가 흐트러진다.
+  // 이런 문서는 그대로 파싱해 <head>의 <style>과 <body> 내용만 추출해 이어붙인다.
+  if (/<html[\s>]/i.test(source) || /<!DOCTYPE\s+html/i.test(source)) {
+    const fullDoc = parser.parseFromString(source, 'text/html');
+    stripUnsafe(fullDoc);
+    const styles = Array.from(fullDoc.head?.querySelectorAll('style') ?? [])
+      .map(style => style.outerHTML)
+      .join('');
+    return styles + (fullDoc.body?.innerHTML ?? '');
+  }
+
+  const doc = parser.parseFromString(`<div>${source}</div>`, 'text/html');
+  stripUnsafe(doc);
 
   return doc.body.firstElementChild?.innerHTML ?? '';
 }
