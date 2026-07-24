@@ -18,6 +18,8 @@ interface GeneratedDisplayProps {
   title?: string;
   // 가정통신문·메시지처럼 다국어 안내가 필요한 문서에서 번역 버튼을 보여준다.
   enableTranslation?: boolean;
+  // 이 결과를 실제로 생성한 AI 모델명 — 주어지면 헤더에 작은 태그로 표시한다.
+  model?: string;
 }
 
 interface SavedGeneratedVersion {
@@ -70,7 +72,7 @@ function applyDocumentStyles(el: HTMLElement): void {
   });
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -598,6 +600,11 @@ h2,h3{page-break-after:avoid;}
             <PenLine className="w-3 h-3" />
             수정 가능
           </span>
+          {model && (
+            <span className="text-xs text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full shrink-0" title="이 결과를 생성한 AI 모델">
+              {model}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button

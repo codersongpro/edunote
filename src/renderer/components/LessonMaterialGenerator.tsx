@@ -188,11 +188,15 @@ const LessonMaterialGenerator: React.FC = () => {
   };
 
   const [slides, setSlides] = useState<LessonSlide[] | null>(null);
+  const [slidesModel, setSlidesModel] = useState('');
   const [worksheetHtml, setWorksheetHtml] = useState<string | null>(null);
+  const [worksheetModel, setWorksheetModel] = useState('');
   const [savedWorksheets, setSavedWorksheets] = useState<SavedWorksheet[]>([]);
   const [worksheetTab, setWorksheetTab] = useState<'generate' | 'saved'>('generate');
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
+  const [quizModel, setQuizModel] = useState('');
   const [planContent, setPlanContent] = useState<string>('');
+  const [planModel, setPlanModel] = useState('');
   const [slideImages, setSlideImages] = useState<Record<number, string>>({});
   const [generatingImageSlides, setGeneratingImageSlides] = useState<Set<number>>(new Set());
   const [allImagesProgress, setAllImagesProgress] = useState<{ done: number; total: number } | null>(null);
@@ -317,16 +321,20 @@ const LessonMaterialGenerator: React.FC = () => {
     setIsGenerating(true);
     if (contentType === 'SLIDE') {
       setSlides(null);
+      setSlidesModel('');
       setSlideImages({});
       setGeneratingImageSlides(new Set());
       setAllImagesProgress(null);
       setIsPresentMode(false);
     } else if (contentType === 'WORKSHEET') {
       setWorksheetHtml(null);
+      setWorksheetModel('');
     } else if (contentType === 'QUIZ') {
       setQuizHtml(null);
+      setQuizModel('');
     } else {
       setPlanContent('');
+      setPlanModel('');
     }
     startGeneration();
 
@@ -341,8 +349,9 @@ const LessonMaterialGenerator: React.FC = () => {
 
     try {
       if (contentType === 'SLIDE') {
-        const result = await generateLessonSlides(params, pageCount);
+        const { slides: result, model } = await generateLessonSlides(params, pageCount);
         setSlides(result);
+        setSlidesModel(model);
       } else if (contentType === 'WORKSHEET') {
         let worksheetImageBase64: string | null = null;
         if (worksheetImageEnabled) {
@@ -355,7 +364,8 @@ const LessonMaterialGenerator: React.FC = () => {
             setError('이미지 생성에 실패했습니다. 워크시트는 이미지 없이 생성합니다.');
           }
         }
-        const html = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore, !!worksheetImageBase64);
+        const { text: html, model: worksheetModelUsed } = await generateLessonWorksheet(params, worksheetType, worksheetCount, includeScore, !!worksheetImageBase64);
+        setWorksheetModel(worksheetModelUsed);
         let finalHtml = extractHtml(html);
         if (worksheetImageBase64) {
           finalHtml = finalHtml.replace(
@@ -376,11 +386,13 @@ const LessonMaterialGenerator: React.FC = () => {
           }
         }).catch(() => {});
       } else if (contentType === 'QUIZ') {
-        const html = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));
+        const { text: html, model } = await generateLessonQuiz(params, questionCount, Array.from(selectedQuizTypes));
         setQuizHtml(html);
+        setQuizModel(model);
       } else {
-        const html = await generateLessonPlan(params);
+        const { text: html, model } = await generateLessonPlan(params);
         setPlanContent(extractHtml(html));
+        setPlanModel(model);
       }
       playSuccessSound();
     } catch (err: any) {
@@ -796,6 +808,11 @@ li{margin-bottom:5pt;line-height:1.6;}
                 <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
+                  {slidesModel && (
+                    <span className="text-[10px] font-normal text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full" title="이 결과를 생성한 AI 모델">
+                      {slidesModel}
+                    </span>
+                  )}
                   {allImagesProgress && (
                     <span className="flex items-center gap-1 text-xs font-normal text-amber-600">
                       <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
@@ -915,7 +932,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 )}
               </div>
               {worksheetTab === 'generate' && worksheetHtml && (
-                <GeneratedDisplay content={worksheetHtml} title={`${topic} 워크시트`} />
+                <GeneratedDisplay content={worksheetHtml} title={`${topic} 워크시트`} model={worksheetModel} />
               )}
               {worksheetTab === 'generate' && !worksheetHtml && (
                 <div className="flex-1 flex items-center justify-center text-[#A8A29E] dark:text-[#6B5E57] text-sm">아직 생성된 워크시트가 없습니다.</div>
@@ -970,6 +987,11 @@ li{margin-bottom:5pt;line-height:1.6;}
                 <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
                   퀴즈 앱 미리보기
+                  {quizModel && (
+                    <span className="text-[10px] font-normal text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full" title="이 결과를 생성한 AI 모델">
+                      {quizModel}
+                    </span>
+                  )}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -1026,6 +1048,7 @@ li{margin-bottom:5pt;line-height:1.6;}
             <GeneratedDisplay
               content={planContent}
               title={`${topic} 수업 계획서`}
+              model={planModel}
             />
           )}
 

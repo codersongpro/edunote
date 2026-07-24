@@ -47,6 +47,7 @@ const LessonObservationGenerator: React.FC = () => {
   const [observationNotes, setObservationNotes] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [result, setResult] = useState(EXAMPLE_RESULT);
+  const [resultModel, setResultModel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -75,12 +76,14 @@ const LessonObservationGenerator: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setResult('');
+    setResultModel('');
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
       const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
-      const output = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
+      const { text: output, model } = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
       setResult(output);
+      setResultModel(model);
       playSuccessSound();
     } catch (e) {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
@@ -194,6 +197,11 @@ const LessonObservationGenerator: React.FC = () => {
                 <h3 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-sm">생성 결과</h3>
                 {result === EXAMPLE_RESULT && (
                   <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
+                )}
+                {resultModel && (
+                  <span className="text-[10px] text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full font-medium" title="이 결과를 생성한 AI 모델">
+                    {resultModel}
+                  </span>
                 )}
               </div>
               <div className="flex gap-2">

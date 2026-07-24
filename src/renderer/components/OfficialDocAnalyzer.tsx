@@ -17,6 +17,7 @@ const OfficialDocAnalyzer: React.FC = () => {
   const [pastedText, setPastedText] = useState('');
   const [files, setFiles] = useState<FileData[]>([]);
   const [result, setResult] = useState('');
+  const [resultModel, setResultModel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [inputPanelCollapsed, setInputPanelCollapsed] = useState(false);
@@ -98,7 +99,8 @@ const OfficialDocAnalyzer: React.FC = () => {
     startGeneration();
     try {
       const output = await analyzeOfficialDocument({ title, pastedText, files });
-      setResult(output.trim());
+      setResult(output.text.trim());
+      setResultModel(output.model);
       playSuccessSound();
     } catch (err: any) {
       setError(err?.message || '공문 분석 중 오류가 발생했습니다.');
@@ -282,6 +284,11 @@ const OfficialDocAnalyzer: React.FC = () => {
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
             <span className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">분석 결과</span>
+            {resultModel && (
+              <span className="text-[10px] text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full font-medium" title="이 결과를 생성한 AI 모델">
+                {resultModel}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button

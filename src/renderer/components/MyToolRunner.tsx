@@ -18,6 +18,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fileValues, setFileValues] = useState<Record<string, FileData[]>>({});
   const [result, setResult] = useState('');
+  const [resultModel, setResultModel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState('');
@@ -50,10 +51,11 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
     setIsLoading(true);
     setError('');
     setResult('');
+    setResultModel('');
     const uploadCount = Object.values(fileValues).flat().length;
     setProgress(uploadCount > 0 ? { current: 0, total: uploadCount } : null);
     try {
-      const output = await runCustomTool(
+      const { text: output, model } = await runCustomTool(
         tool,
         { ...teacherVars, ...fieldValues },
         fileValues,
@@ -62,6 +64,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
         schoolLevel,
       );
       setResult(output);
+      setResultModel(model);
     } catch (e: any) {
       if (e?.message !== '취소되었습니다.') {
         setError(e?.message || '생성 중 오류가 발생했습니다.');
@@ -249,7 +252,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
       <div className="flex-1 overflow-hidden flex flex-col bg-[#FAF9F7] dark:bg-[#171210]">
         {result ? (
           <div className="flex-1 overflow-hidden p-4">
-            <GeneratedDisplay content={result} title={tool.name} />
+            <GeneratedDisplay content={result} title={tool.name} model={resultModel} />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-center p-8">

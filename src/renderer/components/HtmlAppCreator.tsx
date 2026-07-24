@@ -98,6 +98,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
   const [features, setFeatures] = useState<string[]>(parsed.features.length > 0 ? parsed.features : ['']);
   const [extra, setExtra] = useState(parsed.extra);
   const [htmlContent, setHtmlContent] = useState(initial?.htmlContent ?? '');
+  const [htmlContentModel, setHtmlContentModel] = useState('');
   const [name, setName] = useState(initial?.name ?? '');
   const [category, setCategory] = useState<CustomTool['category']>(initial?.category ?? 'lesson');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -117,8 +118,9 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
     setError('');
     setShowCode(false);
     try {
-      const html = await generateHtmlApp(description, abortRef.current.signal);
+      const { text: html, model } = await generateHtmlApp(description, abortRef.current.signal);
       setHtmlContent(html);
+      setHtmlContentModel(model);
       if (!name) setName(appType.trim().slice(0, 24));
     } catch (e: any) {
       if (!e?.message?.includes('취소')) setError(e?.message || 'HTML 앱 생성에 실패했습니다. 다시 시도해 주세요.');
@@ -361,6 +363,11 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
             <div className="flex items-center justify-between px-4 py-2 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
               <span className="text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] flex items-center gap-1.5">
                 <Monitor className="w-3.5 h-3.5" /> 미리보기
+                {htmlContentModel && (
+                  <span className="text-[10px] font-normal text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full" title="이 결과를 생성한 AI 모델">
+                    {htmlContentModel}
+                  </span>
+                )}
               </span>
               <div className="flex gap-1">
                 <button

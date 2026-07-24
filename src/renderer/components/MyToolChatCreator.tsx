@@ -167,7 +167,7 @@ const MyToolChatCreator: React.FC<MyToolChatCreatorProps> = ({ onComplete, onCan
         setMessages(prev => [...prev, { role: 'ai', text: '앱 화면을 만드는 중이에요... 1~2분 정도 걸릴 수 있어요.' }]);
         try {
           const appRequest = spec.appSpec || `${spec.name}: ${spec.description}`;
-          const html = await generateHtmlApp(appRequest);
+          const { text: html } = await generateHtmlApp(appRequest);
           drafts.app = {
             name: wantSkill ? `${spec.name} (앱)` : spec.name,
             description: spec.description || '',

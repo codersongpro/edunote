@@ -100,11 +100,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [templateFavorites, setTemplateFavorites] = useState<DocTemplateFavorite[]>([]);
   const [hwpxFillDataByTab, setHwpxFillDataByTab] = useState<Record<DocType, any[] | null>>(initTabMap(null));
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
+  const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
 
   const uploadedFiles = filesByTab[activeTab] ?? [];
   const uploadedTemplates = templatesByTab[activeTab] ?? [];
   const templateText = templateTextByTab[activeTab] ?? '';
   const generatedContent = contentByTab[activeTab] ?? '';
+  const generatedModel = modelByTab[activeTab] ?? '';
   const hwpxFillData = hwpxFillDataByTab[activeTab] ?? null;
   const activeTemplateFavorites = templateFavorites.filter(item => item.docType === activeTab);
 
@@ -391,7 +393,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     setIsGenerating(true);
     startGeneration(`SCHOOL_DOC_${activeTab}`);
     try {
-      let result: string;
+      let result: { text: string; model: string };
       if (activeTab === DocType.GONGGO) {
         result = await generateDocument(
           activeTab,
@@ -424,8 +426,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           setStreamPreview,
         );
       }
-      const { cleanContent, fillData } = extractResult(result);
+      const { cleanContent, fillData } = extractResult(result.text);
       setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
+      setModelByTab(prev => ({ ...prev, [activeTab]: result.model }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));
       playSuccessSound();
     } catch (err: any) {
@@ -1137,6 +1140,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               hwpxTemplate={hwpxTemplateFile}
               title={getHwpxTitleFromContent(generatedContent, activeTab)}
               enableTranslation={activeTab === DocType.NEWSLETTER || activeTab === DocType.MESSAGE}
+              model={generatedModel}
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">

@@ -45,6 +45,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
   const [testFiles, setTestFiles] = useState<Record<string, FileData[]>>({});
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState('');
+  const [testResultModel, setTestResultModel] = useState('');
   const [testError, setTestError] = useState('');
 
   const addInput = () => {
@@ -91,6 +92,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
     setIsTesting(true);
     setTestError('');
     setTestResult('');
+    setTestResultModel('');
     try {
       const tempTool: CustomTool = {
         id: 'preview',
@@ -103,8 +105,9 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
         createdAt: '',
         updatedAt: '',
       };
-      const output = await runCustomTool(tempTool, testValues, testFiles);
+      const { text: output, model } = await runCustomTool(tempTool, testValues, testFiles);
       setTestResult(output);
+      setTestResultModel(model);
     } catch (e: any) {
       setTestError(e?.message || '실행 중 오류가 발생했습니다.');
     } finally {
@@ -426,7 +429,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
 
             {testResult && (
               <div className="h-[420px]">
-                <GeneratedDisplay content={testResult} title={name.trim() || '미리보기'} />
+                <GeneratedDisplay content={testResult} title={name.trim() || '미리보기'} model={testResultModel} />
               </div>
             )}
           </div>

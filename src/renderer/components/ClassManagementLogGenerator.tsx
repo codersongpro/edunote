@@ -38,6 +38,7 @@ const ClassManagementLogGenerator: React.FC = () => {
   const [studentIssues, setStudentIssues] = useState('');
   const [teacherNotes, setTeacherNotes] = useState('');
   const [result, setResult] = useState(EXAMPLE_RESULT);
+  const [resultModel, setResultModel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -61,12 +62,13 @@ const ClassManagementLogGenerator: React.FC = () => {
     }
     setError('');
     setResult('');
+    setResultModel('');
     setIsLoading(true);
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
       const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
-      const generated = await generateClassManagementLog({
+      const { text: generated, model } = await generateClassManagementLog({
         week,
         dateRange,
         grade,
@@ -77,6 +79,7 @@ const ClassManagementLogGenerator: React.FC = () => {
         rosterNames,
       });
       setResult(generated);
+      setResultModel(model);
       playSuccessSound();
     } catch (err: any) {
       setError(err?.message || '생성 중 오류가 발생했습니다.');
@@ -225,6 +228,11 @@ const ClassManagementLogGenerator: React.FC = () => {
                   <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과</h3>
                   {result === EXAMPLE_RESULT && (
                     <span className="text-[10px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium">예시</span>
+                  )}
+                  {resultModel && (
+                    <span className="text-[10px] text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full font-medium" title="이 결과를 생성한 AI 모델">
+                      {resultModel}
+                    </span>
                   )}
                 </div>
                 <div className="flex gap-2">

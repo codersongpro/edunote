@@ -675,7 +675,7 @@ export const generateDocument = async (
   gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
   gonggoInputs?: GonggoInputs,
   onProgressText?: (accumulated: string) => void,
-): Promise<string> => {
+): Promise<{ text: string; model: string }> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
       ? `[분량 지침] 이 문서는 모바일 문자 메시지(SMS/LMS)입니다. 요청된 문자 유형(단문/장문)에 맞춰 길이를 엄격히 준수하세요.`
@@ -983,10 +983,11 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
   });
 
   try {
+    let usedModel = '';
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText)
-      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 });
-    return stripGeneratedCodeFences(raw);
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText, (model) => { usedModel = model; })
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, (model) => { usedModel = model; });
+    return { text: stripGeneratedCodeFences(raw), model: usedModel };
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));
@@ -1004,7 +1005,7 @@ export const generateLessonObservation = async (inputs: {
   teacherName: string;
   privacyModeEnabled?: boolean;
   rosterNames?: string[];
-}): Promise<string> => {
+}): Promise<{ text: string; model: string }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 작성한 관찰 내용을 바탕으로 수업관찰기록 문서를 작성해주세요.
@@ -1025,12 +1026,14 @@ ${getDateContext()}
 5. 문서 내용만 출력하세요. 작성 경위·안내 문구·설명 문장을 문서 앞뒤에 절대 추가하지 마세요.`;
 
   const privacy = withStudentListPrivacy(prompt, inputs.rosterNames ?? [], inputs.privacyModeEnabled);
+  let usedModel = '';
   const result = await aiGenerate(
     privacy.prompt,
     '당신은 교사의 수업관찰기록 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
+    (model) => { usedModel = model; },
   );
-  return privacy.restore(result);
+  return { text: privacy.restore(result), model: usedModel };
 };
 
 export const generateCounselingLog = async (inputs: {
@@ -1041,7 +1044,7 @@ export const generateCounselingLog = async (inputs: {
   counselingContent: string;
   followUpPlan: string;
   privacyModeEnabled?: boolean;
-}): Promise<string> => {
+}): Promise<{ text: string; model: string }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 기록한 상담 내용을 바탕으로 상담일지 문서를 작성해주세요.
@@ -1061,12 +1064,14 @@ ${getDateContext()}
 4. 문서 내용만 출력하세요. 작성 경위·안내 문구·설명 문장을 문서 앞뒤에 절대 추가하지 마세요.`;
 
   const privacy = withStudentPrivacy(prompt, inputs.studentName, inputs.privacyModeEnabled);
+  let usedModel = '';
   const result = await aiGenerate(
     privacy.prompt,
     '당신은 교사의 상담일지 문서 작성을 돕는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요. 반드시 문서 본문만 출력하고, 작성 배경·안내·설명 등 메타 문구는 절대 출력하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
+    (model) => { usedModel = model; },
   );
-  return privacy.restore(result);
+  return { text: privacy.restore(result), model: usedModel };
 };
 
 export const generateClassManagementLog = async (inputs: {
@@ -1078,7 +1083,7 @@ export const generateClassManagementLog = async (inputs: {
   teacherNotes: string;
   privacyModeEnabled?: boolean;
   rosterNames?: string[];
-}): Promise<string> => {
+}): Promise<{ text: string; model: string }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 기록한 학급 운영 내용을 바탕으로 학급경영일지 문서 작성을 보조해주세요.
@@ -1098,19 +1103,21 @@ ${getDateContext()}
 3. 각 항목은 개조식(~함., ~임., ~였음.)으로 작성하세요.`;
 
   const privacy = withStudentListPrivacy(prompt, inputs.rosterNames ?? [], inputs.privacyModeEnabled);
+  let usedModel = '';
   const result = await aiGenerate(
     privacy.prompt,
     '당신은 담임교사의 학급경영일지 문서 작성을 보조하는 도우미입니다. 교사가 입력한 내용을 최우선으로 존중하고, 문서 형식 정리와 표현 다듬기만 담당하세요. 내용을 임의로 추가하거나 사실을 창작하지 마세요.',
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
+    (model) => { usedModel = model; },
   );
-  return privacy.restore(result);
+  return { text: privacy.restore(result), model: usedModel };
 };
 
 export const analyzeOfficialDocument = async (inputs: {
   title: string;
   pastedText: string;
   files: FileData[];
-}): Promise<string> => {
+}): Promise<{ text: string; model: string }> => {
   const prompt = `
 ${getDateContext()}
 학교 또는 교육청 공문을 분석하여 교사가 바로 확인할 수 있는 짧은 업무 메모로 정리해주세요.
@@ -1154,19 +1161,26 @@ ${inputs.pastedText || '없음'}
     },
   }));
 
+  let usedModel = '';
+  const onModel = (model: string) => { usedModel = model; };
+
   if (fileParts.length > 0) {
-    return await aiGenerateMultipart(
+    const text = await aiGenerateMultipart(
       [{ text: prompt }, ...fileParts],
       '당신은 학교와 교육청 공문을 짧은 업무 메모로 정리하는 행정 보조자입니다. 원문에 없는 사실을 만들지 말고, 일시·장소·링크·마감·제출 업무를 반드시 간결하게 드러내세요.',
       { temperature: 0.2 },
+      onModel,
     );
+    return { text, model: usedModel };
   }
 
-  return await aiGenerate(
+  const text = await aiGenerate(
     prompt,
     '당신은 학교와 교육청 공문을 짧은 업무 메모로 정리하는 행정 보조자입니다. 원문에 없는 사실을 만들지 말고, 일시·장소·링크·마감·제출 업무를 반드시 간결하게 드러내세요.',
     { temperature: 0.2 },
+    onModel,
   );
+  return { text, model: usedModel };
 };
 
 export const askEducationQuestion = async (
@@ -1304,7 +1318,7 @@ const getLessonGradeGuidance = (grade: string): string => {
   return '';
 };
 
-export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<LessonSlide[]> {
+export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<{ slides: LessonSlide[]; model: string }> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
@@ -1329,12 +1343,14 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 반드시 아래 JSON 배열 형식으로만 응답하세요 (마크다운 코드블록 없이):
 [{"page":1,"title":"슬라이드 제목","content":["내용1","내용2"],"notes":"교사 메모","imagePrompt":"educational image description in english, no text"}]`;
 
-  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6, responseJson: true });
+  let usedModel = '';
+  const response = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.6, responseJson: true }, (model) => { usedModel = model; });
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
   if (!arrayMatch) throw new Error('슬라이드 JSON 파싱 실패: 올바른 배열 형식이 아닙니다.');
   const parsed = JSON.parse(arrayMatch[0]);
-  return Array.isArray(parsed) && parsed.length > 0 ? parsed : (() => { throw new Error('슬라이드 생성 결과가 비어있습니다. 다시 시도해주세요.'); })();
+  const slides = Array.isArray(parsed) && parsed.length > 0 ? parsed : (() => { throw new Error('슬라이드 생성 결과가 비어있습니다. 다시 시도해주세요.'); })();
+  return { slides, model: usedModel };
 }
 
 export async function generateLessonWorksheet(
@@ -1343,7 +1359,7 @@ export async function generateLessonWorksheet(
   questionCount: number,
   includeScore: boolean,
   insertImagePlaceholder = false,
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const typeLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
   const baseFontSize = params.grade.includes('초등') ? '12pt' : params.grade.includes('중학') ? '11pt' : '10pt';
   const h1Size = params.grade.includes('초등') ? '18pt' : params.grade.includes('중학') ? '17pt' : '16pt';
@@ -1394,7 +1410,9 @@ p { margin: 2pt 0; line-height: 1.5; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;table-layout:fixed;" 속성을, 모든 <th>와 <td>에 style="border:0.8pt solid #444;padding:3pt 5pt;word-break:keep-all;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }));
+  let usedModel = '';
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }, (model) => { usedModel = model; });
+  return { text: stripGeneratedCodeFences(raw), model: usedModel };
 }
 
 export type QuizType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'OX';
@@ -1623,7 +1641,7 @@ g('restartBtn').addEventListener('click',function(){hide(g('resultScreen'));show
 </html>`;
 }
 
-export async function generateLessonQuiz(params: LessonParams, questionCount: number, quizTypes: QuizType[]): Promise<string> {
+export async function generateLessonQuiz(params: LessonParams, questionCount: number, quizTypes: QuizType[]): Promise<{ text: string; model: string }> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const types = quizTypes.length > 0 ? quizTypes : ['MULTIPLE_CHOICE' as QuizType];
   const typeLines = types.map(t => {
@@ -1658,12 +1676,13 @@ ${typeLines}
   ]
 }`;
 
-  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true });
+  let usedModel = '';
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true }, (model) => { usedModel = model; });
   const data = parseQuizJson(raw);
-  return buildQuizHtml(data);
+  return { text: buildQuizHtml(data), model: usedModel };
 }
 
-export async function generateLessonPlan(params: LessonParams): Promise<string> {
+export async function generateLessonPlan(params: LessonParams): Promise<{ text: string; model: string }> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
@@ -1698,7 +1717,9 @@ h1, h2, h3 { page-break-after: avoid; }
 또한 모든 <table> 태그에 style="border-collapse:collapse;width:100%;" 속성을, 모든 <th>와 <td>에 style="border:1pt solid #333;padding:5pt 8pt;" 속성을 반드시 추가하세요.
 마크다운 코드블록 없이 HTML 코드만 응답하세요.`;
 
-  return stripGeneratedCodeFences(await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 }));
+  let usedModel = '';
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.4 }, (model) => { usedModel = model; });
+  return { text: stripGeneratedCodeFences(raw), model: usedModel };
 }
 
 const escapeHtml = (value: string): string =>
@@ -1909,7 +1930,7 @@ export const runCustomTool = async (
   onProgress?: (current: number, total: number) => void,
   signal?: AbortSignal,
   schoolLevel?: string,
-): Promise<string> => {
+): Promise<{ text: string; model: string }> => {
   const withTimeout = <T>(p: Promise<T>): Promise<T> => {
     let timer: ReturnType<typeof setTimeout>;
     let onAbort: (() => void) | undefined;
@@ -1937,6 +1958,8 @@ export const runCustomTool = async (
   }
 
   const allFiles = Object.values(fileValues).flat();
+  let usedModel = '';
+  const onModel = (model: string) => { usedModel = model; };
 
   if (allFiles.length > 0) {
     // 파일이 여러 개일 때 배치 크기(10)로 묶어 한 번에 전송 → 표 하나로 합산
@@ -1956,18 +1979,20 @@ export const runCustomTool = async (
         ...batch.map(f => ({ inlineData: { data: f.base64.split(',')[1], mimeType: f.mimeType } })),
         { text: basePrompt },
       ];
-      batchResults.push(await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 })));
+      batchResults.push(await withTimeout(aiGenerateMultipart(parts, '', { temperature: 0.8 }, onModel)));
     }
 
-    if (batchResults.length === 1) return batchResults[0];
+    if (batchResults.length === 1) return { text: batchResults[0], model: usedModel };
 
     // 배치가 2개 이상이면 최종 병합 호출
     if (signal?.aborted) throw new Error('취소되었습니다.');
     const mergePrompt = `다음 표들을 헤더 한 번, 중복 없이 하나의 표로 합쳐줘:\n\n${batchResults.join('\n\n---\n\n')}`;
-    return await withTimeout(aiGenerate(mergePrompt, '', { temperature: 0.3 }));
+    const merged = await withTimeout(aiGenerate(mergePrompt, '', { temperature: 0.3 }, onModel));
+    return { text: merged, model: usedModel };
   }
 
-  return await withTimeout(aiGenerate(basePrompt, '', { temperature: 0.8 }));
+  const text = await withTimeout(aiGenerate(basePrompt, '', { temperature: 0.8 }, onModel));
+  return { text, model: usedModel };
 };
 
 export const generateToolPrompt = async (
@@ -2075,7 +2100,7 @@ ${templateNote}
 export const generateHtmlApp = async (
   description: string,
   signal?: AbortSignal,
-): Promise<string> => {
+): Promise<{ text: string; model: string }> => {
   const prompt = `교사가 교실에서 사용할 수 있는 인터랙티브 HTML 앱을 만들어줘.
 
 요청: ${description}
@@ -2100,12 +2125,13 @@ export const generateHtmlApp = async (
       })
     : null;
 
-  const generatePromise = aiGenerate(prompt, '', { temperature: 0.7 });
+  let usedModel = '';
+  const generatePromise = aiGenerate(prompt, '', { temperature: 0.7 }, (model) => { usedModel = model; });
   try {
     const raw = abortPromise
       ? await Promise.race([generatePromise, abortPromise])
       : await generatePromise;
-    return raw.replace(/^```html\n?/i, '').replace(/\n?```\s*$/, '').trim();
+    return { text: raw.replace(/^```html\n?/i, '').replace(/\n?```\s*$/, '').trim(), model: usedModel };
   } finally {
     if (onAbort) signal?.removeEventListener('abort', onAbort);
   }
