@@ -36,7 +36,7 @@ export async function translateHtml(html: string, language: TranslationLanguage)
     '',
     html,
   ].join('\n');
-  const result = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0.2 });
+  const { text: result } = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0.2 });
   // 모델 출력이 그대로 미리보기·저장에 쓰이므로 스크립트 등 활성 콘텐츠를 제거한다.
   return sanitizeHtml(stripGeneratedCodeFences(result).trim());
 }
@@ -51,6 +51,6 @@ export async function translateText(text: string, targetLabel: string): Promise<
     '',
     text,
   ].join('\n');
-  const result = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0.2 });
+  const { text: result } = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0.2 });
   return stripGeneratedCodeFences(result).trim();
 }

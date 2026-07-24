@@ -36,7 +36,7 @@ EduNote의 업데이트는 단순 기능 추가보다 교사의 실제 업무 �
 | 데이터 저장 | 사용자 PC 로컬 저장 중심 |
 | 백업 방식 | 설정과 자료 데이터를 JSON 파일로 내보내기 및 불러오기, 설정 주기 기반 자동 정기 백업 |
 | 배포 방식 | 로컬 빌드 검증 후 GitHub Releases에 portable EXE 업로드 |
-| 현재 정리 기준 버전 | v1.18.1 |
+| 현재 정리 기준 버전 | v1.18.2 |
 | 보안·개인정보 방향 | 모든 API 키·비밀값(Gemini·나라장터·네이버)은 OS 안전 저장소(safeStorage) 암호화 보관·백업 제외, 학생 명단은 필요한 기능에서만 명시적 동작으로 사용, AI 요청 시 개인정보 보호 모드로 학생 이름 마스킹 |
 
 ### 1.3 기능 구성 요약
@@ -225,6 +225,7 @@ PDF 저장은 Electron의 `printToPDF` 기능을 활용하였다. HWPX 관련 �
 | 2026-07-24 | 1.18.0 | 생기부 도우미(교과세특·행동특성·스포츠클럽·창의적 체험활동) 결과 화면의 글자수 표시를 "000자"에서 "000자/000바이트"로 확장 — UTF-8 바이트 길이(TextEncoder)를 계산하는 getByteLength 공용 함수(src/renderer/lib/textLength.ts)를 신설해 4개 생성기 화면에 동일 적용, 나이스(NEIS) 바이트 계산 방식(한글 3바이트·영문/숫자/공백 1바이트)과 동일 | 생기부 작성 시 나이스 입력 바이트 제한 초과 여부를 결과 화면에서 바로 확인할 수 있게 함 |
 | 2026-07-24 | 1.18.0 | 생기부 도우미 4개 화면(교과세특·행동특성·스포츠클럽·창의적 체험활동) 모두에 학생 기록물(활동지·결과물) 사진·스캔 업로드 자동 분석 기능 추가 — 이미지·PDF를 분석해 관찰 내용을 정리하는 parseStudentObservationFromFiles 함수를 geminiService에 신설(단순 OCR이 아니라 활동 내용·완성도·태도까지 분석하도록 프롬프트 설계, 결과에 학생 이름 미포함), 각 화면의 관찰 내용 입력 영역에 업로드 버튼을 추가해 분석 결과를 자동으로 채워 넣음(기존 입력 내용 뒤에 이어 붙임) | 관찰 내용을 타이핑하는 대신 학생 활동 결과물을 사진으로 찍어 올리는 것만으로 생기부 초안 작성이 가능해짐 |
 | 2026-07-24 | 1.18.1 | 무료 등급 모델 선호 순서에 gemini-3.1-flash-lite를 최우선으로 추가(FREE_MODEL_PREFERENCE) — 기존 2.5/2.0 계열은 그대로 폴백으로 남겨, 키의 프로젝트에 3세대 모델이 아직 열리지 않았거나 조회에 실패해도 기존과 동일하게 동작 보장 | 무료 티어 사용자가 구세대 모델(2.5/2.0)에 머물러 있던 것을, 실제 사용 가능하면 최신 세대 모델을 우선 사용하도록 개선하면서도 하위 호환은 깨지지 않게 함 |
+| 2026-07-24 | 1.18.2 | 생기부 도우미 4개 화면에 실제 생성 모델 표시 — 메인 프로세스 generateContent/generateContentMultipart/generateContentMultipartStream이 성공한 모델명을 {text, model}로 함께 반환하도록 변경(IPC 타입도 동일하게 갱신), 렌더러의 저수준 aiGenerate 계열 함수는 onModel 콜백을 선택적으로 받아 기존 46개 생성 함수의 반환 타입(Promise\<string\>)은 그대로 유지하고 생기부 도우미 4개 함수(generateOpinion/generateSubjectReport/generateSportsClubReport/generateCreativeActivityReport)만 {text, model}을 반환하도록 범위를 좁힘, 학생 데이터 4종 인터페이스에 generatedModel 필드 추가, 결과 화면 학생 이름 옆에 모델 태그 표시 | 회귀 위험을 낮추기 위해 타입 변경 범위를 최소 필요 지점으로 한정하고 컴파일러가 누락을 잡아내도록 설계함 — 다른 AI 기능 40여 개는 코드 변경 없음 |
 
 ## 4. 주요 개발 성과
 
@@ -367,6 +368,8 @@ v1.18.0은 생기부 도우미 결과 확인·입력 편의성을 높인 릴리�
 둘째, 생기부 도우미의 학생 기록물 자동 분석 기능을 추가했다. 그동안은 학생의 활동 내용을 교사가 직접 타이핑해야 했지만, 이제 4개 화면 모두에서 학생의 활동지·수행평가 결과물·관찰일지 등을 스캔하거나 촬영한 파일(이미지·PDF, 여러 장 가능)을 업로드하면 AI가 이를 분석해 관찰 내용 입력칸에 자동으로 채워 넣는다. geminiService에 신설한 parseStudentObservationFromFiles 함수는 창체 화면의 기존 "연간 지도 계획" 파일 분석 기능과 달리 파일 속 글자를 그대로 옮기는 OCR이 아니라, 학생이 수행한 활동 과정과 방법, 결과물의 완성도, 드러나는 태도·역량까지 이미지 전체를 분석하도록 프롬프트를 설계했다. 분석 결과 텍스트에는 학생 이름을 포함하지 않도록 지시하며, 업로드한 파일은 분석에만 사용되고 저장되지 않는다.
 
 v1.18.1은 무료 등급 모델 세대를 갱신한 릴리즈이다. 기존 FREE_MODEL_PREFERENCE는 gemini-2.5-flash-lite를 최우선으로 두고 있었는데, 조사 결과 구글이 이미 Gemini 3세대(3.1 Flash-Lite 등)로 넘어갔고 무료 티어에서도 사용 가능함을 확인해 gemini-3.1-flash-lite를 목록 맨 앞에 추가했다. buildModelChain이 키로 실제 조회한 모델 목록과 선호 순서의 교집합만 사용하는 기존 구조를 그대로 활용했기 때문에, 새 모델을 추가만 하고 기존 2.5·2.0 계열 항목은 전혀 건드리지 않았다 — 키가 연결된 프로젝트에 아직 3세대 모델이 열리지 않았거나 목록 조회 자체가 실패해도 기존과 동일하게 동작한다(폴백 안전성 유지). 모델 ID 문자열은 구글 공식 문서(ai.google.dev) 직접 접근이 차단되어 있어 여러 매체 교차 확인으로 파악했으며, 사용자가 로컬에서 직접 실행할 수 있는 진단 스크립트(scripts 폴더 미포함, 저장소 밖에서 실행)로 실제 키 기준 동작 여부를 확인하도록 안내했다.
+
+v1.18.2는 v1.18.1에 이어 생기부 도우미 결과에 실제 생성 모델을 노출한 릴리즈이다. 모델 폴백 체인 도입 이후 어떤 모델이 실제로 응답을 만들었는지 사용자가 알 방법이 없었는데, 회귀 위험을 낮추는 것을 최우선으로 설계했다. 메인 프로세스의 generateContent·generateContentMultipart·generateContentMultipartStream이 텍스트만 반환하던 것을 {text, model} 형태로 바꾸고 IPC 타입(ElectronAPI 인터페이스)도 함께 갱신했지만, 렌더러의 저수준 aiGenerate·aiGenerateMultipart·aiGenerateMultipartStream 함수에는 선택적 onModel 콜백만 추가해 기존 반환 타입(Promise\<string\>)을 그대로 유지했다. 그 결과 이 파일 안의 생성 함수 46개 중 생기부 도우미 4개(generateOpinion·generateSubjectReport·generateSportsClubReport·generateCreativeActivityReport)만 반환 타입을 {text, model}로 바꾸고, 나머지 42개와 그 호출부는 한 줄도 바뀌지 않았다. 타입을 변경한 지점에서 TypeScript 컴파일러가 고쳐야 할 자리를 전부 오류로 잡아주므로 수동 검색으로 놓치는 위험을 줄였고, 실제로 컴파일러가 지목한 곳(BudgetPlannerScreen·MyResourceLibrary·translation.ts처럼 window.electronAPI.aiGenerate를 직접 호출하던 3개 파일 포함) 외에는 손대지 않았다. 4개 학생 데이터 인터페이스(StudentOpinionData 등)에 generatedModel 필드를 추가하고, 결과 화면 학생 이름 옆에 실제 사용된 모델명을 작은 태그로 표시했다. 다만 이 세션에는 유효한 Gemini API 키가 없어 실제 생성 성공 경로(뱃지가 채워지는 순간)까지는 확인하지 못했고, 타입체크·테스트 통과와 화면 정상 로드까지만 검증했다.
 
 ## 6. 향후 개선 방향
 

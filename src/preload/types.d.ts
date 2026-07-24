@@ -1,16 +1,16 @@
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }): Promise<string>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }): Promise<{ text: string; model: string }>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
     options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
-  ): Promise<string>;
+  ): Promise<{ text: string; model: string }>;
   aiGenerateMultipartStream(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction: string | undefined,
     options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
-  ): Promise<string>;
+  ): Promise<{ text: string; model: string }>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
 

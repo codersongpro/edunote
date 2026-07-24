@@ -259,7 +259,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const student = newStudents[i];
             try {
               const extras = await getStudentGenerationExtras(student.name);
-              const result = await callWithAbort(() => generateSportsClubReport({
+              const { text: result, model } = await callWithAbort(() => generateSportsClubReport({
                   schoolLevel,
                   studentName: student.name,
                   sportName: sportsState.sportName,
@@ -271,6 +271,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[i].generatedContent = result;
+              newStudents[i].generatedModel = model;
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -328,7 +329,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const student = newStudents[index];
             try {
               const extras = await getStudentGenerationExtras(student.name);
-              const result = await callWithAbort(() => generateSportsClubReport({
+              const { text: result, model } = await callWithAbort(() => generateSportsClubReport({
                   schoolLevel,
                   studentName: student.name,
                   sportName: sportsState.sportName,
@@ -340,6 +341,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
               }));
               newStudents[index].generatedContent = result;
+              newStudents[index].generatedModel = model;
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -378,7 +380,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
       const extras = await getStudentGenerationExtras(student.name);
-      const result = await generateSportsClubReport({
+      const { text: result, model } = await generateSportsClubReport({
           schoolLevel,
           studentName: student.name,
           sportName: sportsState.sportName,
@@ -390,9 +392,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
           avoidPhrases,
           ...extras
       });
-      
+
       const newStudents = [...sportsState.students];
       newStudents[index].generatedContent = result;
+      newStudents[index].generatedModel = model;
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('sports', sportsState.students[index].name, result);
       updateSportsState({ students: newStudents });
@@ -901,6 +904,11 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         {idx + 1}
                                     </span>
                                     {student.name}
+                                    {student.generatedModel && (
+                                        <span className="ml-3 text-xs font-normal text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full" title="이 결과를 생성한 AI 모델">
+                                            {student.generatedModel}
+                                        </span>
+                                    )}
                                 </h4>
                                 <div className="flex items-center gap-2">
                                     <button

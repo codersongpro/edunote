@@ -132,6 +132,7 @@ export interface StudentOpinionData extends Student {
   negativeTags: string[];
   additionalContext: string;
   generatedContent?: string;
+  generatedModel?: string;
   selected?: boolean;
 }
 
@@ -152,12 +153,14 @@ export interface StudentSubjectData extends Student {
   observationDetails?: ObservationDetails;
   evaluations?: StudentEvaluation[];
   generatedContent?: string;
+  generatedModel?: string;
   selected?: boolean;
 }
 
 export interface StudentSportsData extends Student {
   additionalContext: string;
   generatedContent?: string;
+  generatedModel?: string;
   selected?: boolean;
 }
 
@@ -165,6 +168,7 @@ export interface StudentCreativeActivityData extends Student {
   selectedTags: string[];
   additionalContext: string;
   generatedContent?: string;
+  generatedModel?: string;
   selected?: boolean;
 }
 

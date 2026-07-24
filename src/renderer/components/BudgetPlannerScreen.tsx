@@ -1480,7 +1480,7 @@ export default function BudgetPlannerScreen() {
       }, null, 2),
     ].join('\n');
     const systemInstruction = '너는 한국 학교 예산사용계획을 작성하는 행정 보조자다. 사용자가 바로 수정하고 CSV로 내려받을 수 있는 품목표만 만든다.';
-    const text = await window.electronAPI.aiGenerate(prompt, systemInstruction, { temperature: 0.4, responseJson: true });
+    const { text } = await window.electronAPI.aiGenerate(prompt, systemInstruction, { temperature: 0.4, responseJson: true });
     const parsed = parseAiBudgetItems(text);
     if (parsed.length === 0) throw new Error('AI가 사용할 수 있는 예산안 품목을 만들지 못했습니다.');
     const aiItems = parsed.map(item => ({

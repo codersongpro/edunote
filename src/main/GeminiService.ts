@@ -158,12 +158,12 @@ function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
 // - 분당 제한(429 + retryDelay)이면 같은 모델로 1회 재시도 (문체 일관성 유지)
 // - 일일 한도면 해당 모델을 길게 차단하고 다음 모델로 폴백
 // - 네트워크 등 모델 무관 오류는 즉시 전파 (모델을 바꿔도 동일하게 실패)
-async function generateWithModelChain(
+async function generateWithModelChain<T>(
   ai: GoogleGenAI,
   apiKey: string,
   apiTier: ApiTier,
-  doCall: (model: string) => Promise<string>,
-): Promise<string> {
+  doCall: (model: string) => Promise<T>,
+): Promise<{ result: T; model: string }> {
   const preference = apiTier === 'paid' ? PAID_MODEL_PREFERENCE : FREE_MODEL_PREFERENCE;
   const models = buildModelChain(preference, await getAvailableModelNames(ai, apiKey));
   let lastError: unknown = null;
@@ -173,7 +173,7 @@ async function generateWithModelChain(
 
     try {
       if (apiTier === 'free') await freeTierPacer.reserve();
-      return await doCall(model);
+      return { result: await doCall(model), model };
     } catch (error: unknown) {
       lastError = error;
 
@@ -183,7 +183,7 @@ async function generateWithModelChain(
           await new Promise(resolve => setTimeout(resolve, retryMs + 500));
           try {
             if (apiTier === 'free') await freeTierPacer.reserve();
-            return await doCall(model);
+            return { result: await doCall(model), model };
           } catch (retryError: unknown) {
             lastError = retryError;
             if (!isQuotaError(retryError)) throw retryError;
@@ -227,51 +227,53 @@ async function generateWithModelChain(
   throw lastError ?? new Error('사용 가능한 모델이 없습니다. 잠시 후 다시 시도해주세요.');
 }
 
-// 텍스트 생성 (단일 프롬프트)
+// 텍스트 생성 (단일 프롬프트) — 실제로 성공한 모델명을 함께 반환한다.
 export async function generateContent(
   apiKey: string,
   prompt: string,
   options?: GenerateOptions,
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(options) }),
       REQUEST_TIMEOUT_MS,
     );
     return result.text ?? '';
   });
+  return { text: result, model };
 }
 
-// 멀티파트(텍스트+파일) 생성
+// 멀티파트(텍스트+파일) 생성 — 실제로 성공한 모델명을 함께 반환한다.
 export async function generateContentMultipart(
   apiKey: string,
   parts: MultipartPart[],
   options?: GenerateOptions,
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(options) }),
       REQUEST_TIMEOUT_MS,
     );
     return result.text ?? '';
   });
+  return { text: result, model };
 }
 
 // 스트리밍 생성 이벤트 — 'start'는 새 시도(폴백 포함) 시작을 뜻하므로 수신 측은 버퍼를 비운다
 export type StreamEvent = { type: 'start' } | { type: 'chunk'; text: string };
 
-// 멀티파트 스트리밍 생성 — 생성 중간 텍스트를 onEvent로 흘려보내고 전체 텍스트를 반환한다.
-// 모델 폴백·재시도 시에는 'start' 이벤트가 다시 와서 화면 미리보기가 초기화된다.
+// 멀티파트 스트리밍 생성 — 생성 중간 텍스트를 onEvent로 흘려보내고 전체 텍스트와 실제로
+// 성공한 모델명을 반환한다. 모델 폴백·재시도 시에는 'start' 이벤트가 다시 와서 화면 미리보기가 초기화된다.
 export async function generateContentMultipartStream(
   apiKey: string,
   parts: MultipartPart[],
   options: GenerateOptions | undefined,
   onEvent: (event: StreamEvent) => void,
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const ai = new GoogleGenAI({ apiKey });
-  return generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     onEvent({ type: 'start' });
     const stream = await withTimeout(
       ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(options) }),
@@ -306,6 +308,7 @@ export async function generateContentMultipartStream(
     }
     return full;
   });
+  return { text: result, model };
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)

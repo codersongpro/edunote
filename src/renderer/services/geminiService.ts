@@ -42,9 +42,18 @@ const notifyTemporaryApiError = (error: unknown) => {
 // 포함되므로 실제 필요량(약 1,500 토큰)보다 넉넉하게 둔다.
 const TEXT_OUTPUT_TOKEN_LIMIT = 8192;
 
-const aiGenerate = async (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
+// onModel(선택)이 주어지면 실제로 성공한 모델명을 콜백으로 알려준다.
+// 대부분의 호출부는 이 값이 필요 없어 생략하며, 기존과 동일하게 문자열만 반환받는다.
+const aiGenerate = async (
+  prompt: string,
+  systemInstruction?: string,
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
+  onModel?: (model: string) => void,
+) => {
   try {
-    return await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
+    const { text, model } = await window.electronAPI.aiGenerate(prompt, systemInstruction, options);
+    onModel?.(model);
+    return text;
   } catch (error) {
     notifyTemporaryApiError(error);
     throw error;
@@ -55,18 +64,24 @@ const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
   options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
-) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).catch((error) => {
+  onModel?: (model: string) => void,
+) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model }) => {
+  onModel?.(model);
+  return text;
+}).catch((error) => {
   notifyTemporaryApiError(error);
   throw error;
 });
 
 // 스트리밍 멀티파트 생성 — 누적 텍스트를 onText로 전달한다.
 // 모델 폴백·재시도로 'start'가 다시 오면 누적 버퍼를 비우고 처음부터 다시 쌓는다.
+// onModel(선택)이 주어지면 실제로 성공한 모델명을 콜백으로 알려준다.
 const aiGenerateMultipartStream = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction: string | undefined,
   options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
   onText: (accumulated: string) => void,
+  onModel?: (model: string) => void,
 ) => {
   let buffer = '';
   return window.electronAPI.aiGenerateMultipartStream(parts, systemInstruction, options, (event) => {
@@ -77,6 +92,9 @@ const aiGenerateMultipartStream = (
       buffer += event.text;
       onText(buffer);
     }
+  }).then(({ text, model }) => {
+    onModel?.(model);
+    return text;
   }).catch((error) => {
     notifyTemporaryApiError(error);
     throw error;
@@ -421,7 +439,7 @@ export const askRecordChatbot = async (
   }
 };
 
-export const generateOpinion = async (request: GenerationRequest): Promise<string> => {
+export const generateOpinion = async (request: GenerationRequest): Promise<{ text: string; model: string }> => {
   try {
     const positiveStr = request.positiveTags.length > 0 ? request.positiveTags.join(', ') : '특별히 지정되지 않음';
     const negativeStr = request.negativeTags.length > 0 ? request.negativeTags.join(', ') : '특별히 지정되지 않음';
@@ -455,18 +473,19 @@ ${formatStudentMemos(request.studentMemos)}
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    let usedModel = '';
     const result = await aiGenerate(privacy.prompt, OPINION_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.85,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
-    });
-    return privacy.restore(result);
+    }, (model) => { usedModel = model; });
+    return { text: privacy.restore(result), model: usedModel };
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     throw new Error(describeGenerationError(error));
   }
 };
 
-export const generateSubjectReport = async (request: SubjectGenerationRequest): Promise<string> => {
+export const generateSubjectReport = async (request: SubjectGenerationRequest): Promise<{ text: string; model: string }> => {
   try {
     const tasksText = request.tasks
       .map((t, i) => `- 활동 ${i + 1}: ${t.task} (성취수준: ${t.level})`)
@@ -506,18 +525,19 @@ ${formatStudentMemos(request.studentMemos)}
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    let usedModel = '';
     const result = await aiGenerate(privacy.prompt, SUBJECT_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
-    });
-    return privacy.restore(result);
+    }, (model) => { usedModel = model; });
+    return { text: privacy.restore(result), model: usedModel };
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     throw new Error(describeGenerationError(error));
   }
 };
 
-export const generateSportsClubReport = async (request: SportsGenerationRequest): Promise<string> => {
+export const generateSportsClubReport = async (request: SportsGenerationRequest): Promise<{ text: string; model: string }> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
     const avoidInstruction =
@@ -546,11 +566,12 @@ ${formatStudentMemos(request.studentMemos)}
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    let usedModel = '';
     const result = await aiGenerate(privacy.prompt, SPORTS_GENERATOR_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
-    });
-    return privacy.restore(result);
+    }, (model) => { usedModel = model; });
+    return { text: privacy.restore(result), model: usedModel };
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     throw new Error(describeGenerationError(error));
@@ -559,7 +580,7 @@ ${avoidInstruction}`;
 
 export const generateCreativeActivityReport = async (
   request: CreativeActivityGenerationRequest,
-): Promise<string> => {
+): Promise<{ text: string; model: string }> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
     const keywordsStr = request.keywords.length > 0
@@ -628,11 +649,12 @@ ${leadershipInstruction}
 ${avoidInstruction}`;
 
     const privacy = withStudentPrivacy(prompt, request.studentName, request.privacyModeEnabled);
+    let usedModel = '';
     const result = await aiGenerate(privacy.prompt, CREATIVE_ACTIVITY_SYSTEM_PROMPT(request.schoolLevel), {
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
-    });
-    return privacy.restore(result);
+    }, (model) => { usedModel = model; });
+    return { text: privacy.restore(result), model: usedModel };
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     throw new Error(describeGenerationError(error));

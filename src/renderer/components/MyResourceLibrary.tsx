@@ -193,7 +193,7 @@ const MyResourceLibrary: React.FC = () => {
 - 반드시 위 카테고리 목록 중 하나만 정확히 그대로 답하세요.
 - 맞는 카테고리가 없으면 "없음"이라고만 답하세요.
 - 다른 설명 없이 카테고리 이름 하나만 출력하세요.`;
-      const result = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0 });
+      const { text: result } = await window.electronAPI.aiGenerate(prompt, undefined, { temperature: 0 });
       const matched = categories.find(c => result.trim() === c || result.trim().startsWith(c));
       return matched ?? '';
     } catch {
