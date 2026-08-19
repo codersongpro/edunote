@@ -338,6 +338,13 @@ const SettingsScreen: React.FC = () => {
                   </p>
                 </div>
 
+                {/* 무료/유료 등급의 데이터 취급 방침 차이 안내 — 학생 개인정보를 다루는 앱이라 등급 선택에 영향을 줄 수 있음 */}
+                <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md p-3">
+                  <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+                    무료 등급은 과금이 없지만, 구글이 입력 내용을 서비스 개선(모델 학습·검토)에 활용할 수 있습니다. 유료 등급은 그렇지 않습니다. 학생 개인정보를 다루신다면 유료 등급 키 사용을 검토해 주세요.
+                  </p>
+                </div>
+
                 <div className="mt-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-md p-3">
                   <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1.5">
                     프로젝트가 하나도 없을 때
@@ -710,6 +717,9 @@ const SettingsScreen: React.FC = () => {
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
             기본 정보, 학생 명단, 나만의 자료실, 학생 메모 등 앱 자료를 하나의 JSON 파일로 저장하고 다른 컴퓨터에서 불러올 수 있습니다. API 키는 보안상 포함하지 않습니다.
           </p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-2.5">
+            ⚠️ 백업 파일에는 학생 실명·상담 기록·생성 이력이 암호화 없이 그대로 들어갑니다. USB나 클라우드에 보관할 때는 유출되지 않도록 주의해 주세요.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleExportBackup}
@@ -730,7 +740,7 @@ const SettingsScreen: React.FC = () => {
             <div className="min-w-0">
               <p className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">자동 정기 백업</p>
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관).
+                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관). 학생 정보가 암호화 없이 저장되니, 필요하지 않다면 "사용 안 함"으로 두세요.
               </p>
             </div>
             <select

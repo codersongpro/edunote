@@ -879,6 +879,9 @@ const App: React.FC = () => {
                           <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-1">사용량 기반 과금</p>
                         </button>
                       </div>
+                      <p className="mb-3 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#6B5E57]">
+                        무료 등급은 과금이 없지만, 구글이 입력 내용을 서비스 개선(모델 학습·검토)에 활용할 수 있습니다. 유료 등급은 그렇지 않습니다. 학생 개인정보를 다루신다면 유료 등급 키 사용을 검토해 주세요.
+                      </p>
                       <label className="block text-xs font-bold text-[#78716C] dark:text-[#9C8F87] mb-1">무료 Gmail API 키</label>
                       {hasApiKey && (
                         <p className="mb-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
