@@ -10,7 +10,8 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
-import { getByteLength } from '../lib/textLength';
+import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { ByteCountBadge } from './ByteCountBadge';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -63,6 +64,14 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [studentPanelCollapsed, setStudentPanelCollapsed] = useState(false);
   const [isAnalyzingObservation, setIsAnalyzingObservation] = useState(false);
   const observationFileInputRef = useRef<HTMLInputElement>(null);
+
+  // NEIS 입력 상한(설정에서 조정 가능). 조회 전에는 기본값으로 표시한다.
+  const [byteLimits, setByteLimits] = useState<Record<RecordKind, number>>(DEFAULT_BYTE_LIMITS);
+  useEffect(() => {
+    let cancelled = false;
+    loadByteLimits().then(limits => { if (!cancelled) setByteLimits(limits); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Helper to update sports state
   const updateSportsState = (updates: Partial<typeof state.sports>) => {
@@ -996,9 +1005,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     onChange={(e) => handleResultChange(idx, e.target.value)}
                                     className="w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-blue-500 focus:outline-none resize-y text-sm leading-relaxed"
                                  />
-                                 <div className="absolute bottom-3 right-3 text-xs text-[#A8A29E] pointer-events-none">
-                                     {(student.generatedContent || '').length}자/{getByteLength(student.generatedContent || '')}바이트
-                                 </div>
+                                 <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.sports} />
                              </div>
                              {expandedHistory.has(student.id) && (() => {
                                const hist: HistoryEntry[] = getHistory('sports', student.name);

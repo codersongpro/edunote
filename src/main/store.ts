@@ -36,6 +36,10 @@ interface StoreSchema {
   chatFirebaseConfig: string;
   chatActiveRoomId: string;
   chatRoomHistory: string;
+  // 생기부 항목별 바이트 상한을 담은 JSON 문자열(예: {"opinion":1500,...}).
+  // 기재요령이 학년도·학교급마다 달라 사용자가 조정할 수 있어야 하므로 설정으로 뺐다.
+  // 빈 문자열이면 textLength.ts의 기본값을 쓴다.
+  neisByteLimits: string;
 }
 
 export const store = new Store<StoreSchema>({
@@ -76,5 +80,6 @@ export const store = new Store<StoreSchema>({
     chatFirebaseConfig: '',
     chatActiveRoomId: '',
     chatRoomHistory: '',
+    neisByteLimits: '',
   },
 });
