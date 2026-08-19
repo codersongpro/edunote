@@ -79,6 +79,9 @@ export interface CustomTool {
   updatedAt: string;
   pinned?: boolean;
   pinnedAt?: number;
+  // 스킬마켓(제3자 등록)에서 가져온 도구인지 여부. html-app 실행 시 브라우저에서
+  // 제한 없이 스크립트가 돌아가므로, 실행 전 출처를 사용자에게 알리는 데 사용한다.
+  importedFromMarket?: boolean;
 }
 
 // ─── Chat ─────────────────────────────────────────────────────────

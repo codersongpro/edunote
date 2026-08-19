@@ -8,6 +8,10 @@ const DANGEROUS_HTML_PATTERNS = [
   /<embed\b/i,
   /javascript:/i,
   /data:text\/html/i,
+  // 외부 도메인에서 스크립트를 불러오는 <script src="...">를 차단한다. HTML 앱은 스킬마켓을 통해
+  // 제3자가 만든 것을 가져올 수 있는데, 자체 코드를 담은 인라인 <script>(src 속성 없음)는
+  // 정상 동작에 필요하므로 계속 허용하고, "다른 서버의 코드를 실행하는" 형태만 막는다.
+  /<script\b[^>]*\bsrc\s*=/i,
 ];
 
 export function isSafeHttpsUrl(value: string): boolean {

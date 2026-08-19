@@ -336,6 +336,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
           author: t.author || [entry.author, entry.authorSchool].filter(Boolean).join(' / ') || undefined,
           createdAt: t.createdAt || entry.createdAt || now,
           updatedAt: now,
+          importedFromMarket: true,
         }));
       } catch {
         if (entry.toolType === 'html-app' && raw.trim().startsWith('<')) {
@@ -351,6 +352,7 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
             author: [entry.author, entry.authorSchool].filter(Boolean).join(' / ') || undefined,
             createdAt: entry.createdAt || now,
             updatedAt: now,
+            importedFromMarket: true,
           };
           const validation = validateImportedTool(htmlTool);
           if (validation.ok === false) throw new Error(validation.reason);
@@ -779,6 +781,14 @@ const ToolCard: React.FC<{
   const isHtmlApp = tool.toolType === 'html-app';
   const handleRun = () => {
     if (isHtmlApp && tool.htmlContent) {
+      // 스킬마켓에서 가져온 HTML 앱은 브라우저에서 제한 없이 실행되므로(샌드박스 미적용),
+      // 실행 전 출처를 알리고 확인을 받는다. 직접 만든 앱은 경고 없이 바로 실행한다.
+      if (tool.importedFromMarket) {
+        const confirmed = window.confirm(
+          `"${tool.name}"은(는) 다른 분이 만들어 스킬마켓에 등록한 앱입니다.\n브라우저에서 제한 없이 실행되니, 학생 개인정보는 입력하지 마세요.\n\n계속 실행할까요?`
+        );
+        if (!confirmed) return;
+      }
       window.electronAPI.openHtmlExternal(tool.htmlContent, tool.name);
     } else {
       onRun();
