@@ -588,15 +588,21 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 
 | 항목 | 설계 방향 |
 | --- | --- |
-| API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능 |
-| 백업 | API 키·시크릿은 백업 파일에서 제외 |
+| API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능. 금고를 못 쓰는 환경에서 평문으로 폴백되면 `writeSecret`이 `{ usedPlaintext: true }`를 반환해 렌더러가 사용자에게 알린다 |
+| 백업 | API 키·시크릿은 백업 파일에서 제외. 단 학생 명단·메모·생성 이력은 암호화 없이 포함되므로 백업 화면에 경고 문구 표시. 자동 정기 백업 기본값은 꺼짐(v1.19.0부터) |
+| 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼으로 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모·설정의 학생 명단을 일괄 삭제(generationHistory.ts). 되돌릴 수 없어 2단계 확인을 거친다 |
 | 학생 명단 | 필요한 기능에서만 명시적으로 불러오기 |
-| 개인정보 보호 모드 | AI 요청 시 학생 이름을 임시 토큰으로 치환 후 응답에서 복원. 이름 입력칸이 있는 화면은 해당 이름만, 자유 서술형인 수업관찰기록·학급경영일지는 설정에 저장된 우리 반 학생 명단 기준으로 본문에 등장하는 이름을 치환한다 |
+| 개인정보 보호 모드 | AI 요청 시 학생 이름을 임시 토큰으로 치환 후 응답에서 복원. 이름 입력칸이 있는 화면은 해당 이름만, 자유 서술형인 수업관찰기록·학급경영일지는 설정에 저장된 우리 반 학생 명단 기준으로 본문에 등장하는 이름을 치환한다. `withStudentPrivacy`/`withStudentListPrivacy`가 실제 적용 여부(`applied`)를 반환해 결과 카드에 "🔒 이름 가림 / 이름 그대로 전송" 배지로 표시한다. 나이스 성적 자료·학생 기록물 사진 업로드·간단 번역은 이 모드가 적용되지 않으며 화면에 경고 문구를 표시한다 |
 | 공문서 | 우리 반 학생 명단 자동 반영 금지 |
-| 파일 업로드 | 로컬에서 base64 (파일을 텍스트 형태로 변환하는 방식) 변환 후 필요한 경우에만 Gemini로 전송, 15MB 크기 상한 |
-| 외부 링크 | `openExternal`로 브라우저 열기 |
-| 외부 URL 요청 | `electron.net.fetch` 경유, localhost·사설 IP 접근을 막는 SSRF 가드(netGuard.ts) |
-| renderer 보안 | `contextIsolation: true`, `nodeIntegration: false`, 본 창·PDF 변환 창 모두 샌드박스 적용, 외부 오리진 이동(`will-navigate`) 차단 |
+| 파일 업로드 | 로컬에서 base64 (파일을 텍스트 형태로 변환하는 방식) 변환 후 필요한 경우에만 Gemini로 전송, 15MB 크기 상한. 확장자(accept) 검사를 `FileUpload.tsx`의 `handleFileArray` 진입점에서 수행해 파일 선택 대화상자뿐 아니라 드래그앤드롭·붙여넣기 경로에도 동일하게 적용 |
+| 외부 링크 | `openExternal`로 브라우저 열기(https만 허용) |
+| 외부 URL 요청 | `url:fetch-meta`·`resource:fetch-image`·`resource:youtube-meta`는 `net.request` 기반 `fetchSafely` 헬퍼(ipcHandlers.ts)로 리다이렉트마다 `netGuard.ts`의 `assertSafeUrl`을 재검사한다(최초 URL만 검사하면 공인 도메인이 사설 IP로 302를 보내는 우회가 가능했음). `resource:screenshot`은 `will-redirect` 이벤트에서 검사. `data:fetch-url-json`은 기존부터 `net.request`+홉별 재검사 |
+| 스킬마켓 HTML 앱 | 외부 origin을 참조하는 `<script src=...>`는 `security.ts`의 `DANGEROUS_HTML_PATTERNS`가 차단(자체 코드를 담은 인라인 script는 허용). 마켓에서 가져온 도구는 `CustomTool.importedFromMarket` 플래그로 표시되며, 실행(브라우저에서 열기) 전 출처 확인창을 띄운다 |
+| webview 격리 | 자료실의 `<webview>`는 전용 파티션(`persist:resource-browser`)을 사용해 앱 기본 세션과 쿠키·스토리지를 공유하지 않는다 |
+| 권한 요청 | 모든 webContents에 `session.setPermissionRequestHandler`/`setPermissionCheckHandler`로 카메라·마이크·위치·알림 등 권한 요청을 기본 거부(main/index.ts) |
+| PDF 변환 | `file:save-pdf`가 여는 임시 창은 전용 세션(`partition: 'pdf-render'`)에 `onHeadersReceived`로 CSP(`script-src 'none'` 등)를 주입해, 렌더러 CSP가 적용되지 않는 `file://` 컨텍스트에서도 스크립트 실행을 차단 |
+| 설정값 접근 | `config:get`은 거부 목록이 아닌 허용 목록(`ALLOWED_CONFIG_KEYS`) 방식으로 검사해, 새 시크릿 키 등록을 깜빡해도 노출되지 않게 함 |
+| renderer 보안 | `contextIsolation: true`, `nodeIntegration: false`, 본 창·PDF 변환 창 모두 샌드박스 적용, 외부 오리진 이동(`will-navigate`) 차단. CSP에 `base-uri 'self'`·`form-action 'none'`·`object-src 'none'` 포함 |
 | 생성 결과 HTML | `sanitizeHtml`로 script·on* 속성·iframe 등을 제거한 뒤 화면에 표시 |
 
 ---
