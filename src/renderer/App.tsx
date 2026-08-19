@@ -43,6 +43,8 @@ import DocArchivePanel from './components/DocArchivePanel';
 import PrintFormScreen from './components/PrintFormScreen';
 import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel';
 import TranslatorScreen from './components/TranslatorScreen';
+import { loadWorkDraft, saveWorkDraft, WorkDraft } from './lib/workDraft';
+import RestoreDraftModal from './components/RestoreDraftModal';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -194,6 +196,43 @@ const App: React.FC = () => {
   const getCancelSignal = useCallback((modeKey: string) => cancellationRef.current.signalFor(modeKey), []);
   const dismissToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  // ── 작업 자동 저장 · 이어서 하기 ─────────────────────────────────
+  // 생기부 작업 상태는 그동안 메모리에만 있어 앱을 닫으면 사라졌다. 일정 간격으로
+  // 파일에 저장하고, 다음 실행에서 복원할지 사용자에게 물어본다.
+  const [pendingDraft, setPendingDraft] = useState<WorkDraft | null>(null);
+  // 복원 여부를 정하기 전에는 자동 저장을 미룬다(빈 초기 상태가 초안을 덮어쓰는 것을 막는다).
+  const draftReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (isDemoWindow || isChatWindow) return;
+    let cancelled = false;
+    loadWorkDraft().then(draft => {
+      if (cancelled) return;
+      if (draft) setPendingDraft(draft);
+      else draftReadyRef.current = true;
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (isDemoWindow || isChatWindow) return;
+    if (!draftReadyRef.current) return;
+    const timer = setTimeout(() => { void saveWorkDraft(state); }, 1500);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  const handleRestoreDraft = () => {
+    if (pendingDraft) setState(pendingDraft.state);
+    setPendingDraft(null);
+    draftReadyRef.current = true;
+  };
+
+  const handleDiscardDraft = () => {
+    setPendingDraft(null);
+    draftReadyRef.current = true;
+    void saveWorkDraft(initialGlobalState);
   };
 
   // 컨텍스트 value를 메모이제이션해 생성 진행(600ms 간격) 중 불필요한 전역 리렌더를 줄인다.
@@ -789,6 +828,15 @@ const App: React.FC = () => {
     <GlobalStateContext.Provider value={globalStateValue}>
       <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
+
+        {/* 이전 작업 복원 안내 — 온보딩이 떠 있는 동안에는 겹치지 않게 뒤로 미룬다 */}
+        {pendingDraft && !showDisclaimerModal && (
+          <RestoreDraftModal
+            savedAt={pendingDraft.savedAt}
+            onRestore={handleRestoreDraft}
+            onDiscard={handleDiscardDraft}
+          />
+        )}
 
         {/* Onboarding Modal */}
         {showDisclaimerModal && (

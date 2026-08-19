@@ -5,8 +5,8 @@ import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 import { notifyToast } from '../lib/toast';
-import { clearAllHistory, clearDocumentHistory } from '../lib/generationHistory';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
+import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
   opinion: '행동특성',
@@ -277,17 +277,14 @@ const SettingsScreen: React.FC = () => {
   };
 
   // 학생 데이터 전체 삭제 — 되돌릴 수 없는 작업이라 두 번 확인을 받는다.
-  // 삭제 대상: 학생별 생성 이력(eduHist_*), 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단.
-  // 새 저장소가 추가되면 이 목록에도 함께 반영해야 한다.
+  // 실제 삭제 대상과 안내 문구는 lib/studentDataCleanup.ts가 함께 관리한다(테스트로 고정).
+  // 학생 개인정보 저장소를 새로 추가하면 그 파일만 고치면 된다.
   const [isClearingStudentData, setIsClearingStudentData] = useState(false);
   const handleClearStudentData = async () => {
     const firstConfirm = window.confirm(
       '학생 관련 데이터를 모두 삭제합니다.\n\n' +
-      '- 학생별 생성 이력(행발·세특·스포츠클럽·창체 등)\n' +
-      '- 상담일지·수업관찰기록 등 문서 생성 이력\n' +
-      '- 학생 메모 보드의 모든 메모\n' +
-      '- 설정에 저장된 학생 명단\n\n' +
-      '자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
+      STUDENT_DATA_TARGET_LABELS.map(label => `- ${label}`).join('\n') +
+      '\n\n자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
     );
     if (!firstConfirm) return;
     const secondConfirm = window.confirm('되돌릴 수 없는 작업입니다. 정말로 삭제할까요?');
@@ -295,11 +292,7 @@ const SettingsScreen: React.FC = () => {
 
     setIsClearingStudentData(true);
     try {
-      clearAllHistory();
-      clearDocumentHistory();
-      localStorage.removeItem('eduNote_studentMemos_v1');
-      await window.electronAPI.writeJsonData('student-memos', []);
-      await window.electronAPI.setConfig({ studentNames: '', studentMaleNames: '', studentFemaleNames: '' });
+      await clearAllStudentData();
       notifyToast({ type: 'success', title: '학생 관련 데이터를 모두 삭제했습니다.' });
     } catch (error) {
       notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.' });
