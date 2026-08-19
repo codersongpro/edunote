@@ -136,6 +136,7 @@ export interface StudentOpinionData extends Student {
   additionalContext: string;
   generatedContent?: string;
   generatedModel?: string;
+  privacyApplied?: boolean;
   selected?: boolean;
 }
 
@@ -157,6 +158,7 @@ export interface StudentSubjectData extends Student {
   evaluations?: StudentEvaluation[];
   generatedContent?: string;
   generatedModel?: string;
+  privacyApplied?: boolean;
   selected?: boolean;
 }
 
@@ -164,6 +166,7 @@ export interface StudentSportsData extends Student {
   additionalContext: string;
   generatedContent?: string;
   generatedModel?: string;
+  privacyApplied?: boolean;
   selected?: boolean;
 }
 
@@ -172,6 +175,7 @@ export interface StudentCreativeActivityData extends Student {
   additionalContext: string;
   generatedContent?: string;
   generatedModel?: string;
+  privacyApplied?: boolean;
   selected?: boolean;
 }
 

@@ -67,15 +67,16 @@ export function withStudentPrivacy(
   prompt: string,
   studentName: string,
   enabled?: boolean,
-): { prompt: string; restore: (text: string) => string } {
+): { prompt: string; restore: (text: string) => string; applied: boolean } {
   const cleanName = normalizeName(studentName);
-  if (!enabled || !cleanName) return { prompt, restore: text => text };
+  if (!enabled || !cleanName) return { prompt, restore: text => text, applied: false };
   const token = pickUnusedToken(prompt);
   const escaped = cleanName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const namePattern = new RegExp(escaped, 'g');
   return {
     prompt: prompt.replace(namePattern, token),
     restore: text => text.replace(new RegExp(token, 'g'), cleanName),
+    applied: true,
   };
 }
 
@@ -85,14 +86,14 @@ export function withStudentListPrivacy(
   prompt: string,
   studentNames: string[],
   enabled?: boolean,
-): { prompt: string; restore: (text: string) => string } {
-  if (!enabled) return { prompt, restore: text => text };
+): { prompt: string; restore: (text: string) => string; applied: boolean } {
+  if (!enabled) return { prompt, restore: text => text, applied: false };
   const names = Array.from(new Set(studentNames.map(normalizeName)))
     // 한 글자 이름은 일반 단어와 겹칠 위험이 커서 제외하고, 토큰 형태의 이름도 제외한다
     .filter(name => name.length >= 2 && !/^학생\d*$/.test(name) && prompt.includes(name))
     // 긴 이름부터 치환해 "김민수"가 "김민"보다 먼저 처리되도록 한다
     .sort((a, b) => b.length - a.length);
-  if (names.length === 0) return { prompt, restore: text => text };
+  if (names.length === 0) return { prompt, restore: text => text, applied: false };
   const used = new Set<string>();
   const pairs = names.map((name): [name: string, token: string] => {
     const token = pickUnusedToken(prompt, used);
@@ -108,6 +109,7 @@ export function withStudentListPrivacy(
       [...pairs]
         .sort((a, b) => b[1].length - a[1].length)
         .reduce((acc, [name, token]) => acc.split(token).join(name), text),
+    applied: true,
   };
 }
 

@@ -3,22 +3,25 @@ import { withStudentPrivacy, withStudentListPrivacy, formatStudentMemos, pickUnu
 
 describe('withStudentPrivacy', () => {
   it('활성화 시 학생 이름을 토큰으로 치환하고 복원한다', () => {
-    const { prompt, restore } = withStudentPrivacy('홍길동 학생의 의견을 써줘', '홍길동', true);
+    const { prompt, restore, applied } = withStudentPrivacy('홍길동 학생의 의견을 써줘', '홍길동', true);
     expect(prompt).toBe('학생1 학생의 의견을 써줘');
     expect(prompt).not.toContain('홍길동');
+    expect(applied).toBe(true);
     // 결과 텍스트의 토큰을 다시 원래 이름으로 되돌린다
     expect(restore('학생1 학생은 성실합니다')).toBe('홍길동 학생은 성실합니다');
   });
 
-  it('비활성화 시 프롬프트를 그대로 둔다', () => {
-    const { prompt, restore } = withStudentPrivacy('홍길동 학생', '홍길동', false);
+  it('비활성화 시 프롬프트를 그대로 두고 applied는 false다', () => {
+    const { prompt, restore, applied } = withStudentPrivacy('홍길동 학생', '홍길동', false);
     expect(prompt).toBe('홍길동 학생');
     expect(restore('홍길동 학생')).toBe('홍길동 학생');
+    expect(applied).toBe(false);
   });
 
-  it('이름이 비어 있으면 그대로 둔다', () => {
-    const { prompt } = withStudentPrivacy('내용', '', true);
+  it('이름이 비어 있으면 그대로 두고 applied는 false다', () => {
+    const { prompt, applied } = withStudentPrivacy('내용', '', true);
     expect(prompt).toBe('내용');
+    expect(applied).toBe(false);
   });
 
   it('이름 인자의 앞 번호(예: "3. 홍길동")를 정규화해 본문 속 이름을 치환한다', () => {
@@ -43,13 +46,14 @@ describe('withStudentPrivacy', () => {
 
 describe('withStudentListPrivacy', () => {
   it('명단의 여러 이름을 각각 다른 토큰으로 치환하고 복원한다', () => {
-    const { prompt, restore } = withStudentListPrivacy(
+    const { prompt, restore, applied } = withStudentListPrivacy(
       '김민수는 발표를 잘했고 이지은은 지각함',
       ['김민수', '이지은'],
       true,
     );
     expect(prompt).not.toContain('김민수');
     expect(prompt).not.toContain('이지은');
+    expect(applied).toBe(true);
     // 왕복 복원: 마스킹한 프롬프트를 복원하면 원문과 동일해야 한다
     expect(restore(prompt)).toBe('김민수는 발표를 잘했고 이지은은 지각함');
   });
@@ -69,14 +73,19 @@ describe('withStudentListPrivacy', () => {
     expect(restore(prompt)).toBe(original);
   });
 
-  it('비활성화이거나 명단이 비어 있으면 그대로 둔다', () => {
-    expect(withStudentListPrivacy('김민수 발표', ['김민수'], false).prompt).toBe('김민수 발표');
-    expect(withStudentListPrivacy('김민수 발표', [], true).prompt).toBe('김민수 발표');
+  it('비활성화이거나 명단이 비어 있으면 그대로 두고 applied는 false다', () => {
+    const disabled = withStudentListPrivacy('김민수 발표', ['김민수'], false);
+    expect(disabled.prompt).toBe('김민수 발표');
+    expect(disabled.applied).toBe(false);
+    const emptyRoster = withStudentListPrivacy('김민수 발표', [], true);
+    expect(emptyRoster.prompt).toBe('김민수 발표');
+    expect(emptyRoster.applied).toBe(false);
   });
 
-  it('본문에 없는 이름과 한 글자 이름은 건너뛴다', () => {
-    const { prompt } = withStudentListPrivacy('김민수가 발표함', ['이지은', '수'], true);
+  it('본문에 없는 이름과 한 글자 이름은 건너뛰고, 실제로 바뀐 이름이 없으면 applied는 false다', () => {
+    const { prompt, applied } = withStudentListPrivacy('김민수가 발표함', ['이지은', '수'], true);
     expect(prompt).toBe('김민수가 발표함');
+    expect(applied).toBe(false);
   });
 
   it('번호가 붙은 명단 이름("3. 김민수")도 정규화해 매칭한다', () => {
