@@ -5,6 +5,7 @@ import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent'
 import { sanitizeHtml } from '../lib/security';
 import { safeSetItem } from '../lib/safeStorage';
 import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/translation';
+import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -30,7 +31,8 @@ interface SavedGeneratedVersion {
   createdAt: string;
 }
 
-const RESULT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
+// 학생 데이터 전체 삭제(SettingsScreen)와 동일한 접두사를 쓰기 위해 generationHistory.ts에서 가져온다.
+const RESULT_HISTORY_KEY_PREFIX = DOCUMENT_HISTORY_KEY_PREFIX;
 const selectClassName = 'bg-white px-2 py-1 text-xs font-semibold text-[#1C1917] outline-none dark:bg-white dark:text-[#1C1917]';
 const optionClassName = 'bg-white text-[#1C1917]';
 

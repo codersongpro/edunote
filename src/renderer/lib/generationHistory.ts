@@ -65,3 +65,26 @@ export function saveHistory(mode: string, name: string, content: string): void {
 export function getHistory(mode: string, name: string): HistoryEntry[] {
   return parseEntries(localStorage.getItem(historyKey(mode, name)));
 }
+
+// 학생기록/문서 생성 결과 화면(GeneratedDisplay.tsx)이 버전별 결과를 저장할 때 쓰는 접두사.
+// 여기서 export해 GeneratedDisplay.tsx와 삭제 로직(clearDocumentHistory)이 같은 값을 쓰도록 한다.
+export const DOCUMENT_HISTORY_KEY_PREFIX = 'edunote_generated_document_history_v1_';
+
+function clearKeysByPrefix(prefix: string): void {
+  const toRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(prefix)) toRemove.push(k);
+  }
+  toRemove.forEach(k => localStorage.removeItem(k));
+}
+
+// 학생별 생성 이력(eduHist_*)을 전부 지운다. 설정 화면의 "학생 데이터 전체 삭제"에서 사용.
+export function clearAllHistory(): void {
+  clearKeysByPrefix(KEY_PREFIX);
+}
+
+// 문서 생성 결과 이력(문서작성기·상담일지 등)을 전부 지운다.
+export function clearDocumentHistory(): void {
+  clearKeysByPrefix(DOCUMENT_HISTORY_KEY_PREFIX);
+}

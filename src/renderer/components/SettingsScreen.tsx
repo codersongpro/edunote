@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video, Trash2 } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
+import { notifyToast } from '../lib/toast';
+import { clearAllHistory, clearDocumentHistory } from '../lib/generationHistory';
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
@@ -257,6 +259,38 @@ const SettingsScreen: React.FC = () => {
       }
     } catch (error) {
       setBackupStatus(error instanceof Error ? error.message : '백업 불러오기 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 학생 데이터 전체 삭제 — 되돌릴 수 없는 작업이라 두 번 확인을 받는다.
+  // 삭제 대상: 학생별 생성 이력(eduHist_*), 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단.
+  // 새 저장소가 추가되면 이 목록에도 함께 반영해야 한다.
+  const [isClearingStudentData, setIsClearingStudentData] = useState(false);
+  const handleClearStudentData = async () => {
+    const firstConfirm = window.confirm(
+      '학생 관련 데이터를 모두 삭제합니다.\n\n' +
+      '- 학생별 생성 이력(행발·세특·스포츠클럽·창체 등)\n' +
+      '- 상담일지·수업관찰기록 등 문서 생성 이력\n' +
+      '- 학생 메모 보드의 모든 메모\n' +
+      '- 설정에 저장된 학생 명단\n\n' +
+      '자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
+    );
+    if (!firstConfirm) return;
+    const secondConfirm = window.confirm('되돌릴 수 없는 작업입니다. 정말로 삭제할까요?');
+    if (!secondConfirm) return;
+
+    setIsClearingStudentData(true);
+    try {
+      clearAllHistory();
+      clearDocumentHistory();
+      localStorage.removeItem('eduNote_studentMemos_v1');
+      await window.electronAPI.writeJsonData('student-memos', []);
+      await window.electronAPI.setConfig({ studentNames: '', studentMaleNames: '', studentFemaleNames: '' });
+      notifyToast({ type: 'success', title: '학생 관련 데이터를 모두 삭제했습니다.' });
+    } catch (error) {
+      notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.' });
+    } finally {
+      setIsClearingStudentData(false);
     }
   };
 
@@ -781,6 +815,26 @@ const SettingsScreen: React.FC = () => {
             </button>
           </div>
           <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+        </div>
+
+        {/* Danger Zone: Clear Student Data */}
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-red-200 dark:border-red-900/60 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Trash2 className="w-4 h-4 text-red-500" />
+            <h3 className="text-sm font-bold text-red-700 dark:text-red-300">학생 데이터 전체 삭제</h3>
+          </div>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+            학생별 생성 이력, 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단을 한 번에 삭제합니다.
+            학년이 끝나 학생 정보를 정리할 때 사용하세요. 되돌릴 수 없으니 필요하면 먼저 백업해 주세요.
+          </p>
+          <button
+            onClick={handleClearStudentData}
+            disabled={isClearingStudentData}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-4 h-4" />
+            {isClearingStudentData ? '삭제 중...' : '학생 데이터 전체 삭제'}
+          </button>
         </div>
 
         {/* Version */}
