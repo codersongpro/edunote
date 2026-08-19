@@ -247,7 +247,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const student = newStudents[i];
             try {
               const extras = await getStudentGenerationExtras(student.name);
-              const { text: result, model } = await callWithAbort(() => generateOpinion({
+              const { text: result, model, privacyApplied } = await callWithAbort(() => generateOpinion({
                   schoolLevel,
                   studentName: student.name,
                   positiveTags: student.positiveTags,
@@ -260,6 +260,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
               }));
               newStudents[i].generatedContent = result;
               newStudents[i].generatedModel = model;
+              newStudents[i].privacyApplied = privacyApplied;
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -310,7 +311,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const student = newStudents[index];
             try {
               const extras = await getStudentGenerationExtras(student.name);
-              const { text: result, model } = await callWithAbort(() => generateOpinion({
+              const { text: result, model, privacyApplied } = await callWithAbort(() => generateOpinion({
                   schoolLevel,
                   studentName: student.name,
                   positiveTags: student.positiveTags,
@@ -323,6 +324,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
               }));
               newStudents[index].generatedContent = result;
               newStudents[index].generatedModel = model;
+              newStudents[index].privacyApplied = privacyApplied;
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -360,7 +362,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     try {
       const extras = await getStudentGenerationExtras(student.name);
-      const { text: result, model } = await generateOpinion({
+      const { text: result, model, privacyApplied } = await generateOpinion({
           schoolLevel,
           studentName: student.name,
           positiveTags: student.positiveTags,
@@ -376,6 +378,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       const newStudents = [...opState.students];
       newStudents[index].generatedContent = result;
       newStudents[index].generatedModel = model;
+      newStudents[index].privacyApplied = privacyApplied;
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
@@ -734,7 +737,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     ) : '📷 학생 기록물 업로드 (사진/스캔 자동 분석)'}
                                 </button>
                             </div>
-                            <p className="text-xs text-[#A8A29E] mb-2">※ 학생의 활동지·결과물을 스캔하거나 촬영해 업로드하면 AI가 내용을 분석해 채워줍니다. 업로드된 파일은 분석에만 사용되며 저장되지 않습니다.</p>
+                            <p className="text-xs text-[#A8A29E] mb-2">※ 학생의 활동지·결과물을 스캔하거나 촬영해 업로드하면 AI가 내용을 분석해 채워줍니다. 업로드된 파일은 분석에만 사용되며 저장되지 않지만, 개인정보 보호 모드와 무관하게 원본이 그대로 AI에 전송됩니다.</p>
                             <textarea
                                 value={currentStudent.additionalContext}
                                 onChange={(e) => handleContextChange(e.target.value)}
@@ -870,6 +873,18 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     {student.generatedModel && (
                                         <span className="ml-3 text-xs font-normal text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full" title="이 결과를 생성한 AI 모델">
                                             {student.generatedModel}
+                                        </span>
+                                    )}
+                                    {student.generatedModel && (
+                                        <span
+                                            className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${
+                                                student.privacyApplied
+                                                    ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/40'
+                                                    : 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40'
+                                            }`}
+                                            title={student.privacyApplied ? '개인정보 보호 모드로 이름을 가려 전송했습니다.' : '개인정보 보호 모드가 꺼져 있거나 적용되지 않아 이름이 그대로 전송되었습니다.'}
+                                        >
+                                            {student.privacyApplied ? '🔒 이름 가림' : '이름 그대로 전송'}
                                         </span>
                                     )}
                                 </h4>

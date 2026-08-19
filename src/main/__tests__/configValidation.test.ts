@@ -32,4 +32,14 @@ describe('sanitizeConfigEntry', () => {
     expect(sanitizeConfigEntry('studentNames', 'a'.repeat(10_001))).toBeUndefined();
     expect(sanitizeConfigEntry('cautionTerms', 'a'.repeat(10_000))).toBe('a'.repeat(10_000));
   });
+
+  it('fontSize는 75~150 범위의 정수만 허용한다', () => {
+    expect(sanitizeConfigEntry('fontSize', 100)).toBe(100);
+    expect(sanitizeConfigEntry('fontSize', 75)).toBe(75);
+    expect(sanitizeConfigEntry('fontSize', 150)).toBe(150);
+    expect(sanitizeConfigEntry('fontSize', 74)).toBeUndefined();
+    expect(sanitizeConfigEntry('fontSize', 151)).toBeUndefined();
+    expect(sanitizeConfigEntry('fontSize', 100.5)).toBeUndefined();
+    expect(sanitizeConfigEntry('fontSize', '100')).toBeUndefined();
+  });
 });

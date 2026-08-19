@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video, Trash2 } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
+import { notifyToast } from '../lib/toast';
+import { clearAllHistory, clearDocumentHistory } from '../lib/generationHistory';
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
@@ -26,7 +28,7 @@ const SettingsScreen: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
-  const [autoBackupInterval, setAutoBackupInterval] = useState<'off' | 'daily' | 'weekly'>('weekly');
+  const [autoBackupInterval, setAutoBackupInterval] = useState<'off' | 'daily' | 'weekly'>('off');
   const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
   const [cautionTerms, setCautionTerms] = useState('');
@@ -66,7 +68,7 @@ const SettingsScreen: React.FC = () => {
       setPrivacyModeEnabled(privacyMode !== false);
       setReviewChecklistEnabled(reviewChecklist !== false);
       setCautionTerms(cautionTermList as string || '');
-      setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'weekly');
+      setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'off');
       setGuideExpanded(!(hn as boolean));
     };
     load();
@@ -139,7 +141,10 @@ const SettingsScreen: React.FC = () => {
       }
     }
 
-    await window.electronAPI.setApiKey(key.trim(), apiTier);
+    const { usedPlaintext } = await window.electronAPI.setApiKey(key.trim(), apiTier);
+    if (usedPlaintext) {
+      notifyToast({ type: 'warning', title: '이 컴퓨터의 암호화 저장소를 사용할 수 없어 API 키가 암호화 없이 저장되었습니다.' });
+    }
     await window.electronAPI.setConfig({ apiKeyLastUsable: true });
     setHasKey(true);
     setApiKey('');
@@ -260,6 +265,38 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  // 학생 데이터 전체 삭제 — 되돌릴 수 없는 작업이라 두 번 확인을 받는다.
+  // 삭제 대상: 학생별 생성 이력(eduHist_*), 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단.
+  // 새 저장소가 추가되면 이 목록에도 함께 반영해야 한다.
+  const [isClearingStudentData, setIsClearingStudentData] = useState(false);
+  const handleClearStudentData = async () => {
+    const firstConfirm = window.confirm(
+      '학생 관련 데이터를 모두 삭제합니다.\n\n' +
+      '- 학생별 생성 이력(행발·세특·스포츠클럽·창체 등)\n' +
+      '- 상담일지·수업관찰기록 등 문서 생성 이력\n' +
+      '- 학생 메모 보드의 모든 메모\n' +
+      '- 설정에 저장된 학생 명단\n\n' +
+      '자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
+    );
+    if (!firstConfirm) return;
+    const secondConfirm = window.confirm('되돌릴 수 없는 작업입니다. 정말로 삭제할까요?');
+    if (!secondConfirm) return;
+
+    setIsClearingStudentData(true);
+    try {
+      clearAllHistory();
+      clearDocumentHistory();
+      localStorage.removeItem('eduNote_studentMemos_v1');
+      await window.electronAPI.writeJsonData('student-memos', []);
+      await window.electronAPI.setConfig({ studentNames: '', studentMaleNames: '', studentFemaleNames: '' });
+      notifyToast({ type: 'success', title: '학생 관련 데이터를 모두 삭제했습니다.' });
+    } catch (error) {
+      notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.' });
+    } finally {
+      setIsClearingStudentData(false);
+    }
+  };
+
   const inputClass = 'w-full bg-white dark:bg-[#171210] rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#1C1917] dark:text-[#F0EBE6] text-sm focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] outline-none p-2.5 transition-all';
   const labelClass = 'block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1.5';
 
@@ -335,6 +372,13 @@ const SettingsScreen: React.FC = () => {
                   </ol>
                   <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-2">
                     팁: 신규 Gmail 계정으로 처음 발급하면 자동으로 무료 등급이 됩니다.
+                  </p>
+                </div>
+
+                {/* 무료/유료 등급의 데이터 취급 방침 차이 안내 — 학생 개인정보를 다루는 앱이라 등급 선택에 영향을 줄 수 있음 */}
+                <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md p-3">
+                  <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+                    무료 등급은 과금이 없지만, 구글이 입력 내용을 서비스 개선(모델 학습·검토)에 활용할 수 있습니다. 유료 등급은 그렇지 않습니다. 학생 개인정보를 다루신다면 유료 등급 키 사용을 검토해 주세요.
                   </p>
                 </div>
 
@@ -710,6 +754,9 @@ const SettingsScreen: React.FC = () => {
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
             기본 정보, 학생 명단, 나만의 자료실, 학생 메모 등 앱 자료를 하나의 JSON 파일로 저장하고 다른 컴퓨터에서 불러올 수 있습니다. API 키는 보안상 포함하지 않습니다.
           </p>
+          <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-2.5">
+            ⚠️ 백업 파일에는 학생 실명·상담 기록·생성 이력이 암호화 없이 그대로 들어갑니다. USB나 클라우드에 보관할 때는 유출되지 않도록 주의해 주세요.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={handleExportBackup}
@@ -730,7 +777,7 @@ const SettingsScreen: React.FC = () => {
             <div className="min-w-0">
               <p className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">자동 정기 백업</p>
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관).
+                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관). 학생 정보가 암호화 없이 저장되니, 필요하지 않다면 "사용 안 함"으로 두세요.
               </p>
             </div>
             <select
@@ -771,6 +818,26 @@ const SettingsScreen: React.FC = () => {
             </button>
           </div>
           <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+        </div>
+
+        {/* Danger Zone: Clear Student Data */}
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-red-200 dark:border-red-900/60 shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Trash2 className="w-4 h-4 text-red-500" />
+            <h3 className="text-sm font-bold text-red-700 dark:text-red-300">학생 데이터 전체 삭제</h3>
+          </div>
+          <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+            학생별 생성 이력, 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단을 한 번에 삭제합니다.
+            학년이 끝나 학생 정보를 정리할 때 사용하세요. 되돌릴 수 없으니 필요하면 먼저 백업해 주세요.
+          </p>
+          <button
+            onClick={handleClearStudentData}
+            disabled={isClearingStudentData}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-4 h-4" />
+            {isClearingStudentData ? '삭제 중...' : '학생 데이터 전체 삭제'}
+          </button>
         </div>
 
         {/* Version */}

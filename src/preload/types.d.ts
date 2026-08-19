@@ -30,7 +30,7 @@ export interface ElectronAPI {
   getConfig(key: string): Promise<unknown>;
   getAllConfig(): Promise<Record<string, unknown>>;
   setConfig(data: Record<string, unknown>): Promise<void>;
-  setApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<void>;
+  setApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ usedPlaintext: boolean }>;
   hasApiKey(): Promise<boolean>;
   deleteApiKey(apiTier?: 'free' | 'paid'): Promise<void>;
   readJsonData(name: string): Promise<unknown>;

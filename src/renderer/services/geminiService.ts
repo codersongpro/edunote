@@ -439,7 +439,7 @@ export const askRecordChatbot = async (
   }
 };
 
-export const generateOpinion = async (request: GenerationRequest): Promise<{ text: string; model: string }> => {
+export const generateOpinion = async (request: GenerationRequest): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   try {
     const positiveStr = request.positiveTags.length > 0 ? request.positiveTags.join(', ') : '특별히 지정되지 않음';
     const negativeStr = request.negativeTags.length > 0 ? request.negativeTags.join(', ') : '특별히 지정되지 않음';
@@ -478,14 +478,14 @@ ${avoidInstruction}`;
       temperature: 0.85,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     }, (model) => { usedModel = model; });
-    return { text: privacy.restore(result), model: usedModel };
+    return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
   } catch (error: any) {
     console.error('Gemini Generator Error:', error);
     throw new Error(describeGenerationError(error));
   }
 };
 
-export const generateSubjectReport = async (request: SubjectGenerationRequest): Promise<{ text: string; model: string }> => {
+export const generateSubjectReport = async (request: SubjectGenerationRequest): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   try {
     const tasksText = request.tasks
       .map((t, i) => `- 활동 ${i + 1}: ${t.task} (성취수준: ${t.level})`)
@@ -530,14 +530,14 @@ ${avoidInstruction}`;
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     }, (model) => { usedModel = model; });
-    return { text: privacy.restore(result), model: usedModel };
+    return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
   } catch (error: any) {
     console.error('Subject Generator Error:', error);
     throw new Error(describeGenerationError(error));
   }
 };
 
-export const generateSportsClubReport = async (request: SportsGenerationRequest): Promise<{ text: string; model: string }> => {
+export const generateSportsClubReport = async (request: SportsGenerationRequest): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
     const avoidInstruction =
@@ -571,7 +571,7 @@ ${avoidInstruction}`;
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     }, (model) => { usedModel = model; });
-    return { text: privacy.restore(result), model: usedModel };
+    return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
   } catch (error: any) {
     console.error('Sports Generator Error:', error);
     throw new Error(describeGenerationError(error));
@@ -580,7 +580,7 @@ ${avoidInstruction}`;
 
 export const generateCreativeActivityReport = async (
   request: CreativeActivityGenerationRequest,
-): Promise<{ text: string; model: string }> => {
+): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   try {
     const lengthInstruction = getLengthInstruction(request.lengthOption, request.customLength, request.lengthUnit);
     const keywordsStr = request.keywords.length > 0
@@ -654,7 +654,7 @@ ${avoidInstruction}`;
       temperature: 0.9,
       maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT,
     }, (model) => { usedModel = model; });
-    return { text: privacy.restore(result), model: usedModel };
+    return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
   } catch (error: any) {
     console.error('Creative Activity Generator Error:', error);
     throw new Error(describeGenerationError(error));
@@ -1005,7 +1005,7 @@ export const generateLessonObservation = async (inputs: {
   teacherName: string;
   privacyModeEnabled?: boolean;
   rosterNames?: string[];
-}): Promise<{ text: string; model: string }> => {
+}): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 작성한 관찰 내용을 바탕으로 수업관찰기록 문서를 작성해주세요.
@@ -1033,7 +1033,7 @@ ${getDateContext()}
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
     (model) => { usedModel = model; },
   );
-  return { text: privacy.restore(result), model: usedModel };
+  return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
 };
 
 export const generateCounselingLog = async (inputs: {
@@ -1044,7 +1044,7 @@ export const generateCounselingLog = async (inputs: {
   counselingContent: string;
   followUpPlan: string;
   privacyModeEnabled?: boolean;
-}): Promise<{ text: string; model: string }> => {
+}): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 기록한 상담 내용을 바탕으로 상담일지 문서를 작성해주세요.
@@ -1071,7 +1071,7 @@ ${getDateContext()}
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
     (model) => { usedModel = model; },
   );
-  return { text: privacy.restore(result), model: usedModel };
+  return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
 };
 
 export const generateClassManagementLog = async (inputs: {
@@ -1083,7 +1083,7 @@ export const generateClassManagementLog = async (inputs: {
   teacherNotes: string;
   privacyModeEnabled?: boolean;
   rosterNames?: string[];
-}): Promise<{ text: string; model: string }> => {
+}): Promise<{ text: string; model: string; privacyApplied: boolean }> => {
   const prompt = `
 ${getDateContext()}
 교사가 직접 기록한 학급 운영 내용을 바탕으로 학급경영일지 문서 작성을 보조해주세요.
@@ -1110,7 +1110,7 @@ ${getDateContext()}
     { temperature: 0.4, maxOutputTokens: TEXT_OUTPUT_TOKEN_LIMIT },
     (model) => { usedModel = model; },
   );
-  return { text: privacy.restore(result), model: usedModel };
+  return { text: privacy.restore(result), model: usedModel, privacyApplied: privacy.applied };
 };
 
 export const analyzeOfficialDocument = async (inputs: {

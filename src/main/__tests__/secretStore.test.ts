@@ -49,6 +49,34 @@ describe('secretStore', () => {
     expect(readSecret(backend, crypto, 'geminiApiKey')).toBe('');
   });
 
+  it('writeSecret은 암호화 저장에 성공하면 usedPlaintext: false를 돌려준다', () => {
+    const backend = makeBackend();
+    const crypto = makeCrypto();
+    expect(writeSecret(backend, crypto, 'geminiApiKey', 'my-key')).toEqual({ usedPlaintext: false });
+  });
+
+  it('writeSecret은 암호화 불가 환경에서 평문 폴백 시 usedPlaintext: true를 돌려준다', () => {
+    const backend = makeBackend();
+    const crypto = makeCrypto(false);
+    expect(writeSecret(backend, crypto, 'geminiApiKey', 'plain-key')).toEqual({ usedPlaintext: true });
+  });
+
+  it('writeSecret은 암호화가 예외로 실패해 평문 폴백 시에도 usedPlaintext: true를 돌려준다', () => {
+    const backend = makeBackend();
+    const crypto: SecretCrypto = {
+      isEncryptionAvailable: () => true,
+      encryptString: () => { throw new Error('encrypt failed'); },
+      decryptString: () => { throw new Error('unused'); },
+    };
+    expect(writeSecret(backend, crypto, 'geminiApiKey', 'my-key')).toEqual({ usedPlaintext: true });
+  });
+
+  it('writeSecret은 빈 값(키 삭제) 저장 시 usedPlaintext: false를 돌려준다', () => {
+    const backend = makeBackend();
+    const crypto = makeCrypto();
+    expect(writeSecret(backend, crypto, 'geminiApiKey', '')).toEqual({ usedPlaintext: false });
+  });
+
   it('복호화에 실패하면 빈 값을 돌려줘 재입력을 유도한다', () => {
     const backend = makeBackend({ [encKeyOf('geminiApiKey')]: 'not-real-cipher' });
     const crypto: SecretCrypto = {

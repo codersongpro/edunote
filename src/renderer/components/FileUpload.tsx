@@ -29,8 +29,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // 파일당 크기 상한(15MB). 초과 파일은 메모리·API 요청 폭주를 막기 위해 제외한다.
   const MAX_FILE_SIZE = 15 * 1024 * 1024;
 
+  // accept(확장자 목록)는 <input accept> 속성으로 파일 선택 대화상자에서만 걸러진다.
+  // 드래그앤드롭·붙여넣기 경로는 이 속성을 거치지 않으므로, 실제 처리 진입점인
+  // handleFileArray에서 한 번 더 검사해 세 경로 모두 같은 기준을 적용한다.
+  const acceptedExtensions = accept.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  const isAcceptedFile = (file: File): boolean => {
+    if (acceptedExtensions.length === 0) return true;
+    const name = file.name.toLowerCase();
+    return acceptedExtensions.some(ext => name.endsWith(ext));
+  };
+
   const handleFileArray = async (fileArray: File[]) => {
     if (fileArray.length > 0) {
+      const unsupported = fileArray.filter(f => !isAcceptedFile(f));
+      if (unsupported.length > 0) {
+        notifyToast({
+          type: 'warning',
+          title: '지원하지 않는 파일 형식은 제외되었습니다.',
+          description: `${unsupported.map(f => f.name).join(', ')}`,
+        });
+      }
+      fileArray = fileArray.filter(isAcceptedFile);
+      if (fileArray.length === 0) return;
       const oversized = fileArray.filter(f => f.size > MAX_FILE_SIZE);
       if (oversized.length > 0) {
         notifyToast({

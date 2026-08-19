@@ -137,6 +137,35 @@ describe('validateImportedTool', () => {
     });
     expect(result.ok).toBe(true);
   });
+
+  it('외부 주소를 참조하는 script 태그가 있는 html-app을 거부한다', () => {
+    const result = validateImportedTool({
+      ...validTool,
+      toolType: 'html-app',
+      htmlContent: '<div><script src="https://evil.example.com/payload.js"></script></div>',
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('프로토콜 상대 주소(//evil...)를 참조하는 script 태그도 거부한다', () => {
+    const result = validateImportedTool({
+      ...validTool,
+      toolType: 'html-app',
+      htmlContent: '<div><script src="//evil.example.com/payload.js"></script></div>',
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it('인라인 script(자기 코드를 담은 스크립트)는 계속 허용한다', () => {
+    // HTML 앱은 AI가 만든 인라인 자바스크립트로 동작하므로, 외부 참조가 없는
+    // 인라인 script까지 막으면 정상 기능이 깨진다.
+    const result = validateImportedTool({
+      ...validTool,
+      toolType: 'html-app',
+      htmlContent: '<div><script>document.body.innerHTML = "안녕";</script></div>',
+    });
+    expect(result.ok).toBe(true);
+  });
 });
 
 describe('parseImportedTools', () => {

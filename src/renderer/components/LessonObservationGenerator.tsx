@@ -48,6 +48,7 @@ const LessonObservationGenerator: React.FC = () => {
   const [teacherName, setTeacherName] = useState('');
   const [result, setResult] = useState(EXAMPLE_RESULT);
   const [resultModel, setResultModel] = useState('');
+  const [resultPrivacyApplied, setResultPrivacyApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -77,13 +78,15 @@ const LessonObservationGenerator: React.FC = () => {
     setError(null);
     setResult('');
     setResultModel('');
+    setResultPrivacyApplied(false);
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
       const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
-      const { text: output, model } = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
+      const { text: output, model, privacyApplied } = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
       setResult(output);
       setResultModel(model);
+      setResultPrivacyApplied(privacyApplied);
       playSuccessSound();
     } catch (e) {
       setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
@@ -201,6 +204,18 @@ const LessonObservationGenerator: React.FC = () => {
                 {resultModel && (
                   <span className="text-[10px] text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full font-medium" title="이 결과를 생성한 AI 모델">
                     {resultModel}
+                  </span>
+                )}
+                {resultModel && (
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                      resultPrivacyApplied
+                        ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/40'
+                        : 'text-amber-700 bg-amber-100 dark:text-amber-300 dark:bg-amber-900/40'
+                    }`}
+                    title={resultPrivacyApplied ? '개인정보 보호 모드로 이름을 가려 전송했습니다.' : '개인정보 보호 모드가 꺼져 있거나 적용되지 않아 이름이 그대로 전송되었습니다.'}
+                  >
+                    {resultPrivacyApplied ? '🔒 이름 가림' : '이름 그대로 전송'}
                   </span>
                 )}
               </div>

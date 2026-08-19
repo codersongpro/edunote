@@ -6,7 +6,7 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       webview: React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
-        src?: string; allowpopups?: string; useragent?: string;
+        src?: string; allowpopups?: string; useragent?: string; partition?: string;
       }, HTMLElement>;
     }
   }
@@ -489,6 +489,9 @@ const MyResourceLibrary: React.FC = () => {
                 <webview
                   ref={webviewRef}
                   src={webviewSrc}
+                  // 앱의 기본 세션(쿠키·로그인 등)과 분리된 전용 파티션을 사용한다.
+                  // 지정하지 않으면 이 임의 사이트 탐색용 webview가 앱 본체와 세션을 공유하게 된다.
+                  partition="persist:resource-browser"
                   style={{ width: '100%', height: '100%', display: 'flex' }}
                 />
               </div>

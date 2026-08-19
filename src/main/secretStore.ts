@@ -52,20 +52,25 @@ export function readSecret(backend: SecretBackend, crypto: SecretCrypto, key: Se
   return typeof plain === 'string' ? plain : '';
 }
 
-export function writeSecret(backend: SecretBackend, crypto: SecretCrypto, key: SecretKey, value: string): void {
+// 반환값의 usedPlaintext는 "이번 저장이 암호화 없이 평문으로 이루어졌는지"를 알려준다.
+// 호출부(ipcHandlers.ts)가 이 값을 렌더러로 전달해, 금고를 못 쓰는 환경(리눅스 키링 부재 등)임을
+// 사용자에게 조용히 숨기지 않고 알릴 수 있게 한다. 빈 값(키 삭제)은 애초에 지킬 비밀이 없으므로
+// 항상 false다.
+export function writeSecret(backend: SecretBackend, crypto: SecretCrypto, key: SecretKey, value: string): { usedPlaintext: boolean } {
   const trimmed = value.trim();
   if (trimmed && crypto.isEncryptionAvailable()) {
     try {
       const encrypted = crypto.encryptString(trimmed).toString('base64');
       backend.set(encKeyOf(key), encrypted);
       backend.set(key, '');
-      return;
+      return { usedPlaintext: false };
     } catch {
       // 암호화 실패 시 평문 저장으로 폴백해 키 자체를 잃지 않게 한다.
     }
   }
   backend.set(key, trimmed);
   backend.set(encKeyOf(key), '');
+  return { usedPlaintext: !!trimmed };
 }
 
 // 기존 평문 키를 암호화 저장으로 1회 이관한다. 이관한 키 개수를 돌려준다.

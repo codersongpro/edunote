@@ -7,16 +7,18 @@ import * as http from 'http';
 import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
-import { isBlockedHostname } from './netGuard';
+import { assertSafeUrl } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
-import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, SECRET_STORE_KEYS, isSecretKey, stripSecrets } from './secretStore';
+import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
+// config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
+// configValidation.ts의 sanitizeConfigEntry(값 검증 규칙)를 함께 갱신해야 한다.
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {
@@ -77,6 +79,73 @@ export function cleanupSessionTmpDir(): void {
     // 다른 프로세스(브라우저 등)가 파일을 잡고 있으면 OS가 임시 폴더를 정리하도록 둔다.
   }
   sessionTmpDir = null;
+}
+
+// url:fetch-meta·resource:fetch-image·resource:youtube-meta가 공유하는 리다이렉트 안전 요청 헬퍼.
+// data:fetch-url-json과 동일한 원칙(각 리다이렉트 홉마다 assertSafeUrl로 재검사)을 net.request로 구현한다.
+// net.fetch(redirect 기본값 follow)를 그대로 쓰면 최초 URL만 검사하고 리다이렉트는 검사 없이
+// 따라가 버려, 공인 도메인이 사설 IP·루프백으로 302를 보내는 SSRF를 막지 못한다.
+function fetchSafely(
+  rawUrl: string,
+  options: { timeoutMs?: number; maxRedirects?: number } = {},
+): Promise<{ buffer: Buffer; contentType: string }> {
+  const { timeoutMs = 10000, maxRedirects = 5 } = options;
+  const deadline = Date.now() + timeoutMs;
+  const encodeUrl = (s: string): string => s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
+
+  const attempt = (targetUrl: string, redirectsLeft: number): Promise<{ buffer: Buffer; contentType: string }> =>
+    new Promise((resolve, reject) => {
+      if (redirectsLeft < 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
+      let safeUrl: string;
+      try {
+        safeUrl = assertSafeUrl(targetUrl);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) { reject(new Error('연결 시간이 초과되었습니다')); return; }
+
+      const req = net.request({ url: encodeUrl(safeUrl), redirect: 'manual' });
+      req.setHeader('User-Agent', 'Mozilla/5.0');
+
+      let settled = false;
+      // 어떤 경로로 종료되든(응답·리다이렉트·오류·타임아웃) 타이머를 반드시 정리한다.
+      const done = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
+
+      const timer = setTimeout(() => {
+        done(() => reject(new Error('연결 시간이 초과되었습니다')));
+        req.abort();
+      }, remaining);
+
+      req.on('redirect', (_code, _method, redirectUrl) => {
+        done(() => resolve(attempt(redirectUrl, redirectsLeft - 1)));
+        req.abort();
+      });
+
+      req.on('response', (res) => {
+        if (res.statusCode && res.statusCode >= 400) {
+          done(() => reject(new Error(`HTTP ${res.statusCode}`)));
+          return;
+        }
+        const rawContentType = res.headers['content-type'];
+        const contentType = Array.isArray(rawContentType) ? (rawContentType[0] || '') : (rawContentType || '');
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => done(() => resolve({ buffer: Buffer.concat(chunks), contentType })));
+        res.on('error', (e: Error) => done(() => reject(e)));
+      });
+
+      req.on('error', (e: Error) => done(() => reject(e)));
+      req.end();
+    });
+
+  return attempt(rawUrl, maxRedirects);
 }
 
 function readOpenApiItems(data: any): any[] {
@@ -271,7 +340,9 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (SECRET_STORE_KEYS.includes(key)) return undefined;
+    // 거부 목록(SECRET_STORE_KEYS) 대신 허용 목록으로 검사한다 — 새 시크릿 키를
+    // SECRET_KEYS에 등록하는 걸 깜빡해도, 애초에 ALLOWED_CONFIG_KEYS에 없으면 노출되지 않는다.
+    if (!ALLOWED_CONFIG_KEYS.includes(key)) return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
@@ -318,11 +389,12 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('config:set-api-key', (_e, key: string, apiTier: ApiTier = 'free') => {
-    if (typeof key !== 'string') return;
-    if (apiTier === 'paid') setSecret('geminiPaidApiKey', key);
-    else setSecret('geminiApiKey', key);
+    if (typeof key !== 'string') return { usedPlaintext: false };
+    const { usedPlaintext } = apiTier === 'paid' ? setSecret('geminiPaidApiKey', key) : setSecret('geminiApiKey', key);
     store.set('apiTier', apiTier);
     resetModelCache();
+    // 렌더러가 이 값을 보고, 금고(safeStorage)를 못 써서 평문 저장으로 폴백했음을 사용자에게 알린다.
+    return { usedPlaintext };
   });
 
   ipcMain.handle('config:has-api-key', () => {
@@ -505,14 +577,8 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('url:fetch-meta', async (_e, rawUrl: string) => {
     try {
       const parsed = new URL(rawUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid protocol');
-      if (isBlockedHostname(parsed.hostname)) throw new Error('blocked host');
-      const res = await net.fetch(rawUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const html = (await res.text()).substring(0, 50000);
+      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000 });
+      const html = buffer.toString('utf-8').substring(0, 50000);
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
@@ -536,19 +602,13 @@ export function registerIpcHandlers(): void {
   // Fetch any image URL → base64 data URI (bypasses renderer CSP)
   ipcMain.handle('resource:fetch-image', async (_e, imageUrl: string) => {
     try {
-      const parsed = new URL(imageUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
-      if (isBlockedHostname(parsed.hostname)) return null;
-      const res = await net.fetch(imageUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!res.ok) return null;
-      const ct = res.headers.get('content-type') || 'image/jpeg';
-      const mime = ct.split(';')[0].trim();
-      const arrayBuffer = await res.arrayBuffer();
-      const buf = Buffer.from(arrayBuffer);
-      return `data:${mime};base64,${buf.toString('base64')}`;
+      const { buffer, contentType } = await fetchSafely(imageUrl, { timeoutMs: 10000 });
+      const rawMime = contentType.split(';')[0].trim().toLowerCase();
+      // content-type이 명시적으로 이미지가 아니면(예: 리다이렉트로 도달한 내부 페이지의 text/html) 거부한다.
+      // content-type이 아예 없는 경우는 기존과 동일하게 image/jpeg로 간주한다.
+      if (rawMime && !rawMime.startsWith('image/')) return null;
+      const mime = rawMime || 'image/jpeg';
+      return `data:${mime};base64,${buffer.toString('base64')}`;
     } catch (e) {
       console.warn('[ipc:resource:fetch-image]', e);
       return null;
@@ -559,15 +619,9 @@ export function registerIpcHandlers(): void {
     const match = rawUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
     const videoId = match?.[1] || '';
     try {
-      const parsed = new URL(rawUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol) || !videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
-      if (isBlockedHostname(parsed.hostname)) return { title: '', description: '', thumbnail: '', videoId: '' };
-      const res = await net.fetch(rawUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const html = (await res.text()).substring(0, 120000);
+      if (!videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
+      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000 });
+      const html = buffer.toString('utf-8').substring(0, 120000);
       const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const descMatch = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i);
@@ -601,12 +655,19 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('resource:screenshot', async (_e, rawUrl: string) => {
     let win: BrowserWindow | null = null;
     try {
-      const parsed = new URL(rawUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
-      if (isBlockedHostname(parsed.hostname)) return null;
+      assertSafeUrl(rawUrl);
       win = new BrowserWindow({
         width: 1280, height: 800, show: false,
         webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true },
+      });
+      // win.loadURL은 net.fetch처럼 리다이렉트를 그대로 따라간다. 최초 URL만 검사하고 끝내면
+      // 공인 도메인이 사설 IP·루프백으로 302를 보내는 SSRF를 막지 못하므로, 각 리다이렉트 홉도 검사한다.
+      win.webContents.on('will-redirect', (event, redirectUrl) => {
+        try {
+          assertSafeUrl(redirectUrl);
+        } catch {
+          event.preventDefault();
+        }
       });
       await Promise.race([
         win.loadURL(rawUrl),
@@ -759,19 +820,7 @@ export function registerIpcHandlers(): void {
   // net.fetch 대신 Node.js https 모듈 사용 — Google Drive Content-Disposition 헤더의
   // net.request 사용: 시스템 SSL 인증서 + 리다이렉트 URL 한글 인코딩 처리
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
-    // 최초 URL과 리다이렉트 URL 모두에 적용하는 검사.
-    const assertSafeUrl = (raw: string): string => {
-      let parsed: URL;
-      try {
-        parsed = new URL(raw);
-      } catch {
-        throw new Error('유효하지 않은 URL입니다: ' + String(raw).slice(0, 80));
-      }
-      if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedHostname(parsed.hostname)) {
-        throw new Error('허용되지 않는 주소입니다: ' + parsed.hostname);
-      }
-      return parsed.href;
-    };
+    // 최초 URL과 리다이렉트 URL 모두에 assertSafeUrl(netGuard.ts)로 재검사한다.
     const safeUrl = assertSafeUrl(url);
 
     const encodeUrl = (s: string): string =>
@@ -954,7 +1003,28 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
-    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true } });
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        // 메인 창과 분리된 전용(비영속) 세션을 써서, 아래 CSP 헤더 주입이 다른 창에 영향을 주지 않게 한다.
+        partition: 'pdf-render',
+      },
+    });
+    // 렌더러가 만든 HTML을 file:// 로 여는 이 창에는 렌더러(index.html)와 달리 CSP가 없어
+    // 스크립트·원격 리소스가 제한 없이 로드될 수 있다. sanitizeHtml이 이미 script를
+    // 제거하지만, 이 경로는 GeneratedDisplay의 contentEditable에서 편집된 HTML을 그대로
+    // 받을 수 있으므로 별도로 한 번 더 막는다.
+    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': ["default-src 'self'; script-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none';"],
+        },
+      });
+    });
     try {
       await win.loadFile(tmpFile);
       const pdfData = await win.webContents.printToPDF({

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isBlockedHostname } from '../netGuard';
+import { isBlockedHostname, assertSafeUrl } from '../netGuard';
 
 describe('isBlockedHostname', () => {
   it('루프백·미지정 IPv4 주소를 차단한다', () => {
@@ -61,3 +61,29 @@ describe('isBlockedHostname', () => {
     expect(isBlockedHostname('127.0.0.999.example.com')).toBe(false);
   });
 });
+
+describe('assertSafeUrl', () => {
+  it('허용되는 http(s) 주소는 정규화된 href를 돌려준다', () => {
+    expect(assertSafeUrl('https://example.com/a?b=1')).toBe('https://example.com/a?b=1');
+  });
+
+  it('http(s)가 아닌 스킴을 거부한다', () => {
+    expect(() => assertSafeUrl('file:///etc/passwd')).toThrow();
+    expect(() => assertSafeUrl('ftp://example.com')).toThrow();
+  });
+
+  it('차단 대상 호스트(루프백·링크로컬 등)를 거부한다', () => {
+    expect(() => assertSafeUrl('http://127.0.0.1:8080/admin')).toThrow();
+    expect(() => assertSafeUrl('http://localhost/')).toThrow();
+    expect(() => assertSafeUrl('http://169.254.169.254/latest/meta-data')).toThrow();
+  });
+
+  it('유효하지 않은 URL 문자열을 거부한다', () => {
+    expect(() => assertSafeUrl('not a url')).toThrow();
+  });
+
+  it('사설 대역(학교 인트라넷)은 허용한다', () => {
+    expect(assertSafeUrl('http://192.168.0.10/')).toBe('http://192.168.0.10/');
+  });
+});
+

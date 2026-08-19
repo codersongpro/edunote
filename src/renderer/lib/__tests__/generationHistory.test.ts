@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { saveHistory, getHistory } from '../generationHistory';
+import { saveHistory, getHistory, clearAllHistory, DOCUMENT_HISTORY_KEY_PREFIX, clearDocumentHistory } from '../generationHistory';
 
 afterEach(() => {
   localStorage.clear();
@@ -50,3 +50,27 @@ describe('saveHistory', () => {
     expect(getHistory('opinion', '신규학생')).toHaveLength(1);
   });
 });
+
+describe('clearAllHistory', () => {
+  it('eduHist_ 접두사 키만 지우고 다른 키는 남긴다', () => {
+    saveHistory('opinion', '홍길동', '내용');
+    localStorage.setItem('unrelated-key', 'keep-me');
+    expect(countHistKeys()).toBeGreaterThan(0);
+    clearAllHistory();
+    expect(countHistKeys()).toBe(0);
+    expect(localStorage.getItem('unrelated-key')).toBe('keep-me');
+  });
+});
+
+describe('clearDocumentHistory', () => {
+  it('문서 생성 이력 접두사 키만 지우고 다른 키는 남긴다', () => {
+    localStorage.setItem(`${DOCUMENT_HISTORY_KEY_PREFIX}가정통신문`, JSON.stringify([{ id: '1' }]));
+    localStorage.setItem(`${DOCUMENT_HISTORY_KEY_PREFIX}상담일지`, JSON.stringify([{ id: '2' }]));
+    localStorage.setItem('unrelated-key', 'keep-me');
+    clearDocumentHistory();
+    expect(localStorage.getItem(`${DOCUMENT_HISTORY_KEY_PREFIX}가정통신문`)).toBeNull();
+    expect(localStorage.getItem(`${DOCUMENT_HISTORY_KEY_PREFIX}상담일지`)).toBeNull();
+    expect(localStorage.getItem('unrelated-key')).toBe('keep-me');
+  });
+});
+
