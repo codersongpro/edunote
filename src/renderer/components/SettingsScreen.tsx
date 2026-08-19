@@ -28,7 +28,7 @@ const SettingsScreen: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
-  const [autoBackupInterval, setAutoBackupInterval] = useState<'off' | 'daily' | 'weekly'>('weekly');
+  const [autoBackupInterval, setAutoBackupInterval] = useState<'off' | 'daily' | 'weekly'>('off');
   const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
   const [cautionTerms, setCautionTerms] = useState('');
@@ -68,7 +68,7 @@ const SettingsScreen: React.FC = () => {
       setPrivacyModeEnabled(privacyMode !== false);
       setReviewChecklistEnabled(reviewChecklist !== false);
       setCautionTerms(cautionTermList as string || '');
-      setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'weekly');
+      setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'off');
       setGuideExpanded(!(hn as boolean));
     };
     load();
