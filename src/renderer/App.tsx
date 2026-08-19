@@ -392,7 +392,7 @@ const App: React.FC = () => {
         showToast({ type: 'error', title: 'API 키 확인 실패', description: result?.error || '키를 다시 확인해 주세요.' });
         return;
       }
-      await window.electronAPI.setApiKey(key, onboardingApiTier);
+      const { usedPlaintext } = await window.electronAPI.setApiKey(key, onboardingApiTier);
       await window.electronAPI.setConfig({ apiTier: onboardingApiTier, apiKeyLastUsable: !result.wait });
       setHasApiKey(true);
       setApiKeyAvailability(result.wait ? 'wait' : 'usable');
@@ -401,6 +401,9 @@ const App: React.FC = () => {
       setOnboardingApiMessage('API 키가 저장되었습니다.');
       window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT));
       showToast({ type: 'success', title: 'API 키 저장 완료', description: 'EduNote에서 AI 기능을 사용할 수 있습니다.' });
+      if (usedPlaintext) {
+        showToast({ type: 'warning', title: '암호화 저장소를 사용할 수 없음', description: '이 컴퓨터에서는 API 키가 암호화 없이 저장됩니다.' });
+      }
     } catch {
       setOnboardingApiStatus('error');
       setOnboardingApiMessage('잠시 후 다시 시도해 주세요.');

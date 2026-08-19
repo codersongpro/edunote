@@ -13,10 +13,12 @@ import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
-import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, SECRET_STORE_KEYS, isSecretKey, stripSecrets } from './secretStore';
+import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
+// config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
+// configValidation.ts의 sanitizeConfigEntry(값 검증 규칙)를 함께 갱신해야 한다.
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {
@@ -338,7 +340,9 @@ export function registerIpcHandlers(): void {
 
   // ── Config ────────────────────────────────────────────────────────
   ipcMain.handle('config:get', (_e, key: string) => {
-    if (SECRET_STORE_KEYS.includes(key)) return undefined;
+    // 거부 목록(SECRET_STORE_KEYS) 대신 허용 목록으로 검사한다 — 새 시크릿 키를
+    // SECRET_KEYS에 등록하는 걸 깜빡해도, 애초에 ALLOWED_CONFIG_KEYS에 없으면 노출되지 않는다.
+    if (!ALLOWED_CONFIG_KEYS.includes(key)) return undefined;
     return store.get(key as keyof typeof store.store);
   });
 
@@ -385,11 +389,12 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle('config:set-api-key', (_e, key: string, apiTier: ApiTier = 'free') => {
-    if (typeof key !== 'string') return;
-    if (apiTier === 'paid') setSecret('geminiPaidApiKey', key);
-    else setSecret('geminiApiKey', key);
+    if (typeof key !== 'string') return { usedPlaintext: false };
+    const { usedPlaintext } = apiTier === 'paid' ? setSecret('geminiPaidApiKey', key) : setSecret('geminiApiKey', key);
     store.set('apiTier', apiTier);
     resetModelCache();
+    // 렌더러가 이 값을 보고, 금고(safeStorage)를 못 써서 평문 저장으로 폴백했음을 사용자에게 알린다.
+    return { usedPlaintext };
   });
 
   ipcMain.handle('config:has-api-key', () => {
@@ -998,7 +1003,28 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('file:save-pdf', async (_e, htmlContent: string, suggestedName: string) => {
     const tmpFile = path.join(getSessionTmpDir(), `edunote_pdf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.html`);
     fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
-    const win = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, contextIsolation: true, sandbox: true } });
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        // 메인 창과 분리된 전용(비영속) 세션을 써서, 아래 CSP 헤더 주입이 다른 창에 영향을 주지 않게 한다.
+        partition: 'pdf-render',
+      },
+    });
+    // 렌더러가 만든 HTML을 file:// 로 여는 이 창에는 렌더러(index.html)와 달리 CSP가 없어
+    // 스크립트·원격 리소스가 제한 없이 로드될 수 있다. sanitizeHtml이 이미 script를
+    // 제거하지만, 이 경로는 GeneratedDisplay의 contentEditable에서 편집된 HTML을 그대로
+    // 받을 수 있으므로 별도로 한 번 더 막는다.
+    win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': ["default-src 'self'; script-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none';"],
+        },
+      });
+    });
     try {
       await win.loadFile(tmpFile);
       const pdfData = await win.webContents.printToPDF({

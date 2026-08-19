@@ -31,6 +31,10 @@ export function sanitizeConfigEntry(key: string, value: unknown): unknown | unde
     return value === 'off' || value === 'daily' || value === 'weekly' ? value : undefined;
   }
 
+  if (key === 'fontSize') {
+    return typeof value === 'number' && Number.isInteger(value) && value >= 75 && value <= 150 ? value : undefined;
+  }
+
   if (typeof value !== 'string' || value.length > MAX_STRING_VALUE_CHARS) {
     return undefined;
   }

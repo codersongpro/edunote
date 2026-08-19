@@ -112,6 +112,11 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // 모든 웹 콘텐츠(메인 창·webview 게스트)에 공통 보안 정책을 적용한다.
 app.on('web-contents-created', (_event, contents) => {
+  // 카메라·마이크·위치·알림 등 모든 권한 요청을 기본 거부한다. EduNote는 이런 권한이
+  // 필요 없고, 자료실 webview로 여는 임의 사이트가 사용자 개입 없이 권한을 얻지 못하게 한다.
+  contents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+  contents.session.setPermissionCheckHandler(() => false);
+
   // 자료실 webview가 임의의 preload·nodeIntegration을 갖지 못하게 하고,
   // http(s) 외 주소(file: 등)는 webview에 붙이지 않는다.
   contents.on('will-attach-webview', (event, webPreferences, params) => {

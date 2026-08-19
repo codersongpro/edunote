@@ -141,7 +141,10 @@ const SettingsScreen: React.FC = () => {
       }
     }
 
-    await window.electronAPI.setApiKey(key.trim(), apiTier);
+    const { usedPlaintext } = await window.electronAPI.setApiKey(key.trim(), apiTier);
+    if (usedPlaintext) {
+      notifyToast({ type: 'warning', title: '이 컴퓨터의 암호화 저장소를 사용할 수 없어 API 키가 암호화 없이 저장되었습니다.' });
+    }
     await window.electronAPI.setConfig({ apiKeyLastUsable: true });
     setHasKey(true);
     setApiKey('');
