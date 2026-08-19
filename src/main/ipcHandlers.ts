@@ -18,7 +18,7 @@ import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSec
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
 // configValidation.ts의 sanitizeConfigEntry(값 검증 규칙)를 함께 갱신해야 한다.
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory', 'neisByteLimits'];
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {

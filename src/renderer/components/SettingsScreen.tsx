@@ -5,7 +5,15 @@ import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 import { notifyToast } from '../lib/toast';
-import { clearAllHistory, clearDocumentHistory } from '../lib/generationHistory';
+import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
+import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
+
+const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
+  opinion: '행동특성',
+  subject: '교과 세특',
+  creative: '창체',
+  sports: '스포츠클럽',
+};
 
 const SettingsScreen: React.FC = () => {
   const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
@@ -32,11 +40,12 @@ const SettingsScreen: React.FC = () => {
   const [privacyModeEnabled, setPrivacyModeEnabled] = useState(true);
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
   const [cautionTerms, setCautionTerms] = useState('');
+  const [byteLimits, setByteLimits] = useState<Record<RecordKind, number>>(DEFAULT_BYTE_LIMITS);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList, autoBackup] = await Promise.all([
+      const [hn, tn, inst, sl, gc, stNames, stMale, stFemale, sd, add, tier, privacyMode, reviewChecklist, cautionTermList, autoBackup, rawByteLimits] = await Promise.all([
         window.electronAPI.hasApiKey(),
         window.electronAPI.getConfig('teacherName'),
         window.electronAPI.getConfig('institution'),
@@ -52,6 +61,7 @@ const SettingsScreen: React.FC = () => {
         window.electronAPI.getConfig('reviewChecklistEnabled'),
         window.electronAPI.getConfig('cautionTerms'),
         window.electronAPI.getConfig('autoBackupInterval'),
+        window.electronAPI.getConfig('neisByteLimits'),
       ]);
       if (cancelled) return;
       setHasKey(hn as boolean);
@@ -69,6 +79,7 @@ const SettingsScreen: React.FC = () => {
       setReviewChecklistEnabled(reviewChecklist !== false);
       setCautionTerms(cautionTermList as string || '');
       setAutoBackupInterval((autoBackup as 'off' | 'daily' | 'weekly') || 'off');
+      setByteLimits(parseByteLimits(rawByteLimits));
       setGuideExpanded(!(hn as boolean));
     };
     load();
@@ -266,17 +277,14 @@ const SettingsScreen: React.FC = () => {
   };
 
   // 학생 데이터 전체 삭제 — 되돌릴 수 없는 작업이라 두 번 확인을 받는다.
-  // 삭제 대상: 학생별 생성 이력(eduHist_*), 문서 생성 이력, 학생 메모, 설정에 저장된 학생 명단.
-  // 새 저장소가 추가되면 이 목록에도 함께 반영해야 한다.
+  // 실제 삭제 대상과 안내 문구는 lib/studentDataCleanup.ts가 함께 관리한다(테스트로 고정).
+  // 학생 개인정보 저장소를 새로 추가하면 그 파일만 고치면 된다.
   const [isClearingStudentData, setIsClearingStudentData] = useState(false);
   const handleClearStudentData = async () => {
     const firstConfirm = window.confirm(
       '학생 관련 데이터를 모두 삭제합니다.\n\n' +
-      '- 학생별 생성 이력(행발·세특·스포츠클럽·창체 등)\n' +
-      '- 상담일지·수업관찰기록 등 문서 생성 이력\n' +
-      '- 학생 메모 보드의 모든 메모\n' +
-      '- 설정에 저장된 학생 명단\n\n' +
-      '자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
+      STUDENT_DATA_TARGET_LABELS.map(label => `- ${label}`).join('\n') +
+      '\n\n자료실·나만의 스킬·공문 보관함 등 다른 자료는 삭제되지 않습니다. 계속할까요?'
     );
     if (!firstConfirm) return;
     const secondConfirm = window.confirm('되돌릴 수 없는 작업입니다. 정말로 삭제할까요?');
@@ -284,11 +292,7 @@ const SettingsScreen: React.FC = () => {
 
     setIsClearingStudentData(true);
     try {
-      clearAllHistory();
-      clearDocumentHistory();
-      localStorage.removeItem('eduNote_studentMemos_v1');
-      await window.electronAPI.writeJsonData('student-memos', []);
-      await window.electronAPI.setConfig({ studentNames: '', studentMaleNames: '', studentFemaleNames: '' });
+      await clearAllStudentData();
       notifyToast({ type: 'success', title: '학생 관련 데이터를 모두 삭제했습니다.' });
     } catch (error) {
       notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.' });
@@ -732,9 +736,38 @@ const SettingsScreen: React.FC = () => {
               한 줄에 하나씩 입력하면 생성 결과 화면에서 포함 여부를 알려줍니다.
             </p>
           </div>
+          <div>
+            <label className={labelClass}>생기부 항목별 바이트 제한</label>
+            <div className="grid grid-cols-2 gap-2">
+              {RECORD_KINDS.map(kind => (
+                <div key={kind} className="flex items-center gap-2">
+                  <span className="text-xs text-[#78716C] dark:text-[#9C8F87] w-20 shrink-0">{BYTE_LIMIT_LABELS[kind]}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={byteLimits[kind]}
+                    onChange={e => {
+                      const next = Number(e.target.value);
+                      setByteLimits(prev => ({ ...prev, [kind]: Number.isFinite(next) ? next : prev[kind] }));
+                    }}
+                    className={`${inputClass} py-1.5`}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">
+              생성 결과의 바이트 수가 이 값을 넘으면 결과 화면에 붉게 표시합니다. 기재요령은 학년도·학교급에 따라 다르니 우리 학교 기준으로 맞춰 주세요.
+            </p>
+          </div>
           <button
             onClick={async () => {
-              await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled, cautionTerms });
+              // 입력 중 잠시 비어 있거나 범위를 벗어난 값은 저장하지 않고 기본값으로 되돌린다.
+              const safeLimits = Object.fromEntries(
+                RECORD_KINDS.map(kind => [kind, isValidByteLimit(byteLimits[kind]) ? byteLimits[kind] : DEFAULT_BYTE_LIMITS[kind]]),
+              ) as Record<RecordKind, number>;
+              setByteLimits(safeLimits);
+              await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled, cautionTerms, neisByteLimits: JSON.stringify(safeLimits) });
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}
