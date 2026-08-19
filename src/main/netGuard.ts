@@ -44,3 +44,19 @@ export function isBlockedHostname(hostname: string): boolean {
   if (host === 'localhost' || host.endsWith('.localhost')) return true;
   return isBlockedIpv4(host) || isBlockedIpv6(host);
 }
+
+// http(s) 스킴과 차단 호스트 여부를 함께 검사해 정규화된 URL을 돌려준다.
+// 최초 요청 URL뿐 아니라 리다이렉트로 넘어온 각 홉의 URL에도 반드시 다시 호출해야 한다 —
+// 그렇지 않으면 최초 주소만 검사하고 리다이렉트로 우회하는 SSRF를 막지 못한다.
+export function assertSafeUrl(raw: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error('유효하지 않은 URL입니다: ' + String(raw).slice(0, 80));
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedHostname(parsed.hostname)) {
+    throw new Error('허용되지 않는 주소입니다: ' + parsed.hostname);
+  }
+  return parsed.href;
+}
