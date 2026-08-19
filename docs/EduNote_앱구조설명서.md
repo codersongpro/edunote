@@ -590,7 +590,8 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 | --- | --- |
 | API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능. 금고를 못 쓰는 환경에서 평문으로 폴백되면 `writeSecret`이 `{ usedPlaintext: true }`를 반환해 렌더러가 사용자에게 알린다 |
 | 백업 | API 키·시크릿은 백업 파일에서 제외. 단 학생 명단·메모·생성 이력은 암호화 없이 포함되므로 백업 화면에 경고 문구 표시. 자동 정기 백업 기본값은 꺼짐(v1.19.0부터) |
-| 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼으로 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모·설정의 학생 명단을 일괄 삭제(generationHistory.ts). 되돌릴 수 없어 2단계 확인을 거친다 |
+| 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼. 실제 삭제 대상과 안내 문구는 `lib/studentDataCleanup.ts`(`clearAllStudentData`·`STUDENT_DATA_TARGET_LABELS`) 한 곳에서 관리하고 테스트로 고정한다 — 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모(localStorage+JSON)·작업 초안(`clearWorkDraft`)·설정의 학생 명단 3종. 학생 개인정보 저장소가 흩어져 있어 새 저장소 추가 시 누락되기 쉬우므로 한곳에 모았다. 되돌릴 수 없어 2단계 확인을 거친다 |
+| 작업 자동 저장 | 생기부 4개 생성기·학생기록 챗봇의 GlobalState를 상태 변경 1.5초 후 `work-draft.json`에 디바운스 저장(`lib/workDraft.ts`). 다음 실행에서 `hasMeaningfulWork`가 참일 때만 복원 여부를 묻고, 자동 복원은 하지 않는다. `parseWorkDraft`가 구버전·손상 파일을 초기값 위에 방어적으로 병합한다. 데모(`#demo`)·채팅(`#chat`) 전용 창은 같은 App을 렌더링하므로 저장·복원 대상에서 제외 |
 | 학생 명단 | 필요한 기능에서만 명시적으로 불러오기 |
 | 개인정보 보호 모드 | AI 요청 시 학생 이름을 임시 토큰으로 치환 후 응답에서 복원. 이름 입력칸이 있는 화면은 해당 이름만, 자유 서술형인 수업관찰기록·학급경영일지는 설정에 저장된 우리 반 학생 명단 기준으로 본문에 등장하는 이름을 치환한다. `withStudentPrivacy`/`withStudentListPrivacy`가 실제 적용 여부(`applied`)를 반환해 결과 카드에 "🔒 이름 가림 / 이름 그대로 전송" 배지로 표시한다. 나이스 성적 자료·학생 기록물 사진 업로드·간단 번역은 이 모드가 적용되지 않으며 화면에 경고 문구를 표시한다 |
 | 공문서 | 우리 반 학생 명단 자동 반영 금지 |
