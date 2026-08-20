@@ -35,6 +35,64 @@ export function buildModelChain(preference: string[], availableNames: string[] |
   return chain.slice(0, MAX_CHAIN_LENGTH);
 }
 
+// gemini-{major}.{minor}-flash / -flash-lite / -pro 형태의 정식 안정판 이름만 인식한다.
+// -preview, -exp 등 접미사가 붙은 실험판은 제외해, 불안정한 신모델이 자동으로
+// 선택되지 않게 한다(정식 전환 전까지는 기존 안전망 목록이 계속 쓰인다).
+const STABLE_MODEL_PATTERN = /^gemini-(\d+)\.(\d+)-(flash-lite|flash|pro)$/;
+
+export type ModelTier = 'flash-lite' | 'flash' | 'pro';
+
+interface StableModel {
+  name: string;
+  major: number;
+  minor: number;
+  tier: ModelTier;
+}
+
+function parseStableModels(availableNames: string[]): StableModel[] {
+  const parsed: StableModel[] = [];
+  for (const raw of availableNames) {
+    const name = raw.replace(/^models\//, '');
+    const match = name.match(STABLE_MODEL_PATTERN);
+    if (!match) continue;
+    parsed.push({ name, major: Number(match[1]), minor: Number(match[2]), tier: match[3] as ModelTier });
+  }
+  return parsed;
+}
+
+// 세대(버전)가 다르면 항상 최신 세대를 앞세우고, 같은 세대 안에서만 tierOrder로
+// 우선순위를 가른다(무료: flash-lite가 분당 요청 한도가 넉넉해 우선, 유료: pro가 품질 우선).
+// → Google이 새 모델을 내면 코드 수정 없이 다음 실행부터 자동으로 1순위가 된다.
+export function buildDynamicPreference(tierOrder: readonly ModelTier[], availableNames: string[] | null): string[] {
+  if (!availableNames) return [];
+  const tierRank = new Map(tierOrder.map((tier, index) => [tier, index]));
+  return parseStableModels(availableNames)
+    .filter(m => tierRank.has(m.tier))
+    .sort((a, b) => b.major - a.major || b.minor - a.minor || tierRank.get(a.tier)! - tierRank.get(b.tier)!)
+    .map(m => m.name);
+}
+
+export const FREE_TIER_ORDER: readonly ModelTier[] = ['flash-lite', 'flash'];
+export const PAID_TIER_ORDER: readonly ModelTier[] = ['pro', 'flash', 'flash-lite'];
+
+// 동적으로 감지한 최신 모델을 우선 사용하고, 감지 실패(목록 조회 실패)나 예상 밖
+// 이름 규칙 변경에 대비해 기존 고정 목록을 안전망으로 뒤에 붙인다.
+export function resolvePreference(
+  tierOrder: readonly ModelTier[],
+  staticFallback: readonly string[],
+  availableNames: string[] | null,
+): string[] {
+  const seen = new Set<string>();
+  const combined: string[] = [];
+  for (const name of [...buildDynamicPreference(tierOrder, availableNames), ...staticFallback]) {
+    if (!seen.has(name)) {
+      seen.add(name);
+      combined.push(name);
+    }
+  }
+  return combined;
+}
+
 function errorText(error: unknown): string {
   const msg = (error as { message?: string })?.message || '';
   const str = String(error ?? '');

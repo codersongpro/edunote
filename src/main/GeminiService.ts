@@ -2,7 +2,10 @@ import { GoogleGenAI } from '@google/genai';
 import {
   FREE_MODEL_PREFERENCE,
   PAID_MODEL_PREFERENCE,
+  FREE_TIER_ORDER,
+  PAID_TIER_ORDER,
   buildModelChain,
+  resolvePreference,
   getRetryDelayMs,
   isDailyQuotaError,
 } from './modelChain';
@@ -164,8 +167,12 @@ async function generateWithModelChain<T>(
   apiTier: ApiTier,
   doCall: (model: string) => Promise<T>,
 ): Promise<{ result: T; model: string }> {
-  const preference = apiTier === 'paid' ? PAID_MODEL_PREFERENCE : FREE_MODEL_PREFERENCE;
-  const models = buildModelChain(preference, await getAvailableModelNames(ai, apiKey));
+  const availableNames = await getAvailableModelNames(ai, apiKey);
+  const preference =
+    apiTier === 'paid'
+      ? resolvePreference(PAID_TIER_ORDER, PAID_MODEL_PREFERENCE, availableNames)
+      : resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, availableNames);
+  const models = buildModelChain(preference, availableNames);
   let lastError: unknown = null;
 
   for (const model of models) {

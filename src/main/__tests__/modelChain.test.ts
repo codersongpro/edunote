@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   FREE_MODEL_PREFERENCE,
   PAID_MODEL_PREFERENCE,
+  FREE_TIER_ORDER,
+  PAID_TIER_ORDER,
   buildModelChain,
+  buildDynamicPreference,
+  resolvePreference,
   getRetryDelayMs,
   isDailyQuotaError,
 } from '../modelChain';
@@ -32,6 +36,66 @@ describe('buildModelChain', () => {
   it('폴백 체인은 최대 3개로 제한한다', () => {
     const all = FREE_MODEL_PREFERENCE.map(m => `models/${m}`);
     expect(buildModelChain(FREE_MODEL_PREFERENCE, all)).toHaveLength(3);
+  });
+});
+
+describe('buildDynamicPreference', () => {
+  it('세대가 다르면 항상 최신 세대를 앞세운다 (신모델을 자동으로 1순위로)', () => {
+    const available = ['models/gemini-2.5-flash-lite', 'models/gemini-3.7-flash'];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-3.7-flash',
+      'gemini-2.5-flash-lite',
+    ]);
+  });
+
+  it('같은 세대에서는 tierOrder를 따른다 (무료: flash-lite 우선)', () => {
+    const available = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+    ]);
+  });
+
+  it('유료 등급은 pro를 최우선으로 하되, 더 최신 세대가 있으면 그쪽을 앞세운다', () => {
+    const available = ['gemini-2.5-pro', 'gemini-3.1-pro', 'gemini-2.5-flash'];
+    expect(buildDynamicPreference(PAID_TIER_ORDER, available)).toEqual([
+      'gemini-3.1-pro',
+      'gemini-2.5-pro',
+      'gemini-2.5-flash',
+    ]);
+  });
+
+  it('실험판·프리뷰·임베딩 등 정식 이름 규칙을 벗어난 모델은 제외한다', () => {
+    const available = [
+      'gemini-3.7-flash-preview',
+      'gemini-embedding-001',
+      'gemini-2.0-flash-exp-image-generation',
+      'gemini-2.5-flash',
+    ];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual(['gemini-2.5-flash']);
+  });
+
+  it('목록 조회 실패(null)면 빈 배열을 반환한다', () => {
+    expect(buildDynamicPreference(FREE_TIER_ORDER, null)).toEqual([]);
+  });
+});
+
+describe('resolvePreference', () => {
+  it('동적으로 감지한 최신 모델을 먼저 두고, 기존 고정 목록을 안전망으로 뒤에 붙인다', () => {
+    const available = ['gemini-3.7-flash'];
+    const result = resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, available);
+    expect(result[0]).toBe('gemini-3.7-flash');
+    expect(result).toEqual(['gemini-3.7-flash', ...FREE_MODEL_PREFERENCE]);
+  });
+
+  it('동적 감지 결과와 고정 목록에 겹치는 이름은 중복 제거한다', () => {
+    const available = ['gemini-2.5-flash-lite'];
+    const result = resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, available);
+    expect(result.filter(m => m === 'gemini-2.5-flash-lite')).toHaveLength(1);
+  });
+
+  it('목록 조회 실패(null)면 기존 고정 목록만 그대로 반환한다', () => {
+    expect(resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, null)).toEqual(FREE_MODEL_PREFERENCE);
   });
 });
 
