@@ -40,10 +40,21 @@ describe('buildModelChain', () => {
 });
 
 describe('buildDynamicPreference', () => {
-  it('세대가 다르면 항상 최신 세대를 앞세운다 (신모델을 자동으로 1순위로)', () => {
+  // 회귀 방지: v1.20.1에서 세대(버전)를 등급보다 먼저 따지도록 만들었다가, 무료 키에서
+  // gemini-3.7-flash(무료 등급 미확인 모델)가 구세대 flash-lite보다 먼저 시도되어
+  // 생성이 느려지고 자주 실패하는 문제가 있었다. 등급이 항상 세대보다 우선해야 한다.
+  it('무료 등급은 구세대 flash-lite를 신세대 flash보다 우선한다', () => {
     const available = ['models/gemini-2.5-flash-lite', 'models/gemini-3.7-flash'];
     expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-2.5-flash-lite',
       'gemini-3.7-flash',
+    ]);
+  });
+
+  it('같은 등급 안에서는 최신 세대를 앞세운다 (신모델을 자동으로 1순위로)', () => {
+    const available = ['gemini-2.5-flash-lite', 'gemini-3.5-flash-lite'];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-3.5-flash-lite',
       'gemini-2.5-flash-lite',
     ]);
   });
