@@ -12,11 +12,11 @@ export interface StudentGenerationExtras {
   studentMemos?: string[];
 }
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name.replace(/^\d+[.\s)]+/, '').trim();
 }
 
-function memoStudents(memo: StudentMemoRecord): string[] {
+export function memoStudents(memo: StudentMemoRecord): string[] {
   if (Array.isArray(memo.studentNames) && memo.studentNames.length > 0) {
     return memo.studentNames.map(normalizeName).filter(Boolean);
   }

@@ -14,6 +14,8 @@ import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory'
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { ByteCountBadge } from './ByteCountBadge';
+import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
+import { RosterNameHint } from './RosterNameHint';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -66,6 +68,14 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   useEffect(() => {
     let cancelled = false;
     loadByteLimits().then(limits => { if (!cancelled) setByteLimits(limits); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // 설정에 등록한 학생 번호-이름 명렬표(로컬 전용). 번호로 입력했을 때 실명 힌트를 보여주는 데만 쓴다.
+  const [roster, setRoster] = useState<RosterEntry[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    loadStudentRoster().then(entries => { if (!cancelled) setRoster(entries); });
     return () => { cancelled = true; };
   }, []);
 
@@ -921,6 +931,9 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                 학생 이름을 쉼표(,)로 구분하거나, <strong>엑셀/스프레드시트에서 복사해 붙여넣기</strong>할 수 있습니다.<br/>
                                 <span className="text-orange-600 dark:text-orange-400 font-medium">(예: 김철수, 이영희, 박민수)</span>
                             </p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                🔒 개인정보 보호를 위해 실명 대신 <strong>학생 번호나 별명(가명)</strong> 입력을 권장합니다. (예: 1, 2, 3 또는 학생A, 학생B) — 설정의 "학생 번호-이름 명렬표"에 등록해두면 화면에서만 실명을 확인할 수 있습니다.
+                            </p>
                         </div>
                         <button
                             onClick={async () => {
@@ -1109,7 +1122,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             }`}
                                         >
                                             <div className="flex justify-between items-center">
-                                                <span>{student.name}</span>
+                                                <span>{student.name}<RosterNameHint roster={roster} identifier={student.name} /></span>
                                                 {renderCompletenessDots(student)}
                                             </div>
                                         </button>

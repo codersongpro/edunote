@@ -55,7 +55,8 @@ EduNote
 │     ├─ 수업관찰기록
 │     ├─ 상담일지
 │     ├─ 학급경영일지
-│     └─ 학생 메모 보드
+│     ├─ 학생 메모 보드
+│     └─ 학생 카드                ← 학생별 이력·메모 통합 조회 (AI 호출 없음)
 │
 └─ [AI 스킬즈]                  ← 하위메뉴 드래그 정렬 지원
    ├─ 내 스킬                  ← 스킬 목록·실행·수정·공유, HTML 앱 만들기(HtmlAppCreator) (MY_AI_TOOLS)
@@ -412,6 +413,7 @@ edunote
 | 채팅방 | Firebase(Firestore+Auth) 기반 QR 참여방 개설. 교사가 방을 시작하면 학생은 QR 코드나 주소로 입장해 익명 닉네임으로 대화하고, 교사는 대화 전용 새 창(`#chat`)에서 참여자·메시지·귓속말·핀 고정을 관리한다. 방을 열려면 사용자가 자신의 Firebase 프로젝트 설정값을 직접 입력해야 한다(chatFirebaseGuide.ts 안내) |
 | 나만의 자료실 | URL, 유튜브, 파일 자료를 주제별로 저장·검색 |
 | 학생 메모 보드 | 제목, 학생 여러 명, 내용을 기록하고 학생·키워드로 필터링 |
+| 학생 카드 | 이름/번호/별명으로 검색해 4개 생기부 생성기 이력과 학생 메모를 모아 최신순으로 조회. AI 호출 없이 기존 저장 데이터만 재사용 |
 
 ### 9.5 설정·운영 기능
 
@@ -590,8 +592,10 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 | --- | --- |
 | API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능. 금고를 못 쓰는 환경에서 평문으로 폴백되면 `writeSecret`이 `{ usedPlaintext: true }`를 반환해 렌더러가 사용자에게 알린다 |
 | 백업 | API 키·시크릿은 백업 파일에서 제외. 단 학생 명단·메모·생성 이력은 암호화 없이 포함되므로 백업 화면에 경고 문구 표시. 자동 정기 백업 기본값은 꺼짐(v1.19.0부터) |
-| 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼. 실제 삭제 대상과 안내 문구는 `lib/studentDataCleanup.ts`(`clearAllStudentData`·`STUDENT_DATA_TARGET_LABELS`) 한 곳에서 관리하고 테스트로 고정한다 — 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모(localStorage+JSON)·작업 초안(`clearWorkDraft`)·설정의 학생 명단 3종. 학생 개인정보 저장소가 흩어져 있어 새 저장소 추가 시 누락되기 쉬우므로 한곳에 모았다. 되돌릴 수 없어 2단계 확인을 거친다 |
+| 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼. 실제 삭제 대상과 안내 문구는 `lib/studentDataCleanup.ts`(`clearAllStudentData`·`STUDENT_DATA_TARGET_LABELS`) 한 곳에서 관리하고 테스트로 고정한다 — 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모(localStorage+JSON)·작업 초안(`clearWorkDraft`)·학생 번호-이름 명렬표(`clearStudentRoster`)·설정의 학생 명단 3종. 학생 개인정보 저장소가 흩어져 있어 새 저장소 추가 시 누락되기 쉬우므로 한곳에 모았다. 되돌릴 수 없어 2단계 확인을 거친다 |
 | 작업 자동 저장 | 생기부 4개 생성기·학생기록 챗봇의 GlobalState를 상태 변경 1.5초 후 `work-draft.json`에 디바운스 저장(`lib/workDraft.ts`). 다음 실행에서 `hasMeaningfulWork`가 참일 때만 복원 여부를 묻고, 자동 복원은 하지 않는다. `parseWorkDraft`가 구버전·손상 파일을 초기값 위에 방어적으로 병합한다. 데모(`#demo`)·채팅(`#chat`) 전용 창은 같은 App을 렌더링하므로 저장·복원 대상에서 제외 |
+| 학생 번호-이름 명렬표 | 생기부 4개 생성기의 이름 입력칸에 실명 대신 번호·별명 입력을 권장하는 안내 문구를 추가하고, 설정에서 등록한 번호↔이름 매칭(`lib/studentRoster.ts`, `student-roster.json`)을 번호 입력 시 화면에만(로컬) 힌트로 보여준다(`RosterNameHint.tsx`). AI 요청 프롬프트·`geminiService.ts`는 전혀 건드리지 않는 순수 표시 계층이라, 등록 여부와 무관하게 생성 파이프라인은 항상 입력된 문자열을 그대로 식별자로 쓴다 |
+| 학생 카드 | `StudentCardScreen.tsx`(사이드바 `우리반기록` 하위). AI 호출 없이 기존 저장 구조만 재사용해 한 학생의 기록을 모은다 — `lib/studentCard.ts`의 `loadStudentCard`가 4개 생성기 이력(`getHistory('opinion'|'subject'|'sports'|'creative', id)`)과 학생 메모(`generationSafety.ts`의 `memoStudents`/`normalizeName` 재사용)를 날짜순으로 합친다. 상담일지 등 "문서 이력"은 제목 기준 키(`DOCUMENT_HISTORY_KEY_PREFIX`)라 학생별로 신뢰성 있게 묶을 수 없어 범위에서 제외했다 |
 | 학생 명단 | 필요한 기능에서만 명시적으로 불러오기 |
 | 개인정보 보호 모드 | AI 요청 시 학생 이름을 임시 토큰으로 치환 후 응답에서 복원. 이름 입력칸이 있는 화면은 해당 이름만, 자유 서술형인 수업관찰기록·학급경영일지는 설정에 저장된 우리 반 학생 명단 기준으로 본문에 등장하는 이름을 치환한다. `withStudentPrivacy`/`withStudentListPrivacy`가 실제 적용 여부(`applied`)를 반환해 결과 카드에 "🔒 이름 가림 / 이름 그대로 전송" 배지로 표시한다. 나이스 성적 자료·학생 기록물 사진 업로드·간단 번역은 이 모드가 적용되지 않으며 화면에 경고 문구를 표시한다 |
 | 공문서 | 우리 반 학생 명단 자동 반영 금지 |
