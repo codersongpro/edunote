@@ -60,15 +60,20 @@ function parseStableModels(availableNames: string[]): StableModel[] {
   return parsed;
 }
 
-// 세대(버전)가 다르면 항상 최신 세대를 앞세우고, 같은 세대 안에서만 tierOrder로
-// 우선순위를 가른다(무료: flash-lite가 분당 요청 한도가 넉넉해 우선, 유료: pro가 품질 우선).
-// → Google이 새 모델을 내면 코드 수정 없이 다음 실행부터 자동으로 1순위가 된다.
+// tierOrder(등급)를 세대(버전)보다 먼저 따진다 — 무료는 항상 flash-lite를,
+// 유료는 항상 pro를 다른 등급의 최신 모델보다도 우선한다. flash-lite는 세대와
+// 무관하게 분당 요청 한도가 넉넉하고 무료 등급 제공이 안정적으로 보장되는 반면,
+// 갓 나온 flash(-lite가 아닌) 모델은 무료 등급 한도가 공개되지 않았거나 아예
+// 유료 전용일 수 있어(v1.20.1에서 세대를 등급보다 앞세웠다가 gemini-3.7-flash가
+// 먼저 시도되며 무료 키에서 생성이 느려지고 자주 실패하는 회귀가 있었다) 등급을
+// 먼저 걸러야 안전하다. 같은 등급 안에서는 세대가 높을수록 우선한다.
+// → Google이 새 flash-lite/pro를 내면 코드 수정 없이 다음 실행부터 자동으로 1순위가 된다.
 export function buildDynamicPreference(tierOrder: readonly ModelTier[], availableNames: string[] | null): string[] {
   if (!availableNames) return [];
   const tierRank = new Map(tierOrder.map((tier, index) => [tier, index]));
   return parseStableModels(availableNames)
     .filter(m => tierRank.has(m.tier))
-    .sort((a, b) => b.major - a.major || b.minor - a.minor || tierRank.get(a.tier)! - tierRank.get(b.tier)!)
+    .sort((a, b) => tierRank.get(a.tier)! - tierRank.get(b.tier)! || b.major - a.major || b.minor - a.minor)
     .map(m => m.name);
 }
 
