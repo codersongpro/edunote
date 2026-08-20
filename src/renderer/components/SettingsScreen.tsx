@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video, Trash2 } from 'lucide-react';
+import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video, Trash2, Lock } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -7,6 +7,7 @@ import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUID
 import { notifyToast } from '../lib/toast';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
 import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
+import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
   opinion: '행동특성',
@@ -41,6 +42,16 @@ const SettingsScreen: React.FC = () => {
   const [reviewChecklistEnabled, setReviewChecklistEnabled] = useState(true);
   const [cautionTerms, setCautionTerms] = useState('');
   const [byteLimits, setByteLimits] = useState<Record<RecordKind, number>>(DEFAULT_BYTE_LIMITS);
+  const [rosterInput, setRosterInput] = useState('');
+  const [rosterSaved, setRosterSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadStudentRoster().then(entries => {
+      if (!cancelled) setRosterInput(formatRosterForEdit(entries));
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -666,6 +677,39 @@ const SettingsScreen: React.FC = () => {
           >
             <Save className="w-4 h-4" />
             학생 명단 저장
+          </button>
+        </div>
+
+        {/* Student Number-Name Roster (local only) */}
+        <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Lock className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+            <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">학생 번호-이름 명렬표 (선택 사항)</h3>
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-md px-3 py-2 text-xs text-amber-800 dark:text-amber-200 leading-relaxed space-y-1">
+            <p>💡 생기부 도우미에서는 실명 대신 <strong>학생 번호나 별명</strong> 입력을 권장합니다.</p>
+            <p>여기에 번호-이름을 등록해두면, 생기부 화면에 번호를 입력했을 때 그 번호가 누구인지 화면에서만(로컬) 확인할 수 있습니다.</p>
+            <p><strong>이 정보는 이 기기에만 저장되며 AI로 전송되지 않습니다.</strong> 등록하지 않아도 앱은 그대로 정상 동작합니다.</p>
+          </div>
+          <div>
+            <label className={labelClass}>번호,이름 (한 줄에 한 명씩)</label>
+            <textarea
+              className={`${inputClass} min-h-[100px] resize-y font-mono text-xs`}
+              placeholder={"1,김서윤\n2,이도현\n3,박민준"}
+              value={rosterInput}
+              onChange={e => setRosterInput(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={async () => {
+              await saveStudentRoster(parseRosterInput(rosterInput));
+              setRosterSaved(true);
+              setTimeout(() => setRosterSaved(false), 2500);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold border border-[#E7E5E4] text-[#44403C] hover:bg-[#FAF9F7]"
+          >
+            <Save className="w-4 h-4" />
+            {rosterSaved ? '저장됨' : '명렬표 저장'}
           </button>
         </div>
 

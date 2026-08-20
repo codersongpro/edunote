@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../studentDataCleanup';
 import { WORK_DRAFT_NAME } from '../workDraft';
+import { STUDENT_ROSTER_DATA_KEY } from '../studentRoster';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../generationHistory';
 
 const writeJsonData = vi.fn();
@@ -43,6 +44,8 @@ describe('clearAllStudentData', () => {
     expect(cleared).toContain('student-memos');
     // 자동 저장(이어서 하기) 초안이 빠지면 삭제에 구멍이 생긴다 — 반드시 포함되어야 한다.
     expect(cleared).toContain(WORK_DRAFT_NAME);
+    // 학생 번호-이름 명렬표도 실명이 담긴 학생 개인정보이므로 반드시 포함되어야 한다.
+    expect(cleared).toContain(STUDENT_ROSTER_DATA_KEY);
   });
 
   it('설정에 저장된 학생 명단 3종을 비운다', async () => {

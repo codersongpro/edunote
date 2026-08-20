@@ -17,6 +17,7 @@ import ClassToolsPanel from './components/ClassToolsPanel';
 import ChatRoom from './components/ChatRoom';
 import DemoSamplesScreen from './components/DemoSamplesScreen';
 import StudentMemoBoard from './components/StudentMemoBoard';
+import StudentCardScreen from './components/StudentCardScreen';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import OfficialDocAnalyzer from './components/OfficialDocAnalyzer';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
@@ -35,7 +36,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -53,7 +54,7 @@ const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
 
 const STUDENT_RECORD_MODES: AppMode[] = [
   ...SCHOOL_LEVEL_REQUIRED_MODES,
-  AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO, AppMode.STUDENT_RECORD_GROUP,
+  AppMode.TEACHER_RECORD, AppMode.STUDENT_MEMO, AppMode.STUDENT_CARD, AppMode.STUDENT_RECORD_GROUP,
 ];
 
 const LESSON_AI_MODES: AppMode[] = [AppMode.LESSON_MATERIAL, AppMode.CLASS_TOOLS, AppMode.MY_RESOURCES];
@@ -717,12 +718,13 @@ const App: React.FC = () => {
         { key: AppMode.CREATIVE_ACTIVITY_GENERATOR, label: '창체 특기사항', icon: Palette, active: mode === AppMode.CREATIVE_ACTIVITY_GENERATOR, progress: getProgressFor(AppMode.CREATIVE_ACTIVITY_GENERATOR), onClick: () => handleModeChange(AppMode.CREATIVE_ACTIVITY_GENERATOR) },
       ];
     }
-    if (mode === AppMode.TEACHER_RECORD || mode === AppMode.STUDENT_MEMO) {
+    if (mode === AppMode.TEACHER_RECORD || mode === AppMode.STUDENT_MEMO || mode === AppMode.STUDENT_CARD) {
       return [
         { key: 'observation', label: '수업관찰기록', icon: Eye, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'observation', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('observation') },
         { key: 'counseling', label: '상담일지', icon: MessageCircle, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'counseling', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('counseling') },
         { key: 'class', label: '학급경영일지', icon: CalendarDays, active: mode === AppMode.TEACHER_RECORD && teacherRecordInitialTab === 'class', progress: getProgressFor(AppMode.TEACHER_RECORD), onClick: () => handleTeacherRecordNav('class') },
         { key: AppMode.STUDENT_MEMO, label: '학생 메모 보드', icon: StickyNote, active: mode === AppMode.STUDENT_MEMO, progress: getProgressFor(AppMode.STUDENT_MEMO), onClick: () => goTo(AppMode.STUDENT_MEMO) },
+        { key: AppMode.STUDENT_CARD, label: '학생 카드', icon: IdCard, active: mode === AppMode.STUDENT_CARD, progress: getProgressFor(AppMode.STUDENT_CARD), onClick: () => goTo(AppMode.STUDENT_CARD) },
       ];
     }
     return [];
@@ -778,6 +780,7 @@ const App: React.FC = () => {
       case AppMode.TRANSLATOR: return <TranslatorScreen />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
+      case AppMode.STUDENT_CARD: return <StudentCardScreen />;
       case AppMode.STUDENT_RECORD_GROUP: return null;
       case AppMode.LESSON_MATERIAL: return <LessonMaterialGenerator />;
       case AppMode.CLASS_TOOLS: return <ClassToolsPanel initialTab={classToolsInitialTab} />;

@@ -5,6 +5,7 @@
 // 그래서 삭제 대상을 이 모듈에 모으고 테스트로 고정한다.
 import { clearAllHistory, clearDocumentHistory } from './generationHistory';
 import { clearWorkDraft } from './workDraft';
+import { clearStudentRoster } from './studentRoster';
 
 const STUDENT_MEMO_STORAGE_KEY = 'eduNote_studentMemos_v1';
 
@@ -15,6 +16,7 @@ export const STUDENT_DATA_TARGET_LABELS = [
   '학생 메모 보드의 모든 메모',
   '자동 저장된 작업 내용(이어서 하기)',
   '설정에 저장된 학생 명단',
+  '설정에 등록한 학생 번호-이름 명렬표',
 ] as const;
 
 export async function clearAllStudentData(): Promise<void> {
@@ -24,6 +26,7 @@ export async function clearAllStudentData(): Promise<void> {
 
   await window.electronAPI.writeJsonData('student-memos', []);
   await clearWorkDraft();
+  await clearStudentRoster();
   await window.electronAPI.setConfig({
     studentNames: '',
     studentMaleNames: '',
