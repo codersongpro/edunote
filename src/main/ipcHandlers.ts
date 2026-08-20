@@ -14,6 +14,7 @@ import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pa
 import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
+import { buildNaverShoppingSearchUrl } from './priceSearch';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
@@ -714,6 +715,40 @@ export function registerIpcHandlers(): void {
     } else {
       win.loadFile(path.join(__dirname, '../renderer/index.html'), { hash: 'demo' });
     }
+  });
+
+  // ── 가격 검색 창 ───────────────────────────────────────────────────
+  // 인터넷 가격 조회 API(네이버 쇼핑 검색 API 등)는 서비스가 예고 없이 끊길 수 있어(v1.20 무렵
+  // 실제로 종료됨), API를 호출하는 대신 검색 결과 페이지를 열어 사람이 직접 가격을 확인하게 한다.
+  // 앱 콘텐츠가 아닌 외부 사이트만 보여주므로 preload 없이 격리된 창으로 연다.
+  let priceSearchWindowRef: BrowserWindow | null = null;
+  ipcMain.handle('window:open-price-search', (_e, itemName: unknown) => {
+    const url = buildNaverShoppingSearchUrl(String(itemName ?? ''));
+    if (!url) return;
+
+    if (priceSearchWindowRef && !priceSearchWindowRef.isDestroyed()) {
+      priceSearchWindowRef.loadURL(url);
+      priceSearchWindowRef.focus();
+      return;
+    }
+
+    const win = new BrowserWindow({
+      width: 900,
+      height: 800,
+      minWidth: 480,
+      minHeight: 500,
+      title: '가격 검색',
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        partition: 'persist:price-search',
+      },
+    });
+    win.setMenuBarVisibility(false);
+    win.on('closed', () => { priceSearchWindowRef = null; });
+    priceSearchWindowRef = win;
+    win.loadURL(url);
   });
 
   // 채팅방의 대화 창을 별도 창으로 띄운다(같은 렌더러를 '#chat'로 로드). QR·접속주소는 본 창에 두고

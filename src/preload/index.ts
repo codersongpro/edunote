@@ -86,6 +86,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Window
   openDemoWindow: () => ipcRenderer.invoke('window:open-demo'),
+  openPriceSearchWindow: (itemName: string) => ipcRenderer.invoke('window:open-price-search', itemName),
   openChatWindow: (opts?: { reload?: boolean }) => ipcRenderer.invoke('window:open-chat', opts),
   isChatWindowOpen: (): Promise<boolean> => ipcRenderer.invoke('window:is-chat-open'),
   onChatWindowState: (callback: (open: boolean) => void) => {

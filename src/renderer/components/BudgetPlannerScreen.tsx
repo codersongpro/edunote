@@ -2324,6 +2324,15 @@ function EditableBudgetTable({
                     <input value={item.thngNm} onChange={e => onChange(item.id, { thngNm: e.target.value })}
                       placeholder="품목명" className={`w-full text-xs bg-transparent border-none focus:outline-none text-[#1C1917] dark:text-[#F0EBE6] focus:ring-1 focus:ring-blue-400 rounded px-1 ${isParent ? 'font-semibold' : ''}`} />
                   )}
+                  {!isCategory && !isParent && item.thngNm.trim() && (
+                    <button
+                      onClick={() => window.electronAPI.openPriceSearchWindow(item.thngNm)}
+                      className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded text-[#A8A29E] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      title="네이버쇼핑에서 이 품목 가격 검색 (별도 창)"
+                    >
+                      <Search className="w-3 h-3" />
+                    </button>
+                  )}
                   {isCategory && (
                     <button onClick={() => onAddChild(item.id)} className="shrink-0 inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30" title="이 과목에 품목 추가">
                       <Plus className="w-3 h-3" />품목
