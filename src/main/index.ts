@@ -133,6 +133,28 @@ app.on('web-contents-created', (_event, contents) => {
   // electronAPI가 외부 콘텐츠에 노출된다. 앱 자신(file: 또는 개발 서버) 외 이동을 막고
   // http(s) 주소는 기본 브라우저로 넘긴다. (자료실 webview는 임의 사이트 탐색이 목적이므로 제외)
   if (contents.getType() === 'window') {
+    // 창 내용이 그려지지 않는 문제(하얀 빈 화면 등)를 조용히 묻어두지 않고 원인을 알린다.
+    // 렌더러 프로세스가 죽거나(보안 소프트웨어의 프로세스 차단 등), 페이지 로드 자체가
+    // 실패하면 사용자에게 안내하고 콘솔에 상세를 남겨 다음 진단에 활용한다.
+    contents.on('render-process-gone', (_event, details) => {
+      console.error('[main] render-process-gone:', details);
+      if (details.reason !== 'clean-exit') {
+        dialog.showErrorBox(
+          '화면을 표시할 수 없습니다',
+          `창의 렌더링 프로세스가 예기치 않게 종료되었습니다 (원인: ${details.reason}).\n` +
+            '보안 소프트웨어(백신)나 그룹 정책이 앱 실행을 제한하고 있을 수 있습니다.\n' +
+            '문제가 계속되면 이 메시지와 함께 문의해 주세요.',
+        );
+      }
+    });
+    contents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+      if (errorCode === -3) return; // ERR_ABORTED — 정상적인 취소/리다이렉트
+      console.error('[main] did-fail-load:', errorCode, errorDescription, validatedURL);
+    });
+    contents.on('unresponsive', () => {
+      console.error('[main] webContents unresponsive:', contents.getTitle());
+    });
+
     contents.on('will-navigate', (event, url) => {
       const devUrl = process.env['ELECTRON_RENDERER_URL'];
       let isAppOrigin = false;

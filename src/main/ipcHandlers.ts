@@ -686,9 +686,12 @@ export function registerIpcHandlers(): void {
   });
 
   // ── Demo Window ───────────────────────────────────────────────────
+  // 창 제목은 페이지 로드 후 index.html의 <title>("EduNote")로 되돌아가므로,
+  // title 문자열 비교로는 "이미 열려 있는 데모 창"을 찾을 수 없다(항상 새 창이 생김).
+  // 창 참조를 직접 들고 있다가 닫히면 비운다.
+  let demoWindowRef: BrowserWindow | null = null;
   ipcMain.handle('window:open-demo', () => {
-    const existing = BrowserWindow.getAllWindows().find(w => w.title === 'EduNote Demo');
-    if (existing) { existing.focus(); return; }
+    if (demoWindowRef && !demoWindowRef.isDestroyed()) { demoWindowRef.focus(); return; }
 
     const win = new BrowserWindow({
       width: 560,
@@ -704,6 +707,8 @@ export function registerIpcHandlers(): void {
       },
     });
     win.setMenuBarVisibility(false);
+    win.on('closed', () => { demoWindowRef = null; });
+    demoWindowRef = win;
     if (process.env['ELECTRON_RENDERER_URL']) {
       win.loadURL(process.env['ELECTRON_RENDERER_URL'] + '#demo');
     } else {
