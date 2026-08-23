@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EduNote — 선생님을 위한 AI 도우미</title>
+<meta name="description" content="생기부, 교무행정, 수업자료까지 — 선생님의 반복 업무를 도와주는 Windows용 AI 데스크톱 앱, EduNote를 무료로 다운로드하세요.">
+<meta property="og:title" content="EduNote — 선생님을 위한 AI 도우미">
+<meta property="og:description" content="학생기록 · 교무행정 · 수업자료를 하나로. 무료 API 키만 있으면 바로 시작할 수 있는 교사용 AI 데스크톱 앱입니다.">
+<meta property="og:image" content="assets/icon.png">
+<meta name="theme-color" content="#FAF9F7">
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root {
+    --bg: #FAF9F7;
+    --card: #FFFFFF;
+    --border: #EDE8E1;
+    --text: #1C1917;
+    --text-2: #44403C;
+    --text-3: #78716C;
+    --text-4: #A8A29E;
+    --shadow: 0 1px 2px rgba(28,25,23,0.04), 0 8px 24px rgba(28,25,23,0.06);
+    --amber: #D97706; --amber-bg: #FEF3C7; --amber-bg-dark: rgba(217,119,6,0.18);
+    --teal: #0D9488; --teal-bg: #CCFBF1; --teal-bg-dark: rgba(13,148,136,0.18);
+    --blue: #2563EB; --blue-bg: #DBEAFE; --blue-bg-dark: rgba(37,99,235,0.18);
+    --violet: #7C3AED; --violet-bg: #EDE9FE; --violet-bg-dark: rgba(124,58,237,0.18);
+    --emerald: #059669; --emerald-bg: #D1FAE5; --emerald-bg-dark: rgba(5,150,105,0.18);
+  }
+  html.dark {
+    --bg: #171210;
+    --card: #221E1B;
+    --border: #2E2822;
+    --text: #F0EBE6;
+    --text-2: #C4B8B0;
+    --text-3: #9C8F87;
+    --text-4: #6B5E57;
+    --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  a { color: inherit; }
+  img { max-width: 100%; display: block; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 72px 0; }
+
+  /* Nav */
+  .nav {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav .wrap { display: flex; align-items: center; gap: 16px; padding-top: 12px; padding-bottom: 12px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .nav-links { display: flex; gap: 4px; margin-left: 8px; }
+  .nav-links a {
+    text-decoration: none; color: var(--text-3); font-size: 14px; font-weight: 600;
+    padding: 8px 12px; border-radius: 8px; transition: color 0.15s, background 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--border); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--card); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-3); font-size: 16px;
+  }
+  .icon-btn:hover { color: var(--text); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 15px;
+    text-decoration: none; border: 1px solid transparent; cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+    white-space: nowrap;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: #F59E0B; color: #fff; box-shadow: 0 6px 16px rgba(245,158,11,0.28); }
+  .btn-primary:hover { background: #D97706; }
+  .btn-ghost { background: var(--card); color: var(--text); border-color: var(--border); }
+  .btn-ghost:hover { border-color: var(--text-4); }
+  .btn-sm { padding: 8px 14px; font-size: 13px; border-radius: 9px; }
+
+  /* Hero */
+  .hero { padding-top: 64px; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ''; position: absolute; inset: -20% -10% auto -10%; height: 480px;
+    background: radial-gradient(60% 60% at 30% 20%, rgba(245,158,11,0.16), transparent 70%),
+                radial-gradient(50% 50% at 80% 10%, rgba(124,58,237,0.14), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-inner { position: relative; text-align: center; max-width: 720px; margin: 0 auto; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    color: var(--amber); background: var(--amber-bg); padding: 6px 14px; border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  html.dark .eyebrow { background: var(--amber-bg-dark); }
+  .hero h1 {
+    font-size: clamp(30px, 5vw, 46px); font-weight: 900; letter-spacing: -0.02em;
+    margin: 0 0 16px; line-height: 1.25;
+  }
+  .hero p.sub { font-size: clamp(15px, 2vw, 18px); color: var(--text-3); margin: 0 0 32px; }
+  .hero-icon { width: 96px; height: 96px; border-radius: 24px; margin: 0 auto 24px; box-shadow: var(--shadow); }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 14px; }
+  .cta-note { font-size: 13px; color: var(--text-4); }
+  .trust-row {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 40px;
+  }
+  .trust-chip {
+    display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2);
+    background: var(--card); border: 1px solid var(--border); padding: 8px 14px; border-radius: 999px;
+  }
+
+  /* Section heading */
+  .section-head { text-align: center; max-width: 560px; margin: 0 auto 44px; }
+  .section-head h2 { font-size: clamp(24px, 3vw, 30px); font-weight: 900; letter-spacing: -0.01em; margin: 0 0 10px; }
+  .section-head p { color: var(--text-3); margin: 0; font-size: 15px; }
+
+  /* Feature cards */
+  .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .feature-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 24px;
+    box-shadow: var(--shadow); transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .feature-card:hover { transform: translateY(-3px); }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 14px;
+  }
+  .feature-card h3 { font-size: 16px; font-weight: 800; margin: 0 0 8px; }
+  .feature-card p { font-size: 13.5px; color: var(--text-3); margin: 0; line-height: 1.6; }
+  .badge-teal { background: var(--teal-bg); color: var(--teal); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); }
+  .badge-blue { background: var(--blue-bg); color: var(--blue); }
+  .badge-violet { background: var(--violet-bg); color: var(--violet); }
+  .badge-emerald { background: var(--emerald-bg); color: var(--emerald); }
+  html.dark .badge-teal { background: var(--teal-bg-dark); }
+  html.dark .badge-amber { background: var(--amber-bg-dark); }
+  html.dark .badge-blue { background: var(--blue-bg-dark); }
+  html.dark .badge-violet { background: var(--violet-bg-dark); }
+  html.dark .badge-emerald { background: var(--emerald-bg-dark); }
+
+  .video-card { text-decoration: none; cursor: pointer; }
+  .video-card .feature-icon { font-size: 16px; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 24px; }
+  .chip {
+    font-size: 13px; font-weight: 600; color: var(--text-2); background: var(--card);
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px;
+  }
+
+  /* Download */
+  .download-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 24px;
+    box-shadow: var(--shadow); padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center;
+  }
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+  .steps li { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 999px; background: var(--border); color: var(--text-2);
+    font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  }
+  .steps strong { font-size: 14.5px; font-weight: 700; display: block; margin-bottom: 2px; }
+  .steps span { font-size: 13.5px; color: var(--text-3); }
+  .download-right { text-align: center; }
+  .version-pill {
+    display: inline-block; font-size: 13px; font-weight: 700; color: var(--emerald);
+    background: var(--emerald-bg); padding: 5px 12px; border-radius: 999px; margin-bottom: 16px;
+  }
+  html.dark .version-pill { background: var(--emerald-bg-dark); }
+  .download-meta { font-size: 12.5px; color: var(--text-4); margin-top: 10px; }
+  .download-links { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 16px; }
+
+  /* Release notes */
+  .notes-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px;
+    box-shadow: var(--shadow);
+  }
+  .notes-card h3 { font-size: 15.5px; font-weight: 800; margin: 18px 0 8px; }
+  .notes-card h3:first-child { margin-top: 0; }
+  .notes-card p { font-size: 14px; color: var(--text-2); margin: 0 0 10px; line-height: 1.7; }
+  .notes-card ul { margin: 0 0 10px; padding-left: 20px; }
+  .notes-card li { font-size: 13.5px; color: var(--text-2); margin-bottom: 6px; line-height: 1.65; }
+  .notes-card strong { color: var(--text); }
+  .notes-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .notes-skeleton { color: var(--text-4); font-size: 14px; }
+
+  /* Developer */
+  .dev-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 24px; padding: 40px;
+    box-shadow: var(--shadow); display: flex; gap: 28px; align-items: center;
+  }
+  .dev-avatar {
+    width: 72px; height: 72px; border-radius: 999px; flex-shrink: 0;
+    background: linear-gradient(135deg, #7C3AED, #A78BFA);
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; font-weight: 900;
+  }
+  .dev-card h3 { margin: 0 0 4px; font-size: 19px; font-weight: 800; }
+  .dev-role { font-size: 13.5px; color: var(--violet); font-weight: 700; margin: 0 0 12px; }
+  .dev-card p.blurb { font-size: 14px; color: var(--text-3); margin: 0 0 18px; line-height: 1.7; max-width: 480px; }
+  .dev-links { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--border); padding: 32px 0; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  footer p { margin: 0; font-size: 13px; color: var(--text-4); }
+  footer .foot-links { display: flex; gap: 16px; }
+  footer .foot-links a { font-size: 13px; color: var(--text-3); text-decoration: none; }
+  footer .foot-links a:hover { color: var(--text); }
+
+  @media (max-width: 860px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    .download-card { grid-template-columns: 1fr; }
+    .dev-card { flex-direction: column; text-align: center; }
+    .dev-card p.blurb { max-width: none; }
+    .dev-links { justify-content: center; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .feature-grid { grid-template-columns: 1fr; }
+    section { padding: 52px 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="assets/icon.png" alt="EduNote"> EduNote</a>
+    <div class="nav-links">
+      <a href="#features">기능</a>
+      <a href="#download">다운로드</a>
+      <a href="#videos">영상 가이드</a>
+      <a href="#release-notes">업데이트</a>
+      <a href="#developer">개발자</a>
+    </div>
+    <div class="nav-right">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="테마 전환">🌙</button>
+      <a class="btn btn-primary btn-sm" href="#download">다운로드</a>
+    </div>
+  </div>
+</nav>
+
+<div id="top"></div>
+<header class="hero">
+  <div class="wrap hero-inner">
+    <img class="hero-icon" src="assets/icon.png" alt="EduNote 아이콘">
+    <span class="eyebrow">✨ 선생님을 위한 AI 데스크톱 앱</span>
+    <h1>학생기록 · 교무행정 · 수업자료를 하나로, EduNote</h1>
+    <p class="sub">생기부 작성부터 공문서, 수업자료 제작까지 — Gemini AI가 선생님의 반복 업무를 도와드립니다.<br>무료 API 키만 있으면 바로 시작할 수 있어요.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" id="heroDownloadBtn" href="https://github.com/codersongpro/edunote/releases/latest" target="_blank" rel="noopener">⬇ Windows용 다운로드</a>
+      <a class="btn btn-ghost" href="https://github.com/codersongpro/edunote" target="_blank" rel="noopener">GitHub에서 보기</a>
+    </div>
+    <p class="cta-note" id="heroDownloadNote">최신 버전 정보를 불러오는 중...</p>
+    <div class="trust-row">
+      <span class="trust-chip">🔒 학생 자료는 내 컴퓨터에 저장</span>
+      <span class="trust-chip">🆓 무료 API 키로 사용 가능</span>
+      <span class="trust-chip">🪟 Windows 10 / 11</span>
+      <span class="trust-chip">📦 설치 없는 포터블 실행</span>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>무엇을 할 수 있나요?</h2>
+      <p>교사가 가장 많은 시간을 쏟는 4가지 업무를 AI가 함께합니다.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon badge-teal">📄</div>
+        <h3>교무행정AI</h3>
+        <p>공문서 9종 자동 작성, 공문요약·업무추출, 교무행정 챗봇까지 반복적인 행정 업무를 줄여줍니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon badge-amber">🖥️</div>
+        <h3>수업자료AI</h3>
+        <p>슬라이드·학습지·퀴즈·수업계획서를 자동 생성하고, QR 채팅방·럭키드로우로 수업 중 소통도 도와줍니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon badge-blue">🎓</div>
+        <h3>학생기록AI</h3>
+        <p>행동특성·교과 세특·스포츠클럽·창의적 체험활동은 물론, 수업관찰·상담일지·학급경영일지까지 지원합니다.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon badge-violet">🧩</div>
+        <h3>내 스킬</h3>
+        <p>나만의 AI 스킬을 위저드·대화형·HTML 앱으로 직접 만들고, 스킬마켓에서 다른 선생님과 공유합니다.</p>
+      </div>
+    </div>
+    <div class="chip-row">
+      <span class="chip">💾 작성 중 내용 자동 저장</span>
+      <span class="chip">🌓 다크 모드 지원</span>
+      <span class="chip">🙈 학생 이름 가림(개인정보 보호 모드)</span>
+      <span class="chip">📝 HWPX · PDF · Word 저장</span>
+      <span class="chip">💬 QR 채팅방</span>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>지금 다운로드하세요</h2>
+      <p>설치 과정 없이, 실행 파일 하나로 바로 시작할 수 있습니다.</p>
+    </div>
+    <div class="download-card">
+      <ul class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <div><strong>다운로드 후 바로 실행</strong><span>포터블 방식이라 설치 프로그램 없이 .exe 파일을 실행하면 바로 열립니다.</span></div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div><strong>무료 Gemini API 키 등록</strong><span><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--blue); font-weight:600;">Google AI Studio</a>에서 무료로 발급받아 온보딩 화면에 붙여넣으면 끝입니다.</span></div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div><strong>바로 사용 시작</strong><span>생기부, 공문서, 수업자료 등 원하는 메뉴에서 바로 AI 생성을 시작하세요.</span></div>
+        </li>
+      </ul>
+      <div class="download-right">
+        <span class="version-pill" id="versionPill">최신 버전 확인 중…</span>
+        <div class="download-links">
+          <a class="btn btn-primary" id="downloadBtn" href="https://github.com/codersongpro/edunote/releases/latest" target="_blank" rel="noopener">⬇ EduNote 다운로드</a>
+          <a class="btn btn-ghost btn-sm" href="https://github.com/codersongpro/edunote/releases" target="_blank" rel="noopener">이전 버전 모두 보기</a>
+        </div>
+        <p class="download-meta" id="downloadMeta">Windows 10 / 11 (64비트) 전용</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="videos">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>영상으로 바로 배우기</h2>
+      <p>앱 안에서도 같은 영상을 볼 수 있어요. 궁금한 부분만 골라 보세요.</p>
+    </div>
+    <div class="feature-grid video-grid">
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1D1sdb3qvuxFv2BcrNPSILhMsjU0WgM9Q/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-violet">▶</div>
+        <h3>에듀노트 전체 사용법</h3>
+        <p>홈 화면부터 주요 메뉴까지, 처음 쓰는 분을 위한 전체 사용법을 한 번에 안내합니다.</p>
+      </a>
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1yvznEL-33VomTPeG4TnJY4Vz8X93LJnV/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-emerald">▶</div>
+        <h3>무료 API 키 발급받기</h3>
+        <p>Google AI Studio에서 무료 Gemini API 키를 발급받아 EduNote에 등록하는 과정을 보여드립니다.</p>
+      </a>
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1wY_husl7-Y-1L3xn34bWWIs45s24WudY/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-amber">▶</div>
+        <h3>QR 채팅방 설정하기</h3>
+        <p>무료 Firebase 연동부터 채팅방 보안 규칙 게시까지, 처음 한 번 필요한 설정을 안내합니다.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="release-notes">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>최신 업데이트</h2>
+      <p>EduNote는 선생님들의 피드백을 반영해 꾸준히 개선되고 있습니다.</p>
+    </div>
+    <div class="notes-card" id="notesCard">
+      <p class="notes-skeleton">릴리즈 노트를 불러오는 중...</p>
+    </div>
+  </div>
+</section>
+
+<section id="developer">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>만든 사람</h2>
+      <p>교실의 반복 업무를 가장 가까이서 이해하는 사람이 만듭니다.</p>
+    </div>
+    <div class="dev-card">
+      <div class="dev-avatar">D</div>
+      <div>
+        <h3>Dustin</h3>
+        <p class="dev-role">Teacher · Data Analytics · App Developer</p>
+        <p class="blurb">교실에서 매일 마주치는 반복 업무를 줄이고 싶어 EduNote를 직접 만들고 있습니다. 현장의 목소리를 가장 빠르게 반영하는 것을 목표로, 선생님들의 제안과 피드백을 기다립니다.</p>
+        <div class="dev-links">
+          <a class="btn btn-ghost btn-sm" href="https://github.com/codersongpro" target="_blank" rel="noopener">GitHub 프로필</a>
+          <a class="btn btn-ghost btn-sm" href="https://github.com/codersongpro/edunote" target="_blank" rel="noopener">EduNote 저장소</a>
+          <a class="btn btn-primary btn-sm" href="https://forms.gle/X7rRcFRnsGNSt1ZFA" target="_blank" rel="noopener">피드백 남기기</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Copyright © 2026 Dustin. All rights reserved.</p>
+    <div class="foot-links">
+      <a href="https://github.com/codersongpro/edunote/blob/main/RELEASE_NOTES.md" target="_blank" rel="noopener">릴리즈 노트 전체</a>
+      <a href="https://github.com/codersongpro/edunote/blob/main/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener">오픈소스 라이선스</a>
+      <a href="https://github.com/codersongpro/edunote" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var toggle = document.getElementById('themeToggle');
+  function applyTheme(mode) {
+    root.classList.toggle('dark', mode === 'dark');
+    toggle.textContent = mode === 'dark' ? '☀️' : '🌙';
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('edunote-landing-theme'); } catch (e) {}
+  var initial = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(initial);
+  toggle.addEventListener('click', function () {
+    var next = root.classList.contains('dark') ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('edunote-landing-theme', next); } catch (e) {}
+  });
+})();
+
+(function () {
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function renderNotes(md) {
+    var lines = md.split(/\r?\n/);
+    var html = '';
+    var inList = false;
+    lines.forEach(function (raw) {
+      var line = escapeHtml(raw).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      if (/^###\s+/.test(line)) {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += '<h3>' + line.replace(/^###\s+/, '') + '</h3>';
+      } else if (/^##\s+/.test(line)) {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += '<h3>' + line.replace(/^##\s+/, '') + '</h3>';
+      } else if (/^-\s+/.test(line)) {
+        if (!inList) { html += '<ul>'; inList = true; }
+        html += '<li>' + line.replace(/^-\s+/, '') + '</li>';
+      } else if (line.trim() === '') {
+        if (inList) { html += '</ul>'; inList = false; }
+      } else {
+        if (inList) { html += '</ul>'; inList = false; }
+        html += '<p>' + line + '</p>';
+      }
+    });
+    if (inList) html += '</ul>';
+    return html;
+  }
+  function formatSize(bytes) {
+    if (!bytes) return '';
+    var mb = bytes / (1024 * 1024);
+    return mb.toFixed(1) + 'MB';
+  }
+
+  fetch('https://api.github.com/repos/codersongpro/edunote/releases/latest')
+    .then(function (r) { if (!r.ok) throw new Error('release fetch failed'); return r.json(); })
+    .then(function (data) {
+      var version = data.tag_name || '';
+      var asset = (data.assets || []).find(function (a) { return /portable.*\.exe$/i.test(a.name); }) || (data.assets || [])[0];
+
+      document.getElementById('versionPill').textContent = version ? (version + ' 최신 버전') : '최신 버전';
+      var noteText = version ? ('최신 버전 ' + version + ' 사용 가능') : '';
+      document.getElementById('heroDownloadNote').textContent = noteText;
+
+      if (asset) {
+        document.getElementById('heroDownloadBtn').href = asset.browser_download_url;
+        document.getElementById('downloadBtn').href = asset.browser_download_url;
+        var sizeText = formatSize(asset.size);
+        document.getElementById('downloadMeta').textContent = 'Windows 10 / 11 (64비트) 전용 · ' + asset.name + (sizeText ? ' · ' + sizeText : '');
+      }
+
+      var notesCard = document.getElementById('notesCard');
+      var body = data.body ? renderNotes(data.body) : '<p>릴리즈 노트가 없습니다.</p>';
+      notesCard.innerHTML = body +
+        '<div class="notes-foot">' +
+        '<span style="font-size:13px;color:var(--text-4);">' + (data.published_at ? new Date(data.published_at).toLocaleDateString('ko-KR') + ' 배포' : '') + '</span>' +
+        '<a class="btn btn-ghost btn-sm" href="' + data.html_url + '" target="_blank" rel="noopener">GitHub 릴리즈 페이지 →</a>' +
+        '</div>';
+    })
+    .catch(function () {
+      document.getElementById('heroDownloadNote').textContent = 'GitHub에서 최신 버전을 확인하세요.';
+      document.getElementById('versionPill').textContent = '최신 버전 보기';
+      document.getElementById('notesCard').innerHTML =
+        '<p>릴리즈 노트를 자동으로 불러오지 못했습니다. <a href="https://github.com/codersongpro/edunote/releases" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">GitHub 릴리즈 페이지</a>에서 최신 소식을 확인해 주세요.</p>';
+    });
+})();
+</script>
+
+</body>
+</html>
