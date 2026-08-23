@@ -147,10 +147,15 @@
   .badge-amber { background: var(--amber-bg); color: var(--amber); }
   .badge-blue { background: var(--blue-bg); color: var(--blue); }
   .badge-violet { background: var(--violet-bg); color: var(--violet); }
+  .badge-emerald { background: var(--emerald-bg); color: var(--emerald); }
   html.dark .badge-teal { background: var(--teal-bg-dark); }
   html.dark .badge-amber { background: var(--amber-bg-dark); }
   html.dark .badge-blue { background: var(--blue-bg-dark); }
   html.dark .badge-violet { background: var(--violet-bg-dark); }
+  html.dark .badge-emerald { background: var(--emerald-bg-dark); }
+
+  .video-card { text-decoration: none; cursor: pointer; }
+  .video-card .feature-icon { font-size: 16px; }
 
   .chip-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 24px; }
   .chip {
@@ -239,6 +244,7 @@
     <div class="nav-links">
       <a href="#features">기능</a>
       <a href="#download">다운로드</a>
+      <a href="#videos">영상 가이드</a>
       <a href="#release-notes">업데이트</a>
       <a href="#developer">개발자</a>
     </div>
@@ -337,6 +343,32 @@
         </div>
         <p class="download-meta" id="downloadMeta">Windows 10 / 11 (64비트) 전용</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section id="videos">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>영상으로 바로 배우기</h2>
+      <p>앱 안에서도 같은 영상을 볼 수 있어요. 궁금한 부분만 골라 보세요.</p>
+    </div>
+    <div class="feature-grid video-grid">
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1D1sdb3qvuxFv2BcrNPSILhMsjU0WgM9Q/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-violet">▶</div>
+        <h3>에듀노트 전체 사용법</h3>
+        <p>홈 화면부터 주요 메뉴까지, 처음 쓰는 분을 위한 전체 사용법을 한 번에 안내합니다.</p>
+      </a>
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1yvznEL-33VomTPeG4TnJY4Vz8X93LJnV/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-emerald">▶</div>
+        <h3>무료 API 키 발급받기</h3>
+        <p>Google AI Studio에서 무료 Gemini API 키를 발급받아 EduNote에 등록하는 과정을 보여드립니다.</p>
+      </a>
+      <a class="feature-card video-card" href="https://drive.google.com/file/d/1wY_husl7-Y-1L3xn34bWWIs45s24WudY/view?usp=drive_link" target="_blank" rel="noopener">
+        <div class="feature-icon badge-amber">▶</div>
+        <h3>QR 채팅방 설정하기</h3>
+        <p>무료 Firebase 연동부터 채팅방 보안 규칙 게시까지, 처음 한 번 필요한 설정을 안내합니다.</p>
+      </a>
     </div>
   </div>
 </section>
