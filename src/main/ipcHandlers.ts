@@ -20,7 +20,7 @@ import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
 // configValidation.ts의 sanitizeConfigEntry(값 검증 규칙)를 함께 갱신해야 한다.
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory', 'neisByteLimits'];
+const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'naverShoppingClientId', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory', 'neisByteLimits', 'eduMaterialWebSearch'];
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {
@@ -158,14 +158,14 @@ function readOpenApiItems(data: any): any[] {
 
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
-  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
+  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean }) => {
     validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
-  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number }) => {
+  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean }) => {
     validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
@@ -173,7 +173,7 @@ export function registerIpcHandlers(): void {
   });
 
   // 스트리밍 생성 — 진행 중 텍스트를 'ai:stream-event'로 보내고 전체 텍스트를 반환한다.
-  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) => {
+  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean }) => {
     if (typeof requestId !== 'string' || !/^[\w-]{1,64}$/.test(requestId)) {
       throw new Error('AI 요청 형식이 올바르지 않습니다.');
     }

@@ -16,6 +16,7 @@ import {
   CustomTool,
   CustomToolInput,
 } from '../types';
+import type { GroundingInfo } from '../../preload/types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
@@ -60,13 +61,16 @@ const aiGenerate = async (
   }
 };
 
+// onGrounding(선택)이 주어지면 웹 검색 그라운딩으로 참조한 출처 정보를 콜백으로 알려준다.
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean },
   onModel?: (model: string) => void,
-) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model }) => {
+  onGrounding?: (grounding: GroundingInfo | undefined) => void,
+) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model, grounding }) => {
   onModel?.(model);
+  onGrounding?.(grounding);
   return text;
 }).catch((error) => {
   notifyTemporaryApiError(error);
@@ -79,9 +83,10 @@ const aiGenerateMultipart = (
 const aiGenerateMultipartStream = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction: string | undefined,
-  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
   onText: (accumulated: string) => void,
   onModel?: (model: string) => void,
+  onGrounding?: (grounding: GroundingInfo | undefined) => void,
 ) => {
   let buffer = '';
   return window.electronAPI.aiGenerateMultipartStream(parts, systemInstruction, options, (event) => {
@@ -92,8 +97,9 @@ const aiGenerateMultipartStream = (
       buffer += event.text;
       onText(buffer);
     }
-  }).then(({ text, model }) => {
+  }).then(({ text, model, grounding }) => {
     onModel?.(model);
+    onGrounding?.(grounding);
     return text;
   }).catch((error) => {
     notifyTemporaryApiError(error);
@@ -158,6 +164,15 @@ const NO_FABRICATED_REFERENCES_INSTRUCTION = `
 - 사용자가 직접 제공하지 않은 법령명, 조항, 훈령·예규 번호, 교육청 공문번호, 정책·사업 명칭을 추측해서 쓰지 마세요.
 - '관련' 항목에 쓸 근거가 입력에 없으면 "(근거 공문·법령 입력 필요)"처럼 사용자가 채울 자리로 표시하세요.
 - 실존 여부가 불확실한 기관명, 인용문, 통계 수치를 만들어내지 마세요. 입력에 있는 사실만 사용하세요.`;
+
+// 웹 검색 그라운딩을 켰을 때는 근거를 아예 쓰지 못하게 막는 대신,
+// 검색으로 확인한 내용만 쓰도록 방향을 바꾼다.
+const SEARCH_GROUNDED_REFERENCES_INSTRUCTION = `
+[근거·출처 작성 규칙 — 웹 검색 사용 중]
+- 구글 검색 도구가 켜져 있습니다. 법령명, 지침, 최신 사례, 통계는 검색으로 확인한 내용만 사용하세요.
+- 검색으로 확인하지 못한 공문번호, 시행 일자, 통계 수치는 지어내지 말고 "(근거 법령·지침 확인 후 기재)"로 남기세요.
+- 확인한 근거는 기관명과 자료명을 함께 밝히세요. 예: 교육부 「○○ 기본계획」, ○○교육청 「○○ 안내」
+- 본문에 URL 주소를 넣지 마세요. 참고한 자료 목록은 화면에 따로 표시됩니다.`;
 
 const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 [학생기록 공적 문체 원칙]
@@ -675,7 +690,8 @@ export const generateDocument = async (
   gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
   gonggoInputs?: GonggoInputs,
   onProgressText?: (accumulated: string) => void,
-): Promise<{ text: string; model: string }> => {
+  useSearchGrounding = false,
+): Promise<{ text: string; model: string; grounding?: GroundingInfo }> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
       ? `[분량 지침] 이 문서는 모바일 문자 메시지(SMS/LMS)입니다. 요청된 문자 유형(단문/장문)에 맞춰 길이를 엄격히 준수하세요.`
@@ -1022,16 +1038,22 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 - 단, 사용자가 실제로 입력한 항목의 내용은 그대로 반영하고 임의로 바꾸지 마세요.
 - 법령명·공문번호·통계 등 근거·출처는 이 규칙의 예외입니다. [근거·출처 작성 규칙]에 따라 추측하지 말고 사용자가 채울 자리로 표시하세요.`;
 
+  const referencesInstruction = useSearchGrounding
+    ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
+    : NO_FABRICATED_REFERENCES_INSTRUCTION;
+
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
     let usedModel = '';
+    let grounding: GroundingInfo | undefined;
+    const options = { temperature: 0.3, useSearchGrounding };
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText, (model) => { usedModel = model; })
-      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, (model) => { usedModel = model; });
-    return { text: stripGeneratedCodeFences(raw), model: usedModel };
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, options, onProgressText, (model) => { usedModel = model; }, (info) => { grounding = info; })
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, options, (model) => { usedModel = model; }, (info) => { grounding = info; });
+    return { text: stripGeneratedCodeFences(raw), model: usedModel, ...(grounding ? { grounding } : {}) };
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));

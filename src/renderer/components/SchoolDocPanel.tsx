@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap, Search } from 'lucide-react';
+import type { GroundingInfo } from '../../preload/types';
 import { DocType, GongmunInputs, PlanInputs, EduMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
@@ -267,12 +268,16 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [hwpxFillDataByTab, setHwpxFillDataByTab] = useState<Record<DocType, any[] | null>>(initTabMap(null));
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
+  const [groundingByTab, setGroundingByTab] = useState<Record<DocType, GroundingInfo | undefined>>(initTabMap(undefined));
+  // 교육자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되므로 기본은 꺼둔 상태로 저장한다.
+  const [useWebSearch, setUseWebSearch] = useState(false);
 
   const uploadedFiles = filesByTab[activeTab] ?? [];
   const uploadedTemplates = templatesByTab[activeTab] ?? [];
   const templateText = templateTextByTab[activeTab] ?? '';
   const generatedContent = contentByTab[activeTab] ?? '';
   const generatedModel = modelByTab[activeTab] ?? '';
+  const generatedGrounding = groundingByTab[activeTab];
   const hwpxFillData = hwpxFillDataByTab[activeTab] ?? null;
   const activeTemplateFavorites = templateFavorites.filter(item => item.docType === activeTab);
 
@@ -412,6 +417,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Load saved user info from config on mount
   useEffect(() => {
+    window.electronAPI.getConfig('eduMaterialWebSearch').then(value => setUseWebSearch(value === true));
     Promise.all([
       window.electronAPI.getConfig('institution'),
       window.electronAPI.getConfig('schoolName'),
@@ -568,8 +574,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     setStreamPreview('');
     setIsGenerating(true);
     startGeneration(`SCHOOL_DOC_${activeTab}`);
+    // 웹 검색 참조는 교육자료에서 사용자가 켠 경우에만 쓴다.
+    const withWebSearch = activeTab === DocType.EDU_MATERIAL && useWebSearch;
     try {
-      let result: { text: string; model: string };
+      let result: { text: string; model: string; grounding?: GroundingInfo };
       if (activeTab === DocType.GONGGO) {
         result = await generateDocument(
           activeTab,
@@ -583,6 +591,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           GongmunComplexity.MEDIUM,
           gonggoData,
           setStreamPreview,
+          withWebSearch,
         );
       } else {
         const context = buildContextWithProfile();
@@ -600,15 +609,19 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           gongmunComplexity,
           undefined,
           setStreamPreview,
+          withWebSearch,
         );
       }
       const { cleanContent, fillData } = extractResult(result.text);
       setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
       setModelByTab(prev => ({ ...prev, [activeTab]: result.model }));
+      setGroundingByTab(prev => ({ ...prev, [activeTab]: result.grounding }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));
       playSuccessSound();
     } catch (err: any) {
-      setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');
+      const message = err.message || 'AI 문서 생성 중 오류가 발생했습니다.';
+      // 검색 도구를 지원하지 않는 모델이거나 검색 한도를 넘긴 경우가 있어, 끄고 다시 시도할 수 있게 안내한다.
+      setError(withWebSearch ? `${message} (웹 검색 참조를 끄고 다시 시도해 보세요.)` : message);
     } finally {
       setIsGenerating(false);
       setStreamPreview('');
@@ -822,6 +835,27 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 <div>
                   <label className={labelClass}>추가 사항 (선택)</label>
                   <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="교육 일시·장소·방법, 강조할 내용, 우리 학교 상황 등을 자유롭게 입력하세요. 교육부·교육청 최신 자료를 아래 '참고 자료'에 첨부하면 그 내용을 우선 반영합니다." value={eduMaterialData.extraInfo} onChange={e => setEduMaterialData({ ...eduMaterialData, extraInfo: e.target.value })} />
+                </div>
+                <div className="rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] p-3">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useWebSearch}
+                      onChange={e => {
+                        setUseWebSearch(e.target.checked);
+                        window.electronAPI.setConfig({ eduMaterialWebSearch: e.target.checked });
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+                    />
+                    <span className="text-xs leading-relaxed text-[#44403C] dark:text-[#C4B8B0]">
+                      <span className="font-bold">웹 검색으로 최신 자료 참조</span>
+                      <span className="block mt-1 text-[#78716C] dark:text-[#9C8F87]">
+                        AI가 직접 웹을 검색해 근거를 확인하고, 참고한 자료 목록을 결과 화면에 표시합니다.
+                        검색 건수만큼 API 요금이 추가로 발생하고 무료 키는 한도를 넘으면 생성이 실패할 수 있어,
+                        유료 키 사용 시 권장합니다. 모델에 따라 검색이 지원되지 않을 수도 있습니다.
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -1352,6 +1386,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               title={getHwpxTitleFromContent(generatedContent, activeTab)}
               enableTranslation={activeTab === DocType.NEWSLETTER || activeTab === DocType.MESSAGE}
               model={generatedModel}
+              grounding={generatedGrounding}
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">

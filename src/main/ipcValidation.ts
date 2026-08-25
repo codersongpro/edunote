@@ -14,6 +14,7 @@ export interface GenerateOptions {
   temperature?: number;
   maxOutputTokens?: number;
   responseJson?: boolean;
+  useSearchGrounding?: boolean;
 }
 
 export interface MultipartPart {
@@ -36,6 +37,9 @@ function validateOptions(options?: GenerateOptions): void {
     }
   }
   if (options.responseJson !== undefined && typeof options.responseJson !== 'boolean') {
+    throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
+  }
+  if (options.useSearchGrounding !== undefined && typeof options.useSearchGrounding !== 'boolean') {
     throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
   }
 }
