@@ -82,6 +82,20 @@ describe('연수자료 선택 항목', () => {
     expect(instruction).toContain('짧은 개요나 요약만 작성하지 마세요');
   });
 
+  it('계획서와 같은 4단계 말머리와 명사형 종결을 요구한다', () => {
+    const instruction = buildTrainingMaterialInstruction(
+      DEFAULT_TRAINING_MATERIAL_SECTIONS,
+      2,
+    );
+
+    expect(instruction).toContain('1단계(대항목): 1.  2.  3.');
+    expect(instruction).toContain('2단계(중항목): 가.  나.  다.');
+    expect(instruction).toContain('3단계(소항목): 1)  2)  3)');
+    expect(instruction).toContain('4단계(세항목): 가)  나)  다)');
+    expect(instruction).toContain('모든 문장과 개조식 항목은 명사형으로 끝내세요');
+    expect(instruction).toContain('"~합니다", "~입니다", "~됩니다", "~해야 합니다" 종결은 사용하지 마세요');
+  });
+
   it('웹 조사는 최신 공식 자료와 주제별 핵심 근거를 요구한다', () => {
     const promptContext = buildTrainingMaterialPromptContext(createInputs(), '해솔초등학교');
     const prompt = buildTrainingMaterialResearchPrompt(promptContext, '2026년 8월 25일');

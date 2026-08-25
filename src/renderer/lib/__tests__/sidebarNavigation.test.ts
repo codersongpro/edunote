@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { AppMode } from '../../types';
 import {
   getNavigationSection,
+  getNavigationSectionHeaderClass,
   getNavigationSelectionClass,
+  getNavigationTabClass,
   isSidebarModeActive,
 } from '../sidebarNavigation';
 
@@ -80,5 +82,38 @@ describe('getNavigationSelectionClass', () => {
 
   it('선택되지 않은 메뉴에는 선택 반전 스타일을 적용하지 않는다', () => {
     expect(getNavigationSelectionClass('admin', false)).toBe('');
+  });
+});
+
+describe('상위 메뉴와 화면 탭 선택 범위', () => {
+  it.each([
+    ['admin', 'text-emerald-700', 'bg-emerald-600'],
+    ['lesson', 'text-amber-700', 'bg-amber-500'],
+    ['student', 'text-indigo-700', 'bg-indigo-600'],
+    ['myTools', 'text-pink-700', 'bg-pink-600'],
+  ] as const)('%s 상위 메뉴는 영역색 글씨만 사용하고 선택 음영을 사용하지 않는다', (section, textClass, selectedBackground) => {
+    const className = getNavigationSectionHeaderClass(section);
+
+    expect(className).toContain(textClass);
+    expect(className).not.toContain(selectedBackground);
+    expect(className).not.toContain('text-white');
+  });
+
+  it('AI 스킬즈 선택 탭은 버튼 전체 높이와 가로 여백을 채운다', () => {
+    const className = getNavigationTabClass('myTools', true);
+
+    expect(className).toContain('h-full');
+    expect(className).toContain('px-4');
+    expect(className).toContain('rounded-t-lg');
+    expect(className).toContain('bg-pink-600');
+    expect(className).toContain('text-white');
+  });
+
+  it('선택되지 않은 AI 스킬즈 탭에는 선택 음영을 적용하지 않는다', () => {
+    const className = getNavigationTabClass('myTools', false);
+
+    expect(className).toContain('border-transparent');
+    expect(className).not.toContain('bg-pink-600');
+    expect(className).not.toContain('text-white');
   });
 });
