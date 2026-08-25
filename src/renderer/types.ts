@@ -335,7 +335,7 @@ export interface GlobalStateContextType {
 export enum DocType {
   GONGMUN = 'GONGMUN',
   PLAN = 'PLAN',
-  EDU_MATERIAL = 'EDU_MATERIAL',
+  TRAINING_MATERIAL = 'TRAINING_MATERIAL',
   REPORT = 'REPORT',
   NEWSLETTER = 'NEWSLETTER',
   MESSAGE = 'MESSAGE',
@@ -416,8 +416,8 @@ export interface PlanInputs {
   extraInfo: string;
 }
 
-// 교육자료 제작 — 계획서 입력 틀을 따르되 예산 항목은 제외한다
-export interface EduMaterialInputs {
+// 연수자료 제작 — 계획서 입력 틀을 따르되 예산 항목은 제외한다
+export interface TrainingMaterialInputs {
   topic: string;
   target: string;
   extraInfo: string;

@@ -186,18 +186,9 @@
   .download-links { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 16px; }
 
   /* Release notes */
-  .notes-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 32px;
     box-shadow: var(--shadow);
   }
-  .notes-card h3 { font-size: 15.5px; font-weight: 800; margin: 18px 0 8px; }
-  .notes-card h3:first-child { margin-top: 0; }
-  .notes-card p { font-size: 14px; color: var(--text-2); margin: 0 0 10px; line-height: 1.7; }
-  .notes-card ul { margin: 0 0 10px; padding-left: 20px; }
-  .notes-card li { font-size: 13.5px; color: var(--text-2); margin-bottom: 6px; line-height: 1.65; }
-  .notes-card strong { color: var(--text); }
-  .notes-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
-  .notes-skeleton { color: var(--text-4); font-size: 14px; }
 
   /* Developer */
   .dev-card {
@@ -247,7 +238,6 @@
       <a href="#features">기능</a>
       <a href="#download">다운로드</a>
       <a href="#videos">영상 가이드</a>
-      <a href="#release-notes">업데이트</a>
       <a href="#developer">개발자</a>
     </div>
     <div class="nav-right">
@@ -288,7 +278,7 @@
       <div class="feature-card">
         <div class="feature-icon badge-teal">📄</div>
         <h3>교무행정AI</h3>
-        <p>공문서·계획서·교육자료 등 문서 10종 자동 작성, 공문요약·업무추출, 교무행정 챗봇까지 반복적인 행정 업무를 줄여줍니다.</p>
+        <p>공문서·계획서·연수자료 등 문서 10종 자동 작성, 공문요약·업무추출, 교무행정 챗봇까지 반복적인 행정 업무를 줄여줍니다.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon badge-amber">🖥️</div>
@@ -374,18 +364,6 @@
   </div>
 </section>
 
-<section id="release-notes">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>최신 업데이트</h2>
-      <p>EduNote는 사용자 여러분의 피드백을 반영해 꾸준히 개선되고 있습니다.</p>
-    </div>
-    <div class="notes-card" id="notesCard">
-      <p class="notes-skeleton">릴리즈 노트를 불러오는 중...</p>
-    </div>
-  </div>
-</section>
-
 <section id="developer">
   <div class="wrap">
     <div class="section-head">
@@ -439,31 +417,6 @@
   function escapeHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-  function renderNotes(md) {
-    var lines = md.split(/\r?\n/);
-    var html = '';
-    var inList = false;
-    lines.forEach(function (raw) {
-      var line = escapeHtml(raw).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      if (/^###\s+/.test(line)) {
-        if (inList) { html += '</ul>'; inList = false; }
-        html += '<h3>' + line.replace(/^###\s+/, '') + '</h3>';
-      } else if (/^##\s+/.test(line)) {
-        if (inList) { html += '</ul>'; inList = false; }
-        html += '<h3>' + line.replace(/^##\s+/, '') + '</h3>';
-      } else if (/^-\s+/.test(line)) {
-        if (!inList) { html += '<ul>'; inList = true; }
-        html += '<li>' + line.replace(/^-\s+/, '') + '</li>';
-      } else if (line.trim() === '') {
-        if (inList) { html += '</ul>'; inList = false; }
-      } else {
-        if (inList) { html += '</ul>'; inList = false; }
-        html += '<p>' + line + '</p>';
-      }
-    });
-    if (inList) html += '</ul>';
-    return html;
-  }
   function formatSize(bytes) {
     if (!bytes) return '';
     var mb = bytes / (1024 * 1024);
@@ -486,20 +439,10 @@
         var sizeText = formatSize(asset.size);
         document.getElementById('downloadMeta').textContent = 'Windows 10 / 11 (64비트) 전용 · ' + asset.name + (sizeText ? ' · ' + sizeText : '');
       }
-
-      var notesCard = document.getElementById('notesCard');
-      var body = data.body ? renderNotes(data.body) : '<p>릴리즈 노트가 없습니다.</p>';
-      notesCard.innerHTML = body +
-        '<div class="notes-foot">' +
-        '<span style="font-size:13px;color:var(--text-4);">' + (data.published_at ? new Date(data.published_at).toLocaleDateString('ko-KR') + ' 배포' : '') + '</span>' +
-        '<a class="btn btn-ghost btn-sm" href="' + data.html_url + '" target="_blank" rel="noopener">GitHub 릴리즈 페이지 →</a>' +
-        '</div>';
     })
     .catch(function () {
       document.getElementById('heroDownloadNote').textContent = 'GitHub에서 최신 버전을 확인하세요.';
       document.getElementById('versionPill').textContent = '최신 버전 보기';
-      document.getElementById('notesCard').innerHTML =
-        '<p>릴리즈 노트를 자동으로 불러오지 못했습니다. <a href="https://github.com/codersongpro/edunote/releases" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">GitHub 릴리즈 페이지</a>에서 최신 소식을 확인해 주세요.</p>';
     });
 })();
 </script>

@@ -8,7 +8,7 @@ import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
 import { assertSafeUrl } from './netGuard';
-import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache } from './GeminiService';
+import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache, getModelDiagnostics } from './GeminiService';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
@@ -183,6 +183,13 @@ export function registerIpcHandlers(): void {
     return generateContentMultipartStream(apiKey, parts, { systemInstruction, ...options, apiTier }, (event) => {
       if (!e.sender.isDestroyed()) e.sender.send('ai:stream-event', { requestId, ...event });
     });
+  });
+
+  // 어떤 모델이 왜 선택되는지 설정 화면에서 확인할 수 있게 한다.
+  ipcMain.handle('ai:model-info', async (_e, forceRefresh?: unknown) => {
+    const { apiKey, apiTier } = getActiveApi();
+    if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
+    return getModelDiagnostics(apiKey, apiTier, forceRefresh === true);
   });
 
   ipcMain.handle('ai:test-key', async (_e, key: string, apiTier: ApiTier = 'free') => {
@@ -752,37 +759,17 @@ export function registerIpcHandlers(): void {
     win.loadURL(url);
   });
 
-  // ── 교육자료 참고자료 검색 창 ───────────────────────────────────────
-  // 교육자료 제작에 참고할 교육부·시도교육청 자료를 사람이 직접 찾아 내려받고
-  // '참고 자료'로 첨부하도록, 가격 검색과 같은 방식으로 검색 결과 페이지만 열어준다.
-  let eduReferenceSearchWindowRef: BrowserWindow | null = null;
-  ipcMain.handle('window:open-edu-reference-search', (_e, topic: unknown) => {
+  // ── 연수자료 참고자료 검색 ─────────────────────────────────────────
+  // 연수자료 제작에 참고할 교육부·시도교육청 자료를 사람이 직접 찾아 내려받고
+  // '참고 자료'로 첨부하도록, 검색 결과를 기본 브라우저에서 연다.
+  //
+  // 전용 BrowserWindow로 띄우지 않는 이유: index.ts의 will-navigate 정책이 앱 오리진이
+  // 아닌 이동을 모두 기본 브라우저로 넘기기 때문에, 구글처럼 최초 로드 후 리다이렉트하는
+  // 사이트는 Electron 창이 빈 채로 남고 결과는 브라우저에 뜨는 창 두 개 문제가 생긴다.
+  ipcMain.handle('window:open-edu-reference-search', async (_e, topic: unknown) => {
     const url = buildEduReferenceSearchUrl(String(topic ?? ''));
     if (!url) return;
-
-    if (eduReferenceSearchWindowRef && !eduReferenceSearchWindowRef.isDestroyed()) {
-      eduReferenceSearchWindowRef.loadURL(url);
-      eduReferenceSearchWindowRef.focus();
-      return;
-    }
-
-    const win = new BrowserWindow({
-      width: 900,
-      height: 800,
-      minWidth: 480,
-      minHeight: 500,
-      title: '교육자료 참고자료 검색',
-      webPreferences: {
-        contextIsolation: true,
-        nodeIntegration: false,
-        sandbox: true,
-        partition: 'persist:edu-reference-search',
-      },
-    });
-    win.setMenuBarVisibility(false);
-    win.on('closed', () => { eduReferenceSearchWindowRef = null; });
-    eduReferenceSearchWindowRef = win;
-    win.loadURL(url);
+    await shell.openExternal(url);
   });
 
   // 채팅방의 대화 창을 별도 창으로 띄운다(같은 렌더러를 '#chat'로 로드). QR·접속주소는 본 창에 두고

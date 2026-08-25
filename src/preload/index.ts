@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       .finally(() => { ipcRenderer.removeListener('ai:stream-event', listener as never); });
   },
 
+  getModelInfo: (forceRefresh?: boolean) => ipcRenderer.invoke('ai:model-info', forceRefresh),
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
   testStoredApiKey: () => ipcRenderer.invoke('ai:test-stored-key'),
 

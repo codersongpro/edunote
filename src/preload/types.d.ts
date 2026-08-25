@@ -5,6 +5,15 @@ export interface GroundingInfo {
   searchSuggestionHtml: string;
 }
 
+// 설정 화면의 모델 진단 결과.
+export interface ModelDiagnostics {
+  apiTier: 'free' | 'paid';
+  chain: string[];
+  available: string[];
+  listFailed: boolean;
+  blocked: string[];
+}
+
 export interface ElectronAPI {
   aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipart(
@@ -18,6 +27,7 @@ export interface ElectronAPI {
     options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
   ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
+  getModelInfo(forceRefresh?: boolean): Promise<ModelDiagnostics>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
 

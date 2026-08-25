@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap, Search } from 'lucide-react';
 import type { GroundingInfo } from '../../preload/types';
-import { DocType, GongmunInputs, PlanInputs, EduMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
+import { DocType, GongmunInputs, PlanInputs, TrainingMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
@@ -17,59 +17,62 @@ import { stripGeneratedCodeFences } from '../lib/generatedContent';
 const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
   [DocType.GONGMUN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; padding: 20px 30px;">  수신 &nbsp;수신자 참조<br>  (경유)<br>  제목 &nbsp;<strong>2026학년도 AI활용 수업 연수계획</strong><br><br>  1. 관련: 창의특수교육과-1234(2026. 3. 2.)「2026학년도 충북GEG 운영 계획」<br>  2. 위 호와 관련하여 2026. 충북GEG 워크숍을 다음과 같이 실시하오니, 각급 학교 및 기관의 교직원이 참여할 수 있도록 안내하여 주시기 바랍니다.<br>  &nbsp;&nbsp;가. 일시: 2026. 4. 18.(토) 10:00 ~ 16:00<br>  &nbsp;&nbsp;나. 장소: 충청북도교육청 교육연구정보원 시청각실<br>  &nbsp;&nbsp;다. 대상: 관내 초·중·고등학교 희망 교원 및 교육전문직원<br>  &nbsp;&nbsp;라. 내용: 구글 교육용 도구를 활용한 미래형 수업 설계 및 에듀테크 실습<br><br>  붙임 &nbsp;2026. 충북GEG 워크숍 운영 계획서 1부. &nbsp;끝.</div></body></html>`,
   [DocType.PLAN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width: 800px; margin: 0 auto; padding: 20px 30px;">    <!-- 문서 제목 영역 -->    <div style="text-align: center; margin-bottom: 30px;">        <h1 style="font-size: 22pt; font-weight: bold; margin-bottom: 10px;">2026학년도 교원 AI 활용 수업 역량 강화 연수 운영 계획</h1>        <p style="font-size: 14pt; font-style: italic; color: #4b5563; margin: 0;">- AI와 함께 열어가는 미래 교육, 교실 속 디지털 혁신의 첫걸음 -</p>    </div>    <!-- 1. 추진배경 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">1. 추진배경</h2>        <div style="margin-left: 10px;">            가. 2022 개정 교육과정 도입에 따른 디지털 소양 교육 강화 및 에듀테크 활용 수업 확대 필요성 증대<br>            나. 인공지능(AI) 기술의 급격한 발전에 발맞추어 교원의 디지털 기반 교수·학습 설계 및 실행 역량 강화 요구<br>            다. 학생 맞춤형 개별화 교육 실현을 위한 교사의 AI 도구 활용 능력 및 에듀테크 활용 수업 전문성 신장 필요        </div>    </div>    <!-- 2. 목적 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">2. 목적</h2>        <div style="margin-left: 10px;">            가. AI 및 에듀테크 도구를 활용한 맞춤형 수업 설계 및 평가 역량 강화<br>            나. 교실 수업 개선을 위한 교원 간 공동체적 연구 및 실천 문화 조성<br>            다. 디지털 대전환 시대에 부합하는 미래지향적 공교육 신뢰도 제고        </div>    </div>    <!-- 3. 운영방침 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">3. 운영방침</h2>        <div style="margin-left: 10px;">            가. 본 연수는 전 교원을 대상으로 하며, 자발적 참여와 실습 중심의 워크숍 형태로 운영한다.<br>            나. 학교 교육과정 운영에 지장이 없는 방과후 시간 또는 전문적 학습공동체의 날을 활용하여 실시한다.<br>            다. 연수 강사는 AI 교육 분야의 외부 전문가 또는 교내 전문 교사를 초빙하여 전문성을 확보한다.<br>            라. 연수 이수 시간에 대한 상시 연수 학점(직무연수) 인정을 추진한다.        </div>    </div>    <!-- 4. 세부추진계획 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">4. 세부추진계획</h2>        <div style="margin-left: 10px;">            가. 연수 개요<br>            &nbsp;&nbsp;1) 일시: 2026년 4월 ~ 6월 (총 3회, 회당 2시간, 총 6시간)<br>            &nbsp;&nbsp;2) 대상: 전 교원<br>            &nbsp;&nbsp;3) 장소: 컴퓨터실 및 각 학년 연구실<br>            &nbsp;&nbsp;4) 방법: 대면 실습 및 토론 중심 워크숍<br>            <br>            나. 회차별 연수 세부 내용            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:10%;">회차</th>                        <th style="padding:8px; border:1px solid black; width:15%;">일시</th>                        <th style="padding:8px; border:1px solid black; width:30%;">주제</th>                        <th style="padding:8px; border:1px solid black; width:35%;">주요 내용</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">1회차</td>                        <td style="padding:8px; border:1px solid black;">4월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 교육의 이해와 트렌드</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 생성형 AI(ChatGPT, 뤼튼 등) 기초<br>- 교육용 AI 도구의 윤리적 활용 방안</td>                        <td style="padding:8px; border:1px solid black;">외부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">2회차</td>                        <td style="padding:8px; border:1px solid black;">5월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 도구를 활용한 수업 설계</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 교과별 AI 활용 수업 지도안 작성 실습<br>- Canva, Gamma 등 시각 자료 제작 도구 활용</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">3회차</td>                        <td style="padding:8px; border:1px solid black;">6월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 기반 평가 및 피드백</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- AI 평가 도구를 활용한 과정중심 평가 설계<br>- 학생 맞춤형 피드백 자동화 사례 공유</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 페이지 분할선 (A4 2장 분량 조절을 위한 페이지 브레이크) -->    <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;">    <!-- 5. 소요예산 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">5. 소요예산</h2>        <div style="margin-left: 10px;">            가. 총 예산액: 금500,000원 (금오십만원)<br>            나. 예산 과목: 학교운영비 - 교원연수운영 - 교원역량강화연수<br>            다. 세부 집행 내역            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:20%;">목</th>                        <th style="padding:8px; border:1px solid black; width:20%;">세목</th>                        <th style="padding:8px; border:1px solid black; width:35%;">산출내역</th>                        <th style="padding:8px; border:1px solid black; width:15%;">금액(원)</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">강사료</td>                        <td style="padding:8px; border:1px solid black;">강사수당</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">외부 강사 초빙료 (150,000원 × 2시간)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">300,000</td>                        <td style="padding:8px; border:1px solid black;">1회차</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">수수료및임차료</td>                        <td style="padding:8px; border:1px solid black;">교재인쇄비</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 교재 및 실습 자료 인쇄 (10,000원 × 10부)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">자체제작</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">운영비</td>                        <td style="padding:8px; border:1px solid black;">급량비(다과)</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 참석자 다과 및 음료 구매 (5,000원 × 20명)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                    <tr style="background-color:#f9fafb; font-weight:bold;">                        <td colspan="3" style="padding:8px; border:1px solid black; text-align:center;">합 계</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">500,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 6. 기대효과 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">6. 기대효과</h2>        <div style="margin-left: 10px;">            가. 교원의 AI 및 에듀테크 활용 능력 향상으로 학생 맞춤형 개별화 수업 활성화<br>            나. 디지털 기반의 다양한 수업 모델 개발 및 적용을 통한 교실 수업의 질적 개선<br>            다. 미래 교육 환경 변화에 능동적으로 대처하는 교원의 전문성 및 자신감 고취        </div>    </div></div></body></html>`,
-  [DocType.EDU_MATERIAL]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width:800px; margin:0 auto; padding:20px 30px;">
-  <div style="text-align:center; margin-bottom:30px;">
-    <h1 style="font-size:22pt; font-weight:bold; margin-bottom:10px;">2026학년도 교직원 정보통신윤리 교육자료</h1>
+  [DocType.TRAINING_MATERIAL]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width:800px; margin:0 auto; padding:20px 30px;">
+  <div style="text-align:center; margin-bottom:24px;">
+    <h1 style="font-size:22pt; font-weight:bold; margin-bottom:10px;">2026학년도 교직원 정보통신윤리 연수</h1>
     <p style="font-size:14pt; font-style:italic; color:#4b5563; margin:0;">- 안전한 디지털 학교, 교직원이 먼저 지키는 정보통신윤리 -</p>
   </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">1. 교육 개요</h2>
-    <div style="margin-left:10px;">
-      가. 교육명: 2026학년도 교직원 정보통신윤리 교육<br>
-      나. 대상: 전 교직원<br>
-      다. 일시: 2026. 4. 8.(수) 15:00 ~ 16:00<br>
-      라. 장소: 본교 시청각실<br>
-      마. 방법: 집합 연수 및 사례 토의<br>
-      바. 시간: 1시간(법정 의무교육 이수 시간에 포함)
-    </div>
-  </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">2. 추진 근거 및 필요성</h2>
-    <div style="margin-left:10px;">
-      가. 정보통신망 이용 관련 교직원 법정 의무교육 대상 해당 (근거 법령·지침 확인 후 기재)<br>
-      나. 업무용 계정·클라우드 활용 확대에 따른 학생 개인정보 유출 위험 증가<br>
-      다. 생성형 AI 활용 수업 확산에 따른 저작권·개인정보 처리 기준 숙지 필요<br>
-      라. 사이버폭력·디지털 성범죄 예방을 위한 교직원 대응 역량 강화 필요
-    </div>
-  </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">3. 교육 목표</h2>
-    <div style="margin-left:10px;">
+  <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; font-size:11pt; margin-bottom:28px;">
+    <tbody>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6; width:20%;">연수명</th><td style="padding:8px; border:1px solid black;">2026학년도 교직원 정보통신윤리 연수</td></tr>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6;">대상</th><td style="padding:8px; border:1px solid black;">전 교직원</td></tr>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6;">일시</th><td style="padding:8px; border:1px solid black;">2026. 4. 8.(수) 15:00 ~ 16:00</td></tr>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6;">장소</th><td style="padding:8px; border:1px solid black;">본교 시청각실</td></tr>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6;">시간</th><td style="padding:8px; border:1px solid black;">1시간(법정 의무교육 이수 시간에 포함)</td></tr>
+      <tr><th style="padding:8px; border:1px solid black; background-color:#f3f4f6;">방법</th><td style="padding:8px; border:1px solid black;">집합 연수 및 사례 토의</td></tr>
+    </tbody>
+  </table>
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅰ. 연수 목표</h2>
+    <div style="margin-left:12px;">
       가. 업무 처리 과정에서 지켜야 할 정보통신윤리 기준 이해<br>
       나. 학생 개인정보 및 교육자료의 안전한 관리 방법 습득<br>
       다. 디지털 침해 상황 발생 시 신고·조치 절차 숙지
     </div>
   </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">4. 주요 교육 내용</h2>
-    <div style="margin-left:10px;">
-      가. 정보통신윤리의 기본 개념<br>
-      &nbsp;&nbsp;1) 정보통신윤리: 정보 이용 과정에서 타인의 권리와 안전을 침해하지 않기 위한 행동 기준<br>
-      &nbsp;&nbsp;2) 교직원은 개인정보처리자이자 학생 지도자로서 이중의 책임 부담<br>
-      <br>
-      나. 학생 개인정보 보호<br>
-      &nbsp;&nbsp;1) 수집 목적 범위를 벗어난 개인정보 수집·이용 금지<br>
-      &nbsp;&nbsp;2) 명렬표·성적 자료의 개인 저장매체 반출 및 개인 메신저 전송 금지<br>
-      &nbsp;&nbsp;3) 업무용 계정과 개인 계정의 분리 사용 필요<br>
-      <br>
-      다. 저작권 및 생성형 AI 활용<br>
-      &nbsp;&nbsp;1) 수업 목적 저작물 이용 범위 확인 후 활용<br>
-      &nbsp;&nbsp;2) 생성형 AI에 학생 실명·연락처 등 식별정보 입력 금지<br>
-      <br>
-      라. 사이버폭력 예방 및 대응<br>
-      &nbsp;&nbsp;1) 학생 간 온라인 괴롭힘 인지 시 즉시 학교폭력 사안 처리 절차 연계<br>
-      &nbsp;&nbsp;2) 증거 자료 보전 후 담당 부서 통보
-      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅱ. 연수의 필요성</h2>
+    <div style="margin-left:12px;">
+      가. 정보통신망 이용 관련 교직원 법정 의무교육 대상 해당 (근거 법령·지침 확인 후 기재)<br>
+      나. 업무용 계정·클라우드 활용 확대에 따른 학생 개인정보 유출 위험 증가<br>
+      다. 생성형 AI 활용 수업 확산에 따른 저작권·개인정보 처리 기준 숙지 필요<br>
+      라. 사이버폭력 예방을 위한 교직원 대응 역량 강화 필요
+    </div>
+  </div>
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅲ. 핵심 내용</h2>
+    <div style="margin-left:12px;">
+      <p style="margin:0 0 6px; font-weight:bold;">1. 학생 개인정보 보호</p>
+      <div style="margin-left:14px; margin-bottom:12px;">
+        가. 수집 목적 범위를 벗어난 개인정보 수집·이용 금지<br>
+        나. 명렬표·성적 자료의 개인 저장매체 반출 및 개인 메신저 전송 금지<br>
+        &nbsp;&nbsp;1) 부득이한 경우 암호화 후 반출, 사용 후 즉시 삭제<br>
+        &nbsp;&nbsp;2) 반출 이력 기록 및 보관 필요<br>
+        다. 업무용 계정과 개인 계정의 분리 사용 필요
+      </div>
+      <p style="margin:0 0 6px; font-weight:bold;">2. 저작권 및 생성형 AI 활용</p>
+      <div style="margin-left:14px; margin-bottom:12px;">
+        가. 수업 목적 저작물 이용 범위 확인 후 활용<br>
+        나. 생성형 AI에 학생 실명·연락처 등 식별정보 입력 금지<br>
+        다. AI 생성 결과의 사실 확인 후 사용
+      </div>
+      <p style="margin:0 0 6px; font-weight:bold;">3. 사이버폭력 예방 및 대응</p>
+      <div style="margin-left:14px;">
+        가. 학생 간 온라인 괴롭힘 인지 시 학교폭력 사안 처리 절차 연계<br>
+        나. 화면 자료 보전 후 담당 부서 통보<br>
+        다. 임의 중재 지양, 절차에 따른 처리 필요
+      </div>
+      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:14px; font-size:11pt;">
         <thead>
           <tr style="background-color:#f3f4f6; font-weight:bold;">
             <th style="padding:8px; border:1px solid black; width:25%;">소주제</th>
@@ -86,7 +89,7 @@ const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
           <tr>
             <td style="padding:8px; border:1px solid black;">저작권·AI</td>
             <td style="padding:8px; border:1px solid black; text-align:left;">수업 목적 이용 범위 및 출처 표시 기준</td>
-            <td style="padding:8px; border:1px solid black; text-align:left;">AI 입력값에 식별정보 포함 금지, 결과물 사실 확인 필요</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">AI 입력값에 식별정보 포함 금지</td>
           </tr>
           <tr>
             <td style="padding:8px; border:1px solid black;">사이버폭력</td>
@@ -98,13 +101,13 @@ const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
     </div>
   </div>
   <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;">
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">5. 사례 및 판단 기준</h2>
-    <div style="margin-left:10px;">
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅳ. 사례와 판단 기준</h2>
+    <div style="margin-left:12px;">
       <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; font-size:11pt;">
         <thead>
           <tr style="background-color:#f3f4f6; font-weight:bold;">
-            <th style="padding:8px; border:1px solid black; width:35%;">상황 유형</th>
+            <th style="padding:8px; border:1px solid black; width:35%;">상황</th>
             <th style="padding:8px; border:1px solid black; width:15%;">판단</th>
             <th style="padding:8px; border:1px solid black; width:50%;">근거 및 조치</th>
           </tr>
@@ -118,10 +121,10 @@ const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
           <tr>
             <td style="padding:8px; border:1px solid black; text-align:left;">개인 USB에 성적 자료 저장 후 자택 반출</td>
             <td style="padding:8px; border:1px solid black; color:#b91c1c; font-weight:bold;">위반</td>
-            <td style="padding:8px; border:1px solid black; text-align:left;">부득이한 경우 암호화 후 반출, 사용 후 즉시 삭제 및 이력 기록</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">암호화 후 반출, 사용 후 즉시 삭제 및 이력 기록</td>
           </tr>
           <tr>
-            <td style="padding:8px; border:1px solid black; text-align:left;">수업 자료 제작 시 생성형 AI에 단원명·성취기준 입력</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">생성형 AI에 단원명·성취기준만 입력해 자료 제작</td>
             <td style="padding:8px; border:1px solid black; color:#166534; font-weight:bold;">허용</td>
             <td style="padding:8px; border:1px solid black; text-align:left;">식별정보 미포함, 결과물 사실 확인 후 활용</td>
           </tr>
@@ -134,16 +137,17 @@ const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
       </table>
     </div>
   </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">6. 실천 수칙 및 자가 점검</h2>
-    <div style="margin-left:10px;">
-      가. 실천 수칙<br>
-      &nbsp;&nbsp;1) 업무용 계정 비밀번호 정기 변경 및 타인 공유 금지<br>
-      &nbsp;&nbsp;2) 공용 PC 사용 후 로그아웃 및 다운로드 자료 삭제<br>
-      &nbsp;&nbsp;3) 개인정보 포함 문서 출력물의 즉시 회수 및 파쇄<br>
-      <br>
-      나. 자가 점검표
-      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅴ. 현장 실천 사항</h2>
+    <div style="margin-left:12px;">
+      <p style="margin:0 0 6px; font-weight:bold;">1. 실천 수칙</p>
+      <div style="margin-left:14px; margin-bottom:12px;">
+        가. 업무용 계정 비밀번호 정기 변경 및 타인 공유 금지<br>
+        나. 공용 PC 사용 후 로그아웃 및 다운로드 자료 삭제<br>
+        다. 개인정보 포함 출력물의 즉시 회수 및 파쇄
+      </div>
+      <p style="margin:0 0 6px; font-weight:bold;">2. 자가 점검표</p>
+      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:8px; font-size:11pt;">
         <thead>
           <tr style="background-color:#f3f4f6; font-weight:bold;">
             <th style="padding:8px; border:1px solid black; width:70%;">점검 항목</th>
@@ -161,25 +165,32 @@ const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
       </table>
     </div>
   </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">7. 자주 묻는 질문</h2>
-    <div style="margin-left:10px;">
-      Q. 학부모가 개인 휴대전화로 학생 사진을 요청하는 경우<br>
-      A. 개인 연락 수단을 통한 전송 지양, 학교 공식 알림 시스템 활용 필요<br>
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅵ. 확인 학습</h2>
+    <div style="margin-left:12px;">
+      1. 학급 명렬표를 개인 메신저로 전송해도 됨 (O / X)<br>
+      2. 생성형 AI에 학생 실명을 입력해도 무방함 (O / X)<br>
+      3. 수업 목적 저작물은 출처 표시 후 이용 가능함 (O / X)<br>
+      4. 사이버폭력 정황 확인 시 담임이 임의로 중재해도 됨 (O / X)<br>
       <br>
-      Q. 수업 자료로 인터넷 이미지를 사용해도 되는지<br>
-      A. 수업 목적 이용 범위 내에서 출처 표시 후 활용 가능, 외부 공개 시 별도 이용 허락 확인 필요<br>
-      <br>
-      Q. 개인 노트북으로 업무 처리 시 유의 사항<br>
-      A. 백신 최신 상태 유지, 업무 자료 별도 폴더 관리, 업무 종료 후 자료 삭제 필요
+      <span style="font-weight:bold;">정답</span>: 1. X (업무 시스템 내 공유로 대체 필요) / 2. X (식별정보 입력 금지) / 3. O (수업 목적 이용 범위 내 허용) / 4. X (사안 처리 절차 연계 필요)
     </div>
   </div>
-  <div style="margin-bottom:25px;">
-    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">8. 기대효과</h2>
-    <div style="margin-left:10px;">
-      가. 교직원의 정보통신윤리 인식 제고 및 개인정보 침해 사고 예방<br>
-      나. 디지털 기반 수업 확대 상황에서의 안전한 자료 활용 문화 정착<br>
-      다. 사이버폭력 사안의 신속한 인지 및 대응 체계 강화
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅶ. 한 장 요약</h2>
+    <div style="margin-left:12px;">
+      가. 학생 개인정보는 목적 범위 내에서만 처리<br>
+      나. 개인 저장매체·개인 메신저 반출 금지<br>
+      다. 생성형 AI에 식별정보 입력 금지<br>
+      라. 수업 목적 저작물은 출처 표시 후 이용<br>
+      마. 사이버폭력 인지 시 보전 후 즉시 통보
+    </div>
+  </div>
+  <div style="margin-bottom:26px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin-bottom:10px;">Ⅷ. 참고 자료 및 문의</h2>
+    <div style="margin-left:12px;">
+      가. 근거 법령·지침: (근거 법령·지침 확인 후 기재)<br>
+      나. 문의: 본교 정보업무 담당 부서
     </div>
   </div>
 </div></body></html>`,
@@ -250,7 +261,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Per-tab file/template state
   const allDocTypes = [
-    DocType.GONGMUN, DocType.PLAN, DocType.EDU_MATERIAL, DocType.REPORT, DocType.PUMUI,
+    DocType.GONGMUN, DocType.PLAN, DocType.TRAINING_MATERIAL, DocType.REPORT, DocType.PUMUI,
     DocType.MEETING_MINUTES, DocType.PROMOTION, DocType.NEWSLETTER,
     DocType.MESSAGE, DocType.GONGGO,
   ];
@@ -269,7 +280,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [groundingByTab, setGroundingByTab] = useState<Record<DocType, GroundingInfo | undefined>>(initTabMap(undefined));
-  // 교육자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되므로 기본은 꺼둔 상태로 저장한다.
+  // 연수자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되므로 기본은 꺼둔 상태로 저장한다.
   const [useWebSearch, setUseWebSearch] = useState(false);
 
   const uploadedFiles = filesByTab[activeTab] ?? [];
@@ -332,7 +343,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   });
 
   // Edu material form — 계획서 입력 틀과 동일하되 예산 항목 없음
-  const [eduMaterialData, setEduMaterialData] = useState<EduMaterialInputs>({
+  const [trainingMaterialData, setTrainingMaterialData] = useState<TrainingMaterialInputs>({
     topic: '',
     target: '',
     extraInfo: '',
@@ -473,8 +484,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       }
       case DocType.PLAN:
         return `${field('주제/사업명', planData.topic)}\n${field('대상', planData.target)}\n${field('예산', planData.budget)}\n${field('추가 사항', planData.extraInfo)}`;
-      case DocType.EDU_MATERIAL:
-        return `${field('교육 주제', eduMaterialData.topic)}\n${field('교육 대상', eduMaterialData.target)}\n${field('추가 사항', eduMaterialData.extraInfo)}`;
+      case DocType.TRAINING_MATERIAL:
+        return `${field('연수 주제', trainingMaterialData.topic)}\n${field('연수 대상', trainingMaterialData.target)}\n${field('추가 사항', trainingMaterialData.extraInfo)}`;
       case DocType.REPORT:
         return `${field('주제/사업명', reportData.topic)}\n${field('대상', reportData.target)}\n${field('예산', reportData.budget)}\n${field('운영 결과 및 주요 내용', reportData.summary)}\n${field('추가 사항', reportData.extraInfo)}`;
       case DocType.NEWSLETTER:
@@ -540,7 +551,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     let title = '';
     if (tab === DocType.GONGMUN) title = gongmunData.title;
     else if (tab === DocType.PLAN) title = planData.topic;
-    else if (tab === DocType.EDU_MATERIAL) title = eduMaterialData.topic;
+    else if (tab === DocType.TRAINING_MATERIAL) title = trainingMaterialData.topic;
     else if (tab === DocType.REPORT) title = reportData.topic || reportData.summary.substring(0, 30);
     else if (tab === DocType.NEWSLETTER) title = newsletterData.title;
     else if (tab === DocType.MESSAGE) title = messageData.context.substring(0, 20);
@@ -574,8 +585,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     setStreamPreview('');
     setIsGenerating(true);
     startGeneration(`SCHOOL_DOC_${activeTab}`);
-    // 웹 검색 참조는 교육자료에서 사용자가 켠 경우에만 쓴다.
-    const withWebSearch = activeTab === DocType.EDU_MATERIAL && useWebSearch;
+    // 웹 검색 참조는 연수자료에서 사용자가 켠 경우에만 쓴다.
+    const withWebSearch = activeTab === DocType.TRAINING_MATERIAL && useWebSearch;
     try {
       let result: { text: string; model: string; grounding?: GroundingInfo };
       if (activeTab === DocType.GONGGO) {
@@ -634,7 +645,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const tabs = [
     { type: DocType.GONGMUN, icon: FileText, label: '공문서 작성' },
     { type: DocType.PLAN, icon: ClipboardList, label: '계획서 작성' },
-    { type: DocType.EDU_MATERIAL, icon: GraduationCap, label: '교육자료 제작' },
+    { type: DocType.TRAINING_MATERIAL, icon: GraduationCap, label: '연수자료 제작' },
     { type: DocType.REPORT, icon: FileOutput, label: '보고서 작성' },
     { type: DocType.PUMUI, icon: Receipt, label: '품의서 작성' },
     { type: DocType.MEETING_MINUTES, icon: Users, label: '협의록 작성' },
@@ -724,7 +735,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   placeholder="예: 2026"
                 />
               </div>
-              {(activeTab === DocType.PLAN || activeTab === DocType.EDU_MATERIAL || activeTab === DocType.REPORT || activeTab === DocType.PROMOTION) && (
+              {(activeTab === DocType.PLAN || activeTab === DocType.TRAINING_MATERIAL || activeTab === DocType.REPORT || activeTab === DocType.PROMOTION) && (
                 <div>
                   <label className={labelClass}>분량 (쪽)</label>
                   <input
@@ -806,35 +817,31 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               </div>
             )}
 
-            {/* 교육자료 */}
-            {activeTab === DocType.EDU_MATERIAL && (
+            {/* 연수자료 */}
+            {activeTab === DocType.TRAINING_MATERIAL && (
               <div className="space-y-4">
-                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg text-xs leading-relaxed text-blue-700 dark:text-blue-200">
-                  <GraduationCap className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>계획서 양식 그대로, 교직원 앞에서 바로 교육할 수 있는 자료를 만듭니다. 예산 항목은 들어가지 않습니다.</span>
-                </div>
                 <div>
-                  <label className={labelClass}>교육 주제</label>
+                  <label className={labelClass}>연수 주제</label>
                   <div className="flex items-center gap-1.5">
-                    <input type="text" className={inputClass} placeholder="예: 정보통신윤리교육, 청렴교육, 개인정보보호교육" value={eduMaterialData.topic} onChange={e => setEduMaterialData({ ...eduMaterialData, topic: e.target.value })} />
+                    <input type="text" className={inputClass} placeholder="예: 정보통신윤리교육, 청렴교육, 개인정보보호교육" value={trainingMaterialData.topic} onChange={e => setTrainingMaterialData({ ...trainingMaterialData, topic: e.target.value })} />
                     <button
                       type="button"
-                      onClick={() => window.electronAPI.openEduReferenceSearchWindow(eduMaterialData.topic)}
-                      disabled={!eduMaterialData.topic.trim()}
+                      onClick={() => window.electronAPI.openEduReferenceSearchWindow(trainingMaterialData.topic)}
+                      disabled={!trainingMaterialData.topic.trim()}
                       className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#78716C]"
-                      title="교육부·교육청(go.kr) 자료 검색 (별도 창) — 받은 자료를 아래 참고 자료로 첨부하면 그 내용이 우선 반영됩니다."
+                      title="교육부·교육청(go.kr) 자료 검색 — 기본 브라우저에서 열립니다. 받은 자료를 아래 참고 자료로 첨부하면 그 내용이 우선 반영됩니다."
                     >
                       <Search className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className={labelClass}>교육 대상</label>
-                  <input type="text" className={inputClass} placeholder="예: 전 교직원, 신규 교사, 교육공무직원" value={eduMaterialData.target} onChange={e => setEduMaterialData({ ...eduMaterialData, target: e.target.value })} />
+                  <label className={labelClass}>연수 대상</label>
+                  <input type="text" className={inputClass} placeholder="예: 전 교직원, 신규 교사, 교육공무직원" value={trainingMaterialData.target} onChange={e => setTrainingMaterialData({ ...trainingMaterialData, target: e.target.value })} />
                 </div>
                 <div>
                   <label className={labelClass}>추가 사항 (선택)</label>
-                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="교육 일시·장소·방법, 강조할 내용, 우리 학교 상황 등을 자유롭게 입력하세요. 교육부·교육청 최신 자료를 아래 '참고 자료'에 첨부하면 그 내용을 우선 반영합니다." value={eduMaterialData.extraInfo} onChange={e => setEduMaterialData({ ...eduMaterialData, extraInfo: e.target.value })} />
+                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="연수 일시·장소·방법, 강조할 내용, 우리 학교 상황 등을 자유롭게 입력하세요. 교육부·교육청 최신 자료를 아래 '참고 자료'에 첨부하면 그 내용을 우선 반영합니다." value={trainingMaterialData.extraInfo} onChange={e => setTrainingMaterialData({ ...trainingMaterialData, extraInfo: e.target.value })} />
                 </div>
                 <div className="rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] p-3">
                   <label className="flex items-start gap-2 cursor-pointer">
@@ -1360,7 +1367,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   <Wand2 className="w-4 h-4" />
                   {activeTab === DocType.GONGMUN ? '공문서 생성' :
                    activeTab === DocType.PLAN ? '계획서 생성' :
-                   activeTab === DocType.EDU_MATERIAL ? '교육자료 생성' :
+                   activeTab === DocType.TRAINING_MATERIAL ? '연수자료 생성' :
                    activeTab === DocType.REPORT ? '보고서 생성' :
                    activeTab === DocType.PUMUI ? '품의서 생성' :
                    activeTab === DocType.MEETING_MINUTES ? '협의록 생성' :

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import type { ModelDiagnostics } from '../../preload/types';
 import { Settings, Key, Save, CheckCircle, AlertCircle, AlertTriangle, ExternalLink, ChevronDown, ChevronUp, Folder, User, School, Users, Download, Upload, Video, Trash2, Lock } from 'lucide-react';
 import { SchoolLevel } from '../types';
 import { useGlobalState } from '../GlobalStateContext';
@@ -21,6 +22,9 @@ const SettingsScreen: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
   const [paidApiKey, setPaidApiKey] = useState('');
   const [apiTier, setApiTier] = useState<'free' | 'paid'>('free');
+  const [modelInfo, setModelInfo] = useState<ModelDiagnostics | null>(null);
+  const [modelInfoLoading, setModelInfoLoading] = useState(false);
+  const [modelInfoError, setModelInfoError] = useState('');
   const [teacherName, setTeacherName] = useState('');
   const [institution, setInstitution] = useState('');
   const [schoolLevel, setSchoolLevel] = useState<string>(SchoolLevel.HIGH);
@@ -96,6 +100,20 @@ const SettingsScreen: React.FC = () => {
     load();
     return () => { cancelled = true; };
   }, []);
+
+  // 지금 이 키로 어떤 모델이 잡히는지 실제 목록으로 확인한다(캐시를 건너뛰고 새로 조회).
+  const handleCheckModels = async () => {
+    setModelInfoLoading(true);
+    setModelInfoError('');
+    try {
+      setModelInfo(await window.electronAPI.getModelInfo(true));
+    } catch (error) {
+      setModelInfo(null);
+      setModelInfoError(error instanceof Error ? error.message : '모델 정보를 불러오지 못했습니다.');
+    } finally {
+      setModelInfoLoading(false);
+    }
+  };
 
   const handleTestKey = async () => {
     const key = apiTier === 'paid' ? paidApiKey : apiKey;
@@ -472,6 +490,46 @@ const SettingsScreen: React.FC = () => {
             {apiTier === 'paid' && (
               <div className="mt-2 rounded-md border border-purple-200 bg-purple-50 p-2.5 text-xs text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
                 유료 API 키는 Google Cloud/AI Studio 결제 프로젝트에서 과금될 수 있습니다. 비용과 한도는 Google 계정 설정을 확인한 뒤 사용하세요.
+              </div>
+            )}
+          </div>
+
+          {/* 사용 모델 진단 — 특정 모델을 고정하지 않고 자동으로 고르므로,
+              지금 어떤 모델이 잡히는지 직접 확인할 수 있게 한다. */}
+          <div>
+            <label className={`${labelClass} flex items-center justify-between gap-2`}>
+              <span>사용 모델</span>
+              <button
+                type="button"
+                onClick={handleCheckModels}
+                disabled={modelInfoLoading}
+                className="rounded-md border border-[#E7E5E4] px-2 py-1 text-[11px] font-bold text-[#44403C] hover:bg-[#EDE8E1] disabled:opacity-50 dark:border-[#2E2822] dark:text-[#C4B8B0] dark:hover:bg-[#2A2420]"
+              >
+                {modelInfoLoading ? '확인 중…' : '지금 확인'}
+              </button>
+            </label>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+              모델은 고정되어 있지 않습니다. API 키로 실제 쓸 수 있는 모델을 확인해 최신 세대를 자동으로 먼저 사용하며,
+              구글이 새 모델을 내놓으면 별도 설정 없이 반영됩니다.
+            </p>
+            {modelInfoError && (
+              <p className="mt-2 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">{modelInfoError}</p>
+            )}
+            {modelInfo && (
+              <div className="mt-2 rounded-md border border-[#E7E5E4] bg-[#FAF9F7] p-2.5 text-xs text-[#44403C] dark:border-[#2E2822] dark:bg-[#171210] dark:text-[#C4B8B0]">
+                <p><strong>우선 사용 순서</strong>: {modelInfo.chain.join(' → ') || '없음'}</p>
+                {modelInfo.listFailed && (
+                  <p className="mt-1 text-amber-700 dark:text-amber-300">모델 목록을 불러오지 못해 기본 모델 하나로만 동작합니다. 네트워크 확인 후 다시 시도해 주세요.</p>
+                )}
+                {modelInfo.blocked.length > 0 && (
+                  <p className="mt-1 text-amber-700 dark:text-amber-300">일시 제외됨(한도 초과·접근 불가): {modelInfo.blocked.join(', ')}</p>
+                )}
+                {modelInfo.available.length > 0 && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer">이 키로 쓸 수 있는 모델 {modelInfo.available.length}개</summary>
+                    <p className="mt-1 break-all leading-relaxed">{modelInfo.available.join(', ')}</p>
+                  </details>
+                )}
               </div>
             )}
           </div>
