@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap, Search } from 'lucide-react';
 import type { GroundingInfo } from '../../preload/types';
-import { DocType, GongmunInputs, PlanInputs, TrainingMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
+import { DocType, GongmunInputs, PlanInputs, TrainingMaterialInputs, TrainingMaterialSections, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
@@ -238,6 +238,15 @@ interface DocTemplateFavorite {
 
 const DOC_TEMPLATE_FAVORITES_KEY = 'edunote_doc_template_favorites_v1';
 
+// 연수자료의 선택 항목 — 필수 항목(연수 목표·필요성·핵심 내용·참고 자료)은 목록에 없다.
+const TRAINING_SECTION_OPTIONS: Array<{ key: keyof TrainingMaterialSections; label: string; hint: string }> = [
+  { key: 'overview', label: '연수 개요 표', hint: '연수명·대상·일시·장소·시간·방법을 표로 정리' },
+  { key: 'cases', label: '사례와 판단 기준', hint: '상황별 허용·위반 판단과 조치를 표로 정리' },
+  { key: 'practice', label: '현장 실천 사항', hint: '실천 수칙과 자가 점검표' },
+  { key: 'quiz', label: '확인 학습', hint: 'O/X 문항과 정답·해설' },
+  { key: 'summary', label: '한 장 요약', hint: '반드시 기억할 내용 압축' },
+];
+
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const { startTour } = useTour();
@@ -347,6 +356,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     topic: '',
     target: '',
     extraInfo: '',
+    // 연수 개요 표는 일시·장소처럼 사용자만 아는 정보를 요구하므로 기본은 꺼둔다.
+    sections: { overview: false, cases: true, practice: true, quiz: false, summary: true },
   });
 
   // Report form
@@ -484,8 +495,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       }
       case DocType.PLAN:
         return `${field('주제/사업명', planData.topic)}\n${field('대상', planData.target)}\n${field('예산', planData.budget)}\n${field('추가 사항', planData.extraInfo)}`;
-      case DocType.TRAINING_MATERIAL:
-        return `${field('연수 주제', trainingMaterialData.topic)}\n${field('연수 대상', trainingMaterialData.target)}\n${field('추가 사항', trainingMaterialData.extraInfo)}`;
+      case DocType.TRAINING_MATERIAL: {
+        const chosen = TRAINING_SECTION_OPTIONS.filter(opt => trainingMaterialData.sections[opt.key]).map(opt => opt.label);
+        return `${field('연수 주제', trainingMaterialData.topic)}\n${field('연수 대상', trainingMaterialData.target)}\n${field('추가 사항', trainingMaterialData.extraInfo)}\n[추가로 포함할 항목]: ${chosen.length > 0 ? chosen.join(', ') : '없음'}`;
+      }
       case DocType.REPORT:
         return `${field('주제/사업명', reportData.topic)}\n${field('대상', reportData.target)}\n${field('예산', reportData.budget)}\n${field('운영 결과 및 주요 내용', reportData.summary)}\n${field('추가 사항', reportData.extraInfo)}`;
       case DocType.NEWSLETTER:
@@ -842,6 +855,31 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 <div>
                   <label className={labelClass}>추가 사항 (선택)</label>
                   <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="연수 일시·장소·방법, 강조할 내용, 우리 학교 상황 등을 자유롭게 입력하세요. 교육부·교육청 최신 자료를 아래 '참고 자료'에 첨부하면 그 내용을 우선 반영합니다." value={trainingMaterialData.extraInfo} onChange={e => setTrainingMaterialData({ ...trainingMaterialData, extraInfo: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>추가로 포함할 항목 (선택)</label>
+                  <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mb-2 leading-relaxed">
+                    연수 목표·필요성·핵심 내용·참고 자료는 항상 들어갑니다. 아래 항목은 선택한 것만 추가됩니다.
+                  </p>
+                  <div className="space-y-1.5">
+                    {TRAINING_SECTION_OPTIONS.map(option => (
+                      <label key={option.key} className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={trainingMaterialData.sections[option.key]}
+                          onChange={e => setTrainingMaterialData({
+                            ...trainingMaterialData,
+                            sections: { ...trainingMaterialData.sections, [option.key]: e.target.checked },
+                          })}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+                        />
+                        <span className="text-xs leading-relaxed text-[#44403C] dark:text-[#C4B8B0]">
+                          <span className="font-bold">{option.label}</span>
+                          <span className="block text-[#78716C] dark:text-[#9C8F87]">{option.hint}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div className="rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] p-3">
                   <label className="flex items-start gap-2 cursor-pointer">

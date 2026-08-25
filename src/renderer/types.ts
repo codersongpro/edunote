@@ -417,10 +417,21 @@ export interface PlanInputs {
 }
 
 // 연수자료 제작 — 계획서 입력 틀을 따르되 예산 항목은 제외한다
+// 연수자료에 넣을 선택 항목. 필수 항목(연수 목표·필요성·핵심 내용·참고 자료)은
+// 항상 들어가고, 여기 있는 항목만 사용자가 켠 경우에 추가된다.
+export interface TrainingMaterialSections {
+  overview: boolean;
+  cases: boolean;
+  practice: boolean;
+  quiz: boolean;
+  summary: boolean;
+}
+
 export interface TrainingMaterialInputs {
   topic: string;
   target: string;
   extraInfo: string;
+  sections: TrainingMaterialSections;
 }
 
 export interface ReportInputs {

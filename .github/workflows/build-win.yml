@@ -76,3 +76,37 @@ jobs:
           } else {
             gh release create $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file current_release.md --latest
           }
+
+      # 소개 홈페이지(docs/index.html)에 이번 릴리즈의 버전·다운로드 정보를 직접 써넣는다.
+      # 페이지는 열릴 때 GitHub API로도 최신 정보를 가져오지만, API는 IP당 시간당 60회
+      # 제한이 있어 학교처럼 같은 공인 IP를 여럿이 쓰면 실패할 수 있다. 여기서 미리
+      # 넣어두면 API 호출이 실패해도 항상 최신 버전이 표시된다.
+      # docs/**는 이 워크플로의 paths 필터에 없으므로 이 커밋이 빌드를 다시 부르지 않는다.
+      - name: Update landing page release info
+        env:
+          TAG_NAME: v${{ steps.pkg.outputs.version }}
+        run: |
+          $exe = Get-ChildItem dist/*.exe | Select-Object -First 1
+          if (-not $exe) { Write-Host 'exe 없음 — 건너뜀'; exit 0 }
+          $downloadUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG_NAME/$($exe.Name)"
+          $sizeText = '{0:N1}MB' -f ($exe.Length / 1MB)
+          $meta = "Windows 10 / 11 (64비트) 전용 · $($exe.Name) · $sizeText"
+
+          $path = 'docs/index.html'
+          $html = Get-Content $path -Raw
+          $html = $html -replace '(?<=id="versionPill">)[^<]*', "$env:TAG_NAME 최신 버전"
+          $html = $html -replace '(?<=id="heroDownloadNote">)[^<]*', "최신 버전 $env:TAG_NAME 사용 가능"
+          $html = $html -replace '(?<=id="downloadMeta">)[^<]*', $meta
+          $html = $html -replace '(?<=id="heroDownloadBtn" href=")[^"]*', $downloadUrl
+          $html = $html -replace '(?<=id="downloadBtn" href=")[^"]*', $downloadUrl
+          Set-Content -Path $path -Value $html -NoNewline -Encoding utf8
+
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add $path
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host '변경 없음 — 커밋 건너뜀'; exit 0 }
+          git commit -m "소개 홈페이지 다운로드 정보를 $env:TAG_NAME 기준으로 갱신"
+          # 빌드 중 main이 움직였을 수 있으므로 재적용 후 푸시한다.
+          git pull --rebase origin main
+          git push origin HEAD:main
