@@ -82,7 +82,7 @@ const AboutScreen: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">교무행정AI</p>
-                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">공문서(9종) · 공문요약·업무추출 · 교무행정AI 챗봇</p>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">문서작성기(공문서·계획서·연수자료 등 10종) · 공문요약·업무추출 · 교무행정AI 챗봇</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">

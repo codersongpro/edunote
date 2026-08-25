@@ -94,6 +94,47 @@ async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<
   return availableModelsCache.names;
 }
 
+// 설정 화면의 모델 진단 — 이 키로 실제 쓸 수 있는 모델과, 지금 우선순위가
+// 어떻게 정해졌는지를 그대로 보여준다. "왜 최신 모델이 안 쓰이지?"를 추측이 아니라
+// 실제 목록으로 확인할 수 있게 하는 것이 목적이다.
+export interface ModelDiagnostics {
+  apiTier: ApiTier;
+  // 실제로 시도하는 순서 (최대 3개)
+  chain: string[];
+  // 이 키로 조회된 gemini 모델 전체
+  available: string[];
+  // 모델 목록 조회 자체가 실패한 경우 (이때는 기본 모델 1개로만 동작)
+  listFailed: boolean;
+  // 쿼터·접근 오류로 지금 일시 제외된 모델
+  blocked: string[];
+}
+
+export async function getModelDiagnostics(
+  apiKey: string,
+  apiTier: ApiTier,
+  forceRefresh = false,
+): Promise<ModelDiagnostics> {
+  if (forceRefresh) availableModelsCache = null;
+  const ai = new GoogleGenAI({ apiKey });
+  const names = await getAvailableModelNames(ai, apiKey);
+  const preference =
+    apiTier === 'paid'
+      ? resolvePreference(PAID_TIER_ORDER, PAID_MODEL_PREFERENCE, names)
+      : resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, names);
+  const available = (names ?? [])
+    .map(name => name.replace(/^models\//, ''))
+    .filter(name => name.startsWith('gemini-'))
+    .sort();
+  const blocked = [...permanentlyBlockedModels.keys(), ...quotaBlockedModels.keys()].filter(isBlocked);
+  return {
+    apiTier,
+    chain: buildModelChain(preference, names),
+    available,
+    listFailed: names === null,
+    blocked,
+  };
+}
+
 // API 키 변경 시 모든 차단 상태를 초기화 (외부에서 호출)
 export function resetModelCache(): void {
   permanentlyBlockedModels.clear();
@@ -161,6 +202,12 @@ export interface MultipartPart {
   inlineData?: { data: string; mimeType: string };
 }
 
+// withTools가 false면 검색 도구를 뺀 옵션을 돌려준다 (도구 미지원 모델 재시도용).
+function withToolsOption(options: GenerateOptions | undefined, withTools: boolean): GenerateOptions | undefined {
+  if (withTools || !options?.useSearchGrounding) return options;
+  return { ...options, useSearchGrounding: false };
+}
+
 // 공통 생성 옵션을 SDK config로 변환
 function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
   const config: Record<string, unknown> = {};
@@ -183,7 +230,9 @@ async function generateWithModelChain<T>(
   ai: GoogleGenAI,
   apiKey: string,
   apiTier: ApiTier,
-  doCall: (model: string) => Promise<T>,
+  // withTools가 false면 검색 도구 없이 호출한다 — 도구 미지원 모델 대응용.
+  doCall: (model: string, withTools: boolean) => Promise<T>,
+  usesTools = false,
 ): Promise<{ result: T; model: string }> {
   const availableNames = await getAvailableModelNames(ai, apiKey);
   const preference =
@@ -198,7 +247,7 @@ async function generateWithModelChain<T>(
 
     try {
       if (apiTier === 'free') await freeTierPacer.reserve();
-      return { result: await doCall(model), model };
+      return { result: await doCall(model, usesTools), model };
     } catch (error: unknown) {
       lastError = error;
 
@@ -208,7 +257,7 @@ async function generateWithModelChain<T>(
           await new Promise(resolve => setTimeout(resolve, retryMs + 500));
           try {
             if (apiTier === 'free') await freeTierPacer.reserve();
-            return { result: await doCall(model), model };
+            return { result: await doCall(model, usesTools), model };
           } catch (retryError: unknown) {
             lastError = retryError;
             if (!isQuotaError(retryError)) throw retryError;
@@ -221,6 +270,17 @@ async function generateWithModelChain<T>(
       }
 
       if (isPermanentBlockError(error)) {
+        // 검색 도구를 지원하지 않는 모델이면 400이 난다. 이때 모델 자체를 차단해 버리면
+        // 멀쩡한 최신 모델이 1시간 동안 배제되므로, 도구 없이 같은 모델로 한 번 더 시도한다.
+        if (usesTools) {
+          try {
+            if (apiTier === 'free') await freeTierPacer.reserve();
+            console.warn(`[${model}] 검색 도구 요청이 거부됨 → 도구 없이 같은 모델로 재시도`);
+            return { result: await doCall(model, false), model };
+          } catch (retryError: unknown) {
+            lastError = retryError;
+          }
+        }
         permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
         console.warn(`[${model}] 접근 불가 → 임시 차단, 다음 모델로 폴백`);
         continue;
@@ -259,13 +319,13 @@ export async function generateContent(
   options?: GenerateOptions,
 ): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     const result = await withTimeout(
-      ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(options) }),
+      ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
     );
     return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
-  });
+  }, options?.useSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
@@ -276,13 +336,13 @@ export async function generateContentMultipart(
   options?: GenerateOptions,
 ): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     const result = await withTimeout(
-      ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(options) }),
+      ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
     );
     return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
-  });
+  }, options?.useSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
@@ -298,10 +358,10 @@ export async function generateContentMultipartStream(
   onEvent: (event: StreamEvent) => void,
 ): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
+  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     onEvent({ type: 'start' });
     const stream = await withTimeout(
-      ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(options) }),
+      ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
     );
     // for-await 대신 이터레이터를 직접 돌린다 — 청크 간 대기 시간 제한과
@@ -335,7 +395,7 @@ export async function generateContentMultipartStream(
       throw error;
     }
     return { text: full, grounding };
-  });
+  }, options?.useSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
