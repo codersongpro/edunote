@@ -15,12 +15,19 @@ import {
   NeisAnalyzedData,
   CustomTool,
   CustomToolInput,
+  TrainingMaterialSections,
 } from '../types';
 import type { GroundingInfo } from '../../preload/types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
 import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
+import {
+  DEFAULT_TRAINING_MATERIAL_SECTIONS,
+  buildTrainingMaterialInstruction,
+  buildTrainingMaterialResearchContext,
+  buildTrainingMaterialResearchPrompt,
+} from '../lib/trainingMaterial';
 
 // ─── 현재 날짜/학년도 컨텍스트 ───────────────────────────────────────
 const getDateContext = (): string => {
@@ -65,7 +72,7 @@ const aiGenerate = async (
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean },
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean },
   onModel?: (model: string) => void,
   onGrounding?: (grounding: GroundingInfo | undefined) => void,
 ) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model, grounding }) => {
@@ -83,7 +90,7 @@ const aiGenerateMultipart = (
 const aiGenerateMultipartStream = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction: string | undefined,
-  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
+  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean } | undefined,
   onText: (accumulated: string) => void,
   onModel?: (model: string) => void,
   onGrounding?: (grounding: GroundingInfo | undefined) => void,
@@ -168,9 +175,9 @@ const NO_FABRICATED_REFERENCES_INSTRUCTION = `
 // 웹 검색 그라운딩을 켰을 때는 근거를 아예 쓰지 못하게 막는 대신,
 // 검색으로 확인한 내용만 쓰도록 방향을 바꾼다.
 const SEARCH_GROUNDED_REFERENCES_INSTRUCTION = `
-[근거·출처 작성 규칙 — 웹 검색 사용 중]
-- 구글 검색 도구가 켜져 있습니다. 법령명, 지침, 최신 사례, 통계는 검색으로 확인한 내용만 사용하세요.
-- 검색으로 확인하지 못한 공문번호, 시행 일자, 통계 수치는 지어내지 말고 "(근거 법령·지침 확인 후 기재)"로 남기세요.
+[근거·출처 작성 규칙 — 최신 웹 조사 결과 사용]
+- 구글 검색 또는 사전 웹 조사 결과가 제공되었습니다. 법령명, 지침, 최신 사례, 통계는 조사 결과에서 확인된 내용만 사용하세요.
+- 조사 결과에서 확인하지 못한 공문번호, 시행 일자, 통계 수치는 지어내지 말고 "(근거 법령·지침 확인 후 기재)"로 남기세요.
 - 확인한 근거는 기관명과 자료명을 함께 밝히세요. 예: 교육부 「○○ 기본계획」, ○○교육청 「○○ 안내」
 - 본문에 URL 주소를 넣지 마세요. 참고한 자료 목록은 화면에 따로 표시됩니다.`;
 
@@ -691,6 +698,7 @@ export const generateDocument = async (
   gonggoInputs?: GonggoInputs,
   onProgressText?: (accumulated: string) => void,
   useSearchGrounding = false,
+  trainingMaterialSections?: TrainingMaterialSections,
 ): Promise<{ text: string; model: string; grounding?: GroundingInfo }> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
@@ -830,58 +838,10 @@ ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
       break;
 
     case DocType.TRAINING_MATERIAL:
-      specificInstruction = `
-작업: [교직원 대상 연수자료(직무연수 교재) 작성]
-[문서 성격 — 반드시 이해할 것]
-- 이 문서는 계획서가 아니라, 담당자가 이 자료를 화면에 띄우고 교직원 앞에서 그대로 연수를 진행하는 교재입니다.
-- 계획서의 구성(추진배경·목적·운영방침·세부추진계획·소요예산·기대효과)을 절대 쓰지 마세요. 예산·산출내역·집행 계획도 일절 넣지 마세요.
-- 무엇을 하겠다는 계획이 아니라, 무엇을 알아야 하고 무엇을 지켜야 하는지를 가르치는 내용으로 채우세요.
-[구성 — 필수 항목과 선택 항목을 구분해서 반드시 지킬 것]
-(맨 위) 연수명 제목과 그 아래 부제
-* 아래 [필수 항목] 4개는 언제나 포함합니다.
-* [선택 항목]은 입력 정보의 "[추가로 포함할 항목]"에 이름이 적힌 것만 포함합니다.
-  적혀 있지 않은 선택 항목은 제목조차 만들지 마세요. "해당 없음", "미정" 같은 빈 항목도 남기지 마세요.
-* 포함하기로 한 항목만 모아 아래 순서대로 배치하고, 대단원 번호(Ⅰ. Ⅱ. Ⅲ. ...)는 실제로 들어간 항목에만 1번부터 빠짐없이 순서대로 붙이세요.
-
-[필수 항목]
-- 연수 목표 — 이 연수를 마친 뒤 교직원이 도달해야 할 상태 3개를 가. 나. 다.로 제시
-- 연수의 필요성 — 법정 의무 여부, 최근 현장 쟁점, 예방 필요성을 가. 나. 다.로 제시
-- 핵심 내용 — 이 자료의 본론. 소주제를 1. 2. 3.(3~5개)으로 나누고, 각 소주제 아래 가. 나. 다. 로 설명하며 필요하면 1) 2)로 더 나눔. 실제 강의에서 그대로 설명할 수 있을 만큼 구체적으로 작성. 소주제 전체를 한눈에 보는 표(소주제 | 핵심 내용 | 유의 사항) 1개 포함
-- 참고 자료 및 문의 — 근거 법령·지침·자료명(확인된 것만)과 교내 담당 부서를 가. 나.로 제시. 항상 문서의 마지막에 배치
-
-[선택 항목] (요청된 것만)
-- 연수 개요 표 — 제목 바로 아래에, 대단원 번호 없이 배치. 연수명 / 대상 / 일시 / 장소 / 시간 / 방법을 2열 표로 정리하되, 사용자가 알려주지 않은 항목은 지어내지 말고 "( )"로 비워 담당자가 채우도록 남길 것
-- 사례와 판단 기준 — 핵심 내용 다음에 배치. 학교 현장에서 생길 수 있는 상황을 표(상황 | 판단 | 근거 및 조치)로 4~6행 제시. 판단은 허용·위반·즉시 조치 중 하나로 명확히 표기
-- 현장 실천 사항 — 1. 실천 수칙(가. 나. 다.) 2. 자가 점검표(점검 항목 | 예 | 아니오, 5~7행 표)
-- 확인 학습 — 연수 내용을 점검하는 O/X 또는 단답 문항 4개를 1. 2. 3. 4.로 제시하고, 마지막에 정답과 한 줄 해설
-- 한 장 요약 — 이 연수에서 반드시 기억할 내용 5가지를 가. 나. 다. 라. 마.로 압축. 참고 자료 바로 앞에 배치
-[항목 기호 위계 — 반드시 준수]
-  1단계(대단원): Ⅰ.  Ⅱ.  Ⅲ.  ...  (로마숫자, 계획서의 1. 2. 3.과 구분됨)
-  2단계: 1.  2.  3.  ...
-  3단계: 가.  나.  다.  ...
-  4단계: 1)  2)  3)  ...
-- 대단원 제목은 본문보다 크고 굵게 표시하고, 대단원 사이는 넉넉히 띄우세요.
-- 각 단계는 반드시 줄을 바꿔 작성하고, 같은 줄에 여러 항목을 이어 쓰지 마세요.
-[교육부·교육청 자료 반영 규칙]
-- 교육부와 시도교육청이 실제로 운영하는 교직원 법정·기본 연수 체계(정보통신윤리·개인정보보호·청렴·부패방지·성희롱예방·아동학대예방·학교폭력예방·안전교육 등)의 일반적인 교육 내용과 판단 기준에 맞게 작성하세요.
-- 첨부된 참고 자료가 있으면 그 자료의 최신 지침·사례를 최우선으로 반영하세요.
-- 확인되지 않은 공문번호, 시행 연도, 개정 일자, 통계 수치, 특정 학교·개인의 실제 사건은 절대 지어내지 마세요.
-- 근거 법령이나 지침을 인용해야 하는데 입력에 없으면 "(근거 법령·지침 확인 후 기재)"로 담당자가 채울 자리를 남기세요.
-- 사례는 실명·실제 사건이 아니라 학교 현장에서 흔히 발생하는 상황 유형으로 각색하여 제시하세요.
-[서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하고 그 아래 연수 주제에 맞는 부제를 넣으세요. 표는 반드시 선이 보이는 table로 작성하세요.
-[개조식·명사형 종결 — 반드시 준수]
-- 모든 문장은 개조식으로 짧게 끊어 쓰고, 문단형 설명문으로 이어 쓰지 마세요.
-- 모든 문장은 명사형 어미로 끝내세요. 예: ~ 준수, ~ 금지, ~ 필요, ~ 확인, ~ 강화, ~ 유의, ~ 해당함, ~ 적용됨.
-- "~합니다.", "~입니다.", "~해야 합니다." 같은 높임말 종결을 본문에 사용하지 마세요.
-- 표 안의 내용, 확인 학습 문항과 해설도 동일하게 개조식·명사형으로 작성하세요.
-[예시]
-Ⅲ. 핵심 내용
-  1. 학생 개인정보 보호
-    가. 수집 목적 범위를 벗어난 개인정보 수집·이용 금지
-    나. 명렬표·성적 자료의 개인 저장매체 반출 및 개인 메신저 전송 금지
-      1) 부득이한 경우 암호화 후 반출, 사용 후 즉시 삭제
-      2) 반출 이력 기록 및 보관 필요
-[금지] 소요예산·산출내역·추진배경·운영방침·기대효과 항목 금지. 요청되지 않은 선택 항목 생성 금지. 문서 맨 끝에 작성일, 학교장명, 직인, 결재란 금지. 마지막은 참고 자료 및 문의로 끝내세요.`;
+      specificInstruction = buildTrainingMaterialInstruction(
+        trainingMaterialSections ?? DEFAULT_TRAINING_MATERIAL_SECTIONS,
+        pageCount,
+      );
       break;
 
     case DocType.REPORT:
@@ -1050,21 +1010,49 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 - 단, 사용자가 실제로 입력한 항목의 내용은 그대로 반영하고 임의로 바꾸지 마세요.
 - 법령명·공문번호·통계 등 근거·출처는 이 규칙의 예외입니다. [근거·출처 작성 규칙]에 따라 추측하지 말고 사용자가 채울 자리로 표시하세요.`;
 
-  const referencesInstruction = useSearchGrounding
-    ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
-    : NO_FABRICATED_REFERENCES_INSTRUCTION;
-
-  parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
-  });
-
   try {
     let usedModel = '';
-    let grounding: GroundingInfo | undefined;
-    const options = { temperature: 0.3, useSearchGrounding };
+    let researchGrounding: GroundingInfo | undefined;
+    let researchContext = '';
+    const shouldRunTrainingResearch = docType === DocType.TRAINING_MATERIAL && useSearchGrounding;
+
+    // 최신 무료 작성 모델이 검색을 지원하지 않더라도 최종 문서는 최신 모델로 쓰게 한다.
+    // 검색을 켠 연수자료만 먼저 검색 가능한 모델로 근거를 조사한 뒤, 조사 메모를
+    // 검색 도구 없는 최종 작성 호출에 전달한다.
+    if (shouldRunTrainingResearch) {
+      const researchText = await aiGenerateMultipart(
+        [{ text: buildTrainingMaterialResearchPrompt(promptContext, getDateContext()) }],
+        SYSTEM_INSTRUCTION,
+        {
+          temperature: 0.1,
+          maxOutputTokens: 4096,
+          useSearchGrounding: true,
+          requireSearchGrounding: true,
+        },
+        undefined,
+        (info) => { researchGrounding = info; },
+      );
+      if (!researchGrounding?.sources.length) {
+        throw new Error('최신 자료를 확인할 웹 검색 출처를 찾지 못했습니다. 웹 검색을 끄거나 주제를 더 구체적으로 입력해주세요.');
+      }
+      researchContext = buildTrainingMaterialResearchContext(researchText);
+    }
+
+    const finalUseSearchGrounding = useSearchGrounding && !shouldRunTrainingResearch;
+    const referencesInstruction = shouldRunTrainingResearch || finalUseSearchGrounding
+      ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
+      : NO_FABRICATED_REFERENCES_INSTRUCTION;
+
+    parts.push({
+      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}\n\n${researchContext}`,
+    });
+
+    let finalGrounding: GroundingInfo | undefined;
+    const options = { temperature: 0.3, useSearchGrounding: finalUseSearchGrounding };
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, options, onProgressText, (model) => { usedModel = model; }, (info) => { grounding = info; })
-      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, options, (model) => { usedModel = model; }, (info) => { grounding = info; });
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, options, onProgressText, (model) => { usedModel = model; }, (info) => { finalGrounding = info; })
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, options, (model) => { usedModel = model; }, (info) => { finalGrounding = info; });
+    const grounding = finalGrounding ?? researchGrounding;
     return { text: stripGeneratedCodeFences(raw), model: usedModel, ...(grounding ? { grounding } : {}) };
   } catch (error: any) {
     console.error('Gemini API Error:', error);

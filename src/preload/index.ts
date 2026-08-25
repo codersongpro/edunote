@@ -2,19 +2,19 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // AI Generation
-  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }) =>
+  aiGenerate: (prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) =>
     ipcRenderer.invoke('ai:generate', prompt, systemInstruction, options),
 
   aiGenerateMultipart: (
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
+    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean },
   ) => ipcRenderer.invoke('ai:generate-multipart', parts, systemInstruction, options),
 
   aiGenerateMultipartStream: (
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction: string | undefined,
-    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
   ) => {
     const requestId = `stream-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;

@@ -158,14 +158,14 @@ function readOpenApiItems(data: any): any[] {
 
 export function registerIpcHandlers(): void {
   // ── AI Generation ─────────────────────────────────────────────────
-  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean }) => {
+  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
     return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
   });
 
-  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean }) => {
+  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
@@ -173,7 +173,7 @@ export function registerIpcHandlers(): void {
   });
 
   // 스트리밍 생성 — 진행 중 텍스트를 'ai:stream-event'로 보내고 전체 텍스트를 반환한다.
-  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean }) => {
+  ipcMain.handle('ai:generate-multipart-stream', async (e, requestId: unknown, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     if (typeof requestId !== 'string' || !/^[\w-]{1,64}$/.test(requestId)) {
       throw new Error('AI 요청 형식이 올바르지 않습니다.');
     }

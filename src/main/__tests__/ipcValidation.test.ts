@@ -25,6 +25,20 @@ describe('validateGenerateArgs', () => {
     expect(() => validateGenerateArgs('p', undefined, { temperature: '1' as unknown as number })).toThrow('temperature');
   });
 
+  it('검색 필수 옵션은 검색 사용과 함께 지정해야 한다', () => {
+    expect(() => validateGenerateArgs('p', undefined, {
+      useSearchGrounding: true,
+      requireSearchGrounding: true,
+    })).not.toThrow();
+    expect(() => validateGenerateArgs('p', undefined, {
+      requireSearchGrounding: true,
+    })).toThrow('검색 사용');
+    expect(() => validateGenerateArgs('p', undefined, {
+      useSearchGrounding: true,
+      requireSearchGrounding: 'true' as unknown as boolean,
+    })).toThrow('옵션 형식');
+  });
+
   it('잘못된 시스템 지시문은 거부한다', () => {
     expect(() => validateGenerateArgs('p', 123 as unknown as string)).toThrow('지시문');
     expect(() => validateGenerateArgs('p', '가'.repeat(200_001))).toThrow('지시문');

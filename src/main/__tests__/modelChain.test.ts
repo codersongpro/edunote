@@ -9,6 +9,7 @@ import {
   resolvePreference,
   getRetryDelayMs,
   isDailyQuotaError,
+  isSearchGroundingUnavailableError,
 } from '../modelChain';
 
 describe('buildModelChain', () => {
@@ -152,5 +153,26 @@ describe('isDailyQuotaError', () => {
   it('분당 제한은 일일 한도가 아니다', () => {
     expect(isDailyQuotaError(new Error('quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier"'))).toBe(false);
     expect(isDailyQuotaError(new Error('429 rate limit exceeded'))).toBe(false);
+  });
+});
+
+describe('isSearchGroundingUnavailableError', () => {
+  it('모델의 구글 검색 미지원 오류를 감지한다', () => {
+    expect(isSearchGroundingUnavailableError({
+      status: 400,
+      message: 'Google Search grounding is not supported for this model',
+    })).toBe(true);
+  });
+
+  it('무료 등급에서 검색 그라운딩을 쓸 수 없다는 오류를 감지한다', () => {
+    expect(isSearchGroundingUnavailableError({
+      status: 429,
+      message: 'Grounding with Google Search is not available on the free tier',
+    })).toBe(true);
+  });
+
+  it('일반 쿼터 초과와 일반 입력 오류는 검색 미지원으로 오인하지 않는다', () => {
+    expect(isSearchGroundingUnavailableError(new Error('429 rate limit exceeded'))).toBe(false);
+    expect(isSearchGroundingUnavailableError({ status: 400, message: 'Invalid prompt format' })).toBe(false);
   });
 });
