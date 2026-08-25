@@ -13,6 +13,7 @@ const BOOLEAN_KEYS = new Set([
   'onboardingDismissed',
   'privacyModeEnabled',
   'reviewChecklistEnabled',
+  'eduMaterialWebSearch',
 ]);
 
 const PATH_KEYS = new Set(['saveDir', 'appDataDir']);

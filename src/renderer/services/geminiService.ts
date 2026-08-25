@@ -16,6 +16,7 @@ import {
   CustomTool,
   CustomToolInput,
 } from '../types';
+import type { GroundingInfo } from '../../preload/types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
@@ -60,13 +61,16 @@ const aiGenerate = async (
   }
 };
 
+// onGrounding(선택)이 주어지면 웹 검색 그라운딩으로 참조한 출처 정보를 콜백으로 알려준다.
 const aiGenerateMultipart = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction?: string,
-  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
+  options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean },
   onModel?: (model: string) => void,
-) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model }) => {
+  onGrounding?: (grounding: GroundingInfo | undefined) => void,
+) => window.electronAPI.aiGenerateMultipart(parts, systemInstruction, options).then(({ text, model, grounding }) => {
   onModel?.(model);
+  onGrounding?.(grounding);
   return text;
 }).catch((error) => {
   notifyTemporaryApiError(error);
@@ -79,9 +83,10 @@ const aiGenerateMultipart = (
 const aiGenerateMultipartStream = (
   parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
   systemInstruction: string | undefined,
-  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+  options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
   onText: (accumulated: string) => void,
   onModel?: (model: string) => void,
+  onGrounding?: (grounding: GroundingInfo | undefined) => void,
 ) => {
   let buffer = '';
   return window.electronAPI.aiGenerateMultipartStream(parts, systemInstruction, options, (event) => {
@@ -92,8 +97,9 @@ const aiGenerateMultipartStream = (
       buffer += event.text;
       onText(buffer);
     }
-  }).then(({ text, model }) => {
+  }).then(({ text, model, grounding }) => {
     onModel?.(model);
+    onGrounding?.(grounding);
     return text;
   }).catch((error) => {
     notifyTemporaryApiError(error);
@@ -158,6 +164,15 @@ const NO_FABRICATED_REFERENCES_INSTRUCTION = `
 - 사용자가 직접 제공하지 않은 법령명, 조항, 훈령·예규 번호, 교육청 공문번호, 정책·사업 명칭을 추측해서 쓰지 마세요.
 - '관련' 항목에 쓸 근거가 입력에 없으면 "(근거 공문·법령 입력 필요)"처럼 사용자가 채울 자리로 표시하세요.
 - 실존 여부가 불확실한 기관명, 인용문, 통계 수치를 만들어내지 마세요. 입력에 있는 사실만 사용하세요.`;
+
+// 웹 검색 그라운딩을 켰을 때는 근거를 아예 쓰지 못하게 막는 대신,
+// 검색으로 확인한 내용만 쓰도록 방향을 바꾼다.
+const SEARCH_GROUNDED_REFERENCES_INSTRUCTION = `
+[근거·출처 작성 규칙 — 웹 검색 사용 중]
+- 구글 검색 도구가 켜져 있습니다. 법령명, 지침, 최신 사례, 통계는 검색으로 확인한 내용만 사용하세요.
+- 검색으로 확인하지 못한 공문번호, 시행 일자, 통계 수치는 지어내지 말고 "(근거 법령·지침 확인 후 기재)"로 남기세요.
+- 확인한 근거는 기관명과 자료명을 함께 밝히세요. 예: 교육부 「○○ 기본계획」, ○○교육청 「○○ 안내」
+- 본문에 URL 주소를 넣지 마세요. 참고한 자료 목록은 화면에 따로 표시됩니다.`;
 
 const EDUCATIONAL_RECORD_WRITING_INSTRUCTION = `
 [학생기록 공적 문체 원칙]
@@ -675,7 +690,8 @@ export const generateDocument = async (
   gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
   gonggoInputs?: GonggoInputs,
   onProgressText?: (accumulated: string) => void,
-): Promise<{ text: string; model: string }> => {
+  useSearchGrounding = false,
+): Promise<{ text: string; model: string; grounding?: GroundingInfo }> => {
   const volumeInstruction =
     docType === DocType.MESSAGE
       ? `[분량 지침] 이 문서는 모바일 문자 메시지(SMS/LMS)입니다. 요청된 문자 유형(단문/장문)에 맞춰 길이를 엄격히 준수하세요.`
@@ -708,6 +724,7 @@ export const generateDocument = async (
 
   const needsDocumentHeader = [
     DocType.PLAN,
+    DocType.EDU_MATERIAL,
     DocType.REPORT,
     DocType.PROMOTION,
     DocType.NEWSLETTER,
@@ -810,6 +827,49 @@ ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
   1) 스마트폰 보급률 증가에 따른 독서 시간 감소
   2) 짧은 영상 콘텐츠 위주 미디어 소비 패턴 확산
 [금지] 문서 맨 끝에 작성일, 제작년월, 학교장명, 기관장명, 직인, 결재란을 붙이지 마세요. 마지막은 기대효과 본문으로 끝내세요.`;
+      break;
+
+    case DocType.EDU_MATERIAL:
+      specificInstruction = `
+작업: [교직원 대상 교육자료(연수자료) 제작]
+[문서 성격 — 반드시 이해할 것]
+- 이 문서는 '무엇을 하겠다'는 계획서가 아니라, 담당자가 이 문서만 보고 교직원 앞에서 실제로 교육을 진행할 수 있는 교육 본문 자료입니다.
+- 계획서와 동일한 문서 양식(제목·부제·1./가./1) 항목 위계·표)을 사용하되, 내용은 교육 내용 자체로 채우세요.
+- 소요예산 항목은 절대 넣지 마세요. 예산, 산출내역, 집행 계획, 강사료 관련 내용은 일절 작성 금지입니다.
+[필수 구성] 1.교육 개요 2.추진 근거 및 필요성 3.교육 목표 4.주요 교육 내용 5.사례 및 판단 기준 6.실천 수칙 및 자가 점검 7.자주 묻는 질문 8.기대효과
+[항목별 작성 지침]
+1. 교육 개요: 가. 교육명 나. 대상 다. 일시 라. 장소 마. 방법(집합·원격·자율연수) 바. 시간(이수 시간) 형태로 개조식 정리.
+2. 추진 근거 및 필요성: 가. 나. 다. 로 3~4항목. 법정의무교육 여부, 최근 학교 현장의 쟁점, 예방 필요성 중심.
+3. 교육 목표: 가. 나. 다. 로 3항목. 교직원이 교육 후 도달해야 할 상태를 명사형으로 기술.
+4. 주요 교육 내용: 이 문서의 핵심. 주제를 3~5개 소주제로 나누고, 각 소주제마다 가./나./다. 아래 1) 2) 3) 세부 내용을 실제 강의에서 그대로 설명할 수 있을 만큼 구체적으로 작성. 소주제 구성과 핵심 개념을 한눈에 볼 수 있도록 표(소주제|핵심 내용|유의 사항) 1개 포함.
+5. 사례 및 판단 기준: 실제 학교 현장에서 발생 가능한 상황을 유형별로 제시하고, 허용·위반 판단 기준과 조치 방향을 표(상황 유형|판단|근거 및 조치)로 정리. 4~6행 구성.
+6. 실천 수칙 및 자가 점검: 가. 실천 수칙(가. 나. 다. 개조식) 나. 자가 점검표(점검 항목|예|아니오 3열 표, 5~7행).
+7. 자주 묻는 질문: Q 3~5개. 각 질문은 'Q. 질문 내용'으로 쓰고, 답변은 'A.' 뒤에 개조식·명사형으로 1~3줄 정리.
+8. 기대효과: 가. 나. 다. 로 3항목.
+[교육부·교육청 자료 반영 규칙]
+- 교육부와 시도교육청이 실제로 운영하는 교직원 법정·기본 연수 체계(정보통신윤리·개인정보보호·청렴·부패방지·성희롱예방·아동학대예방·학교폭력예방·안전교육 등)의 일반적인 교육 내용과 판단 기준에 맞게 작성하세요.
+- 첨부된 참고 자료가 있으면 그 자료의 최신 지침·사례를 최우선으로 반영하세요.
+- 다만 확인되지 않은 공문번호, 시행 연도, 개정 일자, 통계 수치, 특정 학교·개인의 실제 사건은 절대 지어내지 마세요.
+- 근거 법령이나 지침을 인용해야 하는데 입력에 없으면 "(근거 법령·지침 확인 후 기재)"처럼 담당자가 채울 자리로 표시하세요.
+- 사례는 실명·실제 사건이 아니라 학교 현장에서 흔히 발생하는 상황 유형으로 각색하여 제시하세요.
+[서식 규칙] 제목은 본문보다 크게, 굵게, 가운데 정렬하고 제목 아래 교육 주제에 맞는 부제를 넣으세요. 표는 반드시 선이 보이는 table로 작성하세요.
+[항목 기호 4단계 위계 — 반드시 준수]
+  1단계(대항목): 1.  2.  3.  ...
+  2단계(중항목): 가.  나.  다.  ...
+  3단계(소항목): 1)  2)  3)  ...
+  4단계(세항목): 가)  나)  다)  ...
+[개조식·명사형 종결 — 반드시 준수]
+- 모든 문장은 개조식으로 짧게 끊어 쓰고, 문단형 설명문으로 이어 쓰지 마세요.
+- 모든 문장은 명사형 어미로 끝내세요. 예: ~ 준수, ~ 금지, ~ 필요, ~ 확인, ~ 강화, ~ 유의, ~ 해당함, ~ 적용됨.
+- "~합니다.", "~입니다.", "~해야 합니다.", "~하였습니다." 같은 높임말 종결을 본문에 사용하지 마세요.
+- 표 안의 내용도 동일하게 개조식·명사형으로 작성하세요.
+- 가. 항목에서 나. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
+[예시]
+- 가. 업무용 계정과 개인 계정의 분리 사용 필요
+- 나. 학생 개인정보가 포함된 파일의 외부 저장매체 반출 금지
+  1) 부득이한 경우 암호화 후 반출, 사용 후 즉시 삭제
+  2) 반출 이력 기록 및 보관 필요
+[금지] 소요예산·산출내역 항목 금지. 문서 맨 끝에 작성일, 학교장명, 직인, 결재란 금지. 마지막은 기대효과 본문으로 끝내세요.`;
       break;
 
     case DocType.REPORT:
@@ -978,16 +1038,22 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 - 단, 사용자가 실제로 입력한 항목의 내용은 그대로 반영하고 임의로 바꾸지 마세요.
 - 법령명·공문번호·통계 등 근거·출처는 이 규칙의 예외입니다. [근거·출처 작성 규칙]에 따라 추측하지 말고 사용자가 채울 자리로 표시하세요.`;
 
+  const referencesInstruction = useSearchGrounding
+    ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
+    : NO_FABRICATED_REFERENCES_INSTRUCTION;
+
   parts.push({
-    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${NO_FABRICATED_REFERENCES_INSTRUCTION}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
+    text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}`,
   });
 
   try {
     let usedModel = '';
+    let grounding: GroundingInfo | undefined;
+    const options = { temperature: 0.3, useSearchGrounding };
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, onProgressText, (model) => { usedModel = model; })
-      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, { temperature: 0.3 }, (model) => { usedModel = model; });
-    return { text: stripGeneratedCodeFences(raw), model: usedModel };
+      ? await aiGenerateMultipartStream(parts, SYSTEM_INSTRUCTION, options, onProgressText, (model) => { usedModel = model; }, (info) => { grounding = info; })
+      : await aiGenerateMultipart(parts, SYSTEM_INSTRUCTION, options, (model) => { usedModel = model; }, (info) => { grounding = info; });
+    return { text: stripGeneratedCodeFences(raw), model: usedModel, ...(grounding ? { grounding } : {}) };
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));

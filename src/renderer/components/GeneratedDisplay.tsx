@@ -1,11 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { notifyToast } from '../lib/toast';
-import { AlertTriangle, Copy, Download, FileText, History, Languages, Loader2, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
+import { AlertTriangle, Copy, Download, FileText, Globe, History, Languages, Loader2, PenLine, Printer, RotateCcw, Trash2 } from 'lucide-react';
 import { extractPlainText, markdownOrHtmlToHtml } from '../lib/generatedContent';
 import { sanitizeHtml } from '../lib/security';
 import { safeSetItem } from '../lib/safeStorage';
 import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/translation';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
+import type { GroundingInfo } from '../../preload/types';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -21,6 +22,8 @@ interface GeneratedDisplayProps {
   enableTranslation?: boolean;
   // 이 결과를 실제로 생성한 AI 모델명 — 주어지면 헤더에 작은 태그로 표시한다.
   model?: string;
+  // 웹 검색 참조로 생성한 경우의 출처 정보 — 주어지면 결과 위에 참조 자료 목록을 표시한다.
+  grounding?: GroundingInfo;
 }
 
 interface SavedGeneratedVersion {
@@ -74,7 +77,7 @@ function applyDocumentStyles(el: HTMLElement): void {
   });
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -784,6 +787,46 @@ h2,h3{page-break-after:avoid;}
                 </div>
               </div>
             )}
+
+            {grounding && (grounding.sources.length > 0 || grounding.searchSuggestionHtml) && (
+              <div className="bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg p-3 no-print">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">웹 검색 참조 자료</span>
+                  {grounding.sources.length > 0 && (
+                    <span className="text-xs text-[#78716C] dark:text-[#9C8F87]">{grounding.sources.length}건</span>
+                  )}
+                </div>
+                <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mb-2 break-keep">
+                  AI가 이 문서를 작성하며 참고한 자료입니다. 실제 배포 전에 원문에서 최신 여부를 확인해 주세요.
+                </p>
+                {grounding.sources.length > 0 && (
+                  <ol className="space-y-1 mb-2">
+                    {grounding.sources.map((source, index) => (
+                      <li key={source.uri} className="text-xs leading-relaxed">
+                        <span className="text-[#A8A29E] mr-1">{index + 1}.</span>
+                        <button
+                          type="button"
+                          onClick={() => window.electronAPI.openExternal(source.uri)}
+                          className="text-left text-blue-600 dark:text-blue-300 hover:underline break-all"
+                          title={source.uri}
+                        >
+                          {source.title}
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {grounding.searchSuggestionHtml && (
+                  <iframe
+                    srcDoc={grounding.searchSuggestionHtml}
+                    sandbox="allow-popups allow-popups-to-escape-sandbox"
+                    className="w-full h-[72px] border-0"
+                    title="구글 검색 제안"
+                  />
+                )}
+              </div>
+            )}
           </div>
         )}
         <div
@@ -828,6 +871,8 @@ h2,h3{page-break-after:avoid;}
         @media print {
           @page { size: A4; margin: 18mm 16mm; }
           body { background: #fff !important; }
+          /* 웹 검색 참조 자료는 화면 안내용이므로 인쇄물에는 넣지 않는다. */
+          .no-print { display: none !important; }
           .print-section {
             box-shadow: none !important;
             border: 0 !important;

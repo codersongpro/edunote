@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react';
-import { DocType, GongmunInputs, PlanInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
+import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap, Search } from 'lucide-react';
+import type { GroundingInfo } from '../../preload/types';
+import { DocType, GongmunInputs, PlanInputs, EduMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
@@ -16,6 +17,172 @@ import { stripGeneratedCodeFences } from '../lib/generatedContent';
 const EXAMPLE_DOCS: Partial<Record<DocType, string>> = {
   [DocType.GONGMUN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; padding: 20px 30px;">  수신 &nbsp;수신자 참조<br>  (경유)<br>  제목 &nbsp;<strong>2026학년도 AI활용 수업 연수계획</strong><br><br>  1. 관련: 창의특수교육과-1234(2026. 3. 2.)「2026학년도 충북GEG 운영 계획」<br>  2. 위 호와 관련하여 2026. 충북GEG 워크숍을 다음과 같이 실시하오니, 각급 학교 및 기관의 교직원이 참여할 수 있도록 안내하여 주시기 바랍니다.<br>  &nbsp;&nbsp;가. 일시: 2026. 4. 18.(토) 10:00 ~ 16:00<br>  &nbsp;&nbsp;나. 장소: 충청북도교육청 교육연구정보원 시청각실<br>  &nbsp;&nbsp;다. 대상: 관내 초·중·고등학교 희망 교원 및 교육전문직원<br>  &nbsp;&nbsp;라. 내용: 구글 교육용 도구를 활용한 미래형 수업 설계 및 에듀테크 실습<br><br>  붙임 &nbsp;2026. 충북GEG 워크숍 운영 계획서 1부. &nbsp;끝.</div></body></html>`,
   [DocType.PLAN]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width: 800px; margin: 0 auto; padding: 20px 30px;">    <!-- 문서 제목 영역 -->    <div style="text-align: center; margin-bottom: 30px;">        <h1 style="font-size: 22pt; font-weight: bold; margin-bottom: 10px;">2026학년도 교원 AI 활용 수업 역량 강화 연수 운영 계획</h1>        <p style="font-size: 14pt; font-style: italic; color: #4b5563; margin: 0;">- AI와 함께 열어가는 미래 교육, 교실 속 디지털 혁신의 첫걸음 -</p>    </div>    <!-- 1. 추진배경 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">1. 추진배경</h2>        <div style="margin-left: 10px;">            가. 2022 개정 교육과정 도입에 따른 디지털 소양 교육 강화 및 에듀테크 활용 수업 확대 필요성 증대<br>            나. 인공지능(AI) 기술의 급격한 발전에 발맞추어 교원의 디지털 기반 교수·학습 설계 및 실행 역량 강화 요구<br>            다. 학생 맞춤형 개별화 교육 실현을 위한 교사의 AI 도구 활용 능력 및 에듀테크 활용 수업 전문성 신장 필요        </div>    </div>    <!-- 2. 목적 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">2. 목적</h2>        <div style="margin-left: 10px;">            가. AI 및 에듀테크 도구를 활용한 맞춤형 수업 설계 및 평가 역량 강화<br>            나. 교실 수업 개선을 위한 교원 간 공동체적 연구 및 실천 문화 조성<br>            다. 디지털 대전환 시대에 부합하는 미래지향적 공교육 신뢰도 제고        </div>    </div>    <!-- 3. 운영방침 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">3. 운영방침</h2>        <div style="margin-left: 10px;">            가. 본 연수는 전 교원을 대상으로 하며, 자발적 참여와 실습 중심의 워크숍 형태로 운영한다.<br>            나. 학교 교육과정 운영에 지장이 없는 방과후 시간 또는 전문적 학습공동체의 날을 활용하여 실시한다.<br>            다. 연수 강사는 AI 교육 분야의 외부 전문가 또는 교내 전문 교사를 초빙하여 전문성을 확보한다.<br>            라. 연수 이수 시간에 대한 상시 연수 학점(직무연수) 인정을 추진한다.        </div>    </div>    <!-- 4. 세부추진계획 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">4. 세부추진계획</h2>        <div style="margin-left: 10px;">            가. 연수 개요<br>            &nbsp;&nbsp;1) 일시: 2026년 4월 ~ 6월 (총 3회, 회당 2시간, 총 6시간)<br>            &nbsp;&nbsp;2) 대상: 전 교원<br>            &nbsp;&nbsp;3) 장소: 컴퓨터실 및 각 학년 연구실<br>            &nbsp;&nbsp;4) 방법: 대면 실습 및 토론 중심 워크숍<br>            <br>            나. 회차별 연수 세부 내용            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:10%;">회차</th>                        <th style="padding:8px; border:1px solid black; width:15%;">일시</th>                        <th style="padding:8px; border:1px solid black; width:30%;">주제</th>                        <th style="padding:8px; border:1px solid black; width:35%;">주요 내용</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">1회차</td>                        <td style="padding:8px; border:1px solid black;">4월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 교육의 이해와 트렌드</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 생성형 AI(ChatGPT, 뤼튼 등) 기초<br>- 교육용 AI 도구의 윤리적 활용 방안</td>                        <td style="padding:8px; border:1px solid black;">외부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">2회차</td>                        <td style="padding:8px; border:1px solid black;">5월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 도구를 활용한 수업 설계</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- 교과별 AI 활용 수업 지도안 작성 실습<br>- Canva, Gamma 등 시각 자료 제작 도구 활용</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">3회차</td>                        <td style="padding:8px; border:1px solid black;">6월 중</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">AI 기반 평가 및 피드백</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">- AI 평가 도구를 활용한 과정중심 평가 설계<br>- 학생 맞춤형 피드백 자동화 사례 공유</td>                        <td style="padding:8px; border:1px solid black;">내부강사</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 페이지 분할선 (A4 2장 분량 조절을 위한 페이지 브레이크) -->    <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;">    <!-- 5. 소요예산 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">5. 소요예산</h2>        <div style="margin-left: 10px;">            가. 총 예산액: 금500,000원 (금오십만원)<br>            나. 예산 과목: 학교운영비 - 교원연수운영 - 교원역량강화연수<br>            다. 세부 집행 내역            <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">                <thead>                    <tr style="background-color:#f3f4f6; font-weight:bold;">                        <th style="padding:8px; border:1px solid black; width:20%;">목</th>                        <th style="padding:8px; border:1px solid black; width:20%;">세목</th>                        <th style="padding:8px; border:1px solid black; width:35%;">산출내역</th>                        <th style="padding:8px; border:1px solid black; width:15%;">금액(원)</th>                        <th style="padding:8px; border:1px solid black; width:10%;">비고</th>                    </tr>                </thead>                <tbody>                    <tr>                        <td style="padding:8px; border:1px solid black;">강사료</td>                        <td style="padding:8px; border:1px solid black;">강사수당</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">외부 강사 초빙료 (150,000원 × 2시간)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">300,000</td>                        <td style="padding:8px; border:1px solid black;">1회차</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">수수료및임차료</td>                        <td style="padding:8px; border:1px solid black;">교재인쇄비</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 교재 및 실습 자료 인쇄 (10,000원 × 10부)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">자체제작</td>                    </tr>                    <tr>                        <td style="padding:8px; border:1px solid black;">운영비</td>                        <td style="padding:8px; border:1px solid black;">급량비(다과)</td>                        <td style="padding:8px; border:1px solid black; text-align:left;">연수 참석자 다과 및 음료 구매 (5,000원 × 20명)</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">100,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                    <tr style="background-color:#f9fafb; font-weight:bold;">                        <td colspan="3" style="padding:8px; border:1px solid black; text-align:center;">합 계</td>                        <td style="padding:8px; border:1px solid black; text-align:right;">500,000</td>                        <td style="padding:8px; border:1px solid black;">-</td>                    </tr>                </tbody>            </table>        </div>    </div>    <!-- 6. 기대효과 -->    <div style="margin-bottom: 25px;">        <h2 style="font-size: 15pt; font-weight: bold; margin-bottom: 10px;">6. 기대효과</h2>        <div style="margin-left: 10px;">            가. 교원의 AI 및 에듀테크 활용 능력 향상으로 학생 맞춤형 개별화 수업 활성화<br>            나. 디지털 기반의 다양한 수업 모델 개발 및 적용을 통한 교실 수업의 질적 개선<br>            다. 미래 교육 환경 변화에 능동적으로 대처하는 교원의 전문성 및 자신감 고취        </div>    </div></div></body></html>`,
+  [DocType.EDU_MATERIAL]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width:800px; margin:0 auto; padding:20px 30px;">
+  <div style="text-align:center; margin-bottom:30px;">
+    <h1 style="font-size:22pt; font-weight:bold; margin-bottom:10px;">2026학년도 교직원 정보통신윤리 교육자료</h1>
+    <p style="font-size:14pt; font-style:italic; color:#4b5563; margin:0;">- 안전한 디지털 학교, 교직원이 먼저 지키는 정보통신윤리 -</p>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">1. 교육 개요</h2>
+    <div style="margin-left:10px;">
+      가. 교육명: 2026학년도 교직원 정보통신윤리 교육<br>
+      나. 대상: 전 교직원<br>
+      다. 일시: 2026. 4. 8.(수) 15:00 ~ 16:00<br>
+      라. 장소: 본교 시청각실<br>
+      마. 방법: 집합 연수 및 사례 토의<br>
+      바. 시간: 1시간(법정 의무교육 이수 시간에 포함)
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">2. 추진 근거 및 필요성</h2>
+    <div style="margin-left:10px;">
+      가. 정보통신망 이용 관련 교직원 법정 의무교육 대상 해당 (근거 법령·지침 확인 후 기재)<br>
+      나. 업무용 계정·클라우드 활용 확대에 따른 학생 개인정보 유출 위험 증가<br>
+      다. 생성형 AI 활용 수업 확산에 따른 저작권·개인정보 처리 기준 숙지 필요<br>
+      라. 사이버폭력·디지털 성범죄 예방을 위한 교직원 대응 역량 강화 필요
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">3. 교육 목표</h2>
+    <div style="margin-left:10px;">
+      가. 업무 처리 과정에서 지켜야 할 정보통신윤리 기준 이해<br>
+      나. 학생 개인정보 및 교육자료의 안전한 관리 방법 습득<br>
+      다. 디지털 침해 상황 발생 시 신고·조치 절차 숙지
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">4. 주요 교육 내용</h2>
+    <div style="margin-left:10px;">
+      가. 정보통신윤리의 기본 개념<br>
+      &nbsp;&nbsp;1) 정보통신윤리: 정보 이용 과정에서 타인의 권리와 안전을 침해하지 않기 위한 행동 기준<br>
+      &nbsp;&nbsp;2) 교직원은 개인정보처리자이자 학생 지도자로서 이중의 책임 부담<br>
+      <br>
+      나. 학생 개인정보 보호<br>
+      &nbsp;&nbsp;1) 수집 목적 범위를 벗어난 개인정보 수집·이용 금지<br>
+      &nbsp;&nbsp;2) 명렬표·성적 자료의 개인 저장매체 반출 및 개인 메신저 전송 금지<br>
+      &nbsp;&nbsp;3) 업무용 계정과 개인 계정의 분리 사용 필요<br>
+      <br>
+      다. 저작권 및 생성형 AI 활용<br>
+      &nbsp;&nbsp;1) 수업 목적 저작물 이용 범위 확인 후 활용<br>
+      &nbsp;&nbsp;2) 생성형 AI에 학생 실명·연락처 등 식별정보 입력 금지<br>
+      <br>
+      라. 사이버폭력 예방 및 대응<br>
+      &nbsp;&nbsp;1) 학생 간 온라인 괴롭힘 인지 시 즉시 학교폭력 사안 처리 절차 연계<br>
+      &nbsp;&nbsp;2) 증거 자료 보전 후 담당 부서 통보
+      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">
+        <thead>
+          <tr style="background-color:#f3f4f6; font-weight:bold;">
+            <th style="padding:8px; border:1px solid black; width:25%;">소주제</th>
+            <th style="padding:8px; border:1px solid black; width:40%;">핵심 내용</th>
+            <th style="padding:8px; border:1px solid black; width:35%;">유의 사항</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px; border:1px solid black;">개인정보 보호</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">수집·이용·보관·파기 전 과정의 최소 처리 원칙</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">개인 저장매체 반출 금지, 보관 기간 경과 자료 즉시 파기</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid black;">저작권·AI</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">수업 목적 이용 범위 및 출처 표시 기준</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">AI 입력값에 식별정보 포함 금지, 결과물 사실 확인 필요</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid black;">사이버폭력</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">인지·보전·통보·지원 4단계 대응 절차</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">임의 중재 지양, 사안 처리 절차 준수</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <hr style="page-break-after: always; border: none; border-top: 2px dashed #9ca3af; margin: 40px 0;">
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">5. 사례 및 판단 기준</h2>
+    <div style="margin-left:10px;">
+      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; font-size:11pt;">
+        <thead>
+          <tr style="background-color:#f3f4f6; font-weight:bold;">
+            <th style="padding:8px; border:1px solid black; width:35%;">상황 유형</th>
+            <th style="padding:8px; border:1px solid black; width:15%;">판단</th>
+            <th style="padding:8px; border:1px solid black; width:50%;">근거 및 조치</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px; border:1px solid black; text-align:left;">학급 명렬표를 개인 메신저로 전송</td>
+            <td style="padding:8px; border:1px solid black; color:#b91c1c; font-weight:bold;">위반</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">업무 시스템 내 공유로 대체, 전송 이력 즉시 삭제</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid black; text-align:left;">개인 USB에 성적 자료 저장 후 자택 반출</td>
+            <td style="padding:8px; border:1px solid black; color:#b91c1c; font-weight:bold;">위반</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">부득이한 경우 암호화 후 반출, 사용 후 즉시 삭제 및 이력 기록</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid black; text-align:left;">수업 자료 제작 시 생성형 AI에 단원명·성취기준 입력</td>
+            <td style="padding:8px; border:1px solid black; color:#166534; font-weight:bold;">허용</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">식별정보 미포함, 결과물 사실 확인 후 활용</td>
+          </tr>
+          <tr>
+            <td style="padding:8px; border:1px solid black; text-align:left;">학생 단체 대화방에서 특정 학생 비방 정황 확인</td>
+            <td style="padding:8px; border:1px solid black; font-weight:bold;">즉시 조치</td>
+            <td style="padding:8px; border:1px solid black; text-align:left;">화면 자료 보전, 담당 부서 통보 후 사안 처리 절차 연계</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">6. 실천 수칙 및 자가 점검</h2>
+    <div style="margin-left:10px;">
+      가. 실천 수칙<br>
+      &nbsp;&nbsp;1) 업무용 계정 비밀번호 정기 변경 및 타인 공유 금지<br>
+      &nbsp;&nbsp;2) 공용 PC 사용 후 로그아웃 및 다운로드 자료 삭제<br>
+      &nbsp;&nbsp;3) 개인정보 포함 문서 출력물의 즉시 회수 및 파쇄<br>
+      <br>
+      나. 자가 점검표
+      <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; text-align:center; margin-top:10px; font-size:11pt;">
+        <thead>
+          <tr style="background-color:#f3f4f6; font-weight:bold;">
+            <th style="padding:8px; border:1px solid black; width:70%;">점검 항목</th>
+            <th style="padding:8px; border:1px solid black; width:15%;">예</th>
+            <th style="padding:8px; border:1px solid black; width:15%;">아니오</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px; border:1px solid black; text-align:left;">업무용 계정과 개인 계정을 분리하여 사용함</td><td style="padding:8px; border:1px solid black;">□</td><td style="padding:8px; border:1px solid black;">□</td></tr>
+          <tr><td style="padding:8px; border:1px solid black; text-align:left;">학생 개인정보 파일을 개인 저장매체에 보관하지 않음</td><td style="padding:8px; border:1px solid black;">□</td><td style="padding:8px; border:1px solid black;">□</td></tr>
+          <tr><td style="padding:8px; border:1px solid black; text-align:left;">생성형 AI에 학생 식별정보를 입력하지 않음</td><td style="padding:8px; border:1px solid black;">□</td><td style="padding:8px; border:1px solid black;">□</td></tr>
+          <tr><td style="padding:8px; border:1px solid black; text-align:left;">사이버폭력 인지 시 보고 절차를 알고 있음</td><td style="padding:8px; border:1px solid black;">□</td><td style="padding:8px; border:1px solid black;">□</td></tr>
+          <tr><td style="padding:8px; border:1px solid black; text-align:left;">보관 기간이 지난 개인정보 자료를 파기함</td><td style="padding:8px; border:1px solid black;">□</td><td style="padding:8px; border:1px solid black;">□</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">7. 자주 묻는 질문</h2>
+    <div style="margin-left:10px;">
+      Q. 학부모가 개인 휴대전화로 학생 사진을 요청하는 경우<br>
+      A. 개인 연락 수단을 통한 전송 지양, 학교 공식 알림 시스템 활용 필요<br>
+      <br>
+      Q. 수업 자료로 인터넷 이미지를 사용해도 되는지<br>
+      A. 수업 목적 이용 범위 내에서 출처 표시 후 활용 가능, 외부 공개 시 별도 이용 허락 확인 필요<br>
+      <br>
+      Q. 개인 노트북으로 업무 처리 시 유의 사항<br>
+      A. 백신 최신 상태 유지, 업무 자료 별도 폴더 관리, 업무 종료 후 자료 삭제 필요
+    </div>
+  </div>
+  <div style="margin-bottom:25px;">
+    <h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">8. 기대효과</h2>
+    <div style="margin-left:10px;">
+      가. 교직원의 정보통신윤리 인식 제고 및 개인정보 침해 사고 예방<br>
+      나. 디지털 기반 수업 확대 상황에서의 안전한 자료 활용 문화 정착<br>
+      다. 사이버폭력 사안의 신속한 인지 및 대응 체계 강화
+    </div>
+  </div>
+</div></body></html>`,
   [DocType.REPORT]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; max-width:800px; margin:0 auto; padding: 20px 30px;"><div style="text-align:center; margin-bottom:30px;"><h1 style="font-size:22pt; font-weight:bold; margin-bottom:10px;">2026학년도 교원 AI 활용 수업 역량 강화 연수 운영 결과 보고서</h1><p style="font-size:14pt; font-style:italic; color:#4b5563; margin:0;">- AI와 함께 열어가는 미래 교육, 교실 속 디지털 혁신의 첫걸음 -</p></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">1. 추진 개요</h2><div style="margin-left:10px;">사업명: 2026학년도 교원 AI 활용 수업 역량 강화 연수 / 기간: 2026. 4. 15. ~ 6. 17. (총 3회, 6시간) / 대상: 전 교원 20명 / 예산: 500,000원 (집행률 100%)</div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">2. 추진 실적</h2><div style="margin-left:10px;"><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:30%;">항목</th><th style="padding:8px; border:1px solid black; width:35%;">계획</th><th style="padding:8px; border:1px solid black; width:35%;">결과</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">운영 횟수</td><td style="padding:8px; border:1px solid black;">3회</td><td style="padding:8px; border:1px solid black;">3회</td></tr><tr><td style="padding:8px; border:1px solid black;">총 연수 시간</td><td style="padding:8px; border:1px solid black;">6시간</td><td style="padding:8px; border:1px solid black;">6시간</td></tr><tr><td style="padding:8px; border:1px solid black;">참여 인원</td><td style="padding:8px; border:1px solid black;">전 교원</td><td style="padding:8px; border:1px solid black;">20명</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">3. 세부 운영 결과</h2><div style="margin-left:10px;">가. 회차별 결과<br><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:10%;">회차</th><th style="padding:8px; border:1px solid black; width:15%;">일시</th><th style="padding:8px; border:1px solid black; width:30%;">주제</th><th style="padding:8px; border:1px solid black; width:35%;">주요 내용 및 결과</th><th style="padding:8px; border:1px solid black; width:10%;">비고</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">1회차</td><td style="padding:8px; border:1px solid black;">4.15.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 교육의 이해와 트렌드</td><td style="padding:8px; border:1px solid black; text-align:left;">- 생성형 AI(ChatGPT, 뤼튼 등) 기초 실습 완료<br>- 교육용 AI 윤리 가이드라인 학습 및 토론 실시</td><td style="padding:8px; border:1px solid black;">외부강사</td></tr><tr><td style="padding:8px; border:1px solid black;">2회차</td><td style="padding:8px; border:1px solid black;">5.20.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 도구를 활용한 수업 설계</td><td style="padding:8px; border:1px solid black; text-align:left;">- 교과별 AI 활용 수업 지도안 작성 실습 완료<br>- Canva, Gamma 활용 시각 자료 제작 완료</td><td style="padding:8px; border:1px solid black;">내부강사</td></tr><tr><td style="padding:8px; border:1px solid black;">3회차</td><td style="padding:8px; border:1px solid black;">6.17.(수)</td><td style="padding:8px; border:1px solid black; text-align:left;">AI 기반 평가 및 피드백</td><td style="padding:8px; border:1px solid black; text-align:left;">- AI 평가 도구 활용 과정중심 평가 설계 실습<br>- 학생 맞춤형 피드백 자동화 사례 공유 완료</td><td style="padding:8px; border:1px solid black;">내부강사</td></tr></tbody></table><br>나. 연수 운영 사진<table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><tbody><tr><td style="padding:8px; border:1px solid black; width:50%; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>1회차 생성형 AI 기초 실습 및 윤리 교육 전경</td><td style="padding:8px; border:1px solid black; width:50%; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>2회차 AI 활용 수업 지도안 작성 및 실습 장면</td></tr><tr><td style="padding:8px; border:1px solid black; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>3회차 과정중심 평가 도구 실습 및 피드백 공유</td><td style="padding:8px; border:1px solid black; height:150px; vertical-align:middle; color:#6b7280;">[사진 첨부]<br><br>연수 결과 종합 토론 및 소감 발표</td></tr></tbody></table></div></div><hr style="page-break-after:always; border:none; border-top:2px dashed #9ca3af; margin:40px 0;"><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">4. 만족도 조사 결과</h2><div style="margin-left:10px;"><table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:35%;">조사 항목</th><th style="padding:8px; border:1px solid black; width:20%;">만족도(5점)</th><th style="padding:8px; border:1px solid black; width:45%;">주요 의견</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">연수 내용의 유익성</td><td style="padding:8px; border:1px solid black;">4.8</td><td style="padding:8px; border:1px solid black; text-align:left;">실제 수업에 바로 적용 가능한 내용 구성 호평</td></tr><tr><td style="padding:8px; border:1px solid black;">강사 전문성 및 진행 방식</td><td style="padding:8px; border:1px solid black;">4.7</td><td style="padding:8px; border:1px solid black; text-align:left;">실습 중심 운영 방식 만족도 높음</td></tr><tr><td style="padding:8px; border:1px solid black;">연수 시간 및 환경</td><td style="padding:8px; border:1px solid black;">4.5</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 시간 확대 및 후속 연수 요구</td></tr><tr style="background-color:#f9fafb; font-weight:bold;"><td style="padding:8px; border:1px solid black;">종합 만족도</td><td style="padding:8px; border:1px solid black;">4.7</td><td style="padding:8px; border:1px solid black; text-align:left;">응답자 20명 기준</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">5. 소요예산 정산</h2><div style="margin-left:10px;">가. 총 집행액: 금500,000원 (금오십만원) — 집행률 100%<br>나. 예산 과목: 학교운영비 - 교원연수운영 - 교원역량강화연수<br>다. 세부 정산 내역<table border="1" style="border-collapse:collapse; width:100%; border:1px solid black; text-align:center; font-size:11pt; margin-top:8px;"><thead><tr style="background-color:#f3f4f6; font-weight:bold;"><th style="padding:8px; border:1px solid black; width:13%;">목</th><th style="padding:8px; border:1px solid black; width:13%;">세목</th><th style="padding:8px; border:1px solid black; width:30%;">산출내역</th><th style="padding:8px; border:1px solid black; width:12%;">계획액(원)</th><th style="padding:8px; border:1px solid black; width:12%;">집행액(원)</th><th style="padding:8px; border:1px solid black; width:10%;">잔액(원)</th><th style="padding:8px; border:1px solid black; width:10%;">비고</th></tr></thead><tbody><tr><td style="padding:8px; border:1px solid black;">강사료</td><td style="padding:8px; border:1px solid black;">강사수당</td><td style="padding:8px; border:1px solid black; text-align:left;">외부 강사 초빙료 (150,000원 × 2시간)</td><td style="padding:8px; border:1px solid black; text-align:right;">300,000</td><td style="padding:8px; border:1px solid black; text-align:right;">300,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">1회차</td></tr><tr><td style="padding:8px; border:1px solid black;">수수료</td><td style="padding:8px; border:1px solid black;">교재인쇄비</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 교재 및 실습 자료 인쇄 (10,000원 × 10부)</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">자체제작</td></tr><tr><td style="padding:8px; border:1px solid black;">운영비</td><td style="padding:8px; border:1px solid black;">급량비</td><td style="padding:8px; border:1px solid black; text-align:left;">연수 참석자 다과 및 음료 (5,000원 × 20명)</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">100,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">-</td></tr><tr style="background-color:#f9fafb; font-weight:bold;"><td colspan="3" style="padding:8px; border:1px solid black; text-align:center;">합 계</td><td style="padding:8px; border:1px solid black; text-align:right;">500,000</td><td style="padding:8px; border:1px solid black; text-align:right;">500,000</td><td style="padding:8px; border:1px solid black; text-align:right;">0</td><td style="padding:8px; border:1px solid black;">-</td></tr></tbody></table></div></div><div style="margin-bottom:25px;"><h2 style="font-size:15pt; font-weight:bold; margin-bottom:10px;">6. 운영 성과 및 제언</h2><div style="margin-left:10px;">가. 운영 성과<br>&nbsp;&nbsp;1) 전 교원(20명) 대상 3회 연수 완료, 직무연수 6시간 이수 처리 완료하였음.<br>&nbsp;&nbsp;2) AI 수업 설계 실습을 통해 교과별 AI 활용 지도안 20종 이상 개발하였음.<br>&nbsp;&nbsp;3) 연수 후 참여 교원의 85%가 수업 내 AI 도구 활용 의향을 밝혔음.<br>나. 제언 및 향후 계획<br>&nbsp;&nbsp;1) 일회성 연수에 그치지 않도록 교내 전문적 학습공동체와 연계한 지속적 수업 나눔 및 모니터링이 필요함.<br>&nbsp;&nbsp;2) 하반기에는 교과별 특성에 맞춘 심화 과정(AI 디지털교과서 활용 구체화) 연수 개설을 검토할 필요가 있음.</div></div></div></body></html>`,
   [DocType.PUMUI]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; padding: 20px; max-width: 800px; margin: 0 auto;">  <div style="text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 30px; letter-spacing: 10px;">지출품의서</div>  <div style="line-height: 2.0; margin-bottom: 20px;">    1. 관련: 창의특수교육과-1234(2026.5.24.)<br>    2. 2026. AI수업 역량강화 연수 운영을 위해 다음과 같이 물품을 구입하고자 합니다.<br>    &nbsp;&nbsp;가. 내역: 2026. AI수업 역량강화 연수 운영 물품<br>    &nbsp;&nbsp;나. 용도: 교원 역량 강화<br>    &nbsp;&nbsp;다. 소요예산: 금500,000원 (금오십만원)<br>    &nbsp;&nbsp;라. 산출내역: 노트 100개 * 3,000원 + 펜 100개 * 2,000원 = 500,000원<br><br>    붙임 &nbsp;지출품의서 1부. &nbsp;끝.  </div></div></body></html>`,
   [DocType.MEETING_MINUTES]: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Document</title></head><body><div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.6; color:#000000; padding: 20px;">  <div style="text-align:right; font-size:11pt; font-weight:bold; margin-bottom:10px;"><br></div>  <div style="text-align:center; font-size:22pt; font-weight:bold; margin-bottom:30px; letter-spacing:2px;">2026. AI수업 역량강화 연수 운영 협의</div><div style="text-align:center; font-size:22pt; font-weight:bold; margin-bottom:30px; letter-spacing:2px;"><span style="font-size: 14.6667px; text-align: right;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 충북초등학교</span></div>  <table border="1" style="border-collapse:collapse; width:100%; color:#000000; border:1px solid black; font-size:12pt;">    <tbody><tr style="height:45px;">      <td style="width:15%; text-align:center; background-color:#f3f4f6; font-weight:bold; border:1px solid black;">일 시</td>      <td style="width:35%; padding-left:15px; border:1px solid black;">2026. 5. 24.(일) <br>15:30 ~ 16:30</td>      <td style="width:15%; text-align:center; background-color:#f3f4f6; font-weight:bold; border:1px solid black;">장 소</td>      <td style="width:35%; padding-left:15px; border:1px solid black;">교무실</td>    </tr>    <tr style="height:45px;">      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; border:1px solid black;">출석위원</td>      <td colspan="3" style="padding-left:15px; border:1px solid black;">교장, 교감, 교무부장, 연구부장, 정보부장 (총 5명)</td>    </tr>    <tr style="height:45px;">      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; border:1px solid black;">회의안건</td>      <td colspan="3" style="padding-left:15px; font-weight:bold; border:1px solid black;">2026. AI수업 역량강화 연수 운영 적절성 검토</td>    </tr>    <tr style="height:40px;">      <td colspan="4" style="text-align:center; background-color:#e5e7eb; font-weight:bold; border:1px solid black; letter-spacing:4px;">회 의 내 용</td>    </tr>    <tr>      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; vertical-align:middle; padding:15px; border:1px solid black;">정보<br>부장</td>      <td colspan="3" style="padding:15px; line-height:1.6; border:1px solid black; text-align:justify;">        금일 협의회는 '2026학년도 AI수업 역량강화 연수' 운영 계획의 적절성을 검토하고, 교원의 디지털 기반 교수학습 역량을 효과적으로 지원하기 위해 마련되었습니다. 이번 연수는 단순 이론 강의를 탈피하여 생성형 AI 및 AI 코스웨어를 활용한 실습 중심의 교육과정으로 기획하였습니다. 연수 일정, 강사 구성 및 운영 방식의 적절성에 대해 고견을 부탁드립니다.      </td>    </tr>    <tr>      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; vertical-align:middle; padding:15px; border:1px solid black;">연구<br>부장</td>      <td colspan="3" style="padding:15px; line-height:1.6; border:1px solid black; text-align:justify;">        제시해주신 연수 프로그램을 보니 최근 교육과정 개정 방향과 우리 학교의 디지털 교육 환경에 매우 부합합니다. 특히 교사들이 직접 노트북을 활용해 수업 설계안을 작성해보는 실습 중심의 운영 방식이 매우 적절하다고 생각합니다. 다만, 교사들의 디지털 기기 활용 숙련도 편차를 고려하여 실습 시 도움을 줄 수 있는 보조 인력이나 멘토 교사를 지정해 운영하면 연수 효과가 더욱 극대화될 것입니다.      </td>    </tr>    <tr>      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; vertical-align:middle; padding:15px; border:1px solid black;">교무<br>부장</td>      <td colspan="3" style="padding:15px; line-height:1.6; border:1px solid black; text-align:justify;">        연수 일정이 6월 중 전문적 학습공동체의 날(수요일 오후)로 계획되어 있어, 수업 결손 없이 전 교원이 안정적으로 참여하기에 매우 적절한 시기입니다. 연수 당일 교무실 및 행정실과의 긴밀한 협조를 통해 무선 네트워크 환경을 사전 점검하고 멀티탭 등 기자재를 충분히 확보하여 연수 운영에 차질이 없도록 행정적 지원을 아끼지 않겠습니다.      </td>    </tr>    <tr>      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; vertical-align:middle; padding:15px; border:1px solid black;">교감</td>      <td colspan="3" style="padding:15px; line-height:1.6; border:1px solid black; text-align:justify;">        AI 시대에 교원의 디지털 역량 강화는 학교 교육력 제고를 위한 필수 과제입니다. 이번 연수 운영 방식은 교사들의 실제적인 수업 설계 능력을 키우는 데 매우 적합하게 설계되었습니다. 연수 이후에도 교사들이 수업 시간에 AI 도구를 적극적으로 활용할 수 있도록, 우수 수업 사례를 공유하는 사후 피드백 기회를 마련해 주시기 바라며, 관련 예산은 적극 지원하겠습니다.      </td>    </tr>    <tr>      <td style="text-align:center; background-color:#f3f4f6; font-weight:bold; vertical-align:middle; padding:15px; border:1px solid black;">교장</td>      <td colspan="3" style="padding:15px; line-height:1.6; border:1px solid black; text-align:justify;">        모든 위원님들의 긍정적인 검토와 건설적인 제안에 감사드립니다. 이번 'AI수업 역량강화 연수'는 우리 충북초등학교 교원들이 미래 교육을 선도하는 역량을 갖추는 데 중요한 디딤돌이 될 것입니다. 제안해주신 실습 보조 인력 활용 및 사후 사례 공유 방안을 적극 반영하여 연수 계획을 최종 확정해 주시기 바랍니다. 학교 차원에서도 교원 역량 강화를 위한 행·재정적 지원을 아끼지 않겠습니다. 정보부장님께서는 오늘 협의된 내용을 바탕으로 연수 준비에 만전을 기해 주시기 바랍니다.      </td>    </tr>    <tr style="height:60px;">      <td colspan="4" style="text-align:center; font-weight:bold; background-color:#f9fafb; border:1px solid black; font-size:11pt; color:#4b5563;">        ※ 본 협의회 결과는 업무관리시스템 결재로 서명을 대신함.      </td>    </tr>  </tbody></table></div></body></html>`,
@@ -83,7 +250,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Per-tab file/template state
   const allDocTypes = [
-    DocType.GONGMUN, DocType.PLAN, DocType.REPORT, DocType.PUMUI,
+    DocType.GONGMUN, DocType.PLAN, DocType.EDU_MATERIAL, DocType.REPORT, DocType.PUMUI,
     DocType.MEETING_MINUTES, DocType.PROMOTION, DocType.NEWSLETTER,
     DocType.MESSAGE, DocType.GONGGO,
   ];
@@ -101,12 +268,16 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [hwpxFillDataByTab, setHwpxFillDataByTab] = useState<Record<DocType, any[] | null>>(initTabMap(null));
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
+  const [groundingByTab, setGroundingByTab] = useState<Record<DocType, GroundingInfo | undefined>>(initTabMap(undefined));
+  // 교육자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되므로 기본은 꺼둔 상태로 저장한다.
+  const [useWebSearch, setUseWebSearch] = useState(false);
 
   const uploadedFiles = filesByTab[activeTab] ?? [];
   const uploadedTemplates = templatesByTab[activeTab] ?? [];
   const templateText = templateTextByTab[activeTab] ?? '';
   const generatedContent = contentByTab[activeTab] ?? '';
   const generatedModel = modelByTab[activeTab] ?? '';
+  const generatedGrounding = groundingByTab[activeTab];
   const hwpxFillData = hwpxFillDataByTab[activeTab] ?? null;
   const activeTemplateFavorites = templateFavorites.filter(item => item.docType === activeTab);
 
@@ -157,6 +328,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     topic: '',
     target: '',
     budget: '',
+    extraInfo: '',
+  });
+
+  // Edu material form — 계획서 입력 틀과 동일하되 예산 항목 없음
+  const [eduMaterialData, setEduMaterialData] = useState<EduMaterialInputs>({
+    topic: '',
+    target: '',
     extraInfo: '',
   });
 
@@ -239,6 +417,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Load saved user info from config on mount
   useEffect(() => {
+    window.electronAPI.getConfig('eduMaterialWebSearch').then(value => setUseWebSearch(value === true));
     Promise.all([
       window.electronAPI.getConfig('institution'),
       window.electronAPI.getConfig('schoolName'),
@@ -294,6 +473,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       }
       case DocType.PLAN:
         return `${field('주제/사업명', planData.topic)}\n${field('대상', planData.target)}\n${field('예산', planData.budget)}\n${field('추가 사항', planData.extraInfo)}`;
+      case DocType.EDU_MATERIAL:
+        return `${field('교육 주제', eduMaterialData.topic)}\n${field('교육 대상', eduMaterialData.target)}\n${field('추가 사항', eduMaterialData.extraInfo)}`;
       case DocType.REPORT:
         return `${field('주제/사업명', reportData.topic)}\n${field('대상', reportData.target)}\n${field('예산', reportData.budget)}\n${field('운영 결과 및 주요 내용', reportData.summary)}\n${field('추가 사항', reportData.extraInfo)}`;
       case DocType.NEWSLETTER:
@@ -359,6 +540,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     let title = '';
     if (tab === DocType.GONGMUN) title = gongmunData.title;
     else if (tab === DocType.PLAN) title = planData.topic;
+    else if (tab === DocType.EDU_MATERIAL) title = eduMaterialData.topic;
     else if (tab === DocType.REPORT) title = reportData.topic || reportData.summary.substring(0, 30);
     else if (tab === DocType.NEWSLETTER) title = newsletterData.title;
     else if (tab === DocType.MESSAGE) title = messageData.context.substring(0, 20);
@@ -392,8 +574,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     setStreamPreview('');
     setIsGenerating(true);
     startGeneration(`SCHOOL_DOC_${activeTab}`);
+    // 웹 검색 참조는 교육자료에서 사용자가 켠 경우에만 쓴다.
+    const withWebSearch = activeTab === DocType.EDU_MATERIAL && useWebSearch;
     try {
-      let result: { text: string; model: string };
+      let result: { text: string; model: string; grounding?: GroundingInfo };
       if (activeTab === DocType.GONGGO) {
         result = await generateDocument(
           activeTab,
@@ -407,6 +591,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           GongmunComplexity.MEDIUM,
           gonggoData,
           setStreamPreview,
+          withWebSearch,
         );
       } else {
         const context = buildContextWithProfile();
@@ -424,15 +609,19 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           gongmunComplexity,
           undefined,
           setStreamPreview,
+          withWebSearch,
         );
       }
       const { cleanContent, fillData } = extractResult(result.text);
       setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
       setModelByTab(prev => ({ ...prev, [activeTab]: result.model }));
+      setGroundingByTab(prev => ({ ...prev, [activeTab]: result.grounding }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));
       playSuccessSound();
     } catch (err: any) {
-      setError(err.message || 'AI 문서 생성 중 오류가 발생했습니다.');
+      const message = err.message || 'AI 문서 생성 중 오류가 발생했습니다.';
+      // 검색 도구를 지원하지 않는 모델이거나 검색 한도를 넘긴 경우가 있어, 끄고 다시 시도할 수 있게 안내한다.
+      setError(withWebSearch ? `${message} (웹 검색 참조를 끄고 다시 시도해 보세요.)` : message);
     } finally {
       setIsGenerating(false);
       setStreamPreview('');
@@ -445,6 +634,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const tabs = [
     { type: DocType.GONGMUN, icon: FileText, label: '공문서 작성' },
     { type: DocType.PLAN, icon: ClipboardList, label: '계획서 작성' },
+    { type: DocType.EDU_MATERIAL, icon: GraduationCap, label: '교육자료 제작' },
     { type: DocType.REPORT, icon: FileOutput, label: '보고서 작성' },
     { type: DocType.PUMUI, icon: Receipt, label: '품의서 작성' },
     { type: DocType.MEETING_MINUTES, icon: Users, label: '협의록 작성' },
@@ -534,7 +724,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   placeholder="예: 2026"
                 />
               </div>
-              {(activeTab === DocType.PLAN || activeTab === DocType.REPORT || activeTab === DocType.PROMOTION) && (
+              {(activeTab === DocType.PLAN || activeTab === DocType.EDU_MATERIAL || activeTab === DocType.REPORT || activeTab === DocType.PROMOTION) && (
                 <div>
                   <label className={labelClass}>분량 (쪽)</label>
                   <input
@@ -612,6 +802,60 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 <div>
                   <label className={labelClass}>추가 사항 (선택)</label>
                   <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="포함되어야 할 특이사항, 일정, 방법 등을 자유롭게 입력하세요." value={planData.extraInfo} onChange={e => setPlanData({ ...planData, extraInfo: e.target.value })} />
+                </div>
+              </div>
+            )}
+
+            {/* 교육자료 */}
+            {activeTab === DocType.EDU_MATERIAL && (
+              <div className="space-y-4">
+                <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-lg text-xs leading-relaxed text-blue-700 dark:text-blue-200">
+                  <GraduationCap className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>계획서 양식 그대로, 교직원 앞에서 바로 교육할 수 있는 자료를 만듭니다. 예산 항목은 들어가지 않습니다.</span>
+                </div>
+                <div>
+                  <label className={labelClass}>교육 주제</label>
+                  <div className="flex items-center gap-1.5">
+                    <input type="text" className={inputClass} placeholder="예: 정보통신윤리교육, 청렴교육, 개인정보보호교육" value={eduMaterialData.topic} onChange={e => setEduMaterialData({ ...eduMaterialData, topic: e.target.value })} />
+                    <button
+                      type="button"
+                      onClick={() => window.electronAPI.openEduReferenceSearchWindow(eduMaterialData.topic)}
+                      disabled={!eduMaterialData.topic.trim()}
+                      className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#78716C]"
+                      title="교육부·교육청(go.kr) 자료 검색 (별도 창) — 받은 자료를 아래 참고 자료로 첨부하면 그 내용이 우선 반영됩니다."
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>교육 대상</label>
+                  <input type="text" className={inputClass} placeholder="예: 전 교직원, 신규 교사, 교육공무직원" value={eduMaterialData.target} onChange={e => setEduMaterialData({ ...eduMaterialData, target: e.target.value })} />
+                </div>
+                <div>
+                  <label className={labelClass}>추가 사항 (선택)</label>
+                  <textarea className={`${inputClass} min-h-[100px] resize-none`} placeholder="교육 일시·장소·방법, 강조할 내용, 우리 학교 상황 등을 자유롭게 입력하세요. 교육부·교육청 최신 자료를 아래 '참고 자료'에 첨부하면 그 내용을 우선 반영합니다." value={eduMaterialData.extraInfo} onChange={e => setEduMaterialData({ ...eduMaterialData, extraInfo: e.target.value })} />
+                </div>
+                <div className="rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] p-3">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useWebSearch}
+                      onChange={e => {
+                        setUseWebSearch(e.target.checked);
+                        window.electronAPI.setConfig({ eduMaterialWebSearch: e.target.checked });
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
+                    />
+                    <span className="text-xs leading-relaxed text-[#44403C] dark:text-[#C4B8B0]">
+                      <span className="font-bold">웹 검색으로 최신 자료 참조</span>
+                      <span className="block mt-1 text-[#78716C] dark:text-[#9C8F87]">
+                        AI가 직접 웹을 검색해 근거를 확인하고, 참고한 자료 목록을 결과 화면에 표시합니다.
+                        검색 건수만큼 API 요금이 추가로 발생하고 무료 키는 한도를 넘으면 생성이 실패할 수 있어,
+                        유료 키 사용 시 권장합니다. 모델에 따라 검색이 지원되지 않을 수도 있습니다.
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </div>
             )}
@@ -1116,6 +1360,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   <Wand2 className="w-4 h-4" />
                   {activeTab === DocType.GONGMUN ? '공문서 생성' :
                    activeTab === DocType.PLAN ? '계획서 생성' :
+                   activeTab === DocType.EDU_MATERIAL ? '교육자료 생성' :
                    activeTab === DocType.REPORT ? '보고서 생성' :
                    activeTab === DocType.PUMUI ? '품의서 생성' :
                    activeTab === DocType.MEETING_MINUTES ? '협의록 생성' :
@@ -1141,6 +1386,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               title={getHwpxTitleFromContent(generatedContent, activeTab)}
               enableTranslation={activeTab === DocType.NEWSLETTER || activeTab === DocType.MESSAGE}
               model={generatedModel}
+              grounding={generatedGrounding}
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">

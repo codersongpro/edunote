@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { extractGroundingInfo, mergeGroundingInfo, type GroundingInfo } from './groundingSources';
 import {
   FREE_MODEL_PREFERENCE,
   PAID_MODEL_PREFERENCE,
@@ -55,12 +56,22 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-// 키에서 실제 사용 가능한 모델 이름 목록 (세션당 1회 조회 후 캐시)
-let availableModelsCache: { keyId: string; names: string[] | null } | null = null;
+// 조회한 모델 목록을 다시 확인하기까지의 유효 기간.
+// 앱을 며칠씩 켜둔 채로 써도 새로 출시된 모델이 반영되도록 주기적으로 다시 조회한다.
+const MODEL_LIST_TTL_MS = 6 * 60 * 60 * 1000; // 6시간
+// 조회 실패는 짧게만 기억한다 — 일시적인 네트워크 문제로 오래 기본 모델 1개에 묶이지 않도록.
+const MODEL_LIST_FAILURE_TTL_MS = 10 * 60 * 1000; // 10분
+
+// 키에서 실제 사용 가능한 모델 이름 목록 (유효 기간 동안 캐시)
+let availableModelsCache: { keyId: string; names: string[] | null; fetchedAt: number } | null = null;
 
 async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<string[] | null> {
   const keyId = apiKey;
-  if (availableModelsCache && availableModelsCache.keyId === keyId) return availableModelsCache.names;
+  const cached = availableModelsCache;
+  if (cached && cached.keyId === keyId) {
+    const ttl = cached.names === null ? MODEL_LIST_FAILURE_TTL_MS : MODEL_LIST_TTL_MS;
+    if (Date.now() - cached.fetchedAt < ttl) return cached.names;
+  }
 
   try {
     const names = await withTimeout((async () => {
@@ -74,11 +85,11 @@ async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<
       }
       return collected;
     })(), 10_000);
-    availableModelsCache = { keyId, names };
+    availableModelsCache = { keyId, names, fetchedAt: Date.now() };
   } catch (error: unknown) {
     // 조회 실패 시 기본 모델 1개로만 동작 (종전과 동일한 안전한 동작)
     console.warn('[GeminiService] 모델 목록 조회 실패 — 기본 모델만 사용:', (error as any)?.message ?? error);
-    availableModelsCache = { keyId, names: null };
+    availableModelsCache = { keyId, names: null, fetchedAt: Date.now() };
   }
   return availableModelsCache.names;
 }
@@ -139,6 +150,9 @@ export interface GenerateOptions {
   maxOutputTokens?: number;
   // true면 모델이 순수 JSON만 출력하도록 강제한다 (코드펜스·설명 문장 제거 불필요)
   responseJson?: boolean;
+  // true면 구글 검색 결과를 근거로 답하게 한다(그라운딩). 검색 건수만큼 과금되고
+  // 모델별로 지원 여부가 달라, 사용자가 명시적으로 켠 경우에만 전달한다.
+  useSearchGrounding?: boolean;
   apiTier?: ApiTier;
 }
 
@@ -154,6 +168,10 @@ function toGenerateConfig(options?: GenerateOptions): Record<string, unknown> {
   if (options?.temperature !== undefined) config.temperature = options.temperature;
   if (options?.maxOutputTokens !== undefined) config.maxOutputTokens = options.maxOutputTokens;
   if (options?.responseJson) config.responseMimeType = 'application/json';
+  // 검색 도구와 JSON 강제 출력은 함께 쓸 수 없으므로 JSON 모드가 아닐 때만 붙인다.
+  if (options?.useSearchGrounding && !options?.responseJson) {
+    config.tools = [{ googleSearch: {} }];
+  }
   return config;
 }
 
@@ -239,16 +257,16 @@ export async function generateContent(
   apiKey: string,
   prompt: string,
   options?: GenerateOptions,
-): Promise<{ text: string; model: string }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
   const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(options) }),
       REQUEST_TIMEOUT_MS,
     );
-    return result.text ?? '';
+    return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
   });
-  return { text: result, model };
+  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // 멀티파트(텍스트+파일) 생성 — 실제로 성공한 모델명을 함께 반환한다.
@@ -256,16 +274,16 @@ export async function generateContentMultipart(
   apiKey: string,
   parts: MultipartPart[],
   options?: GenerateOptions,
-): Promise<{ text: string; model: string }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
   const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(options) }),
       REQUEST_TIMEOUT_MS,
     );
-    return result.text ?? '';
+    return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
   });
-  return { text: result, model };
+  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // 스트리밍 생성 이벤트 — 'start'는 새 시도(폴백 포함) 시작을 뜻하므로 수신 측은 버퍼를 비운다
@@ -278,7 +296,7 @@ export async function generateContentMultipartStream(
   parts: MultipartPart[],
   options: GenerateOptions | undefined,
   onEvent: (event: StreamEvent) => void,
-): Promise<{ text: string; model: string }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
   const ai = new GoogleGenAI({ apiKey });
   const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model) => {
     onEvent({ type: 'start' });
@@ -290,6 +308,8 @@ export async function generateContentMultipartStream(
     // 비정상 반복 감지 시 스트림을 명시적으로 닫기 위해서다.
     const iterator = stream[Symbol.asyncIterator]();
     let full = '';
+    // 그라운딩 정보는 청크에 나눠 실려 오므로, 가장 정보가 많은 청크의 값을 남긴다.
+    let grounding: GroundingInfo | null = null;
     try {
       while (true) {
         let next: IteratorResult<{ text?: string }>;
@@ -299,6 +319,7 @@ export async function generateContentMultipartStream(
           throw new RetryableStreamError('생성 응답이 중간에 멈췄습니다.');
         }
         if (next.done) break;
+        grounding = mergeGroundingInfo(grounding, extractGroundingInfo(next.value));
         const text = next.value.text ?? '';
         if (text) {
           full += text;
@@ -313,9 +334,9 @@ export async function generateContentMultipartStream(
       await iterator.return?.(undefined).catch(() => undefined);
       throw error;
     }
-    return full;
+    return { text: full, grounding };
   });
-  return { text: result, model };
+  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)

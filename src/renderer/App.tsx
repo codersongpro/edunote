@@ -63,6 +63,7 @@ const MY_TOOLS_MODES: AppMode[] = [AppMode.MY_AI_TOOLS, AppMode.MY_AI_TOOLS_SHAR
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   [DocType.GONGMUN]: '공문서',
   [DocType.PLAN]: '계획서',
+  [DocType.EDU_MATERIAL]: '교육자료',
   [DocType.REPORT]: '보고서',
   [DocType.PUMUI]: '품의서',
   [DocType.MEETING_MINUTES]: '회의록',
@@ -73,7 +74,7 @@ const DOC_TYPE_LABELS: Record<DocType, string> = {
 };
 
 const ALL_DOC_TYPES = [
-  DocType.GONGMUN, DocType.PLAN, DocType.REPORT, DocType.PUMUI,
+  DocType.GONGMUN, DocType.PLAN, DocType.EDU_MATERIAL, DocType.REPORT, DocType.PUMUI,
   DocType.MEETING_MINUTES, DocType.PROMOTION, DocType.NEWSLETTER,
   DocType.MESSAGE, DocType.GONGGO,
 ];

@@ -1,16 +1,23 @@
+// 웹 검색 그라운딩을 켠 생성에서만 함께 오는 출처 정보.
+export interface GroundingInfo {
+  sources: Array<{ title: string; uri: string }>;
+  searchQueries: string[];
+  searchSuggestionHtml: string;
+}
+
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean }): Promise<{ text: string; model: string }>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean },
-  ): Promise<{ text: string; model: string }>;
+    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean },
+  ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipartStream(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction: string | undefined,
-    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean } | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
-  ): Promise<{ text: string; model: string }>;
+  ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
 
@@ -48,6 +55,7 @@ export interface ElectronAPI {
   fetchSlideImage(keyword: string): Promise<string | null>;
   openDemoWindow(): Promise<void>;
   openPriceSearchWindow(itemName: string): Promise<void>;
+  openEduReferenceSearchWindow(topic: string): Promise<void>;
   openChatWindow(opts?: { reload?: boolean }): Promise<void>;
   isChatWindowOpen(): Promise<boolean>;
   onChatWindowState(callback: (open: boolean) => void): () => void;
