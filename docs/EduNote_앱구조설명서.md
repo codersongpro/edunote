@@ -118,6 +118,8 @@ edunote
 │  │  ├─ ipcValidation.ts
 │  │  ├─ GeminiService.ts
 │  │  ├─ modelChain.ts
+│  │  ├─ groundingSources.ts
+│  │  ├─ eduReferenceSearch.ts
 │  │  ├─ requestPacer.ts
 │  │  ├─ streamGuard.ts
 │  │  ├─ HwpxGenerator.ts
@@ -226,8 +228,10 @@ edunote
 | --- | --- |
 | `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
 | `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
-| `src/main/GeminiService.ts` | Gemini API 실제 호출, 무료·유료 API 등급별 모델 폴백 체인 실행, 429/일일한도 재시도, 이미지 생성. `generateContent`류 함수는 `{text, model}` 형태로 실제 사용된 모델명을 함께 반환한다 |
+| `src/main/GeminiService.ts` | Gemini API 실제 호출, 무료·유료 API 등급별 모델 폴백 체인 실행, 429/일일한도 재시도, 이미지 생성. `generateContent`류 함수는 `{text, model}` 형태로 실제 사용된 모델명을 함께 반환하며, 웹 검색 그라운딩을 켠 요청에는 출처 정보(`grounding`)가 선택 필드로 더해진다 |
 | `src/main/modelChain.ts` | 모델 폴백 체인 순수 로직 — 선호 모델 목록(`FREE_MODEL_PREFERENCE`/`PAID_MODEL_PREFERENCE`)과 키로 실제 조회한 모델 목록의 교집합 계산, 429 재시도 대기시간(retryDelay) 파싱, 일일 한도 오류 판별 |
+| `src/main/groundingSources.ts` | 웹 검색 그라운딩 응답에서 출처(URL 기준 중복 제거)·검색어·검색 제안 위젯 HTML을 추려내는 순수 로직. 스트리밍은 청크마다 부분 메타데이터가 와서 정보가 가장 많은 것을 남긴다 |
+| `src/main/eduReferenceSearch.ts` | 교육자료 제작에 참고할 교육부·교육청 자료를 사람이 직접 찾도록, 교육 주제를 `site:go.kr`로 좁힌 검색 URL로 만드는 순수 로직 |
 | `src/main/requestPacer.ts` | 무료 키 분당 요청 한도(15회)에 맞춰 AI 호출 간 최소 간격을 자동으로 띄우는 로직 |
 | `src/main/streamGuard.ts` | 스트리밍 생성이 빈 마크업만 무한 반복하거나 청크가 오래 끊기는 비정상 상황을 감지해 다음 모델로 폴백시키는 로직 |
 | `src/main/secretStore.ts` | Gemini·나라장터·네이버 API 키를 safeStorage로 암호화 저장·복호화, 시크릿 키 목록(`SECRET_KEYS`)을 렌더러 노출 차단·백업 제외·설정 동기화 전 구간에서 공통 파생 |
@@ -296,7 +300,7 @@ edunote
 | 기본 | `DEMO_SAMPLES` | `DemoSamplesScreen` | 샘플 입력값 모음 (Demo 버튼 → 별도 창으로 열림, 공문요약 예시에 일정·마감일·참고 웹사이트 포함) |
 | 교무행정AI | `EDUCATION_QA` | `EducationAssistantQA` | 교육 일반 질의응답 |
 | 교무행정AI | `OFFICIAL_DOC_ANALYZER` | `OfficialDocAnalyzer` | 공문 업무추출, 일정화 |
-| 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 보고서 등 9종 문서 생성 |
+| 교무행정AI | `SCHOOL_DOC` | `SchoolDocPanel` | 공문서, 계획서, 교육자료, 보고서 등 10종 문서 생성 |
 | 교무행정AI | `DOC_ARCHIVE` | `DocArchivePanel` | 공문 캡처 이미지·첨부 저장 및 검색 |
 | 교무행정AI | `DOC_TODO` | `DocTodoPanel` | 공문요약·업무추출에서 저장한 할일의 마감일·완료 상태 관리 |
 | 교무행정AI | `PRINT_FORM` | `PrintFormScreen` | 학교 양식 10종 A4 출력·PDF 저장 |
@@ -328,6 +332,7 @@ edunote
 | --- | --- | --- |
 | `GONGMUN` | 공문서 | 수신, 경유, 제목, 관련, 본문, 붙임, 끝. 합쇼체 |
 | `PLAN` | 계획서 | 추진배경, 목적, 운영방침, 세부추진계획, 소요예산, 기대효과. 개조식 보고서체. 제목 크게/진하게/가운데 정렬 |
+| `EDU_MATERIAL` | 교육자료 | 교육개요, 추진근거 및 필요성, 교육목표, 주요 교육내용, 사례 및 판단기준, 실천수칙 및 자가점검, 자주 묻는 질문, 기대효과. 계획서와 같은 문서 양식을 쓰되 **예산 항목 없음**. 개조식 + 명사형 종결. 입력은 계획서 틀에서 예산만 제외(주제·대상·추가사항) |
 | `REPORT` | 보고서 | 추진개요, 추진실적, 운영결과, 예산정산, 성과 및 제언. 완료형 보고서체. 주제·대상·예산 입력칸 제공 |
 | `PUMUI` | 품의서 | 관련, 시행문, 세부내역, 산출내역. 합쇼체 |
 | `MEETING_MINUTES` | 회의록 | 일시, 장소, 참석자, 안건, 발언 내용, 서명란 |
@@ -342,10 +347,20 @@ edunote
 
 고정된 모델 하나를 쓰지 않고, `src/main/modelChain.ts`의 선호 순서 목록과 API 키로 실제 조회한(`ai.models.list()`, 세션당 1회 캐시) 사용 가능 모델 목록의 **교집합**만 폴백 체인으로 사용한다. 목록에 없는 이름은 애초에 후보에서 빠지므로, 하드코딩한 모델명이 그 키에서 지원되지 않아 요청을 낭비하는 일이 없다.
 
-| 등급 | 선호 순서 (`FREE_MODEL_PREFERENCE` / `PAID_MODEL_PREFERENCE`) |
+선호 순서는 고정 목록이 아니라 `resolvePreference`가 실행할 때마다 새로 만든다.
+
+1. `buildDynamicPreference`가 조회된 모델 중 정식 안정판 이름 규칙(`gemini-{major}.{minor}-(flash-lite|flash|pro)`, 프리뷰·실험판 제외)에 맞는 것만 추려, **등급 → 세대** 순으로 정렬한다. 무료는 `flash-lite`를, 유료는 `pro`를 다른 등급의 최신 모델보다 앞세우고, 같은 등급 안에서는 세대가 높을수록 우선한다.
+2. 그 뒤에 아래 고정 목록을 **안전망**으로 붙인다(중복 제거).
+3. 앞에서부터 최대 3개(`MAX_CHAIN_LENGTH`)만 폴백 체인으로 쓴다.
+
+따라서 구글이 새 `flash-lite`/`pro` 안정판을 내면 코드 수정 없이 다음 실행부터 자동으로 1순위가 된다. 단, 이름 규칙을 벗어난 모델(예: 소수점 없는 이름)은 자동 감지에서 빠지며, 이 경우 고정 목록으로 동작한다.
+
+| 등급 | 고정 안전망 목록 (`FREE_MODEL_PREFERENCE` / `PAID_MODEL_PREFERENCE`) |
 | --- | --- |
 | 무료 (Free) | `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` |
 | 유료 (Paid) | `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.5-flash-lite` |
+
+이 목록은 모델 조회에 성공하면 동적 감지 결과 **뒤**에 놓이므로 실제로는 거의 쓰이지 않는다. 조회가 실패했을 때만 첫 번째 모델 하나로 동작한다.
 
 모델 폴백·오류 처리(`GeminiService.ts`):
 - 분당 요청 한도(429)로 재시도 대기시간(`retryDelay`)이 응답에 포함된 경우, 그 시간만큼 기다린 뒤 **같은 모델로** 재시도해 문체 일관성을 유지한다.
@@ -354,6 +369,8 @@ edunote
 - 모든 시도가 막히면 분당 제한/일일 한도를 구분해 안내한다.
 - 무료 키는 분당 요청 한도(15회)에 맞춰 호출 간 최소 4초 간격을 자동 적용한다(`requestPacer.ts`).
 - 스트리밍 생성이 빈 마크업만 반복하거나 45초 이상 응답이 없으면 다음 모델로 폴백한다(`streamGuard.ts`).
+
+웹 검색 그라운딩(`useSearchGrounding`)을 켠 요청은 `config.tools`에 `googleSearch`를 붙여 호출하고, 응답의 `groundingMetadata`에서 출처·검색어·검색 제안 위젯을 `groundingSources.ts`가 추려 `grounding` 필드로 함께 돌려준다. JSON 강제 출력(`responseJson`)과는 함께 쓸 수 없어 그때는 도구를 붙이지 않는다. 이 옵션은 교육자료에서 사용자가 켠 경우에만 전달되며 기본값은 꺼짐이다(검색 건수만큼 과금).
 
 생성 결과에는 실제로 응답한 모델명이 함께 반환되며(`{text, model}`), 생기부 도우미·문서작성기·수업자료·AI스킬즈 등 사용자가 보는 결과 화면에는 이 모델명이 작은 배지로 표시된다(9.6절 참고). 배지는 화면 표시용이며 저장·복사·인쇄되는 실제 결과물 텍스트에는 포함되지 않는다.
 
@@ -381,6 +398,7 @@ edunote
 | --- | --- | --- | --- |
 | 공문서 작성 | 문서 유형, 제목, 본문 요청, 첨부 파일 | 문서 유형별 구조와 문체 지침 적용 | HTML 문서 |
 | 계획서 | 사업 내용, 학교 정보, 날짜 | 개조식, 표, 제목 서식 지침 적용 | 계획서 HTML |
+| 교육자료 | 교육 주제, 교육 대상, 추가 사항, 참고 파일 | 계획서 문서 양식에 예산 항목을 빼고, 교육 본문(내용·사례·판단기준·자가점검·질의응답) 중심으로 구성. 개조식 + 명사형 종결 | 교육자료 HTML (+ 웹 검색을 켠 경우 출처 목록) |
 | 보고서 | 주제, 대상, 예산/집행액, 운영 결과, 추가 사항, 참고 파일 | 완료형 보고서체, 표 중심 결과 정리 | 보고서 HTML |
 | 품의서 | 품의 유형, 근거, 예산, 산출내역 | 산출내역 텍스트화, 합쇼체 적용 | 지출품의서 |
 | 회의록 | 일시, 장소, 안건, 발언 내용 | 표 기반 회의록 구조 적용 | 회의록 HTML |
@@ -544,9 +562,10 @@ API 키는 백업 파일에 포함하지 않는 방향으로 설계되어 있다
 1. 사용자가 문서 유형과 요청 내용을 입력한다.
 2. `SchoolDocPanel`이 입력값을 문서 유형별 context (맥락 정보)로 정리한다.
 3. `generateDocument`가 `DocType`에 따라 지침을 선택한다.
-4. 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체, 가정통신문은 안내문체를 적용한다.
-5. Gemini 응답을 HTML 형태로 받아 `GeneratedDisplay`에 표시한다.
-6. 사용자는 결과를 편집, 복사, PDF 저장, Word 저장, HWPX 저장 실험 기능으로 내보낼 수 있다.
+4. 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체, 교육자료는 개조식 명사형 종결, 가정통신문은 안내문체를 적용한다.
+5. 교육자료에서 웹 검색 참조를 켠 경우, 근거 규칙을 "지어내지 않기"에서 "검색으로 확인한 내용만 출처와 함께 쓰기"로 교체해 프롬프트를 구성한다.
+6. Gemini 응답을 HTML 형태로 받아 `GeneratedDisplay`에 표시한다. 출처 정보가 함께 왔다면 결과 위에 참고 자료 목록과 검색 제안 위젯을 표시하며, 이 영역은 인쇄물에서 제외된다(`.no-print`).
+7. 사용자는 결과를 편집, 복사, PDF 저장, Word 저장, HWPX 저장 실험 기능으로 내보낼 수 있다.
 
 ### 10.9 PDF 저장 메커니즘
 
