@@ -15,6 +15,7 @@ export interface GenerateOptions {
   maxOutputTokens?: number;
   responseJson?: boolean;
   useSearchGrounding?: boolean;
+  requireSearchGrounding?: boolean;
 }
 
 export interface MultipartPart {
@@ -41,6 +42,12 @@ function validateOptions(options?: GenerateOptions): void {
   }
   if (options.useSearchGrounding !== undefined && typeof options.useSearchGrounding !== 'boolean') {
     throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
+  }
+  if (options.requireSearchGrounding !== undefined && typeof options.requireSearchGrounding !== 'boolean') {
+    throw new Error('AI 요청 옵션 형식이 올바르지 않습니다.');
+  }
+  if (options.requireSearchGrounding === true && options.useSearchGrounding !== true) {
+    throw new Error('검색 필수 옵션은 검색 사용 옵션과 함께 지정해야 합니다.');
   }
 }
 

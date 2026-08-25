@@ -136,3 +136,13 @@ export function isDailyQuotaError(error: unknown): boolean {
   const text = errorText(error).toLowerCase();
   return /perday|per day|daily limit|requests per day/.test(text);
 }
+
+// 일반 생성 쿼터 오류와 "이 모델/등급에서는 검색 그라운딩을 쓸 수 없음" 오류를
+// 구분한다. 검색 전용 호출에서 이 오류가 나면 모델 자체를 차단하지 않고 다음
+// 후보로 넘어가야, 이어지는 일반 문서 생성에서 최신 모델을 그대로 쓸 수 있다.
+export function isSearchGroundingUnavailableError(error: unknown): boolean {
+  const text = errorText(error).toLowerCase();
+  const mentionsSearchTool = /google search|search grounding|grounding with google|grounded generation|google_search/.test(text);
+  const mentionsUnavailable = /not supported|unsupported|not available|unavailable|free tier|permission|not enabled|invalid argument/.test(text);
+  return mentionsSearchTool && mentionsUnavailable;
+}

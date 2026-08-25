@@ -15,16 +15,16 @@ export interface ModelDiagnostics {
 }
 
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
-    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean },
+    options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean },
   ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipartStream(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction: string | undefined,
-    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean } | undefined,
+    options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
   ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   getModelInfo(forceRefresh?: boolean): Promise<ModelDiagnostics>;

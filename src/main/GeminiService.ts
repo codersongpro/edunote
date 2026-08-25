@@ -9,6 +9,7 @@ import {
   resolvePreference,
   getRetryDelayMs,
   isDailyQuotaError,
+  isSearchGroundingUnavailableError,
 } from './modelChain';
 import { RetryableStreamError, isDegenerateStream, isRetryableStreamError } from './streamGuard';
 import { RequestPacer } from './requestPacer';
@@ -194,6 +195,9 @@ export interface GenerateOptions {
   // true면 구글 검색 결과를 근거로 답하게 한다(그라운딩). 검색 건수만큼 과금되고
   // 모델별로 지원 여부가 달라, 사용자가 명시적으로 켠 경우에만 전달한다.
   useSearchGrounding?: boolean;
+  // true면 검색 도구가 빠진 응답을 성공으로 인정하지 않는다. 연수자료의 사전 조사처럼
+  // 최신 근거 확인이 필수인 호출에만 사용한다.
+  requireSearchGrounding?: boolean;
   apiTier?: ApiTier;
 }
 
@@ -233,6 +237,7 @@ async function generateWithModelChain<T>(
   // withTools가 false면 검색 도구 없이 호출한다 — 도구 미지원 모델 대응용.
   doCall: (model: string, withTools: boolean) => Promise<T>,
   usesTools = false,
+  requireTools = false,
 ): Promise<{ result: T; model: string }> {
   const availableNames = await getAvailableModelNames(ai, apiKey);
   const preference =
@@ -250,6 +255,13 @@ async function generateWithModelChain<T>(
       return { result: await doCall(model, usesTools), model };
     } catch (error: unknown) {
       lastError = error;
+
+      // 검색 전용 호출에서는 검색 미지원이 모델 자체의 결함이 아니다. 전역 차단 없이
+      // 다음 후보로 넘어가고, 일반 문서 생성은 최신 모델부터 다시 시작하게 둔다.
+      if (usesTools && requireTools && isSearchGroundingUnavailableError(error)) {
+        console.warn(`[${model}] 검색 그라운딩 미지원 → 검색 가능한 다음 모델로 폴백`);
+        continue;
+      }
 
       if (isQuotaError(error)) {
         const retryMs = getRetryDelayMs(error);
@@ -270,6 +282,10 @@ async function generateWithModelChain<T>(
       }
 
       if (isPermanentBlockError(error)) {
+        if (usesTools && requireTools) {
+          console.warn(`[${model}] 검색 도구 요청 거부 → 모델을 차단하지 않고 다음 후보로 폴백`);
+          continue;
+        }
         // 검색 도구를 지원하지 않는 모델이면 400이 난다. 이때 모델 자체를 차단해 버리면
         // 멀쩡한 최신 모델이 1시간 동안 배제되므로, 도구 없이 같은 모델로 한 번 더 시도한다.
         if (usesTools) {
@@ -296,6 +312,10 @@ async function generateWithModelChain<T>(
     }
   }
 
+  if (usesTools && requireTools && lastError && isSearchGroundingUnavailableError(lastError)) {
+    throw new Error('이 API 키에서 웹 검색을 지원하는 모델을 찾지 못했습니다. 웹 검색을 끄거나 다른 API 키를 사용해주세요.');
+  }
+
   if (lastError && isQuotaError(lastError)) {
     throw new Error(
       isDailyQuotaError(lastError)
@@ -306,6 +326,10 @@ async function generateWithModelChain<T>(
 
   if (lastError && isRetryableStreamError(lastError)) {
     throw new Error('AI가 정상적인 문서를 생성하지 못했습니다 (같은 내용 반복 또는 응답 중단). 잠시 후 다시 시도해 주세요.');
+  }
+
+  if (usesTools && requireTools && lastError && isPermanentBlockError(lastError)) {
+    throw new Error('이 API 키에서 웹 검색을 지원하는 모델을 찾지 못했습니다. 웹 검색을 끄거나 다른 API 키를 사용해주세요.');
   }
 
   // 모든 모델이 실패한 경우 마지막 에러 전파
@@ -325,7 +349,7 @@ export async function generateContent(
       REQUEST_TIMEOUT_MS,
     );
     return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
-  }, options?.useSearchGrounding === true);
+  }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
@@ -342,7 +366,7 @@ export async function generateContentMultipart(
       REQUEST_TIMEOUT_MS,
     );
     return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
-  }, options?.useSearchGrounding === true);
+  }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
@@ -395,7 +419,7 @@ export async function generateContentMultipartStream(
       throw error;
     }
     return { text: full, grounding };
-  }, options?.useSearchGrounding === true);
+  }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 

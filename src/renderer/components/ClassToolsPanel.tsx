@@ -4,6 +4,7 @@ import LuckyDraw from './LuckyDraw';
 import ChatRoom from './ChatRoom';
 import { HelpCircle, QrCode, MessageCircle } from 'lucide-react';
 import { useTour } from '../TourContext';
+import { getNavigationSelectionClass } from '../lib/sidebarNavigation';
 
 type Tab = 'qr' | 'lucky' | 'chat';
 
@@ -27,7 +28,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           onClick={() => setActiveTab('qr')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'qr'
-              ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+              ? getNavigationSelectionClass('lesson', true)
               : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:border-[#E7E5E4]'
           }`}
         >
@@ -39,7 +40,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           onClick={() => setActiveTab('lucky')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'lucky'
-              ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+              ? getNavigationSelectionClass('lesson', true)
               : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:border-[#E7E5E4]'
           }`}
         >
@@ -51,7 +52,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
           onClick={() => setActiveTab('chat')}
           className={`h-full flex items-center gap-1.5 px-4 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'chat'
-              ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+              ? getNavigationSelectionClass('lesson', true)
               : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:border-[#E7E5E4]'
           }`}
         >
