@@ -349,15 +349,17 @@ edunote
 
 선호 순서는 고정 목록이 아니라 `resolvePreference`가 실행할 때마다 새로 만든다.
 
-1. `buildDynamicPreference`가 조회된 모델 중 정식 안정판 이름 규칙(`gemini-{major}.{minor}-(flash-lite|flash|pro)`, 프리뷰·실험판 제외)에 맞는 것만 추려, **등급 → 세대** 순으로 정렬한다. 무료는 `flash-lite`를, 유료는 `pro`를 다른 등급의 최신 모델보다 앞세우고, 같은 등급 안에서는 세대가 높을수록 우선한다.
+1. `buildDynamicPreference`가 조회된 모델 중 정식 안정판 이름 규칙(`gemini-{major}[.{minor}]-(flash-lite|flash|pro)`, 프리뷰·실험판 제외)에 맞는 것만 추려, **등급 → 세대** 순으로 정렬한다. 무료는 `flash-lite`를, 유료는 `pro`를 다른 등급의 최신 모델보다 앞세우고, 같은 등급 안에서는 세대가 높을수록 우선한다.
 2. 그 뒤에 아래 고정 목록을 **안전망**으로 붙인다(중복 제거).
 3. 앞에서부터 최대 3개(`MAX_CHAIN_LENGTH`)만 폴백 체인으로 쓴다.
 
-따라서 구글이 새 `flash-lite`/`pro` 안정판을 내면 코드 수정 없이 다음 실행부터 자동으로 1순위가 된다. 단, 이름 규칙을 벗어난 모델(예: 소수점 없는 이름)은 자동 감지에서 빠지며, 이 경우 고정 목록으로 동작한다.
+따라서 구글이 새 `flash-lite`/`pro` 안정판을 내면 코드 수정 없이 자동으로 1순위가 된다. 소수점 아래 버전은 선택이라 `gemini-4-flash-lite`처럼 세대만 붙인 이름도 인식하며, 이때 minor는 0으로 본다.
+
+모델 목록은 6시간 동안 캐시하고 그 뒤 다시 조회하므로(`MODEL_LIST_TTL_MS`), 앱을 며칠 켜둔 채로 써도 새로 출시된 모델이 반영된다. 조회에 실패하면 10분만 기억하고 다시 시도해(`MODEL_LIST_FAILURE_TTL_MS`), 일시적 네트워크 오류로 기본 모델 하나에 오래 묶이지 않는다. API 키를 바꾸면 캐시와 차단 상태가 즉시 초기화된다(`resetModelCache`).
 
 | 등급 | 고정 안전망 목록 (`FREE_MODEL_PREFERENCE` / `PAID_MODEL_PREFERENCE`) |
 | --- | --- |
-| 무료 (Free) | `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` |
+| 무료 (Free) | `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` |
 | 유료 (Paid) | `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.5-flash-lite` |
 
 이 목록은 모델 조회에 성공하면 동적 감지 결과 **뒤**에 놓이므로 실제로는 거의 쓰이지 않는다. 조회가 실패했을 때만 첫 번째 모델 하나로 동작한다.

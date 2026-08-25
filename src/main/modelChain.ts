@@ -5,10 +5,14 @@
 // 이번에는 키로 실제 조회한 모델 목록과 선호 순서의 교집합만 폴백 후보로 쓴다.
 
 // 선호 순서 — 무료 키는 분당 허용량이 큰 경량 모델을 앞에 둔다.
-// gemini-3.1-flash-lite(무료 티어 제공, 안정판)를 최우선으로 두고, 프로젝트에 아직
-// 3세대 모델이 열리지 않은 키를 위해 2.5/2.0 계열을 그대로 폴백으로 남겨둔다.
+//
+// 이 목록은 1순위가 아니라 안전망이다. 평소에는 resolvePreference가 키로 조회한
+// 모델에서 최신 세대를 자동으로 앞세우고(buildDynamicPreference), 이 목록은 그 뒤에
+// 붙는다. 조회 자체가 실패했을 때만 이 목록의 첫 번째 모델로 동작하므로, 그 경우에
+// 대비해 출시된 최신 안정판을 앞에 두고 구세대를 뒤에 남겨둔다.
 // (buildModelChain이 키로 실제 조회한 모델과 교집합만 쓰므로, 없는 이름은 안전하게 건너뛴다.)
 export const FREE_MODEL_PREFERENCE = [
+  'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
   'gemini-2.5-flash-lite',
   'gemini-2.5-flash',
@@ -35,10 +39,14 @@ export function buildModelChain(preference: string[], availableNames: string[] |
   return chain.slice(0, MAX_CHAIN_LENGTH);
 }
 
-// gemini-{major}.{minor}-flash / -flash-lite / -pro 형태의 정식 안정판 이름만 인식한다.
+// gemini-{major}[.{minor}]-flash / -flash-lite / -pro 형태의 정식 안정판 이름만 인식한다.
 // -preview, -exp 등 접미사가 붙은 실험판은 제외해, 불안정한 신모델이 자동으로
 // 선택되지 않게 한다(정식 전환 전까지는 기존 안전망 목록이 계속 쓰인다).
-const STABLE_MODEL_PATTERN = /^gemini-(\d+)\.(\d+)-(flash-lite|flash|pro)$/;
+//
+// 소수점 아래 버전은 선택이다 — 구글이 gemini-4-flash-lite처럼 세대만 붙인 이름을
+// 내놓아도 자동 감지에서 빠지지 않도록 하고, 이때 minor는 0으로 본다
+// (gemini-4-flash-lite < gemini-4.1-flash-lite).
+const STABLE_MODEL_PATTERN = /^gemini-(\d+)(?:\.(\d+))?-(flash-lite|flash|pro)$/;
 
 export type ModelTier = 'flash-lite' | 'flash' | 'pro';
 
@@ -55,7 +63,12 @@ function parseStableModels(availableNames: string[]): StableModel[] {
     const name = raw.replace(/^models\//, '');
     const match = name.match(STABLE_MODEL_PATTERN);
     if (!match) continue;
-    parsed.push({ name, major: Number(match[1]), minor: Number(match[2]), tier: match[3] as ModelTier });
+    parsed.push({
+      name,
+      major: Number(match[1]),
+      minor: match[2] === undefined ? 0 : Number(match[2]),
+      tier: match[3] as ModelTier,
+    });
   }
   return parsed;
 }

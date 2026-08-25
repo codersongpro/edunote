@@ -56,12 +56,22 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-// 키에서 실제 사용 가능한 모델 이름 목록 (세션당 1회 조회 후 캐시)
-let availableModelsCache: { keyId: string; names: string[] | null } | null = null;
+// 조회한 모델 목록을 다시 확인하기까지의 유효 기간.
+// 앱을 며칠씩 켜둔 채로 써도 새로 출시된 모델이 반영되도록 주기적으로 다시 조회한다.
+const MODEL_LIST_TTL_MS = 6 * 60 * 60 * 1000; // 6시간
+// 조회 실패는 짧게만 기억한다 — 일시적인 네트워크 문제로 오래 기본 모델 1개에 묶이지 않도록.
+const MODEL_LIST_FAILURE_TTL_MS = 10 * 60 * 1000; // 10분
+
+// 키에서 실제 사용 가능한 모델 이름 목록 (유효 기간 동안 캐시)
+let availableModelsCache: { keyId: string; names: string[] | null; fetchedAt: number } | null = null;
 
 async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<string[] | null> {
   const keyId = apiKey;
-  if (availableModelsCache && availableModelsCache.keyId === keyId) return availableModelsCache.names;
+  const cached = availableModelsCache;
+  if (cached && cached.keyId === keyId) {
+    const ttl = cached.names === null ? MODEL_LIST_FAILURE_TTL_MS : MODEL_LIST_TTL_MS;
+    if (Date.now() - cached.fetchedAt < ttl) return cached.names;
+  }
 
   try {
     const names = await withTimeout((async () => {
@@ -75,11 +85,11 @@ async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<
       }
       return collected;
     })(), 10_000);
-    availableModelsCache = { keyId, names };
+    availableModelsCache = { keyId, names, fetchedAt: Date.now() };
   } catch (error: unknown) {
     // 조회 실패 시 기본 모델 1개로만 동작 (종전과 동일한 안전한 동작)
     console.warn('[GeminiService] 모델 목록 조회 실패 — 기본 모델만 사용:', (error as any)?.message ?? error);
-    availableModelsCache = { keyId, names: null };
+    availableModelsCache = { keyId, names: null, fetchedAt: Date.now() };
   }
   return availableModelsCache.names;
 }

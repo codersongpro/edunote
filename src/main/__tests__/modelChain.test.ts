@@ -76,6 +76,23 @@ describe('buildDynamicPreference', () => {
     ]);
   });
 
+  // 구글이 소수점 없는 세대 이름을 내놓아도 자동 감지에서 빠지지 않아야 한다.
+  it('소수점 없는 세대 이름(gemini-4-flash-lite)도 인식한다', () => {
+    const available = ['gemini-3.5-flash-lite', 'gemini-4-flash-lite'];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-4-flash-lite',
+      'gemini-3.5-flash-lite',
+    ]);
+  });
+
+  it('소수점 없는 이름은 minor 0으로 보아 같은 세대의 소수점 버전보다 뒤에 둔다', () => {
+    const available = ['gemini-4-flash-lite', 'gemini-4.1-flash-lite'];
+    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
+      'gemini-4.1-flash-lite',
+      'gemini-4-flash-lite',
+    ]);
+  });
+
   it('실험판·프리뷰·임베딩 등 정식 이름 규칙을 벗어난 모델은 제외한다', () => {
     const available = [
       'gemini-3.7-flash-preview',
