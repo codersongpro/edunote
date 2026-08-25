@@ -6,6 +6,7 @@ import { sanitizeHtml } from '../lib/security';
 import { safeSetItem } from '../lib/safeStorage';
 import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/translation';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 import type { GroundingInfo } from '../../preload/types';
 
 export interface HwpxTemplateData {
@@ -466,9 +467,13 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   };
 
   const copyText = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const success = await copyPlainTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다. 브라우저 설정을 확인해 주세요.' });
+    }
   };
 
   const handleCopyByFormat = async () => {

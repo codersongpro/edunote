@@ -46,6 +46,7 @@ import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel
 import TranslatorScreen from './components/TranslatorScreen';
 import { loadWorkDraft, saveWorkDraft, WorkDraft } from './lib/workDraft';
 import RestoreDraftModal from './components/RestoreDraftModal';
+import { isSidebarModeActive } from './lib/sidebarNavigation';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
   AppMode.RECORD_CHATBOT, AppMode.GENERATOR,
@@ -570,7 +571,7 @@ const App: React.FC = () => {
 
   const studentNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-      mode === m
+      isSidebarModeActive(mode, m)
         ? 'bg-indigo-600 text-white font-semibold shadow-sm'
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-700 dark:hover:text-indigo-300'
     }`;
@@ -598,7 +599,7 @@ const App: React.FC = () => {
 
   const favNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
-      mode === m
+      isSidebarModeActive(mode, m)
         ? 'bg-amber-500 text-white font-semibold shadow-sm'
         : 'text-[#78716C] dark:text-[#9C8F87] hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-700 dark:hover:text-amber-300'
     }`;
