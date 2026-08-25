@@ -14,6 +14,7 @@ import {
   RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
   Pin, PinOff, Copy, HelpCircle,
 } from 'lucide-react';
+import { getNavigationSelectionClass } from '../lib/sidebarNavigation';
 
 type Tab = 'my' | 'market';
 type View = 'list' | 'run' | 'edit' | 'edit-html' | 'create-wizard' | 'create-chat' | 'create-html';
@@ -545,13 +546,13 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
               onClick={() => handleTabSwitch(t)}
               className={`flex items-center gap-1.5 pb-3 text-sm font-semibold border-b-2 transition-colors ${
                 tab === t
-                  ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                  ? getNavigationSelectionClass('myTools', true)
                   : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0]'
               }`}
             >
               {t === 'market' && <Share2 className="w-4 h-4" />}
               {label}
-              {t === 'my' && <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-full">{tools.length}</span>}
+              {t === 'my' && <span className={`text-xs px-1.5 py-0.5 rounded-full ${tab === t ? 'bg-white/20 text-white' : 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300'}`}>{tools.length}</span>}
             </button>
           ))}
         </div>

@@ -3,6 +3,7 @@ import { notifyToast } from '../lib/toast';
 import { FileDown, FileText, HelpCircle, Printer, ChevronLeft, RotateCcw } from 'lucide-react';
 import { PRINT_FORMS, PrintForm } from '../data/printForms';
 import { useTour } from '../TourContext';
+import { getNavigationSelectionClass } from '../lib/sidebarNavigation';
 
 const CATEGORIES = Array.from(new Set(PRINT_FORMS.map(f => f.category)));
 
@@ -249,7 +250,7 @@ export default function PrintFormScreen() {
             onClick={() => setActiveCategory(cat)}
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
               activeCategory === cat
-                ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                ? getNavigationSelectionClass('admin', true)
                 : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0]'
             }`}
           >
