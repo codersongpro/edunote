@@ -169,7 +169,8 @@ const UsageGuideScreen: React.FC = () => {
             </div>
             <div>
               <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">문서작성기</p>
-              <p className="text-xs leading-relaxed">공문서, 계획서, 보고서, 품의서, 회의록, 홍보자료, 가정통신문, 문자&소통메시지, 공고문을 생성합니다. 필요한 경우 참고 자료 파일이나 스크린샷도 함께 넣을 수 있습니다.</p>
+              <p className="text-xs leading-relaxed">공문서, 계획서, 교육자료, 보고서, 품의서, 회의록, 홍보자료, 가정통신문, 문자&소통메시지, 공고문을 생성합니다. 필요한 경우 참고 자료 파일이나 스크린샷도 함께 넣을 수 있습니다.</p>
+              <p className="text-xs leading-relaxed mt-1">교육자료는 계획서와 같은 문서 양식을 쓰되 예산 항목 없이, 정보통신윤리교육·청렴교육처럼 교직원에게 실제로 교육할 수 있는 내용(교육 개요, 주요 교육 내용, 사례 및 판단 기준, 자가 점검표, 질의응답)을 개조식·명사형 문체로 작성합니다.</p>
             </div>
           </div>
         </Section>
@@ -311,7 +312,7 @@ const UsageGuideScreen: React.FC = () => {
             </div>
             <div>
               <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">Q. Demo 버튼은 무엇인가요?</p>
-              <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열립니다. 교무행정AI·수업자료AI·학생기록AI·내 스킬 등 주요 기능의 샘플 입력값이 카테고리별로 정리되어 있으며, 복사 버튼으로 바로 붙여넣을 수 있습니다. 문서작성기는 내부결재 공문·계획서·보고서·품의서·협의록·보도자료·메세지·공고문·가정통신문 9종 샘플이 모두 포함되어 있습니다.</p>
+              <p className="text-xs leading-relaxed">사이드바 하단의 Demo 버튼을 누르면 별도 창이 열립니다. 교무행정AI·수업자료AI·학생기록AI·내 스킬 등 주요 기능의 샘플 입력값이 카테고리별로 정리되어 있으며, 복사 버튼으로 바로 붙여넣을 수 있습니다. 문서작성기는 내부결재 공문·계획서·교육자료·보고서·품의서·협의록·보도자료·메세지·공고문·가정통신문 10종 샘플이 모두 포함되어 있습니다.</p>
             </div>
           </div>
         </Section>
