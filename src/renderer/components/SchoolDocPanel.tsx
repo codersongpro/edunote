@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap } from 'lucide-react';
+import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutput, ArrowRight, Layout, MessageSquare, Calendar, AlignLeft, AlignJustify, List, CheckCircle, AlertTriangle, Receipt, Users, Megaphone, Mail, Smartphone, Monitor, Megaphone as MegaphoneIcon, PanelLeftClose, PanelLeftOpen, HelpCircle, GraduationCap, Search } from 'lucide-react';
 import { DocType, GongmunInputs, PlanInputs, EduMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
 import { safeSetItem } from '../lib/safeStorage';
@@ -802,7 +802,18 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 </div>
                 <div>
                   <label className={labelClass}>교육 주제</label>
-                  <input type="text" className={inputClass} placeholder="예: 정보통신윤리교육, 청렴교육, 개인정보보호교육" value={eduMaterialData.topic} onChange={e => setEduMaterialData({ ...eduMaterialData, topic: e.target.value })} />
+                  <div className="flex items-center gap-1.5">
+                    <input type="text" className={inputClass} placeholder="예: 정보통신윤리교육, 청렴교육, 개인정보보호교육" value={eduMaterialData.topic} onChange={e => setEduMaterialData({ ...eduMaterialData, topic: e.target.value })} />
+                    <button
+                      type="button"
+                      onClick={() => window.electronAPI.openEduReferenceSearchWindow(eduMaterialData.topic)}
+                      disabled={!eduMaterialData.topic.trim()}
+                      className="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[#78716C]"
+                      title="교육부·교육청(go.kr) 자료 검색 (별도 창) — 받은 자료를 아래 참고 자료로 첨부하면 그 내용이 우선 반영됩니다."
+                    >
+                      <Search className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>교육 대상</label>

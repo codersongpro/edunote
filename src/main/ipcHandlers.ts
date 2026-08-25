@@ -15,6 +15,7 @@ import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
 import { buildNaverShoppingSearchUrl } from './priceSearch';
+import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
@@ -748,6 +749,39 @@ export function registerIpcHandlers(): void {
     win.setMenuBarVisibility(false);
     win.on('closed', () => { priceSearchWindowRef = null; });
     priceSearchWindowRef = win;
+    win.loadURL(url);
+  });
+
+  // ── 교육자료 참고자료 검색 창 ───────────────────────────────────────
+  // 교육자료 제작에 참고할 교육부·시도교육청 자료를 사람이 직접 찾아 내려받고
+  // '참고 자료'로 첨부하도록, 가격 검색과 같은 방식으로 검색 결과 페이지만 열어준다.
+  let eduReferenceSearchWindowRef: BrowserWindow | null = null;
+  ipcMain.handle('window:open-edu-reference-search', (_e, topic: unknown) => {
+    const url = buildEduReferenceSearchUrl(String(topic ?? ''));
+    if (!url) return;
+
+    if (eduReferenceSearchWindowRef && !eduReferenceSearchWindowRef.isDestroyed()) {
+      eduReferenceSearchWindowRef.loadURL(url);
+      eduReferenceSearchWindowRef.focus();
+      return;
+    }
+
+    const win = new BrowserWindow({
+      width: 900,
+      height: 800,
+      minWidth: 480,
+      minHeight: 500,
+      title: '교육자료 참고자료 검색',
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+        partition: 'persist:edu-reference-search',
+      },
+    });
+    win.setMenuBarVisibility(false);
+    win.on('closed', () => { eduReferenceSearchWindowRef = null; });
+    eduReferenceSearchWindowRef = win;
     win.loadURL(url);
   });
 
