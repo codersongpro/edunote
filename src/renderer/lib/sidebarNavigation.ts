@@ -50,6 +50,16 @@ const SELECTED_NAVIGATION_CLASSES: Readonly<Record<NavigationSection, string>> =
   myTools: 'border-pink-600 bg-pink-600 text-white font-bold shadow-sm',
 };
 
+const NAVIGATION_SECTION_HEADER_CLASSES: Readonly<Record<NavigationSection, string>> = {
+  admin: 'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20',
+  lesson: 'text-amber-700 dark:text-amber-300 hover:bg-amber-50/80 dark:hover:bg-amber-900/20',
+  student: 'text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50/80 dark:hover:bg-indigo-900/20',
+  myTools: 'text-pink-700 dark:text-pink-300 hover:bg-pink-50/80 dark:hover:bg-pink-900/20',
+};
+
+const NAVIGATION_TAB_BASE_CLASSES = 'h-full px-4 inline-flex items-center gap-1.5 border-t-2 rounded-t-lg text-sm font-semibold transition-colors';
+const INACTIVE_NAVIGATION_TAB_CLASSES = 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]';
+
 // 부모 메뉴는 클릭 후 하위 화면 모드로 전환되므로 단순 일치 비교로는 선택 표시가
 // 사라진다. 부모가 대표하는 하위 모드까지 포함해 실제 활성 상태를 판단한다.
 export function isSidebarModeActive(currentMode: AppMode, menuMode: AppMode): boolean {
@@ -74,4 +84,16 @@ export function getNavigationSection(currentMode: AppMode): NavigationSection | 
 // 클래스명을 정적 문자열로 보관해 Tailwind 빌드에서도 누락되지 않게 한다.
 export function getNavigationSelectionClass(section: NavigationSection, selected: boolean): string {
   return selected ? SELECTED_NAVIGATION_CLASSES[section] : '';
+}
+
+// 상위 영역은 메뉴 묶음을 구분하는 용도이므로 하위 메뉴와 같은 선택 음영을 쓰지 않는다.
+export function getNavigationSectionHeaderClass(section: NavigationSection): string {
+  return NAVIGATION_SECTION_HEADER_CLASSES[section];
+}
+
+// 화면 내부 탭은 버튼 전체 높이와 가로 여백을 선택 영역으로 사용한다.
+export function getNavigationTabClass(section: NavigationSection, selected: boolean): string {
+  return `${NAVIGATION_TAB_BASE_CLASSES} ${
+    selected ? SELECTED_NAVIGATION_CLASSES[section] : INACTIVE_NAVIGATION_TAB_CLASSES
+  }`;
 }

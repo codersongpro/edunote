@@ -14,7 +14,7 @@ import {
   RefreshCw, Share2, AlertCircle, User, X, School, Check, Monitor, Search,
   Pin, PinOff, Copy, HelpCircle,
 } from 'lucide-react';
-import { getNavigationSelectionClass } from '../lib/sidebarNavigation';
+import { getNavigationTabClass } from '../lib/sidebarNavigation';
 
 type Tab = 'my' | 'market';
 type View = 'list' | 'run' | 'edit' | 'edit-html' | 'create-wizard' | 'create-chat' | 'create-html';
@@ -539,16 +539,12 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
         </div>
 
         {/* 탭 */}
-        <div data-tour="my-tools-tabs" className="flex gap-4 border-b border-[#EDE8E1] dark:border-[#2E2822] -mb-px">
+        <div data-tour="my-tools-tabs" className="h-12 flex items-stretch gap-0 border-b border-[#EDE8E1] dark:border-[#2E2822] -mb-px">
           {([['my', '내 스킬'], ['market', '스킬마켓']] as [Tab, string][]).map(([t, label]) => (
             <button
               key={t}
               onClick={() => handleTabSwitch(t)}
-              className={`flex items-center gap-1.5 pb-3 text-sm font-semibold border-b-2 transition-colors ${
-                tab === t
-                  ? getNavigationSelectionClass('myTools', true)
-                  : 'border-transparent text-[#78716C] dark:text-[#9C8F87] hover:text-[#44403C] dark:hover:text-[#C4B8B0]'
-              }`}
+              className={getNavigationTabClass('myTools', tab === t)}
             >
               {t === 'market' && <Share2 className="w-4 h-4" />}
               {label}

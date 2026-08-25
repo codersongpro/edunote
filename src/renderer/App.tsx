@@ -48,9 +48,9 @@ import { loadWorkDraft, saveWorkDraft, WorkDraft } from './lib/workDraft';
 import RestoreDraftModal from './components/RestoreDraftModal';
 import {
   getNavigationSection,
+  getNavigationSectionHeaderClass,
   getNavigationSelectionClass,
   isSidebarModeActive,
-  type NavigationSection,
 } from './lib/sidebarNavigation';
 
 const SCHOOL_LEVEL_REQUIRED_MODES: AppMode[] = [
@@ -575,7 +575,6 @@ const App: React.FC = () => {
   };
 
   const activeNavigationSection = getNavigationSection(mode);
-  const isNavigationSectionSelected = (section: NavigationSection) => activeNavigationSection === section;
 
   const studentNavClass = (m: AppMode) =>
     `w-full flex items-center gap-2 px-2.5 py-2 text-sm rounded-md transition-all cursor-pointer ${
@@ -1416,14 +1415,10 @@ const App: React.FC = () => {
             <div className="rounded-xl overflow-hidden border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20">
               <button
                 onClick={() => setAdminSectionOpen(!adminSectionOpen)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${
-                  isNavigationSectionSelected('admin')
-                    ? getNavigationSelectionClass('admin', true)
-                    : 'text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${getNavigationSectionHeaderClass('admin')}`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isNavigationSectionSelected('admin') ? 'bg-white/20' : 'bg-emerald-500'}`}>
+                  <div className="w-5 h-5 rounded-md bg-emerald-500 flex items-center justify-center shrink-0">
                     <FileText className="w-3 h-3 text-white" />
                   </div>
                   <span className="text-sm font-bold tracking-wide truncate">교무행정AI</span>
@@ -1479,14 +1474,10 @@ const App: React.FC = () => {
             <div className="rounded-xl overflow-hidden border border-amber-100 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20">
               <button
                 onClick={() => setLessonSectionOpen(!lessonSectionOpen)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${
-                  isNavigationSectionSelected('lesson')
-                    ? getNavigationSelectionClass('lesson', true)
-                    : 'text-amber-700 dark:text-amber-300 hover:bg-amber-50/80 dark:hover:bg-amber-900/20'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${getNavigationSectionHeaderClass('lesson')}`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isNavigationSectionSelected('lesson') ? 'bg-white/20' : 'bg-amber-500'}`}>
+                  <div className="w-5 h-5 rounded-md bg-amber-500 flex items-center justify-center shrink-0">
                     <Presentation className="w-3 h-3 text-white" />
                   </div>
                   <span className="text-sm font-bold tracking-wide truncate">수업자료AI</span>
@@ -1541,25 +1532,17 @@ const App: React.FC = () => {
             <div className="rounded-xl overflow-hidden border border-indigo-100 dark:border-indigo-900/50 bg-indigo-50/40 dark:bg-indigo-950/20">
               <button
                 onClick={() => setStudentSectionOpen(!studentSectionOpen)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${
-                  isNavigationSectionSelected('student')
-                    ? getNavigationSelectionClass('student', true)
-                    : 'text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50/80 dark:hover:bg-indigo-900/20'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${getNavigationSectionHeaderClass('student')}`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isNavigationSectionSelected('student') ? 'bg-white/20' : 'bg-indigo-500'}`}>
+                  <div className="w-5 h-5 rounded-md bg-indigo-500 flex items-center justify-center shrink-0">
                     <Bot className="w-3 h-3 text-white" />
                   </div>
                   <span className="text-sm font-bold tracking-wide truncate">학생기록AI</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {hasEnteredStudentSection && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                      isNavigationSectionSelected('student')
-                        ? 'bg-white/20 text-white'
-                        : 'bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300'
-                    }`}>{schoolLevel}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300">{schoolLevel}</span>
                   )}
                   {studentSectionOpen ? <ChevronDown className="w-3 h-3 opacity-80" /> : <ChevronRight className="w-3 h-3 opacity-80" />}
                 </div>
@@ -1616,14 +1599,10 @@ const App: React.FC = () => {
             <div className="rounded-xl overflow-hidden border border-pink-100 dark:border-pink-900/50 bg-pink-50/40 dark:bg-pink-950/20">
               <button
                 onClick={() => setMyToolsSectionOpen(!myToolsSectionOpen)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${
-                  isNavigationSectionSelected('myTools')
-                    ? getNavigationSelectionClass('myTools', true)
-                    : 'text-pink-700 dark:text-pink-300 hover:bg-pink-50/80 dark:hover:bg-pink-900/20'
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-t-xl transition-colors ${getNavigationSectionHeaderClass('myTools')}`}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${isNavigationSectionSelected('myTools') ? 'bg-white/20' : 'bg-pink-500'}`}>
+                  <div className="w-5 h-5 rounded-md bg-pink-500 flex items-center justify-center shrink-0">
                     <Wrench className="w-3 h-3 text-white" />
                   </div>
                   <span className="text-sm font-bold tracking-wide truncate">AI 스킬즈</span>
