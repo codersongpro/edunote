@@ -11,6 +11,7 @@ import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
+import { applyOutlineStyles } from '../lib/outlineFormat';
 import {
   DEFAULT_TRAINING_MATERIAL_SECTIONS,
   TRAINING_SECTION_OPTIONS,
@@ -496,7 +497,12 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
         );
       }
       const { cleanContent, fillData } = extractResult(result.text);
-      setContentByTab(prev => ({ ...prev, [activeTab]: cleanContent }));
+      // 연수자료는 말머리 위계가 그대로 보여야 하므로, AI가 단계별 들여쓰기·글자 크기를
+      // 빠뜨렸으면 계획서와 같은 서식으로 보정해서 보여준다.
+      const displayContent = activeTab === DocType.TRAINING_MATERIAL
+        ? applyOutlineStyles(cleanContent)
+        : cleanContent;
+      setContentByTab(prev => ({ ...prev, [activeTab]: displayContent }));
       setModelByTab(prev => ({ ...prev, [activeTab]: result.model }));
       setGroundingByTab(prev => ({ ...prev, [activeTab]: result.grounding }));
       setHwpxFillDataByTab(prev => ({ ...prev, [activeTab]: fillData }));

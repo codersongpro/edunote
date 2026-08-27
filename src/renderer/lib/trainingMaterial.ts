@@ -78,6 +78,30 @@ const buildSelectedSectionInstructions = (sections: TrainingMaterialSections): s
   return instructions;
 };
 
+// 말머리 단계마다 들여쓰기와 글자 크기가 실제로 눈에 보이려면 태그만으로는 부족하고
+// 인라인 style이 있어야 한다. 계획서와 같은 서식 체계를 그대로 지정해 준다.
+const TRAINING_MATERIAL_HTML_FORMAT_INSTRUCTION = `[HTML 서식 체계 — 계획서와 동일하게 반드시 인라인 style로 지정]
+- 본문 전체는 <div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.7; color:#000000;">로 감싸세요.
+- 제목: <h1 style="text-align:center; font-size:22pt; font-weight:bold; margin:0 0 10px;">
+- 기관명: <div style="text-align:right; font-size:12pt; font-weight:bold; margin-bottom:26px;">
+- 1단계 대항목(1. 2. 3.): <h2 style="font-size:16pt; font-weight:bold; margin:0 0 10px;">
+- 2단계 중항목(가. 나. 다.): <div style="margin-left:14px; font-size:13pt;"> 안에서 <br>로 줄을 나눠 작성
+- 3단계 소항목(1) 2) 3)): <div style="margin-left:30px; font-size:12.5pt;">
+- 4단계 세항목(가) 나) 다)): <div style="margin-left:46px; font-size:12pt;">
+- 들여쓰기는 &nbsp;가 아니라 위의 margin-left로 표현하고, 단계가 내려갈수록 들여쓰기는 넓어지고 글자 크기는 작아지게 하세요.
+- style 없이 태그만 쓰면 모든 단계가 같은 크기·같은 위치로 보이므로, 위 style을 빠뜨리지 마세요.
+[출력 예시]
+<div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.7; color:#000000;">
+  <h1 style="text-align:center; font-size:22pt; font-weight:bold; margin:0 0 10px;">연수 제목</h1>
+  <div style="text-align:right; font-size:12pt; font-weight:bold; margin-bottom:26px;">기관명</div>
+  <div style="margin-bottom:24px;">
+    <h2 style="font-size:16pt; font-weight:bold; margin:0 0 10px;">1. 핵심 주제</h2>
+    <div style="margin-left:14px; font-size:13pt;">가. 개념과 기준 정리<br>나. 학교 현장 적용 기준</div>
+    <div style="margin-left:30px; font-size:12.5pt;">1) 세부 확인 사항<br>2) 담당자 유의 사항</div>
+    <div style="margin-left:46px; font-size:12pt;">가) 기록 보관 기준<br>나) 점검 주기</div>
+  </div>
+</div>`;
+
 export const buildTrainingMaterialInstruction = (
   sections: TrainingMaterialSections,
   pageCount: number,
@@ -120,7 +144,8 @@ ${selectedInstructions.length > 0 ? selectedInstructions.join('\n') : '- 선택 
 - 표가 필요한 선택 항목만 선이 보이는 HTML table로 작성하세요.
 - 모든 문장과 개조식 항목은 명사형으로 끝내세요. 예: 보호 조치 강화, 접근 권한 확인 필요, 즉시 보고함, 관련 기준에 따른 처리 원칙임.
 - "~합니다", "~입니다", "~됩니다", "~해야 합니다" 종결은 사용하지 마세요.
-- 짧고 구체적인 학교 업무 문체를 사용하되, 같은 명사형 어미를 기계적으로 반복하지 마세요.`;
+- 짧고 구체적인 학교 업무 문체를 사용하되, 같은 명사형 어미를 기계적으로 반복하지 마세요.
+${TRAINING_MATERIAL_HTML_FORMAT_INSTRUCTION}`;
 };
 
 export const buildTrainingMaterialResearchPrompt = (

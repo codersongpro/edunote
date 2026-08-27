@@ -17,4 +17,14 @@ describe('랜딩페이지 외부 링크', () => {
     expect(landingPage.querySelector<HTMLAnchorElement>('#downloadBtn')?.href)
       .toContain('/releases/download/');
   });
+
+  it('바닥글의 릴리즈 노트 전체와 오픈소스 라이선스 링크는 표시하지 않는다', () => {
+    const footerLinks = Array.from(landingPage.querySelectorAll('footer a'))
+      .map(link => link.textContent?.trim());
+
+    expect(footerLinks).not.toContain('릴리즈 노트 전체');
+    expect(footerLinks).not.toContain('오픈소스 라이선스');
+    expect(landingPage.querySelector('footer p')?.textContent)
+      .toContain('Copyright');
+  });
 });
