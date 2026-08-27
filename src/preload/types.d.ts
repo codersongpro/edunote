@@ -64,7 +64,7 @@ export interface ElectronAPI {
   screenshotUrl(url: string): Promise<string | null>;
   fetchSlideImage(keyword: string): Promise<string | null>;
   openDemoWindow(): Promise<void>;
-  openPriceSearchWindow(itemName: string): Promise<void>;
+  openPriceSearchWindow(itemName: string): Promise<boolean>;
   openEduReferenceSearchWindow(topic: string): Promise<void>;
   openChatWindow(opts?: { reload?: boolean }): Promise<void>;
   isChatWindowOpen(): Promise<boolean>;

@@ -64,14 +64,16 @@ describe('웹 검색 시중가 결과 해석', () => {
     expect(items).toHaveLength(2);
   });
 
-  it('http·https가 아닌 출처 주소는 버린다', () => {
+  it('https가 아닌 출처 주소는 버린다', () => {
+    // 외부 링크 열기가 https만 허용하므로, 열리지 않을 주소는 아예 남기지 않는다.
     const items = parseMarketPriceItems(JSON.stringify([
       { name: '제품A', unitPrice: 1000, sourceUrl: 'javascript:alert(1)' },
       { name: '제품B', unitPrice: 2000, sourceUrl: '판매처 홈페이지' },
-      { name: '제품C', unitPrice: 3000, sourceUrl: 'https://shop.example.com/c' },
+      { name: '제품C', unitPrice: 3000, sourceUrl: 'http://shop.example.com/c' },
+      { name: '제품D', unitPrice: 4000, sourceUrl: 'https://shop.example.com/d' },
     ]));
 
-    expect(items.map(item => item.sourceUrl)).toEqual(['', '', 'https://shop.example.com/c']);
+    expect(items.map(item => item.sourceUrl)).toEqual(['', '', '', 'https://shop.example.com/d']);
   });
 
   it('비정상적으로 큰 금액은 단가로 쓰지 않는다', () => {

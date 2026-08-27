@@ -35,7 +35,7 @@ export function buildMarketPriceSearchPrompt(keyword: string, count = 8): string
     '- spec: 규격·용량·수량 단위 (없으면 빈 문자열)',
     '- maker: 제조사 또는 판매처 (없으면 빈 문자열)',
     '- unitPrice: 1개 기준 판매가를 원 단위 양의 정수로. 쉼표·원 표시·범위 표기 금지',
-    '- sourceUrl: 그 가격을 확인한 웹 페이지의 http/https 주소',
+    '- sourceUrl: 그 가격을 확인한 웹 페이지의 https 주소 (https로 시작하지 않는 주소는 쓰지 마)',
     '가격을 확인하지 못한 제품은 목록에서 빼고, 추정 가격을 만들어 넣지 마.',
     '배송비·설치비는 빼고 제품 가격만 적어.',
   ].join('\n');
@@ -51,12 +51,13 @@ function toPositiveInteger(value: unknown): number {
   return parsed;
 }
 
-function toHttpUrl(value: unknown): string {
+// 외부 링크 열기(shell:open-external)는 https만 허용하므로, 여기서도 https만 남긴다.
+// http 주소를 그대로 두면 화면에는 '열기' 버튼이 보이는데 눌러도 아무 일이 없다.
+function toHttpsUrl(value: unknown): string {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
   try {
-    const url = new URL(raw);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+    return new URL(raw).protocol === 'https:' ? new URL(raw).href : '';
   } catch {
     return '';
   }
@@ -89,7 +90,7 @@ export function parseMarketPriceItems(text: string): MarketPriceItem[] {
       spec: toText(record.spec),
       maker: toText(record.maker),
       unitPrice,
-      sourceUrl: toHttpUrl(record.sourceUrl),
+      sourceUrl: toHttpsUrl(record.sourceUrl),
     });
   }
 

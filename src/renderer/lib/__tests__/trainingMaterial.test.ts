@@ -111,6 +111,40 @@ describe('연수자료 선택 항목', () => {
     expect(instruction).toContain('들여쓰기는 &nbsp;가 아니라 위의 margin-left로 표현');
   });
 
+  it('개조식을 이유로 설명이 짧아지지 않도록 항목 충실도를 요구한다', () => {
+    const instruction = buildTrainingMaterialInstruction(
+      DEFAULT_TRAINING_MATERIAL_SECTIONS,
+      2,
+    );
+
+    expect(instruction).toContain('[항목 내용의 충실도 — 반드시 준수]');
+    expect(instruction).toContain('내용을 짧게 줄이라는 뜻이 아닙니다');
+    expect(instruction).toContain('60자 이상으로 쓰세요');
+    expect(instruction).toContain('제목·라벨식 항목은 절대 쓰지 마세요');
+    expect(instruction).toContain('중항목을 4개 이상 배치하고');
+    expect(instruction).toContain('어미를 맞추려고 설명을 잘라 내지 마세요');
+  });
+
+  it('출력 예시의 항목도 설명 문장 수준으로 제시한다', () => {
+    const instruction = buildTrainingMaterialInstruction(
+      DEFAULT_TRAINING_MATERIAL_SECTIONS,
+      2,
+    );
+    // 예시가 라벨 수준이면 모델이 그 길이를 따라 하므로, 예시 항목 자체가 충분히 길어야 한다.
+    // 서식을 설명하는 줄(- 로 시작)이 아니라 출력 예시 블록의 항목 줄만 검사한다.
+    const exampleLines = instruction
+      .split('\n')
+      .filter(line => /^\s+<div style="margin-left:(14|30|46)px/.test(line));
+
+    expect(exampleLines.length).toBeGreaterThan(0);
+    for (const line of exampleLines) {
+      const items = line.split('<br>').map(part => part.replace(/<[^>]+>/g, '').trim());
+      for (const item of items) {
+        expect(item.length).toBeGreaterThan(60);
+      }
+    }
+  });
+
   it('웹 조사는 최신 공식 자료와 주제별 핵심 근거를 요구한다', () => {
     const promptContext = buildTrainingMaterialPromptContext(createInputs(), '해솔초등학교');
     const prompt = buildTrainingMaterialResearchPrompt(promptContext, '2026년 8월 25일');

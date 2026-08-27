@@ -728,12 +728,12 @@ export function registerIpcHandlers(): void {
   let priceSearchWindowRef: BrowserWindow | null = null;
   ipcMain.handle('window:open-price-search', (_e, itemName: unknown) => {
     const url = buildNaverShoppingSearchUrl(String(itemName ?? ''));
-    if (!url) return;
+    if (!url) return false;
 
     if (priceSearchWindowRef && !priceSearchWindowRef.isDestroyed()) {
       priceSearchWindowRef.loadURL(url);
       priceSearchWindowRef.focus();
-      return;
+      return true;
     }
 
     const win = new BrowserWindow({
@@ -751,8 +751,25 @@ export function registerIpcHandlers(): void {
     });
     win.setMenuBarVisibility(false);
     win.on('closed', () => { priceSearchWindowRef = null; });
+
+    // 쇼핑몰이 내장 브라우저 접속을 막거나 네트워크가 끊기면 빈 창만 남아 "안 열린다"로 보인다.
+    // 본문 로드가 실패하면 창을 닫고 사용자의 기본 브라우저로 같은 검색을 연다.
+    // ERR_ABORTED(-3)는 페이지 이동 중 흔히 발생하는 정상 취소라 제외한다.
+    win.webContents.on('did-fail-load', (_event, errorCode, _desc, _validatedUrl, isMainFrame) => {
+      if (!isMainFrame || errorCode === -3) return;
+      if (!win.isDestroyed()) win.destroy();
+      shell.openExternal(url).catch(() => { /* 기본 브라우저가 없으면 더 할 수 있는 일이 없다 */ });
+    });
+
+    // 검색 결과에서 상품을 누르면 새 창 대신 기본 브라우저로 보내, 창이 계속 쌓이지 않게 한다.
+    win.webContents.setWindowOpenHandler(({ url: target }) => {
+      if (/^https:/i.test(target)) shell.openExternal(target).catch(() => { /* 무시 */ });
+      return { action: 'deny' };
+    });
+
     priceSearchWindowRef = win;
     win.loadURL(url);
+    return true;
   });
 
   // ── 연수자료 참고자료 검색 ─────────────────────────────────────────

@@ -1267,7 +1267,7 @@ export default function BudgetPlannerScreen() {
     setPriceSearchStatus(totalShown > 0 ? 'ready' : 'error');
     setPriceSearchMessage(totalShown > 0
       ? `${totalShown}건 표시 중${hasMore ? ' · 더 보기로 다음 결과를 이어서 볼 수 있습니다.' : ''}`
-      : failures[0] ?? '검색 결과가 없습니다. 다른 키워드로 시도하거나 아래 네이버쇼핑에서 직접 확인해보세요.');
+      : failures[0] ?? '검색 결과가 없습니다. 다른 키워드로 시도하거나 「직접 검색하기」로 확인해보세요.');
   };
 
   // AI 웹 검색으로 시중 참고 단가를 조사해 검색 결과 목록에 넣을 형태로 바꾼다.
@@ -1302,6 +1302,36 @@ export default function BudgetPlannerScreen() {
     setPriceSearchMessage(useCategoryRatio
       ? `'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`
       : `'${item.thngNm}'을(를) 맨 위에 추가했습니다.`);
+  };
+
+  // 입력한 키워드로 쇼핑 검색 결과 창을 연다. 창을 띄우지 못하면 조용히 넘어가지 않고 알린다.
+  const openDirectPriceSearch = async () => {
+    const query = priceSearchQuery.trim();
+    if (!query) return;
+    try {
+      const opened = await window.electronAPI.openPriceSearchWindow(query);
+      if (!opened) {
+        setPriceSearchStatus('error');
+        setPriceSearchMessage('검색 창을 열지 못했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    } catch (e: any) {
+      setPriceSearchStatus('error');
+      setPriceSearchMessage(e?.message ?? '검색 창을 열지 못했습니다.');
+    }
+  };
+
+  // 검색 결과의 출처 링크를 기본 브라우저로 연다. 열지 못하면 원인을 화면에 남긴다.
+  const openSourceLink = async (url: string) => {
+    try {
+      const opened = await window.electronAPI.openExternal(url);
+      if (opened === false) {
+        setPriceSearchStatus('error');
+        setPriceSearchMessage('출처 주소를 열지 못했습니다. 주소가 올바르지 않을 수 있습니다.');
+      }
+    } catch {
+      setPriceSearchStatus('error');
+      setPriceSearchMessage('출처 주소를 열지 못했습니다.');
+    }
   };
 
   // 검색 결과 위에 마우스를 올리면 상품 이미지를 data URI로 받아 미리보기로 보여준다(CSP 우회).
@@ -1649,7 +1679,7 @@ export default function BudgetPlannerScreen() {
               저장 후 예산안 화면 위쪽의 '품목 검색으로 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
             </p>
             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-2 leading-relaxed">
-              네이버 쇼핑 검색 API는 2026년 7월 31일 종료되어 더 이상 사용하지 않습니다. 나라장터에 없는 시중 물품은 품목 검색 패널의 '웹 검색 참고가'를 켜거나, 검색 결과 아래의 네이버쇼핑 열기 버튼으로 직접 확인해 주세요.
+              네이버 쇼핑 검색 API는 2026년 7월 31일 종료되어 더 이상 사용하지 않습니다. 나라장터에 없는 시중 물품은 품목 검색 패널의 '웹 검색 참고가'를 켜거나, '직접 검색하기' 버튼으로 확인해 주세요.
             </p>
               </>
             )}
@@ -1867,12 +1897,12 @@ export default function BudgetPlannerScreen() {
                       웹 검색으로 시중 참고가 함께 조사
                     </label>
                     <button
-                      onClick={() => window.electronAPI.openPriceSearchWindow(priceSearchQuery.trim())}
+                      onClick={openDirectPriceSearch}
                       disabled={!priceSearchQuery.trim()}
-                      title="네이버쇼핑 검색 결과를 창으로 열어 직접 가격을 확인합니다"
+                      title="쇼핑 검색 결과를 창으로 열어 직접 가격을 확인합니다"
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline disabled:text-[#A8A29E] disabled:no-underline"
                     >
-                      <ExternalLink className="w-3 h-3" />네이버쇼핑에서 직접 확인
+                      <ExternalLink className="w-3 h-3" />직접 검색하기
                     </button>
                   </div>
                   {useMarketPriceSearch && (
@@ -1920,7 +1950,7 @@ export default function BudgetPlannerScreen() {
                             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] truncate">
                               {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
-                                <button onClick={() => window.electronAPI.openExternal(item.priceSourceUrl!)}
+                                <button onClick={() => openSourceLink(item.priceSourceUrl!)}
                                   onMouseEnter={() => loadPreviewImage(item.image)}
                                   className="ml-1 text-blue-500 hover:underline inline-flex items-center gap-0.5">
                                   <ExternalLink className="w-3 h-3" />열기

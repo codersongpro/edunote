@@ -750,7 +750,11 @@ export const generateDocument = async (
 6. 문단과 표가 너무 붙지 않도록 주요 구역에는 margin-bottom:16px 이상을 사용하세요.`
     : '';
 
-  const reportStyleInstruction = docType === DocType.NEWSLETTER || docType === DocType.MESSAGE
+  // 연수자료는 buildTrainingMaterialInstruction이 자체 [문체] 규칙을 갖는다. 공통 보고서체
+  // 규칙은 "단어 또는 짧은 구로 마무리"를 요구해 연수 교재에 필요한 설명까지 잘라내므로 빼둔다.
+  const reportStyleInstruction = docType === DocType.NEWSLETTER
+    || docType === DocType.MESSAGE
+    || docType === DocType.TRAINING_MATERIAL
     ? ''
     : docType === DocType.GONGMUN || docType === DocType.PUMUI
       ? OFFICIAL_HAPSHO_STYLE_INSTRUCTION
