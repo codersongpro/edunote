@@ -2,6 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
+import {
+  MARKET_PRICE_SOURCE_LABEL,
+  MARKET_PRICE_SYSTEM_INSTRUCTION,
+  buildMarketPriceSearchPrompt,
+  parseMarketPriceItems,
+} from '../lib/marketPriceSearch';
 import { useTour } from '../TourContext';
 import {
   AlertCircle,
@@ -1011,16 +1017,10 @@ export default function BudgetPlannerScreen() {
   // 나라장터 인증키 원문은 앱에서 다시 받아오지 않는다. 입력칸 값과 저장 여부만 관리한다.
   const [apiKey, setApiKey] = useState('');
   const [hasSavedNaramarketKey, setHasSavedNaramarketKey] = useState(false);
-  const [naverClientId, setNaverClientId] = useState('');
-  // Client Secret 원문은 앱에서 다시 받아오지 않는다. 입력칸 값과 저장 여부만 관리한다.
-  const [naverClientSecret, setNaverClientSecret] = useState('');
-  const [hasSavedNaverSecret, setHasSavedNaverSecret] = useState(false);
   const [showPriceSettings, setShowPriceSettings] = useState(false);
   const [showApiGuide, setShowApiGuide] = useState(false);
   const [showBalanceHelp, setShowBalanceHelp] = useState(false);
   const [apiGuideStep, setApiGuideStep] = useState(1);
-  const [internetPriceTestMessage, setInternetPriceTestMessage] = useState('');
-  const [isTestingInternetPrice, setIsTestingInternetPrice] = useState(false);
 
   const [ratioEdu, setRatioEdu] = useState('75');
   const [ratioGeneral, setRatioGeneral] = useState('20');
@@ -1037,7 +1037,7 @@ export default function BudgetPlannerScreen() {
   const [collapsedBudgetIds, setCollapsedBudgetIds] = useState<Set<string>>(new Set());
   const [inputSidebarCollapsed, setInputSidebarCollapsed] = useState(false);
 
-  // 인터넷 가격 조회(품목 검색) 패널 상태
+  // 품목 검색 패널 상태
   const [priceSearchQuery, setPriceSearchQuery] = useState('');
   const [priceSearchCategory, setPriceSearchCategory] = useState<BudgetCategory>('교육운영비');
   const [priceSearchResults, setPriceSearchResults] = useState<NaraItem[]>([]);
@@ -1045,17 +1045,13 @@ export default function BudgetPlannerScreen() {
   const [priceSearchMessage, setPriceSearchMessage] = useState('');
   const [priceSearchPage, setPriceSearchPage] = useState(1);
   const [priceSearchHasMore, setPriceSearchHasMore] = useState(false);
+  // 나라장터에 없는 시중 물품은 AI 웹 검색으로 참고 단가를 조사한다(선택).
+  const [useMarketPriceSearch, setUseMarketPriceSearch] = useState(false);
   const [previewImages, setPreviewImages] = useState<Record<string, string>>({}); // 이미지 URL → data URI 캐시
 
   useEffect(() => {
     window.electronAPI.hasNaramarketKey().then(saved => {
       setHasSavedNaramarketKey(!!saved);
-    }).catch(() => {});
-    window.electronAPI.getConfig('naverShoppingClientId').then((key: unknown) => {
-      if (typeof key === 'string') setNaverClientId(key);
-    }).catch(() => {});
-    window.electronAPI.hasNaverShoppingSecret().then(saved => {
-      setHasSavedNaverSecret(!!saved);
     }).catch(() => {});
     Promise.all([
       window.electronAPI.readJsonData('budget-plans').catch(() => []),
@@ -1147,45 +1143,12 @@ export default function BudgetPlannerScreen() {
   };
 
   const saveApiKey = async () => {
-    setApiKey(apiKey.trim());
-    setNaverClientId(naverClientId.trim());
-    setNaverClientSecret(naverClientSecret.trim());
-    const payload: Record<string, string> = {
-      naverShoppingClientId: naverClientId.trim(),
-    };
-    // 인증키·Secret 입력칸이 비어 있으면 저장된 기존 값을 지우지 않도록 보낼 항목에서 제외한다.
-    if (apiKey.trim()) {
-      payload.naramarketApiKey = apiKey.trim();
-    }
-    if (naverClientSecret.trim()) {
-      payload.naverShoppingClientSecret = naverClientSecret.trim();
-    }
-    await window.electronAPI.setConfig(payload);
-    if (apiKey.trim()) setHasSavedNaramarketKey(true);
-    if (naverClientSecret.trim()) setHasSavedNaverSecret(true);
-  };
-
-  const testInternetPriceSearch = async () => {
-    const clientId = naverClientId.trim();
-    const clientSecret = naverClientSecret.trim();
-    if (!clientId || (!clientSecret && !hasSavedNaverSecret)) {
-      setInternetPriceTestMessage('Client ID와 Client Secret을 모두 입력해주세요.');
-      return;
-    }
-    setIsTestingInternetPrice(true);
-    setInternetPriceTestMessage('');
-    try {
-      await saveApiKey();
-      const data = await window.electronAPI.naverShoppingSearch('복사용지');
-      const rows = normalizeNaverShoppingItems(data);
-      setInternetPriceTestMessage(rows.length > 0
-        ? `인터넷 가격조회 연결됨 · 복사용지 ${rows.length}건 확인`
-        : '연결은 되었지만 복사용지 검색 결과가 없습니다. 검색 API 권한을 확인해주세요.');
-    } catch (e: any) {
-      setInternetPriceTestMessage(e?.message ?? '인터넷 가격조회 테스트 중 오류가 발생했습니다.');
-    } finally {
-      setIsTestingInternetPrice(false);
-    }
+    const trimmedKey = apiKey.trim();
+    setApiKey(trimmedKey);
+    // 인증키 입력칸이 비어 있으면 저장된 기존 값을 지우지 않도록 아무것도 보내지 않는다.
+    if (!trimmedKey) return;
+    await window.electronAPI.setConfig({ naramarketApiKey: trimmedKey });
+    setHasSavedNaramarketKey(true);
   };
 
   const handleNewPlan = async () => {
@@ -1251,45 +1214,43 @@ export default function BudgetPlannerScreen() {
     setCollapsedBudgetIds(prev => (prev.size > 0 ? new Set() : parentIdsWithChildren(activePlan.items)));
   };
 
-  // 인터넷 가격 조회: 입력한 키(나라장터·네이버 쇼핑)로 실제 상품·단가를 검색한다.
-  // 네이버 쇼핑 결과는 한 페이지당 10건씩 받아오고, '더 보기'로 다음 페이지를 이어서 보여준다.
-  const PRICE_PAGE_SIZE = 10;
+  // 품목 검색: 나라장터 종합쇼핑몰에서 실제 계약 품목과 단가를 페이지 단위로 가져온다.
+  // '더 보기'를 누르면 다음 페이지를 이어서 보여준다.
   const runPriceSearch = async (page: number, append: boolean) => {
     const query = priceSearchQuery.trim();
     if (!query) return;
     const hasNaraKey = !!apiKey.trim() || hasSavedNaramarketKey;
-    const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
-    if (!hasNaraKey && !hasNaverKey) {
+    if (!hasNaraKey && !useMarketPriceSearch) {
       setPriceSearchStatus('error');
-      setPriceSearchMessage('먼저 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해주세요.');
+      setPriceSearchMessage('먼저 나라장터 인증키를 저장하거나, 웹 검색 참고가 조사를 켜주세요.');
       return;
     }
     setPriceSearchStatus('loading');
     if (!append) { setPriceSearchResults([]); setPriceSearchMessage(''); setPriceSearchHasMore(false); }
 
     const fetched: NaraItem[] = [];
-    // 나라장터 결과는 첫 페이지에서만 한 번 가져온다.
-    if (!append && hasNaraKey) {
+    const failures: string[] = [];
+    let naraCount = 0;
+
+    if (hasNaraKey) {
       try {
-        const data = await window.electronAPI.naramarketShoppingSearch(query);
-        fetched.push(...normalizeApiItems(data, true)
+        const data = await window.electronAPI.naramarketShoppingSearch(query, page);
+        const naraItems = normalizeApiItems(data, true)
           .filter(item => (item.unitPrice ?? 0) > 0)
-          .map(item => ({ ...item, priceSource: '나라장터' })));
-      } catch {
-        // 한쪽 조회가 실패해도 다른 조회 결과로 계속 진행한다.
+          .map(item => ({ ...item, priceSource: '나라장터' }));
+        naraCount = naraItems.length;
+        fetched.push(...naraItems);
+      } catch (e: any) {
+        failures.push(`나라장터 조회 실패: ${e?.message ?? '알 수 없는 오류'}`);
       }
     }
-    let naverCount = 0;
-    let naverTotal = 0;
-    if (hasNaverKey) {
+
+    // 웹 검색 참고가는 첫 페이지에서만 조사한다(검색 건수만큼 요금이 발생하므로).
+    if (useMarketPriceSearch && !append) {
       try {
-        const data: any = await window.electronAPI.naverShoppingSearch(query, page);
-        const naverItems = normalizeNaverShoppingItems(data).map(item => ({ ...item, priceSource: item.priceSource || '인터넷 가격조회' }));
-        naverCount = naverItems.length;
-        naverTotal = Number(data?.total) || 0;
-        fetched.push(...naverItems);
-      } catch {
-        // 위와 동일하게 무시한다.
+        fetched.push(...await fetchMarketPriceItems(query));
+      } catch (e: any) {
+        failures.push(`웹 검색 참고가 조사 실패: ${e?.message ?? '알 수 없는 오류'}`);
       }
     }
 
@@ -1299,14 +1260,32 @@ export default function BudgetPlannerScreen() {
       totalShown = merged.length;
       return merged;
     });
-    // 네이버 쇼핑에 다음 페이지가 더 있으면 '더 보기'를 보여준다.
-    const hasMore = hasNaverKey && naverCount >= PRICE_PAGE_SIZE && page * PRICE_PAGE_SIZE < naverTotal && page < 50;
+    // 나라장터가 이번 페이지를 가득 채워 돌려줬으면 다음 페이지가 더 있을 수 있다.
+    const hasMore = hasNaraKey && naraCount > 0 && page < 20;
     setPriceSearchHasMore(hasMore);
     setPriceSearchPage(page);
     setPriceSearchStatus(totalShown > 0 ? 'ready' : 'error');
     setPriceSearchMessage(totalShown > 0
-      ? `${totalShown}건 표시 중${hasMore ? ' · 더 보기로 다음 10건을 이어서 볼 수 있습니다.' : ''}`
-      : '검색 결과가 없습니다. 다른 키워드로 시도해보세요.');
+      ? `${totalShown}건 표시 중${hasMore ? ' · 더 보기로 다음 결과를 이어서 볼 수 있습니다.' : ''}`
+      : failures[0] ?? '검색 결과가 없습니다. 다른 키워드로 시도하거나 아래 네이버쇼핑에서 직접 확인해보세요.');
+  };
+
+  // AI 웹 검색으로 시중 참고 단가를 조사해 검색 결과 목록에 넣을 형태로 바꾼다.
+  const fetchMarketPriceItems = async (query: string): Promise<NaraItem[]> => {
+    const { text } = await window.electronAPI.aiGenerate(
+      buildMarketPriceSearchPrompt(query),
+      MARKET_PRICE_SYSTEM_INSTRUCTION,
+      { temperature: 0.2, useSearchGrounding: true },
+    );
+    return parseMarketPriceItems(text).map(item => ({
+      thngNm: item.name,
+      thngCd: `market-${item.name}-${item.unitPrice}`,
+      spec: item.spec,
+      mnfctCorpNm: item.maker,
+      unitPrice: item.unitPrice,
+      priceSource: MARKET_PRICE_SOURCE_LABEL,
+      priceSourceUrl: item.sourceUrl,
+    }));
   };
 
   const handlePriceSearch = () => runPriceSearch(1, false);
@@ -1333,11 +1312,11 @@ export default function BudgetPlannerScreen() {
       .catch(() => setPreviewImages(prev => ({ ...prev, [url]: '' })));
   };
 
-  // 가격 조회에 쓸 수 있는 키(나라장터 또는 인터넷 가격조회)가 저장돼 있는지 여부
-  const hasPriceLookupKey = !!apiKey.trim() || hasSavedNaramarketKey || (!!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret));
-  const priceSearchTooltip = hasPriceLookupKey
-    ? '키워드로 실제 상품과 단가를 조회합니다.'
-    : '먼저 왼쪽 \'가격 조회 정보 선택 입력\'에서 나라장터 키 또는 인터넷 가격조회 Client 정보를 저장해 주세요. 키가 없으면 조회되지 않습니다.';
+  // 품목 검색에 쓸 수 있는 나라장터 키가 저장돼 있는지 여부
+  const hasPriceLookupKey = !!apiKey.trim() || hasSavedNaramarketKey;
+  const priceSearchTooltip = hasPriceLookupKey || useMarketPriceSearch
+    ? '키워드로 실제 품목과 단가를 조회합니다.'
+    : '먼저 왼쪽 \'가격 조회 정보 선택 입력\'에서 나라장터 인증키를 저장하거나, 아래 웹 검색 참고가 조사를 켜주세요.';
 
   const addChildItemToPlan = (parentId: string) => {
     if (!activePlan) return;
@@ -1399,8 +1378,7 @@ export default function BudgetPlannerScreen() {
     };
 
     const hasNaraKey = !!apiKey.trim() || hasSavedNaramarketKey;
-    const hasNaverKey = !!naverClientId.trim() && (!!naverClientSecret.trim() || hasSavedNaverSecret);
-    if (!hasNaraKey && !hasNaverKey) return candidates;
+    if (!hasNaraKey) return candidates;
     for (const category of CATEGORIES) {
       const explicitWords = splitDesiredItems(desiredItems[category]);
       const keywords = Array.from(new Set([
@@ -1408,19 +1386,9 @@ export default function BudgetPlannerScreen() {
         ...(explicitWords.length > 0 ? [] : (titleKeywords[category] ?? [])),
       ])).slice(0, 6);
       for (const keyword of keywords) {
-        if (hasNaverKey) {
-          try {
-            const data = await window.electronAPI.naverShoppingSearch(keyword);
-            candidates[category].push(...normalizeNaverShoppingItems(data));
-          } catch {
-            // Internet reference prices are optional.
-          }
-        }
         try {
-          if (hasNaraKey) {
-            const data = await window.electronAPI.naramarketShoppingSearch(keyword);
-            candidates[category].unshift(...normalizeApiItems(data, true));
-          }
+          const data = await window.electronAPI.naramarketShoppingSearch(keyword);
+          candidates[category].unshift(...normalizeApiItems(data, true));
         } catch {
           // API 결과가 없어도 내장 후보로 예산안을 계속 만듭니다.
         }
@@ -1605,13 +1573,12 @@ export default function BudgetPlannerScreen() {
   ];
 
   const PRICE_API_GUIDE_STEPS = [
-    { title: '나라장터 키 발급', desc: '공공데이터포털에서 물품목록정보서비스와 종합쇼핑몰 품목정보 서비스를 활용신청합니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
-    { title: '인터넷 가격 조회 신청', desc: '개발자 센터에 로그인한 뒤 애플리케이션 등록 화면에서 새 애플리케이션을 만듭니다.', action: { label: '개발자 센터 열기', url: 'https://developers.naver.com' } },
-    { title: '쇼핑 검색 API 선택', desc: '사용 API 항목에서 검색 API를 선택하고, 세부 항목에서 쇼핑 검색을 사용할 수 있게 설정합니다.' },
-    { title: '사용 환경 입력', desc: '앱 이름은 EduNote처럼 알아보기 쉽게 입력하고, 사용 환경은 PC 프로그램 또는 웹 서비스 항목 중 제공되는 방식에 맞춰 등록합니다.' },
-    { title: '키 복사', desc: '등록이 끝나면 애플리케이션 정보 화면에서 Client ID와 Client Secret을 각각 복사합니다.' },
-    { title: '키 저장', desc: '아래 입력칸에 인터넷 가격 조회 Client ID와 Client Secret을 붙여넣고 저장합니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
-    { title: '단가 적용 방식', desc: '입력된 키가 있으면 가격 조회 결과를 참고하고, 없으면 앱의 예산 생성 로직으로 단가를 추정합니다.' },
+    { title: '공공데이터포털 가입', desc: '공공데이터포털에 회원가입하고 로그인합니다. 나라장터 품목·단가 조회에 쓰는 무료 인증키를 받는 곳입니다.', action: { label: 'data.go.kr 열기', url: 'https://www.data.go.kr' } },
+    { title: '서비스 활용신청', desc: '검색창에서 조달청 물품목록정보서비스와 나라장터 종합쇼핑몰 품목정보 서비스를 찾아 각각 활용신청합니다.' },
+    { title: '인증키 확인', desc: '마이페이지 - 데이터활용 - 오픈API - 개발계정에서 일반 인증키(Encoding 또는 Decoding)를 복사합니다.' },
+    { title: '키 저장', desc: '아래 입력칸에 인증키를 붙여넣고 나라장터 키 저장을 누릅니다. 저장하면 앱을 껐다 켜도 유지됩니다.' },
+    { title: '나라장터에 없는 물품', desc: '나라장터 종합쇼핑몰에 없는 일반 시중 물품은 품목 검색 패널의 웹 검색 참고가 조사를 켜면 AI가 웹에서 가격을 찾아 출처와 함께 보여줍니다. 검색 건수만큼 API 요금이 발생하므로 기본은 꺼짐입니다.' },
+    { title: '단가 적용 방식', desc: '저장한 키가 있으면 나라장터 계약 단가를 우선 참고하고, 없으면 앱의 예산 생성 로직으로 단가를 추정합니다.' },
   ];
 
   return (
@@ -1679,33 +1646,11 @@ export default function BudgetPlannerScreen() {
             </div>
             {(apiKey || hasSavedNaramarketKey) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
-              나라장터 API 키와 인터넷 가격조회 Client 정보는 선택 입력입니다. 입력하지 않아도 예산안은 만들 수 있고, 입력하면 실제 검색 단가를 참고합니다.
+              저장 후 예산안 화면 위쪽의 '품목 검색으로 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
             </p>
-          <div className="pt-3">
-            <p className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] mb-2">인터넷 가격조회 Client 정보 (선택)</p>
-            <div className="space-y-2">
-              <input type="password" value={naverClientId} onChange={e => setNaverClientId(e.target.value)} placeholder="인터넷 가격 조회 Client ID" className={inputCls} />
-              <input type="password" value={naverClientSecret} onChange={e => setNaverClientSecret(e.target.value)} placeholder={hasSavedNaverSecret ? 'Client Secret 저장됨 (변경할 때만 입력)' : '인터넷 가격 조회 Client Secret'} className={inputCls} />
-            </div>
-            <div className="mt-2 flex gap-2">
-              <button onClick={saveApiKey} className={`${btnCls} bg-[#78716C] text-white hover:bg-[#44403C] flex-1`}>
-                <Save className="w-3.5 h-3.5 inline mr-1" />인터넷 키 저장
-              </button>
-              <button onClick={testInternetPriceSearch} disabled={isTestingInternetPrice} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 flex-1`}>
-                {isTestingInternetPrice ? <RefreshCw className="w-3.5 h-3.5 inline mr-1 animate-spin" /> : <Search className="w-3.5 h-3.5 inline mr-1" />}
-                테스트 조회
-              </button>
-            </div>
-            {(naverClientId && (naverClientSecret || hasSavedNaverSecret)) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> 인터넷 가격 조회 키 설정됨</p>}
-            {internetPriceTestMessage && (
-              <p className={`text-xs mt-1 flex items-start gap-1 ${internetPriceTestMessage.includes('연결됨') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
-                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> {internetPriceTestMessage}
-              </p>
-            )}
-            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1">
-              저장 후 예산안 화면 위쪽의 '인터넷 가격 조회로 품목 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
+            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-2 leading-relaxed">
+              네이버 쇼핑 검색 API는 2026년 7월 31일 종료되어 더 이상 사용하지 않습니다. 나라장터에 없는 시중 물품은 품목 검색 패널의 '웹 검색 참고가'를 켜거나, 검색 결과 아래의 네이버쇼핑 열기 버튼으로 직접 확인해 주세요.
             </p>
-          </div>
               </>
             )}
           </section>
@@ -1879,7 +1824,7 @@ export default function BudgetPlannerScreen() {
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
                       <Search className="w-4 h-4 text-blue-500" />
-                      <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">인터넷 가격 조회로 품목 추가</h3>
+                      <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">품목 검색으로 추가</h3>
                     </div>
                     <button
                       onClick={() => { setPriceSearchResults([]); setPriceSearchMessage(''); setPriceSearchQuery(''); setPriceSearchStatus('idle'); setPriceSearchHasMore(false); setPriceSearchPage(1); }}
@@ -1911,10 +1856,35 @@ export default function BudgetPlannerScreen() {
                       조회
                     </button>
                   </div>
-                  {!hasPriceLookupKey && (
-                    <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1.5 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 shrink-0" />
-                      나라장터 키 또는 인터넷 가격조회 Client 정보를 저장하면 검색을 사용할 수 있습니다.
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#44403C] dark:text-[#C4B8B0] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useMarketPriceSearch}
+                        onChange={e => setUseMarketPriceSearch(e.target.checked)}
+                        className="w-3.5 h-3.5 accent-blue-600"
+                      />
+                      웹 검색으로 시중 참고가 함께 조사
+                    </label>
+                    <button
+                      onClick={() => window.electronAPI.openPriceSearchWindow(priceSearchQuery.trim())}
+                      disabled={!priceSearchQuery.trim()}
+                      title="네이버쇼핑 검색 결과를 창으로 열어 직접 가격을 확인합니다"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline disabled:text-[#A8A29E] disabled:no-underline"
+                    >
+                      <ExternalLink className="w-3 h-3" />네이버쇼핑에서 직접 확인
+                    </button>
+                  </div>
+                  {useMarketPriceSearch && (
+                    <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1.5 flex items-start gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                      웹 검색 참고가는 조사 시점의 판매가라 실제 구매가와 다를 수 있습니다. 반드시 출처를 열어 확인하세요. 검색 건수만큼 API 요금이 발생합니다.
+                    </p>
+                  )}
+                  {!hasPriceLookupKey && !useMarketPriceSearch && (
+                    <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1.5 flex items-start gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                      나라장터 인증키를 저장하거나 위 '웹 검색으로 시중 참고가 함께 조사'를 켜면 검색을 사용할 수 있습니다.
                     </p>
                   )}
                   {priceSearchMessage && (
@@ -1941,7 +1911,12 @@ export default function BudgetPlannerScreen() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate">{item.thngNm}</p>
+                            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate">
+                              {item.thngNm}
+                              {item.priceSource === MARKET_PRICE_SOURCE_LABEL && (
+                                <span className="ml-1.5 align-middle rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">참고가</span>
+                              )}
+                            </p>
                             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] truncate">
                               {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
@@ -1967,7 +1942,7 @@ export default function BudgetPlannerScreen() {
                       <button onClick={handlePriceSearchMore} disabled={priceSearchStatus === 'loading'}
                         className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] inline-flex items-center gap-1`}>
                         {priceSearchStatus === 'loading' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                        더 보기 (다음 10건)
+                        더 보기
                       </button>
                     </div>
                   )}
@@ -2045,23 +2020,6 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
       unitPrice: preferPrice ? unitPrice : undefined,
     };
   });
-}
-
-function normalizeNaverShoppingItems(data: any): NaraItem[] {
-  const rows = Array.isArray(data?.items) ? data.items : [];
-  return rows.map((row: any) => {
-    const unitPrice = Number(row.lprice ?? row.lowPrice ?? row.price ?? 0) || undefined;
-    const title = String(row.title ?? '').replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
-    return {
-      thngNm: title || '(이름 없음)',
-      thngCd: row.productId ? `internet-${row.productId}` : `internet-${title}`,
-      spec: row.mallName || '',
-      mnfctCorpNm: row.maker || row.brand || row.mallName || '',
-      unitPrice,
-      priceSourceUrl: row.link || '',
-      image: row.image || '',
-    };
-  }).filter((item: NaraItem) => item.thngNm && (item.unitPrice ?? 0) > 0);
 }
 
 function uniqueSearchItems(items: NaraItem[]): NaraItem[] {

@@ -77,8 +77,6 @@ export interface ElectronAPI {
   fetchUrlJson(url: string): Promise<string>;
   naramarketSearch(keyword: string, pageNo?: number): Promise<unknown>;
   naramarketShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
-  naverShoppingSearch(keyword: string, pageNo?: number): Promise<unknown>;
-  hasNaverShoppingSecret(): Promise<boolean>;
   hasNaramarketKey(): Promise<boolean>;
 }
 

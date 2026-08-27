@@ -14,6 +14,8 @@ export interface SecretBackend {
   set(key: string, value: string): void;
 }
 
+// naverShoppingClientSecret은 API 종료로 더 이상 저장하지 않지만, 예전 버전에서 만든 백업
+// 파일을 복원할 때 그 값이 평문으로 새어 나가지 않도록 시크릿 키 목록에는 남겨 둔다.
 export const SECRET_KEYS = ['geminiApiKey', 'geminiPaidApiKey', 'naramarketApiKey', 'naverShoppingClientSecret'] as const;
 export type SecretKey = (typeof SECRET_KEYS)[number];
 

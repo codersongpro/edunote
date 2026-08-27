@@ -150,8 +150,9 @@ const UsageGuideScreen: React.FC = () => {
               </div>
             </div>
             <div>
-              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">인터넷 가격 조회로 품목 추가</p>
-              <p className="text-xs leading-relaxed">나라장터 또는 네이버 쇼핑 API 키를 설정하면 실제 상품을 검색해 품목을 바로 추가할 수 있습니다. 상품에 마우스를 올리면 이미지를 미리볼 수 있습니다.</p>
+              <p className="font-bold text-[#44403C] dark:text-[#C4B8B0] mb-1">품목 검색으로 추가</p>
+              <p className="text-xs leading-relaxed">나라장터 인증키를 설정하면 종합쇼핑몰의 실제 계약 품목과 단가를 검색해 바로 추가할 수 있습니다. 상품에 마우스를 올리면 이미지를 미리볼 수 있습니다.</p>
+              <p className="text-xs leading-relaxed mt-1">나라장터에 없는 시중 물품은 "웹 검색으로 시중 참고가 함께 조사"를 켜면 AI가 웹에서 가격을 찾아 출처 링크와 함께 보여줍니다(참고가 표시, 검색 건수만큼 요금 발생). "네이버쇼핑에서 직접 확인" 버튼으로 검색 결과 창을 열어 가격을 눈으로 확인할 수도 있습니다.</p>
             </div>
           </div>
         </Section>
