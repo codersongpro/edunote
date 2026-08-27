@@ -80,7 +80,7 @@ EduNote
 | 스타일 | Tailwind CSS, PostCSS | 화면 레이아웃, 다크모드, 버튼, 카드, 입력창 스타일 |
 | AI SDK | @google/genai | Gemini API 호출, 텍스트·이미지·파일 입력 처리, 모델 폴백 체인 |
 | 로컬 저장 | electron-store, JSON 파일 | 사용자 설정, 학생 명단, 자료실, 학생 메모, 백업 데이터 저장 |
-| 시크릿 저장 | Electron safeStorage | Gemini·나라장터·네이버 API 키를 OS 자격 증명 저장소로 암호화 보관 |
+| 시크릿 저장 | Electron safeStorage | Gemini·나라장터 API 키를 OS 자격 증명 저장소로 암호화 보관 |
 | 문서 처리 | HTML, CSS, Electron printToPDF | 공문서, 수업자료, 워크시트, PDF 저장 |
 | HWPX 저장 | JSZip, @xmldom/xmldom | HWPX 내부 XML 생성·분석, 줄 배치 정보(lineseg), 표(hp:tbl)·서식 변환, 골격 기반 재포장 |
 | 마크다운 렌더링 | react-markdown, remark, remark-gfm, remark-rehype, rehype-stringify | 챗봇·생성 결과의 마크다운·HTML 렌더링 판별 및 변환 |
@@ -234,9 +234,9 @@ edunote
 | `src/main/eduReferenceSearch.ts` | 연수자료 제작에 참고할 교육부·교육청 자료를 사람이 직접 찾도록, 교육 주제를 `site:go.kr`로 좁힌 검색 URL로 만드는 순수 로직. 결과는 전용 창이 아니라 기본 브라우저에서 연다(will-navigate 정책상 전용 창은 빈 창으로 남기 때문) |
 | `src/main/requestPacer.ts` | 무료 키 분당 요청 한도(15회)에 맞춰 AI 호출 간 최소 간격을 자동으로 띄우는 로직 |
 | `src/main/streamGuard.ts` | 스트리밍 생성이 빈 마크업만 무한 반복하거나 청크가 오래 끊기는 비정상 상황을 감지해 다음 모델로 폴백시키는 로직 |
-| `src/main/secretStore.ts` | Gemini·나라장터·네이버 API 키를 safeStorage로 암호화 저장·복호화, 시크릿 키 목록(`SECRET_KEYS`)을 렌더러 노출 차단·백업 제외·설정 동기화 전 구간에서 공통 파생 |
+| `src/main/secretStore.ts` | Gemini·나라장터 API 키를 safeStorage로 암호화 저장·복호화, 시크릿 키 목록(`SECRET_KEYS`)을 렌더러 노출 차단·백업 제외·설정 동기화 전 구간에서 공통 파생 |
 | `src/main/configValidation.ts`, `src/main/ipcValidation.ts` | 설정 저장·백업 복원 값과 AI 생성 IPC 요청의 형식·크기를 main process에서 한 번 더 검증 |
-| `src/main/netGuard.ts` | 인터넷 가격조회 등 외부 URL 요청에서 localhost·사설 IP(IPv4 매핑 IPv6 포함) 접근을 막는 SSRF 가드 |
+| `src/main/netGuard.ts` | 나라장터 조회 등 외부 URL 요청에서 localhost·사설 IP(IPv4 매핑 IPv6 포함) 접근을 막는 SSRF 가드 |
 | `src/main/pathSafety.ts` | 자동 저장 경로가 지정된 저장 폴더 밖으로 벗어나지 않도록 검증 |
 | `src/main/versionCompare.ts` | `-beta` 등 접미사가 붙은 릴리즈 태그도 안전하게 비교하는 버전 비교 로직 |
 | `src/main/hwpxSkeleton.ts` | 한글이 실제로 여는 빈 HWPX 문서 골격(Apache-2.0 픽스처)을 내장해 HWPX 생성 시 재사용 |
@@ -260,6 +260,8 @@ edunote
 | `src/renderer/lib/chatFirebaseGuide.ts` | 채팅방 기능에 필요한 Firebase 프로젝트 설정 단계·Firestore 보안 규칙 안내 텍스트 |
 | `src/renderer/lib/cancellation.ts` | 화면별로 분리된 생성 중단 신호 처리 |
 | `src/renderer/lib/aiJson.ts` | Gemini JSON 응답 모드 결과를 안전하게 파싱하는 공용 유틸 |
+| `src/renderer/lib/outlineFormat.ts` | 연수자료처럼 `1. → 가. → 1) → 가)` 말머리를 쓰는 문서에서 단계별 들여쓰기·글자 크기를 생성 결과 HTML에 직접 채워 넣는 서식 보정. AI가 인라인 style을 빠뜨려도 화면·인쇄·저장이 같은 모양이 되게 한다(표 안·이미 서식이 있는 제목·말머리 없는 문장은 건드리지 않음) |
+| `src/renderer/lib/marketPriceSearch.ts` | 나라장터에 없는 시중 물품의 참고 단가를 AI 웹 검색으로 조사하는 프롬프트와 응답 해석. 이름·양수 단가가 없는 항목, 중복, http(s)가 아닌 출처, 비정상 금액을 걸러 낸다 |
 | `src/renderer/lib/tours.ts` | 인터랙티브 튜토리얼(TourOverlay) 단계 정의 |
 | `src/renderer/GlobalStateContext.tsx` | 생성 중에도 화면 상태를 유지하기 위한 전역 상태 컨텍스트 |
 | `src/renderer/components/GeneratedDisplay.tsx` | 생성된 HTML 결과 표시, 편집, 복사, 저장, PDF 저장. 선택적 `model` prop을 헤더에 배지로만 표시하고 저장·복사·인쇄에 쓰이는 `content`와는 분리되어 있어 결과물에는 섞이지 않는다 |
@@ -276,7 +278,7 @@ edunote
 | `src/renderer/components/HtmlAppCreator.tsx` | HTML 앱 만들기 화면 — 앱 설명·기능 목록 입력, AI 생성, 미리보기, 내 스킬 저장 (어휘 플래시카드 예시는 단어/뜻 쌍이 미리 채워짐) |
 | `src/renderer/components/PrintFormScreen.tsx` | 양식 인쇄 화면 — 양식 선택, A4 양식 직접 편집, 현재 화면 기준 PDF/HWPX 저장 |
 | `src/renderer/data/printForms.ts` | 학교 양식 10종 정의 — 필드 구성과 A4 HTML 템플릿, 줄 단위 입력을 표로 만드는 `table` 필드 타입 |
-| `src/renderer/components/BudgetPlannerScreen.tsx` | 예산안작성 화면 — 작성 방식 선택, 제목 주제 분석 기반 AI 품목 생성, 과목 트리 편집, 0원 맞추기, 인터넷 가격 조회, CSV 입출력 |
+| `src/renderer/components/BudgetPlannerScreen.tsx` | 예산안작성 화면 — 작성 방식 선택, 제목 주제 분석 기반 AI 품목 생성, 과목 트리 편집, 0원 맞추기, 나라장터 품목 검색·웹 검색 참고가 조사, CSV 입출력 |
 | `src/renderer/components/MyToolEditor.tsx` | 도구 만들기 3단계 위저드 — 기본정보·입력필드·프롬프트 작성, AI 도움받기 |
 | `src/renderer/components/MyToolRunner.tsx` | 도구 실행 화면 — 동적 폼, 파일 업로드, 배치 처리, 취소 버튼 |
 | `src/renderer/components/MyToolChatCreator.tsx` | 대화형 도구 만들기 — AI 4단계 질문으로 도구 초안 자동 생성 |
@@ -613,7 +615,7 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 
 | 항목 | 설계 방향 |
 | --- | --- |
-| API 키·시크릿 | Gemini·나라장터·네이버 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능. 금고를 못 쓰는 환경에서 평문으로 폴백되면 `writeSecret`이 `{ usedPlaintext: true }`를 반환해 렌더러가 사용자에게 알린다 |
+| API 키·시크릿 | Gemini·나라장터 키 모두 main process에서 OS safeStorage로 암호화 보관(secretStore.ts), 렌더러에는 값 자체를 노출하지 않고 저장 여부만 조회 가능. 금고를 못 쓰는 환경에서 평문으로 폴백되면 `writeSecret`이 `{ usedPlaintext: true }`를 반환해 렌더러가 사용자에게 알린다 |
 | 백업 | API 키·시크릿은 백업 파일에서 제외. 단 학생 명단·메모·생성 이력은 암호화 없이 포함되므로 백업 화면에 경고 문구 표시. 자동 정기 백업 기본값은 꺼짐(v1.19.0부터) |
 | 학생 데이터 삭제 | 설정 화면의 "학생 데이터 전체 삭제" 버튼. 실제 삭제 대상과 안내 문구는 `lib/studentDataCleanup.ts`(`clearAllStudentData`·`STUDENT_DATA_TARGET_LABELS`) 한 곳에서 관리하고 테스트로 고정한다 — 생성 이력(`clearAllHistory`)·문서 이력(`clearDocumentHistory`)·학생 메모(localStorage+JSON)·작업 초안(`clearWorkDraft`)·학생 번호-이름 명렬표(`clearStudentRoster`)·설정의 학생 명단 3종. 학생 개인정보 저장소가 흩어져 있어 새 저장소 추가 시 누락되기 쉬우므로 한곳에 모았다. 되돌릴 수 없어 2단계 확인을 거친다 |
 | 작업 자동 저장 | 생기부 4개 생성기·학생기록 챗봇의 GlobalState를 상태 변경 1.5초 후 `work-draft.json`에 디바운스 저장(`lib/workDraft.ts`). 다음 실행에서 `hasMeaningfulWork`가 참일 때만 복원 여부를 묻고, 자동 복원은 하지 않는다. `parseWorkDraft`가 구버전·손상 파일을 초기값 위에 방어적으로 병합한다. 데모(`#demo`)·채팅(`#chat`) 전용 창은 같은 App을 렌더링하므로 저장·복원 대상에서 제외 |
@@ -677,7 +679,7 @@ Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로
 - 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하거나 Git 태그를 직접 만들 필요가 없다(13절 참고).
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다. `AppMode`에는 실제로 어디에서도 참조되지 않는 값(`GUIDELINE_QA`, `QR_MAKER`, `LUCKY_DRAW`)이 남아 있으니 6절을 참고해 혼동하지 않는다.
 - Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다. 공문요약·업무추출 샘플에는 일정, 마감일, 참고 웹사이트 주소가 포함된다. 채팅방(`#chat`)도 같은 방식으로 별도 창을 판별한다.
-- API 키·시크릿(Gemini·나라장터·네이버)을 다루는 코드를 추가할 때는 `secretStore.ts`의 `SECRET_KEYS`에서 파생되는 헬퍼(`SECRET_STORE_KEYS`·`isSecretKey`·`stripSecrets`)를 사용해야 한다. 렌더러 조회 차단·설정 파일 동기화·백업 제외 대상 목록을 각 위치에 따로 나열하면, 새 시크릿을 추가할 때 어느 한 곳이라도 빠뜨려 평문이 유출될 수 있다.
+- API 키·시크릿(Gemini·나라장터)을 다루는 코드를 추가할 때는 `secretStore.ts`의 `SECRET_KEYS`에서 파생되는 헬퍼(`SECRET_STORE_KEYS`·`isSecretKey`·`stripSecrets`)를 사용해야 한다. 렌더러 조회 차단·설정 파일 동기화·백업 제외 대상 목록을 각 위치에 따로 나열하면, 새 시크릿을 추가할 때 어느 한 곳이라도 빠뜨려 평문이 유출될 수 있다.
 - AI가 완성된 `<!DOCTYPE html>` 문서를 반환하는 기능(문서작성기, 워크시트 등)을 만지거나 비슷한 기능을 추가할 때는 `generatedContent.ts`의 HTML 판별 정규식과 `security.ts`의 `sanitizeHtml`이 전체 문서 입력을 어떻게 다루는지 먼저 확인해야 한다. `<div>`로 감싸 파싱하면 중첩된 `<head>`/`<body>`가 브라우저 트리 구성 규칙에 따라 흐트러진다(10.4·12절, v1.18.4 참고).
 - 여러 화면에 걸친 기능(예: 생성 모델 배지, 바이트 수 표시)을 추가할 때는 저수준 `aiGenerate`류 함수의 반환 타입을 바꾸기보다, 필요한 곳에만 선택적 콜백이나 별도 반환 타입을 추가해 TypeScript 컴파일러가 영향받는 호출부를 오류로 잡아내게 하는 방식을 우선 검토한다 — 이 저장소는 이 패턴으로 회귀 위험을 최소화해 왔다(8절·9.6절 참고).
 
