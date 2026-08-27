@@ -73,6 +73,20 @@ describe('공공데이터포털 오류 응답 해석', () => {
     expect(describeOpenApiError(body)).toBeNull();
   });
 
+  it('HTTP 에러는 인증 문제가 아니라 요청 명세 문제로 안내한다', () => {
+    const body = JSON.stringify({
+      OpenAPI_ServiceResponse: {
+        cmmMsgHeader: { errMsg: 'HTTP 에러', returnAuthMsg: 'HTTP 에러', returnReasonCode: '04' },
+      },
+    });
+
+    const reason = describeOpenApiError(body);
+
+    expect(reason).toContain('[04]');
+    expect(reason).toContain('인증키 문제가 아니라');
+    expect(reason).toContain('오퍼레이션 이름과 필수 요청변수');
+  });
+
   it('빈 응답과 알 수 없는 형식도 사유를 남긴다', () => {
     expect(describeOpenApiError('')).toBe('응답이 비어 있습니다.');
     expect(describeOpenApiError('알 수 없는 텍스트')).toBe('응답 형식을 알 수 없습니다.');
@@ -94,6 +108,13 @@ describe('본문 파싱', () => {
     expect(parseOpenApiBody(body)).toMatchObject({
       response: { body: { items: { item: [{ prdctIdntNoNm: '복사용지' }] } } },
     });
+  });
+
+  it('오류는 아니지만 XML로 온 응답은 형식 문제로 알려준다', () => {
+    // 데이터포맷이 JSON+XML인 서비스에서 type=json이 먹지 않으면 정상 XML이 온다.
+    const body = '<response><header><resultCode>00</resultCode></header><body><items><item><prdctIdntNoNm>복사용지</prdctIdntNoNm></item></items></body></response>';
+
+    expect(() => parseOpenApiBody(body)).toThrowError(/XML로 응답/);
   });
 
   it('오류 응답은 사유를 담아 예외를 던진다', () => {

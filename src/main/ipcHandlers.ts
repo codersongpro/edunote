@@ -989,10 +989,14 @@ export function registerIpcHandlers(): void {
   // 돌려주므로, 본문을 먼저 읽어 오류인지 판별한 뒤 JSON으로 해석한다.
   async function fetchNaramarket(path: string, params: URLSearchParams): Promise<unknown> {
     const serviceKey = getNaramarketKey();
-    // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함.
-    // 공공데이터포털은 Encoding 키(이미 %로 인코딩됨)와 Decoding 키를 함께 제공한다.
+    // 공공데이터포털 표준 파라미터명은 소문자 serviceKey다. 게이트웨이가 대소문자를 가리면
+    // 키를 읽지 못해 SERVICE_KEY_IS_NOT_REGISTERED_ERROR로 응답한다.
+    // 인증키는 Encoding 키(이미 %로 인코딩됨)와 Decoding 키가 함께 제공되며,
+    // 특수문자가 없는 키는 두 형태가 같아 encodeURIComponent를 거쳐도 값이 바뀌지 않는다.
     const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
-    const rawUrl = `https://apis.data.go.kr/1230000/${path}?ServiceKey=${encodedKey}&${params.toString()}`;
+    const rawUrl = `https://apis.data.go.kr/1230000/${path}?serviceKey=${encodedKey}&${params.toString()}`;
+    // 실패 원인을 좁히려면 실제로 보낸 주소가 필요하다. 인증키만 가려서 함께 알려준다.
+    const maskedUrl = rawUrl.replace(encodedKey, '***');
     const response = await net.fetch(rawUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
       signal: AbortSignal.timeout(20000),
@@ -1000,12 +1004,12 @@ export function registerIpcHandlers(): void {
     const body = await response.text().catch(() => '');
     if (!response.ok) {
       const reason = describeOpenApiError(body);
-      throw new Error(`나라장터 API 오류(HTTP ${response.status}): ${reason ?? body.slice(0, 200)}`);
+      throw new Error(`나라장터 API 오류(HTTP ${response.status}): ${reason ?? body.slice(0, 200)} · 요청: ${maskedUrl}`);
     }
     try {
       return parseOpenApiBody(body);
     } catch (e: any) {
-      throw new Error(`나라장터 API 오류: ${e?.message ?? '응답을 해석하지 못했습니다.'}`);
+      throw new Error(`나라장터 API 오류: ${e?.message ?? '응답을 해석하지 못했습니다.'} · 요청: ${maskedUrl}`);
     }
   }
 

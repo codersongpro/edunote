@@ -30,6 +30,12 @@ const ERROR_HINTS: Array<{ match: RegExp; hint: string }> = [
     match: /INVALID_REQUEST_PARAMETER|필수요청파라메터|파라미터/i,
     hint: '요청 항목이 올바르지 않습니다. 검색어를 바꿔 다시 시도해주세요.',
   },
+  {
+    // 인증은 통과했지만 게이트웨이가 요청을 처리하지 못한 경우. 오퍼레이션 이름이나
+    // 필수 요청변수가 서비스 명세와 맞지 않을 때 주로 나온다.
+    match: /HTTP[\s_]*(에러|ERROR)/i,
+    hint: '인증키 문제가 아니라 요청 주소나 요청 항목이 서비스 명세와 맞지 않습니다. 서비스 참고문서의 오퍼레이션 이름과 필수 요청변수를 확인해야 합니다.',
+  },
 ];
 
 // 포털은 응답 봉투를 한 가지로 고정하지 않는다. 정상 응답은 response.header 아래에,
@@ -72,7 +78,9 @@ function describeCodeAndMessage(code: string, message: string): string {
   const combined = `${code} ${message}`.trim();
   const hint = ERROR_HINTS.find(entry => entry.match.test(combined))?.hint;
   const label = message || code || '알 수 없는 오류';
-  return hint ? `${label} — ${hint}` : label;
+  // 안내 문구로 덮이지 않는 오류도 원인을 좁힐 수 있도록 포털이 준 코드를 함께 남긴다.
+  const prefix = code && message ? `[${code}] ` : '';
+  return hint ? `${prefix}${label} — ${hint}` : `${prefix}${label}`;
 }
 
 // 응답 본문이 오류면 사람이 읽을 수 있는 사유를, 정상이면 null을 돌려준다.
@@ -114,5 +122,11 @@ export function describeOpenApiError(bodyText: string): string | null {
 export function parseOpenApiBody(bodyText: string): unknown {
   const reason = describeOpenApiError(bodyText);
   if (reason) throw new Error(reason);
-  return JSON.parse(String(bodyText).trim());
+  const trimmed = String(bodyText).trim();
+  // 오류는 아닌데 XML로 왔다면 type=json이 먹지 않은 것이다. JSON.parse의 영어 예외
+  // 대신 무엇이 잘못됐는지 그대로 알려, 다음 확인에서 원인을 좁힐 수 있게 한다.
+  if (trimmed.startsWith('<')) {
+    throw new Error('서비스가 JSON이 아닌 XML로 응답했습니다. 응답 형식 요청 항목(type)이 이 서비스에 맞지 않습니다.');
+  }
+  return JSON.parse(trimmed);
 }
