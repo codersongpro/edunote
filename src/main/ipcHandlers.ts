@@ -16,6 +16,12 @@ import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
 import { buildNaverShoppingSearchUrl } from './priceSearch';
 import { describeOpenApiError, parseOpenApiBody } from './openApiError';
+import {
+  SHOPPING_MALL_SEARCH_KEYS,
+  THNG_LIST_SEARCH_KEYS,
+  buildShoppingMallParams,
+  buildThngListParams,
+} from './naramarketRequest';
 import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
@@ -1013,31 +1019,22 @@ export function registerIpcHandlers(): void {
     }
   }
 
-  function naramarketParams(queryKey: string, keyword: string, pageNo: number): URLSearchParams {
-    const params = new URLSearchParams();
-    params.set('pageNo', String(pageNo));
-    params.set('numOfRows', '30');
-    params.set(queryKey, keyword);
-    params.set('type', 'json');
-    return params;
-  }
-
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
     const path = 'ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch';
-    return collectOpenApiItems([
-      fetchNaramarket(path, naramarketParams('krnPrdctNm', keyword, pageNo)),
-      fetchNaramarket(path, naramarketParams('prdctClsfcNoNm', keyword, pageNo)),
-      fetchNaramarket(path, naramarketParams('dtilPrdctClsfcNoNm', keyword, pageNo)),
-    ]);
+    return collectOpenApiItems(
+      THNG_LIST_SEARCH_KEYS.map(searchKey => (
+        fetchNaramarket(path, buildThngListParams(searchKey, keyword, pageNo))
+      )),
+    );
   });
 
   ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
     const path = 'at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList';
-    return collectOpenApiItems([
-      fetchNaramarket(path, naramarketParams('prdctIdntNoNm', keyword, pageNo)),
-      fetchNaramarket(path, naramarketParams('prdctClsfcNoNm', keyword, pageNo)),
-      fetchNaramarket(path, naramarketParams('dtilPrdctClsfcNoNm', keyword, pageNo)),
-    ]);
+    return collectOpenApiItems(
+      SHOPPING_MALL_SEARCH_KEYS.map(searchKey => (
+        fetchNaramarket(path, buildShoppingMallParams(searchKey, keyword, pageNo))
+      )),
+    );
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
