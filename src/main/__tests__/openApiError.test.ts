@@ -10,6 +10,26 @@ describe('공공데이터포털 오류 응답 해석', () => {
     expect(describeOpenApiError(body)).toBeNull();
   });
 
+  it('인증키 미등록 JSON 응답(OpenAPI_ServiceResponse 봉투)을 오류로 읽는다', () => {
+    // 실제 포털이 type=json 요청에 돌려준 응답. 정상 응답과 봉투 모양이 달라서
+    // response.header만 보면 오류를 놓치고 "결과 없음"으로 오판한다.
+    const body = JSON.stringify({
+      OpenAPI_ServiceResponse: {
+        cmmMsgHeader: {
+          errMsg: 'SERVICE_KEY_IS_NOT_REGISTERED_ERROR',
+          returnAuthMsg: '등록되지 않은 서비스키',
+          returnReasonCode: '30',
+        },
+      },
+    });
+
+    const reason = describeOpenApiError(body);
+
+    expect(reason).not.toBeNull();
+    expect(reason).toContain('등록되지 않은 서비스키');
+    expect(reason).toContain('일반 인증키를 다시 복사해 저장');
+  });
+
   it('인증키 미등록 XML 응답에서 조치 안내를 만든다', () => {
     // 인증 오류일 때는 type=json을 요청해도 HTTP 200에 이 XML이 온다.
     const body = `<?xml version="1.0"?><OpenAPI_ServiceResponse><cmmMsgHeader>`
@@ -42,6 +62,15 @@ describe('공공데이터포털 오류 응답 해석', () => {
     });
 
     expect(describeOpenApiError(body)).toContain('일반 인증키를 다시 복사해 저장');
+  });
+
+  it('items가 담긴 정상 JSON은 오류로 보지 않는다', () => {
+    // 오류 필드가 전혀 없는 응답을 오류로 오판하면 정상 검색까지 막힌다.
+    const body = JSON.stringify({
+      response: { body: { items: { item: [{ prdctIdntNoNm: '복사용지', cntrctPrceAmt: 4500 }] }, totalCount: 1 } },
+    });
+
+    expect(describeOpenApiError(body)).toBeNull();
   });
 
   it('빈 응답과 알 수 없는 형식도 사유를 남긴다', () => {

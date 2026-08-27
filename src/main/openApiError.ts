@@ -32,9 +32,40 @@ const ERROR_HINTS: Array<{ match: RegExp; hint: string }> = [
   },
 ];
 
+// 포털은 응답 봉투를 한 가지로 고정하지 않는다. 정상 응답은 response.header 아래에,
+// 인증 오류는 OpenAPI_ServiceResponse.cmmMsgHeader 아래에 담겨 오고, 같은 오류가
+// XML로 올 때도 JSON으로 올 때도 있다. 그래서 봉투 모양을 가정하지 않고 필드 이름으로 찾는다.
+const CODE_FIELDS = ['returnReasonCode', 'resultCode', 'errorCode'];
+const MESSAGE_FIELDS = ['returnAuthMsg', 'errMsg', 'resultMsg', 'errorMessage', 'errorMsg'];
+
+const MAX_SEARCH_DEPTH = 6;
+
+function findField(value: unknown, names: string[], depth = 0): string {
+  if (depth > MAX_SEARCH_DEPTH || !value || typeof value !== 'object') return '';
+  const record = value as Record<string, unknown>;
+  for (const name of names) {
+    const found = record[name];
+    if (typeof found === 'string' && found.trim()) return found.trim();
+    if (typeof found === 'number') return String(found);
+  }
+  for (const nested of Object.values(record)) {
+    const found = findField(nested, names, depth + 1);
+    if (found) return found;
+  }
+  return '';
+}
+
 function pickTag(text: string, tag: string): string {
   const matched = text.match(new RegExp(`<${tag}>\\s*(?:<!\\[CDATA\\[)?\\s*([^<\\]]*)`, 'i'));
   return matched?.[1]?.trim() ?? '';
+}
+
+function pickAnyTag(text: string, tags: string[]): string {
+  for (const tag of tags) {
+    const found = pickTag(text, tag);
+    if (found) return found;
+  }
+  return '';
 }
 
 function describeCodeAndMessage(code: string, message: string): string {
@@ -49,28 +80,30 @@ export function describeOpenApiError(bodyText: string): string | null {
   const text = String(bodyText ?? '');
   if (!text.trim()) return '응답이 비어 있습니다.';
 
-  // JSON 정상/오류 응답
   const trimmed = text.trim();
+
+  // JSON 정상/오류 응답
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    let parsed: unknown;
     try {
-      const parsed = JSON.parse(trimmed) as any;
-      const header = parsed?.response?.header ?? parsed?.header;
-      const code = String(header?.resultCode ?? '').trim();
-      const message = String(header?.resultMsg ?? '').trim();
-      // 00 또는 정상 메시지는 오류가 아니다.
-      if (!code || code === '00' || code === '0') return null;
-      return describeCodeAndMessage(code, message);
+      parsed = JSON.parse(trimmed);
     } catch {
       return '응답을 해석하지 못했습니다.';
     }
+    const code = findField(parsed, CODE_FIELDS);
+    const message = findField(parsed, MESSAGE_FIELDS);
+    // 오류 표시가 전혀 없으면 정상 응답으로 본다.
+    if (!code && !message) return null;
+    if (code === '00' || code === '0') return null;
+    return describeCodeAndMessage(code, message);
   }
 
-  // XML 오류 응답(인증 오류일 때 type=json이어도 이 형태로 온다)
+  // XML 오류 응답(인증 오류일 때 type=json이어도 이 형태로 오는 경우가 있다)
   if (trimmed.startsWith('<')) {
-    const code = pickTag(text, 'returnReasonCode') || pickTag(text, 'resultCode') || pickTag(text, 'errMsg');
-    const message = pickTag(text, 'returnAuthMsg') || pickTag(text, 'resultMsg') || pickTag(text, 'errMsg');
+    const code = pickAnyTag(text, CODE_FIELDS);
+    const message = pickAnyTag(text, MESSAGE_FIELDS);
     if (!code && !message) return '응답 형식을 알 수 없습니다.';
-    if ((code === '00' || code === '0') && !message) return null;
+    if (code === '00' || code === '0') return null;
     return describeCodeAndMessage(code, message);
   }
 

@@ -1021,6 +1021,8 @@ export default function BudgetPlannerScreen() {
   const [showApiGuide, setShowApiGuide] = useState(false);
   const [showBalanceHelp, setShowBalanceHelp] = useState(false);
   const [apiGuideStep, setApiGuideStep] = useState(1);
+  const [naramarketTestMessage, setNaramarketTestMessage] = useState('');
+  const [isTestingNaramarket, setIsTestingNaramarket] = useState(false);
 
   const [ratioEdu, setRatioEdu] = useState('75');
   const [ratioGeneral, setRatioGeneral] = useState('20');
@@ -1149,6 +1151,29 @@ export default function BudgetPlannerScreen() {
     if (!trimmedKey) return;
     await window.electronAPI.setConfig({ naramarketApiKey: trimmedKey });
     setHasSavedNaramarketKey(true);
+  };
+
+  // 저장한 인증키가 실제로 통하는지 고정 검색어로 한 번 확인한다.
+  // 실패하면 포털이 알려준 사유(등록되지 않은 서비스키·활용신청 미승인 등)를 그대로 보여준다.
+  const testNaramarketKey = async () => {
+    if (!apiKey.trim() && !hasSavedNaramarketKey) {
+      setNaramarketTestMessage('먼저 인증키를 입력해주세요.');
+      return;
+    }
+    setIsTestingNaramarket(true);
+    setNaramarketTestMessage('');
+    try {
+      await saveApiKey();
+      const data = await window.electronAPI.naramarketShoppingSearch('복사용지');
+      const rows = normalizeApiItems(data, true).filter(item => (item.unitPrice ?? 0) > 0);
+      setNaramarketTestMessage(rows.length > 0
+        ? `연결됨 · 복사용지 ${rows.length}건 확인`
+        : '연결은 되었지만 복사용지 검색 결과가 없습니다. 다른 검색어로 다시 확인해주세요.');
+    } catch (e: any) {
+      setNaramarketTestMessage(e?.message ?? '나라장터 조회 중 오류가 발생했습니다.');
+    } finally {
+      setIsTestingNaramarket(false);
+    }
   };
 
   const handleNewPlan = async () => {
@@ -1675,6 +1700,18 @@ export default function BudgetPlannerScreen() {
               <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder={hasSavedNaramarketKey ? '인증키 저장됨 (변경할 때만 입력)' : '인증키 붙여넣기'} className={inputCls} />
               <button onClick={saveApiKey} className={`${btnCls} bg-blue-600 text-white hover:bg-blue-700 shrink-0`}>나라장터 키 저장</button>
             </div>
+            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
+              공공데이터포털 마이페이지의 일반 인증키 중 <strong>Encoding</strong> 키를 붙여넣으세요.
+            </p>
+            <button onClick={testNaramarketKey} disabled={isTestingNaramarket} className={`${btnCls} bg-[#78716C] text-white hover:bg-[#44403C] w-full mt-2`}>
+              {isTestingNaramarket ? <RefreshCw className="w-3.5 h-3.5 inline mr-1 animate-spin" /> : <Search className="w-3.5 h-3.5 inline mr-1" />}
+              테스트 조회
+            </button>
+            {naramarketTestMessage && (
+              <p className={`text-xs mt-1 flex items-start gap-1 ${naramarketTestMessage.startsWith('연결됨') ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" /> {naramarketTestMessage}
+              </p>
+            )}
             {(apiKey || hasSavedNaramarketKey) && <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> API 키 설정됨</p>}
             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
               저장 후 예산안 화면 위쪽의 '품목 검색으로 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
