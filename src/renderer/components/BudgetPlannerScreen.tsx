@@ -1241,7 +1241,8 @@ export default function BudgetPlannerScreen() {
         naraCount = naraItems.length;
         fetched.push(...naraItems);
       } catch (e: any) {
-        failures.push(`나라장터 조회 실패: ${e?.message ?? '알 수 없는 오류'}`);
+        // 메인 프로세스가 이미 '나라장터 API 오류: ...' 형태로 사유를 담아 보낸다.
+        failures.push(e?.message ?? '나라장터 조회에 실패했습니다.');
       }
     }
 

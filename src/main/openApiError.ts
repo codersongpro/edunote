@@ -1,0 +1,85 @@
+// 공공데이터포털(data.go.kr) OpenAPI는 인증 오류·필수값 누락·트래픽 초과일 때
+// type=json을 요청해도 HTTP 200에 XML 오류 본문을 돌려주는 경우가 많다.
+// 이를 그대로 response.json()에 넣으면 파싱 예외만 남아, 호출부에서는
+// "결과 0건"과 "키가 잘못됨"을 구분할 수 없게 된다.
+// 여기서 오류 본문을 먼저 알아보고 사람이 읽을 수 있는 이유로 바꿔 준다.
+
+// 포털이 돌려주는 대표 오류 코드에 대한 조치 안내.
+const ERROR_HINTS: Array<{ match: RegExp; hint: string }> = [
+  {
+    match: /SERVICE_KEY_IS_NOT_REGISTERED|SERVICE KEY IS NOT REGISTERED|등록되지\s*않은\s*(서비스|인증)/i,
+    hint: '등록되지 않은 인증키입니다. 공공데이터포털 마이페이지의 일반 인증키를 다시 복사해 저장해주세요.',
+  },
+  {
+    match: /LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS|요청횟수|트래픽/i,
+    hint: '오늘 사용할 수 있는 요청 횟수를 모두 썼습니다. 내일 다시 시도하거나 공공데이터포털에서 운영계정으로 전환 신청해주세요.',
+  },
+  {
+    match: /SERVICE_ACCESS_DENIED|접근\s*거부|권한/i,
+    hint: '이 서비스에 대한 활용신청이 승인되지 않았습니다. 공공데이터포털에서 종합쇼핑몰 품목정보 서비스 활용신청 상태를 확인해주세요.',
+  },
+  {
+    match: /NO_OPENAPI_SERVICE_ERROR|HTTP\s*ROUTING\s*ERROR|해당\s*오픈API서비스가\s*없거나/i,
+    hint: '요청한 서비스 주소를 찾지 못했습니다. 활용신청한 서비스가 맞는지 확인이 필요합니다.',
+  },
+  {
+    match: /DEADLINE_HAS_EXPIRED|기한만료|활용기간/i,
+    hint: '인증키 활용 기간이 만료되었습니다. 공공데이터포털에서 연장 신청해주세요.',
+  },
+  {
+    match: /INVALID_REQUEST_PARAMETER|필수요청파라메터|파라미터/i,
+    hint: '요청 항목이 올바르지 않습니다. 검색어를 바꿔 다시 시도해주세요.',
+  },
+];
+
+function pickTag(text: string, tag: string): string {
+  const matched = text.match(new RegExp(`<${tag}>\\s*(?:<!\\[CDATA\\[)?\\s*([^<\\]]*)`, 'i'));
+  return matched?.[1]?.trim() ?? '';
+}
+
+function describeCodeAndMessage(code: string, message: string): string {
+  const combined = `${code} ${message}`.trim();
+  const hint = ERROR_HINTS.find(entry => entry.match.test(combined))?.hint;
+  const label = message || code || '알 수 없는 오류';
+  return hint ? `${label} — ${hint}` : label;
+}
+
+// 응답 본문이 오류면 사람이 읽을 수 있는 사유를, 정상이면 null을 돌려준다.
+export function describeOpenApiError(bodyText: string): string | null {
+  const text = String(bodyText ?? '');
+  if (!text.trim()) return '응답이 비어 있습니다.';
+
+  // JSON 정상/오류 응답
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed) as any;
+      const header = parsed?.response?.header ?? parsed?.header;
+      const code = String(header?.resultCode ?? '').trim();
+      const message = String(header?.resultMsg ?? '').trim();
+      // 00 또는 정상 메시지는 오류가 아니다.
+      if (!code || code === '00' || code === '0') return null;
+      return describeCodeAndMessage(code, message);
+    } catch {
+      return '응답을 해석하지 못했습니다.';
+    }
+  }
+
+  // XML 오류 응답(인증 오류일 때 type=json이어도 이 형태로 온다)
+  if (trimmed.startsWith('<')) {
+    const code = pickTag(text, 'returnReasonCode') || pickTag(text, 'resultCode') || pickTag(text, 'errMsg');
+    const message = pickTag(text, 'returnAuthMsg') || pickTag(text, 'resultMsg') || pickTag(text, 'errMsg');
+    if (!code && !message) return '응답 형식을 알 수 없습니다.';
+    if ((code === '00' || code === '0') && !message) return null;
+    return describeCodeAndMessage(code, message);
+  }
+
+  return '응답 형식을 알 수 없습니다.';
+}
+
+// 응답 본문을 JSON으로 읽되, 오류 본문이면 사유를 담아 예외를 던진다.
+export function parseOpenApiBody(bodyText: string): unknown {
+  const reason = describeOpenApiError(bodyText);
+  if (reason) throw new Error(reason);
+  return JSON.parse(String(bodyText).trim());
+}

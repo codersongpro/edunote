@@ -15,6 +15,7 @@ import { semverGt } from './versionCompare';
 import { validateGenerateArgs, validateMultipartArgs } from './ipcValidation';
 import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSecretKey, stripSecrets } from './secretStore';
 import { buildNaverShoppingSearchUrl } from './priceSearch';
+import { describeOpenApiError, parseOpenApiBody } from './openApiError';
 import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
@@ -965,77 +966,74 @@ export function registerIpcHandlers(): void {
     return serviceKey;
   }
 
-  ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
-    const serviceKey = getNaramarketKey();
-    // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함
-    const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
-    const fetchList = async (queryKey: string) => {
-      const params = new URLSearchParams();
-      params.set('pageNo', String(pageNo));
-      params.set('numOfRows', '30');
-      params.set(queryKey, keyword);
-      params.set('type', 'json');
-      const rawUrl = `https://apis.data.go.kr/1230000/ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch?ServiceKey=${encodedKey}&${params.toString()}`;
-      const response = await net.fetch(rawUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        throw new Error(`API 오류: ${response.status} — ${body.slice(0, 500)}`);
+  // 여러 검색 항목으로 나눠 조회한 결과를 합친다. 하나라도 성공하면 그 결과를 쓰고,
+  // 전부 실패하면 첫 실패 사유를 그대로 올려 보낸다 — 조용히 빈 결과를 돌려주면 화면에는
+  // "검색 결과가 없습니다"로만 보여서 인증키 오류·활용신청 미승인을 구분할 수 없다.
+  async function collectOpenApiItems(requests: Array<Promise<unknown>>): Promise<any> {
+    const responses = await Promise.allSettled(requests);
+    const items = responses.flatMap(result => (
+      result.status === 'fulfilled' ? readOpenApiItems(result.value) : []
+    ));
+    if (items.length === 0) {
+      const firstFailure = responses.find(result => result.status === 'rejected');
+      if (firstFailure && firstFailure.status === 'rejected') {
+        throw firstFailure.reason instanceof Error
+          ? firstFailure.reason
+          : new Error(String(firstFailure.reason));
       }
-      return response.json();
-    };
-
-    const responses = await Promise.allSettled([
-      fetchList('krnPrdctNm'),
-      fetchList('prdctClsfcNoNm'),
-      fetchList('dtilPrdctClsfcNoNm'),
-    ]);
-    const items = responses.flatMap(result => {
-      if (result.status !== 'fulfilled') return [];
-      return readOpenApiItems(result.value);
-    });
-    if (items.length > 0) {
-      return { response: { body: { items: { item: items } } } };
     }
-    return { response: { body: { items: { item: [] } } } };
+    return { response: { body: { items: { item: items } } } };
+  }
+
+  // 나라장터 OpenAPI 한 건을 호출한다. 포털은 인증 오류일 때도 HTTP 200에 XML 오류 본문을
+  // 돌려주므로, 본문을 먼저 읽어 오류인지 판별한 뒤 JSON으로 해석한다.
+  async function fetchNaramarket(path: string, params: URLSearchParams): Promise<unknown> {
+    const serviceKey = getNaramarketKey();
+    // ServiceKey: API 문서 명세에 따라 대소문자 정확히 일치해야 함.
+    // 공공데이터포털은 Encoding 키(이미 %로 인코딩됨)와 Decoding 키를 함께 제공한다.
+    const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
+    const rawUrl = `https://apis.data.go.kr/1230000/${path}?ServiceKey=${encodedKey}&${params.toString()}`;
+    const response = await net.fetch(rawUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
+      signal: AbortSignal.timeout(20000),
+    });
+    const body = await response.text().catch(() => '');
+    if (!response.ok) {
+      const reason = describeOpenApiError(body);
+      throw new Error(`나라장터 API 오류(HTTP ${response.status}): ${reason ?? body.slice(0, 200)}`);
+    }
+    try {
+      return parseOpenApiBody(body);
+    } catch (e: any) {
+      throw new Error(`나라장터 API 오류: ${e?.message ?? '응답을 해석하지 못했습니다.'}`);
+    }
+  }
+
+  function naramarketParams(queryKey: string, keyword: string, pageNo: number): URLSearchParams {
+    const params = new URLSearchParams();
+    params.set('pageNo', String(pageNo));
+    params.set('numOfRows', '30');
+    params.set(queryKey, keyword);
+    params.set('type', 'json');
+    return params;
+  }
+
+  ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
+    const path = 'ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch';
+    return collectOpenApiItems([
+      fetchNaramarket(path, naramarketParams('krnPrdctNm', keyword, pageNo)),
+      fetchNaramarket(path, naramarketParams('prdctClsfcNoNm', keyword, pageNo)),
+      fetchNaramarket(path, naramarketParams('dtilPrdctClsfcNoNm', keyword, pageNo)),
+    ]);
   });
 
   ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
-    const serviceKey = getNaramarketKey();
-    const encodedKey = serviceKey.includes('%') ? serviceKey : encodeURIComponent(serviceKey);
-    const fetchMall = async (queryKey: string) => {
-      const params = new URLSearchParams();
-      params.set('pageNo', String(pageNo));
-      params.set('numOfRows', '30');
-      params.set(queryKey, keyword);
-      params.set('type', 'json');
-      const rawUrl = `https://apis.data.go.kr/1230000/at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList?ServiceKey=${encodedKey}&${params.toString()}`;
-      const response = await net.fetch(rawUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!response.ok) {
-        const body = await response.text().catch(() => '');
-        throw new Error(`종합쇼핑몰 API 오류: ${response.status} — ${body.slice(0, 500)}`);
-      }
-      return response.json();
-    };
-
-    const responses = await Promise.allSettled([
-      fetchMall('prdctIdntNoNm'),
-      fetchMall('prdctClsfcNoNm'),
-      fetchMall('dtilPrdctClsfcNoNm'),
+    const path = 'at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList';
+    return collectOpenApiItems([
+      fetchNaramarket(path, naramarketParams('prdctIdntNoNm', keyword, pageNo)),
+      fetchNaramarket(path, naramarketParams('prdctClsfcNoNm', keyword, pageNo)),
+      fetchNaramarket(path, naramarketParams('dtilPrdctClsfcNoNm', keyword, pageNo)),
     ]);
-    const items = responses.flatMap(result => {
-      if (result.status !== 'fulfilled') return [];
-      return readOpenApiItems(result.value);
-    });
-    if (items.length > 0) {
-      return { response: { body: { items: { item: items } } } };
-    }
-    return { response: { body: { items: { item: [] } } } };
   });
 
   // ── PDF Save ──────────────────────────────────────────────────────
