@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SHOPPING_MALL_INQRY_VARIANTS,
   SHOPPING_MALL_REQUIRED_KEYS,
   SHOPPING_MALL_SEARCH_KEYS,
   THNG_LIST_SEARCH_KEYS,
@@ -33,6 +34,22 @@ describe('종합쇼핑몰 품목정보 요청', () => {
       'dtilPrdctClsfcNoNm',
       'prdctIdntNoNm',
     ]);
+  });
+
+  it('조회구분 두 가지를 준비하고, 기간 기준에는 조회기준일자를 함께 보낸다', () => {
+    // inqryDiv=1(기간 기준)인데 기간을 안 보내면 결과가 비어 돌아온다.
+    const [byPeriod, byCondition] = SHOPPING_MALL_INQRY_VARIANTS;
+    const today = new Date('2026-08-27T00:00:00');
+
+    const periodParams = buildShoppingMallParams('prdctClsfcNoNm', '복사용지', 1, byPeriod, today);
+    expect(periodParams.get('inqryDiv')).toBe('1');
+    expect(periodParams.get('inqryEndDate')).toBe('20260827');
+    expect(periodParams.get('inqryBgnDate')).toBe('20250827');
+
+    const conditionParams = buildShoppingMallParams('prdctClsfcNoNm', '복사용지', 1, byCondition, today);
+    expect(conditionParams.get('inqryDiv')).toBe('2');
+    expect(conditionParams.get('inqryBgnDate')).toBeNull();
+    expect(conditionParams.get('inqryEndDate')).toBeNull();
   });
 
   it('잘못된 페이지 번호는 1로 보정한다', () => {

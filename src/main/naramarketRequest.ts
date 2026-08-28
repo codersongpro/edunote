@@ -7,9 +7,21 @@
 // serviceKey는 호출부에서 붙이므로 여기서는 나머지를 만든다.
 export const SHOPPING_MALL_REQUIRED_KEYS = ['pageNo', 'numOfRows', 'inqryDiv'] as const;
 
-// 조회구분. 명세에 값 목록이 없어 조달청 관행대로 1을 사용한다.
-// 조회기준일자(inqryBgnDate·inqryEndDate)는 선택값이라 보내지 않는다.
-const SHOPPING_MALL_INQRY_DIV = '1';
+// 조회구분(inqryDiv)은 필수값인데 명세에 값 목록이 없다. 조달청 서비스들의 관행상
+// 1은 조회기간 기준, 2는 조건 기준인 경우가 많아 두 가지를 함께 시도하고 결과를 합친다.
+// 한쪽이 실패해도 다른 쪽 결과를 쓰므로(collectOpenApiItems), 값이 확인되면 하나로 줄인다.
+// 1에는 조회기준일자를 함께 보낸다 — 기간 기준인데 기간이 없으면 결과가 비어 돌아온다.
+export const SHOPPING_MALL_INQRY_VARIANTS = [
+  { inqryDiv: '1', dateRangeDays: 365 },
+  { inqryDiv: '2', dateRangeDays: 0 },
+] as const;
+
+function formatApiDate(date: Date): string {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+}
 
 // 키워드로 검색할 항목을 넓은 것부터 좁은 것 순으로 시도한다.
 // 명세상 각 항목의 의미: prdctClsfcNoNm=품명, dtilPrdctClsfcNoNm=세부품명,
@@ -36,14 +48,23 @@ function baseParams(pageNo: number): URLSearchParams {
   return params;
 }
 
-// 종합쇼핑몰 품목정보 서비스용 요청 항목
+// 종합쇼핑몰 품목정보 서비스용 요청 항목.
+// variant는 SHOPPING_MALL_INQRY_VARIANTS의 항목이며, today는 시험에서 고정하기 위해 받는다.
 export function buildShoppingMallParams(
   searchKey: string,
   keyword: string,
   pageNo: number,
+  variant: { inqryDiv: string; dateRangeDays: number } = SHOPPING_MALL_INQRY_VARIANTS[0],
+  today: Date = new Date(),
 ): URLSearchParams {
   const params = baseParams(pageNo);
-  params.set('inqryDiv', SHOPPING_MALL_INQRY_DIV);
+  params.set('inqryDiv', variant.inqryDiv);
+  if (variant.dateRangeDays > 0) {
+    const begin = new Date(today);
+    begin.setDate(begin.getDate() - variant.dateRangeDays);
+    params.set('inqryBgnDate', formatApiDate(begin));
+    params.set('inqryEndDate', formatApiDate(today));
+  }
   params.set(searchKey, keyword);
   params.set('type', 'json');
   return params;

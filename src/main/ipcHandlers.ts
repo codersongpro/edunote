@@ -17,6 +17,7 @@ import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSec
 import { buildNaverShoppingSearchUrl } from './priceSearch';
 import { describeOpenApiError, parseOpenApiBody } from './openApiError';
 import {
+  SHOPPING_MALL_INQRY_VARIANTS,
   SHOPPING_MALL_SEARCH_KEYS,
   THNG_LIST_SEARCH_KEYS,
   buildShoppingMallParams,
@@ -1030,9 +1031,13 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
     const path = 'at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList';
+    // 조회구분 값이 확정되지 않아 두 가지를 함께 시도한다. 한쪽이 실패하거나 0건이어도
+    // 다른 쪽 결과를 그대로 쓴다.
     return collectOpenApiItems(
-      SHOPPING_MALL_SEARCH_KEYS.map(searchKey => (
-        fetchNaramarket(path, buildShoppingMallParams(searchKey, keyword, pageNo))
+      SHOPPING_MALL_INQRY_VARIANTS.flatMap(variant => (
+        SHOPPING_MALL_SEARCH_KEYS.map(searchKey => (
+          fetchNaramarket(path, buildShoppingMallParams(searchKey, keyword, pageNo, variant))
+        ))
       )),
     );
   });

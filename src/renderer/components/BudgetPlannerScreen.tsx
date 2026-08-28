@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
+import { readApiItemCount } from '../lib/openApiItems';
 import {
   MARKET_PRICE_SOURCE_LABEL,
   MARKET_PRICE_SYSTEM_INSTRUCTION,
@@ -1165,10 +1166,19 @@ export default function BudgetPlannerScreen() {
     try {
       await saveApiKey();
       const data = await window.electronAPI.naramarketShoppingSearch('복사용지');
-      const rows = normalizeApiItems(data, true).filter(item => (item.unitPrice ?? 0) > 0);
-      setNaramarketTestMessage(rows.length > 0
-        ? `연결됨 · 복사용지 ${rows.length}건 확인`
-        : '연결은 되었지만 복사용지 검색 결과가 없습니다. 다른 검색어로 다시 확인해주세요.');
+      // "결과 없음"에는 원인이 둘 있다. 정말 0건인 경우와, 항목은 왔는데 단가 필드를
+      // 읽지 못해 전부 걸러진 경우다. 둘을 구분해야 다음에 무엇을 고칠지 알 수 있다.
+      const received = readApiItemCount(data);
+      const priced = normalizeApiItems(data, true).filter(item => (item.unitPrice ?? 0) > 0);
+      if (priced.length > 0) {
+        setNaramarketTestMessage(`연결됨 · 복사용지 ${priced.length}건 확인`);
+      } else if (received.count > 0) {
+        setNaramarketTestMessage(
+          `${received.count}건을 받았지만 단가를 읽지 못했습니다. 응답 항목: ${received.fieldNames}`,
+        );
+      } else {
+        setNaramarketTestMessage('연결은 되었지만 복사용지 검색 결과가 0건입니다. 다른 검색어로 다시 확인해주세요.');
+      }
     } catch (e: any) {
       setNaramarketTestMessage(e?.message ?? '나라장터 조회 중 오류가 발생했습니다.');
     } finally {
