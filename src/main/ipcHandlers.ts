@@ -17,6 +17,7 @@ import { readSecret, writeSecret, migrateSecrets, SecretCrypto, SecretKey, isSec
 import { buildNaverShoppingSearchUrl } from './priceSearch';
 import { describeOpenApiError, parseOpenApiBody } from './openApiError';
 import {
+  collectFirstNonEmpty,
   SHOPPING_MALL_INQRY_VARIANTS,
   SHOPPING_MALL_SEARCH_KEYS,
   THNG_LIST_SEARCH_KEYS,
@@ -976,18 +977,13 @@ export function registerIpcHandlers(): void {
   // 여러 검색 항목으로 나눠 조회한 결과를 합친다. 하나라도 성공하면 그 결과를 쓰고,
   // 전부 실패하면 첫 실패 사유를 그대로 올려 보낸다 — 조용히 빈 결과를 돌려주면 화면에는
   // "검색 결과가 없습니다"로만 보여서 인증키 오류·활용신청 미승인을 구분할 수 없다.
-  async function collectOpenApiItems(requests: Array<Promise<unknown>>): Promise<any> {
-    const responses = await Promise.allSettled(requests);
-    const items = responses.flatMap(result => (
-      result.status === 'fulfilled' ? readOpenApiItems(result.value) : []
-    ));
-    if (items.length === 0) {
-      const firstFailure = responses.find(result => result.status === 'rejected');
-      if (firstFailure && firstFailure.status === 'rejected') {
-        throw firstFailure.reason instanceof Error
-          ? firstFailure.reason
-          : new Error(String(firstFailure.reason));
-      }
+  async function collectOpenApiItems(runners: Array<() => Promise<unknown>>): Promise<any> {
+    const { items, failures, attempts } = await collectFirstNonEmpty(runners, readOpenApiItems);
+    // 시도한 조회가 모두 실패했을 때만 오류로 본다. 하나라도 정상 응답했는데 결과가 없으면
+    // 그건 오류가 아니라 "검색 결과 없음"이다.
+    if (items.length === 0 && failures.length > 0 && failures.length === attempts) {
+      const first = failures[0];
+      throw first instanceof Error ? first : new Error(String(first));
     }
     return { response: { body: { items: { item: items } } } };
   }
@@ -1006,7 +1002,8 @@ export function registerIpcHandlers(): void {
     const maskedUrl = rawUrl.replace(encodedKey, '***');
     const response = await net.fetch(rawUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 edunote-app' },
-      signal: AbortSignal.timeout(20000),
+      // 나라장터 게이트웨이는 응답이 느릴 때가 많아 20초로는 자주 끊긴다.
+      signal: AbortSignal.timeout(30000),
     });
     const body = await response.text().catch(() => '');
     if (!response.ok) {
@@ -1023,7 +1020,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('api:naramarket-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
     const path = 'ao/ThngListInfoService/getThngPrdnmLocplcAccotListInfoInfoPrdlstSearch';
     return collectOpenApiItems(
-      THNG_LIST_SEARCH_KEYS.map(searchKey => (
+      THNG_LIST_SEARCH_KEYS.map(searchKey => () => (
         fetchNaramarket(path, buildThngListParams(searchKey, keyword, pageNo))
       )),
     );
@@ -1031,11 +1028,11 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('api:naramarket-shopping-search', async (_e, { keyword, pageNo = 1 }: { keyword: string; pageNo?: number }) => {
     const path = 'at/ShoppingMallPrdctInfoService/getShoppingMallPrdctInfoList';
-    // 조회구분 값이 확정되지 않아 두 가지를 함께 시도한다. 한쪽이 실패하거나 0건이어도
-    // 다른 쪽 결과를 그대로 쓴다.
+    // 조회구분 값이 확정되지 않아 두 가지를 순서대로 시도한다. 결과가 나오면 거기서 멈추므로
+    // 보통은 첫 조회 한 번으로 끝나고, 일일 호출 한도와 응답 시간을 아낀다.
     return collectOpenApiItems(
       SHOPPING_MALL_INQRY_VARIANTS.flatMap(variant => (
-        SHOPPING_MALL_SEARCH_KEYS.map(searchKey => (
+        SHOPPING_MALL_SEARCH_KEYS.map(searchKey => () => (
           fetchNaramarket(path, buildShoppingMallParams(searchKey, keyword, pageNo, variant))
         ))
       )),

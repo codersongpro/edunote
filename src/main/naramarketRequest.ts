@@ -41,6 +41,33 @@ export const THNG_LIST_SEARCH_KEYS = [
 
 const ROWS_PER_PAGE = '30';
 
+// 여러 조회 조합을 한 번에 병렬로 던지면 느린 정부 API가 버티지 못해 전부 타임아웃 난다.
+// 순서대로 하나씩 시도하고, 결과가 나오는 순간 나머지는 호출하지 않는다.
+// 전체 제한 시간을 넘기면 더 시도하지 않고 그때까지의 결과를 돌려준다.
+export async function collectFirstNonEmpty<T>(
+  runners: Array<() => Promise<T>>,
+  readItems: (value: T) => unknown[],
+  options: { deadlineMs?: number; now?: () => number } = {},
+): Promise<{ items: unknown[]; failures: unknown[]; attempts: number }> {
+  const { deadlineMs = 60_000, now = () => Date.now() } = options;
+  const startedAt = now();
+  const failures: unknown[] = [];
+  let attempts = 0;
+
+  for (const run of runners) {
+    if (attempts > 0 && now() - startedAt >= deadlineMs) break;
+    attempts += 1;
+    try {
+      const items = readItems(await run());
+      if (items.length > 0) return { items, failures, attempts };
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+
+  return { items: [], failures, attempts };
+}
+
 function baseParams(pageNo: number): URLSearchParams {
   const params = new URLSearchParams();
   params.set('pageNo', String(Math.max(1, Math.floor(pageNo) || 1)));
