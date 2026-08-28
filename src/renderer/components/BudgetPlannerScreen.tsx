@@ -3,6 +3,7 @@ import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
 import { readApiItemCount } from '../lib/openApiItems';
+import { extractNaraIdNo, formatItemNameWithIdNo } from '../lib/budgetItemName';
 import {
   MARKET_PRICE_SOURCE_LABEL,
   MARKET_PRICE_SYSTEM_INSTRUCTION,
@@ -1171,7 +1172,9 @@ export default function BudgetPlannerScreen() {
       const received = readApiItemCount(data);
       const priced = normalizeApiItems(data, true).filter(item => (item.unitPrice ?? 0) > 0);
       if (priced.length > 0) {
-        setNaramarketTestMessage(`연결됨 · 복사용지 ${priced.length}건 확인`);
+        // 응답 항목 이름을 함께 남긴다 — 썸네일·식별번호처럼 새 항목을 붙일 때
+        // 어떤 필드를 읽어야 하는지 앱에서 바로 확인할 수 있다.
+        setNaramarketTestMessage(`연결됨 · 복사용지 ${priced.length}건 확인 · 응답 항목: ${received.fieldNames}`);
       } else if (received.count > 0) {
         setNaramarketTestMessage(
           `${received.count}건을 받았지만 단가를 읽지 못했습니다. 응답 항목: ${received.fieldNames}`,
@@ -1329,15 +1332,17 @@ export default function BudgetPlannerScreen() {
 
   const addSearchItemToPlan = (item: NaraItem) => {
     if (!activePlan) return;
+    // 예산안에는 "물품명(식별번호)"로 넣어, 나중에 나라장터에서 같은 물품을 바로 찾을 수 있게 한다.
+    const named: NaraItem = { ...item, thngNm: formatItemNameWithIdNo(item.thngNm, item.thngCd) };
     // 검색으로 추가한 품목은 해당 과목의 맨 위에 들어가도록 배열 앞쪽에 넣어 정규화한다.
     const next = useCategoryRatio
-      ? normalizeToCategoryTree([makeItem(priceSearchCategory, item), ...activePlan.items])
-      : [makeItem('교육운영비', item), ...activePlan.items.filter(row => !isCategoryRow(row))];
+      ? normalizeToCategoryTree([makeItem(priceSearchCategory, named), ...activePlan.items])
+      : [makeItem('교육운영비', named), ...activePlan.items.filter(row => !isCategoryRow(row))];
     updatePlanItems(next);
     if (useCategoryRatio) revealCategory(next, priceSearchCategory);
     setPriceSearchMessage(useCategoryRatio
-      ? `'${item.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`
-      : `'${item.thngNm}'을(를) 맨 위에 추가했습니다.`);
+      ? `'${named.thngNm}'을(를) ${priceSearchCategory} 맨 위에 추가했습니다.`
+      : `'${named.thngNm}'을(를) 맨 위에 추가했습니다.`);
   };
 
   // 입력한 키워드로 쇼핑 검색 결과 창을 연다. 창을 띄우지 못하면 조용히 넘어가지 않고 알린다.
@@ -1996,7 +2001,12 @@ export default function BudgetPlannerScreen() {
                               )}
                             </p>
                             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] truncate">
-                              {[item.priceSource, item.spec, item.mnfctCorpNm].filter(Boolean).join(' · ')}
+                              {[
+                                item.priceSource,
+                                extractNaraIdNo(item.thngCd) && `식별번호 ${extractNaraIdNo(item.thngCd)}`,
+                                item.spec,
+                                item.mnfctCorpNm,
+                              ].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
                                 <button onClick={() => openSourceLink(item.priceSourceUrl!)}
                                   onMouseEnter={() => loadPreviewImage(item.image)}
