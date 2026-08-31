@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
 import { readApiItemCount } from '../lib/openApiItems';
 import { extractNaraIdNo, formatItemNameWithIdNo } from '../lib/budgetItemName';
+import { toNaraImageUrl } from '../lib/naraImage';
 import {
   MARKET_PRICE_SOURCE_LABEL,
   MARKET_PRICE_SYSTEM_INSTRUCTION,
@@ -1375,13 +1376,22 @@ export default function BudgetPlannerScreen() {
     }
   };
 
-  // 검색 결과 위에 마우스를 올리면 상품 이미지를 data URI로 받아 미리보기로 보여준다(CSP 우회).
+  // 상품 이미지를 data URI로 받아 썸네일로 보여준다(렌더러 CSP 때문에 메인 프로세스가 대신 받아온다).
+  // 같은 주소를 여러 번 요청하지 않도록, 아직 응답이 오지 않은 주소는 ref에 기록해 둔다 —
+  // 목록 여러 줄이 같은 순간에 요청하면 previewImages 상태는 아직 비어 있어 중복 요청이 나간다.
+  const requestedImagesRef = useRef<Set<string>>(new Set());
   const loadPreviewImage = (url?: string) => {
-    if (!url || previewImages[url] !== undefined) return;
+    if (!url || requestedImagesRef.current.has(url)) return;
+    requestedImagesRef.current.add(url);
     window.electronAPI.fetchImage(url)
       .then(dataUri => setPreviewImages(prev => ({ ...prev, [url]: dataUri || '' })))
       .catch(() => setPreviewImages(prev => ({ ...prev, [url]: '' })));
   };
+
+  // 검색 결과가 나오면 사진을 바로 받아 썸네일로 보여준다(마우스를 올릴 때까지 기다리지 않는다).
+  useEffect(() => {
+    priceSearchResults.forEach(item => loadPreviewImage(item.image));
+  }, [priceSearchResults]);
 
   // 품목 검색에 쓸 수 있는 나라장터 키가 저장돼 있는지 여부
   const hasPriceLookupKey = !!apiKey.trim() || hasSavedNaramarketKey;
@@ -1731,9 +1741,6 @@ export default function BudgetPlannerScreen() {
             <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-1 leading-relaxed">
               저장 후 예산안 화면 위쪽의 '품목 검색으로 추가'에서 검색하면 실제 단가를 가져와 바로 추가할 수 있습니다.
             </p>
-            <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] mt-2 leading-relaxed">
-              네이버 쇼핑 검색 API는 2026년 7월 31일 종료되어 더 이상 사용하지 않습니다. 나라장터에 없는 시중 물품은 품목 검색 패널의 '웹 검색 참고가'를 켜거나, '직접 검색하기' 버튼으로 확인해 주세요.
-            </p>
               </>
             )}
           </section>
@@ -1987,10 +1994,10 @@ export default function BudgetPlannerScreen() {
                           onMouseEnter={() => loadPreviewImage(item.image)}
                         >
                           {item.image && (
-                            <div className="shrink-0 h-14 w-14 rounded border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden bg-[#FAF9F7] dark:bg-[#171210] flex items-center justify-center" title="마우스를 올리면 상품 이미지가 표시됩니다">
+                            <div className="shrink-0 h-14 w-14 rounded border border-[#EDE8E1] dark:border-[#2E2822] overflow-hidden bg-[#FAF9F7] dark:bg-[#171210] flex items-center justify-center" title={item.thngNm}>
                               {preview
                                 ? <img src={preview} alt="" className="h-full w-full object-contain" />
-                                : <span className="text-[9px] text-[#A8A29E] text-center leading-tight px-0.5">이미지</span>}
+                                : <span className="text-[9px] text-[#A8A29E] text-center leading-tight px-0.5">{preview === '' ? '사진 없음' : '불러오는 중'}</span>}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -2104,8 +2111,9 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
       thngNm: row.prdctIdntNoNm || row.krnPrdctNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || row.prdctNm || '(이름 없음)',
       thngCd: row.prdctIdntNo || row.prdctNo || '',
       spec: row.itemSpec || row.prdctSpecNm || row.stdUntNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || '',
-      mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.mnfctCmpyNm || '',
+      mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.prdctMakrNm || row.mnfctCmpyNm || '',
       unitPrice: preferPrice ? unitPrice : undefined,
+      image: toNaraImageUrl(row.prdctImgUrl) || undefined,
     };
   });
 }
