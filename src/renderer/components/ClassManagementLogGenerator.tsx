@@ -4,6 +4,8 @@ import { getRosterGenerationExtras } from '../lib/generationSafety';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 const EXAMPLE_RESULT = `【 학급경영일지 】
 
@@ -94,13 +96,12 @@ const ClassManagementLogGenerator: React.FC = () => {
 
   const handleCopy = async () => {
     if (!result) return;
-    try {
-      await navigator.clipboard.writeText(result);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Copy failed:', err);
+    if (!await copyPlainTextToClipboard(result)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSaveTxt = () => {

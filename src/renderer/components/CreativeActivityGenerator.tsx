@@ -17,6 +17,7 @@ import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -666,14 +667,12 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleCopy = async (text: string, id: string) => {
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err: any) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Failed to copy text: ', errorMessage);
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // 현재 활동의 모든 학생 결과를 한 번에 클립보드에 복사
@@ -683,13 +682,12 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
       .map(s => `[${s.name}]\n${s.generatedContent}`)
       .join('\n\n');
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId('__ALL__');
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy all: ', err instanceof Error ? err.message : String(err));
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId('__ALL__');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const checkDuplicates = () => {

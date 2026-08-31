@@ -9,6 +9,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { notifyToast } from '../lib/toast';
 import { loadDocTodos, saveDocTodos, DocTodo } from './DocTodoPanel';
 import { useTour } from '../TourContext';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 const OfficialDocAnalyzer: React.FC = () => {
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.OFFICIAL_DOC_ANALYZER);
@@ -112,7 +113,10 @@ const OfficialDocAnalyzer: React.FC = () => {
 
   const handleCopy = async () => {
     if (!result) return;
-    await navigator.clipboard.writeText(result);
+    const copied = await copyPlainTextToClipboard(result);
+    notifyToast(copied
+      ? { type: 'success', title: '추출 결과를 복사했습니다.' }
+      : { type: 'error', title: '클립보드 복사에 실패했습니다.' });
   };
 
   const handleSave = async () => {

@@ -1,5 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Copy } from 'lucide-react';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 type Field = { label: string; value: string };
 type Sample = {
@@ -563,15 +565,9 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const el = document.createElement('textarea');
-      el.value = text;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
