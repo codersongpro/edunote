@@ -279,9 +279,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
-              newStudents[i].generatedModel = model;
-              newStudents[i].privacyApplied = privacyApplied;
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -343,9 +341,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
-              newStudents[index].generatedModel = model;
-              newStudents[index].privacyApplied = privacyApplied;
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -397,9 +393,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
 
       const newStudents = [...opState.students];
-      newStudents[index].generatedContent = result;
-      newStudents[index].generatedModel = model;
-      newStudents[index].privacyApplied = privacyApplied;
+      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
@@ -420,7 +414,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...opState.students];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateOpState({ students: newStudents });
   };
 

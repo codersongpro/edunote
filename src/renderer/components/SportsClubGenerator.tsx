@@ -191,7 +191,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const toggleSelection = (index: number) => {
     if (isGlobalGenerating) return;
     const newStudents = [...sportsState.students];
-    newStudents[index].selected = !newStudents[index].selected;
+    newStudents[index] = { ...newStudents[index], selected: !newStudents[index].selected };
     updateSportsState({ students: newStudents });
   };
 
@@ -203,8 +203,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   // --- Config Handlers ---
   const handleContextChange = (text: string) => {
-    const newStudents = [...sportsState.students];
-    newStudents[sportsState.currentStudentIndex].additionalContext = text;
+    const idx = sportsState.currentStudentIndex;
+    const newStudents = sportsState.students.map((s, i) =>
+      i === idx ? { ...s, additionalContext: text } : s
+    );
     updateSportsState({ students: newStudents });
   };
 
@@ -291,9 +293,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: sportsState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
-              newStudents[i].generatedModel = model;
-              newStudents[i].privacyApplied = privacyApplied;
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -362,9 +362,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: sportsState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
-              newStudents[index].generatedModel = model;
-              newStudents[index].privacyApplied = privacyApplied;
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -417,9 +415,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
 
       const newStudents = [...sportsState.students];
-      newStudents[index].generatedContent = result;
-      newStudents[index].generatedModel = model;
-      newStudents[index].privacyApplied = privacyApplied;
+      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('sports', sportsState.students[index].name, result);
       updateSportsState({ students: newStudents });
@@ -440,7 +436,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...sportsState.students];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateSportsState({ students: newStudents });
   };
 
