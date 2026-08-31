@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
-import { readApiItemCount } from '../lib/openApiItems';
-import { extractNaraIdNo, formatItemNameWithIdNo } from '../lib/budgetItemName';
+import { readApiItemCount, readNumericFieldSamples } from '../lib/openApiItems';
+import { extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../lib/budgetItemName';
 import { toNaraImageUrl } from '../lib/naraImage';
 import {
   MARKET_PRICE_SOURCE_LABEL,
@@ -1175,7 +1175,13 @@ export default function BudgetPlannerScreen() {
       if (priced.length > 0) {
         // 응답 항목 이름을 함께 남긴다 — 썸네일·식별번호처럼 새 항목을 붙일 때
         // 어떤 필드를 읽어야 하는지 앱에서 바로 확인할 수 있다.
-        setNaramarketTestMessage(`연결됨 · 복사용지 ${priced.length}건 확인 · 응답 항목: ${received.fieldNames}`);
+        // 숫자로만 된 값은 이름=값으로 함께 보여준다. 물품식별번호(8자리)와
+        // 물품분류번호(10자리)는 이름만으로 구분되지 않고 자릿수를 봐야 알 수 있다.
+        const numeric = readNumericFieldSamples(data);
+        setNaramarketTestMessage(
+          `연결됨 · 복사용지 ${priced.length}건 확인 · 응답 항목: ${received.fieldNames}`
+          + (numeric ? ` · 숫자 항목: ${numeric}` : ''),
+        );
       } else if (received.count > 0) {
         setNaramarketTestMessage(
           `${received.count}건을 받았지만 단가를 읽지 못했습니다. 응답 항목: ${received.fieldNames}`,
@@ -2109,7 +2115,7 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
     ) || undefined;
     return {
       thngNm: row.prdctIdntNoNm || row.krnPrdctNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || row.prdctNm || '(이름 없음)',
-      thngCd: row.prdctIdntNo || row.prdctNo || '',
+      thngCd: pickNaraIdNo(row) || String(row.prdctNo ?? ''),
       spec: row.itemSpec || row.prdctSpecNm || row.stdUntNm || row.prdctClsfcNoNm || row.dtilPrdctClsfcNoNm || '',
       mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.prdctMakrNm || row.mnfctCmpyNm || '',
       unitPrice: preferPrice ? unitPrice : undefined,
