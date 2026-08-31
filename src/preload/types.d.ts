@@ -41,6 +41,8 @@ export interface ElectronAPI {
   savePdf(htmlContent: string, suggestedName: string): Promise<string | null>;
   openHtmlExternal(htmlContent: string, suggestedName?: string): Promise<string | null>;
 
+  copyImageToClipboard(dataUrl: string): Promise<boolean>;
+
   openFolder(folderPath: string): Promise<boolean>;
   openExternal(url: string): Promise<boolean>;
 

@@ -57,6 +57,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openHtmlExternal: (htmlContent: string, suggestedName?: string) =>
     ipcRenderer.invoke('file:open-html-external', htmlContent, suggestedName),
 
+  // Clipboard — QR 이미지를 OS 클립보드에 그림으로 넣는다(성공 여부 반환).
+  copyImageToClipboard: (dataUrl: string): Promise<boolean> =>
+    ipcRenderer.invoke('clipboard:write-image', dataUrl),
+
   // Shell
   openFolder: (folderPath: string) => ipcRenderer.invoke('shell:open-folder', folderPath),
   openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),

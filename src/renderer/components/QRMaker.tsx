@@ -49,21 +49,24 @@ const QRMaker: React.FC = () => {
 
   const handleCopyImage = async () => {
     if (!qrDataUrl) return;
-    try {
-      const res = await fetch(qrDataUrl);
-      const blob = await res.blob();
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+
+    // 메인 프로세스의 네이티브 클립보드로 그림을 넣는다.
+    // 렌더러에서 fetch(dataUrl) → Blob → ClipboardItem 경로는 쓸 수 없다 —
+    // index.html의 CSP가 connect-src를 'self'와 파이어베이스 주소로만 열어 두어
+    // data: URL에 대한 fetch가 차단되고, 그 예외 때문에 그림 대신 주소 텍스트만
+    // 복사되고 있었다.
+    if (await window.electronAPI.copyImageToClipboard(qrDataUrl)) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // fallback: copy URL text
-      if (!await copyPlainTextToClipboard(url)) {
-        notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
-        return;
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      return;
     }
+
+    // 그림 복사가 안 되는 환경에서는 주소 텍스트라도 넘겨주되, 그림이 아니라는 걸 알린다.
+    if (await copyPlainTextToClipboard(url)) {
+      notifyToast({ type: 'warning', title: '이미지를 복사하지 못해 주소만 복사했습니다.' });
+      return;
+    }
+    notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
   };
 
   return (
