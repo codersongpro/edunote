@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatItemNameWithIdNo, pickNaraIdNo } from '../budgetItemName';
+import { buildNaraDisplayName, formatItemNameWithIdNo, pickNaraIdNo } from '../budgetItemName';
 import { toNaraImageUrl } from '../naraImage';
 
 // 나라장터 종합쇼핑몰 품목정보 서비스가 실제로 돌려준 항목의 모양을 그대로 고정한다.
@@ -70,6 +70,18 @@ describe('실제 나라장터 응답에서 값 읽기', () => {
   });
 
   it('예산안 품목명을 물품명(식별번호)로 만든다', () => {
+    expect(formatItemNameWithIdNo(REAL_ROW.prdctClsfcNoNm, pickNaraIdNo(REAL_ROW)))
+      .toBe('복사용지(20698349)');
+  });
+});
+
+describe('검색 목록과 예산안의 이름 분리', () => {
+  it('검색 목록에는 세부품명과 규격을 합친 이름을 보여준다', () => {
+    expect(buildNaraDisplayName(REAL_ROW)).toBe('백상지복사용지 A4 80g/㎡');
+  });
+
+  it('예산안에는 자세한 이름이 아니라 품명(식별번호)이 들어간다', () => {
+    // 예산안 품목명은 품의·계약 문서에 그대로 쓰이므로 짧게 유지한다.
     expect(formatItemNameWithIdNo(REAL_ROW.prdctClsfcNoNm, pickNaraIdNo(REAL_ROW)))
       .toBe('복사용지(20698349)');
   });

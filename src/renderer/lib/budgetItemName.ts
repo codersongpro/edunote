@@ -29,6 +29,21 @@ export function pickNaraIdNo(row: Record<string, unknown>): string {
   return '';
 }
 
+// 검색 결과 목록에만 쓰는 자세한 이름을 만든다.
+// 응답의 품명(prdctClsfcNoNm)은 "복사용지"처럼 뭉뚱그린 이름이라, 목록에서 물품을
+// 서로 구분하기 어렵다. 세부품명과 규격을 이어 붙여 "백상지복사용지 A4 80g/㎡"처럼
+// 보이게 한다. 예산안에는 이 이름을 넣지 않는다 — 예산안 품목명은 품의·계약 문서에
+// 그대로 쓰이므로 짧은 품명과 식별번호를 유지한다.
+export function buildNaraDisplayName(row: Record<string, unknown>): string {
+  const text = (value: unknown) => String(value ?? '').trim();
+  const name = text(row.dtilPrdctClsfcNoNm) || text(row.prdctClsfcNoNm) || text(row.prdctNm);
+  const spec = text(row.prdctSpecNm);
+  if (!name) return '';
+  // 규격이 없거나 이미 이름에 들어 있으면 덧붙이지 않는다.
+  if (!spec || name.includes(spec)) return name;
+  return `${name} ${spec}`;
+}
+
 // 품목명에 식별번호를 괄호로 덧붙인다. 식별번호가 없으면 품목명을 그대로 둔다.
 export function formatItemNameWithIdNo(thngNm?: string, thngCd?: string): string {
   const name = String(thngNm ?? '').trim();
