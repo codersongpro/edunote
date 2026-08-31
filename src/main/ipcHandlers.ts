@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, app, BrowserWindow, net, safeStorage } from 'electron';
+import { ipcMain, dialog, shell, app, BrowserWindow, net, safeStorage, clipboard, nativeImage } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -25,6 +25,7 @@ import {
   buildThngListParams,
 } from './naramarketRequest';
 import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
+import { isPngDataUrl } from './clipboardImage';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
@@ -354,6 +355,19 @@ export function registerIpcHandlers(): void {
       console.warn('[ipc:shell:open-external]', e);
       return false;
     }
+  });
+
+  // ── Clipboard ─────────────────────────────────────────────────────
+  // QR 이미지를 OS 클립보드에 그림으로 넣는다.
+  // 렌더러에서 fetch(dataUrl) → Blob → ClipboardItem 경로는 쓸 수 없다 —
+  // index.html의 CSP가 connect-src를 'self'와 파이어베이스 주소로만 열어 두어
+  // data: URL에 대한 fetch가 차단되기 때문이다.
+  ipcMain.handle('clipboard:write-image', (_e, dataUrl: unknown) => {
+    if (!isPngDataUrl(dataUrl)) return false;
+    const image = nativeImage.createFromDataURL(dataUrl);
+    if (image.isEmpty()) return false;
+    clipboard.writeImage(image);
+    return true;
   });
 
   // ── Config ────────────────────────────────────────────────────────

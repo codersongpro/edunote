@@ -9,6 +9,7 @@ import { notifyToast } from '../lib/toast';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
 import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
 import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
+import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
   opinion: '행동특성',
@@ -440,6 +441,13 @@ const SettingsScreen: React.FC = () => {
                   <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
                     참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
                   </p>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
+                  <p className="mb-2 text-xs font-bold text-[#44403C] dark:text-[#F0EBE6]">
+                    키가 없어도 쓸 수 있는 기능
+                  </p>
+                  <ApiKeyScopeNotice />
                 </div>
               </div>
             </div>

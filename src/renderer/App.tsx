@@ -46,6 +46,7 @@ import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel
 import TranslatorScreen from './components/TranslatorScreen';
 import { loadWorkDraft, saveWorkDraft, WorkDraft } from './lib/workDraft';
 import RestoreDraftModal from './components/RestoreDraftModal';
+import { ApiKeyScopeNotice } from './components/ApiKeyScopeNotice';
 import {
   getNavigationSection,
   getNavigationSectionHeaderClass,
@@ -916,7 +917,13 @@ const App: React.FC = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-7">
                     <div>
                       <h3 className="text-lg font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">API 키 설정</h3>
-                      <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-6">Gemini API 키를 입력하면 AI 기능을 모두 사용할 수 있습니다.</p>
+                      <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-4">
+                        Gemini API 키를 입력하면 AI 기능을 모두 사용할 수 있습니다.
+                        <strong className="text-[#44403C] dark:text-[#C4B8B0]"> 키는 나중에 설정 화면에서 넣어도 되고, 지금 건너뛰어도 아래 기능은 바로 쓸 수 있습니다.</strong>
+                      </p>
+                      <div className="mb-6">
+                        <ApiKeyScopeNotice variant="compact" />
+                      </div>
                       <div className="grid grid-cols-2 gap-2 mb-4">
                         <button
                           onClick={() => { setOnboardingApiTier('free'); setOnboardingApiStatus('idle'); setOnboardingApiMessage(''); }}

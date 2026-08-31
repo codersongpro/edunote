@@ -16,6 +16,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
+import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
 
 const USAGE_GUIDE_VIDEO_URL = 'https://drive.google.com/file/d/1D1sdb3qvuxFv2BcrNPSILhMsjU0WgM9Q/view?usp=drive_link';
 
@@ -73,6 +74,10 @@ const UsageGuideScreen: React.FC = () => {
         >
           <Video className="w-4 h-4" /> 에듀노트 전체 사용법 보기 (영상)
         </button>
+
+        <Section title="API 키 없이 쓸 수 있는 기능" icon={<Key className="w-4 h-4 text-emerald-500" />} defaultOpen>
+          <ApiKeyScopeNotice />
+        </Section>
 
         <Section title="시작 전 준비 - Gemini API 키 발급" icon={<Key className="w-4 h-4 text-blue-500" />} defaultOpen>
           <ol className="space-y-2.5">
