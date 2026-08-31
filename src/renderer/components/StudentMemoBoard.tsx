@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StickyNote, Plus, Trash2, Download, Search, HelpCircle } from 'lucide-react';
 import { useTour } from '../TourContext';
 import { safeSetItem } from '../lib/safeStorage';
+import { toCsv } from '../lib/csv';
 
 interface Memo {
   id: string;
@@ -127,7 +128,7 @@ const StudentMemoBoard: React.FC = () => {
   };
 
   const handleExportCSV = async () => {
-    const header = '제목,학생 이름,메모 내용,작성일,수정일';
+    const header = ['제목', '학생 이름', '메모 내용', '작성일', '수정일'];
     // 편집 중인 메모가 있으면 현재 입력값을 반영
     const exportMemos = memos.map(m =>
       m.id === editingId
@@ -140,11 +141,14 @@ const StudentMemoBoard: React.FC = () => {
           }
         : m
     );
-    const rows = exportMemos.map(m =>
-      `"${(m.title || '').replace(/"/g, '""')}","${joinStudents(getMemoStudents(m)).replace(/"/g, '""')}","${m.content.replace(/"/g, '""')}","${new Date(m.createdAt).toLocaleString('ko-KR')}","${new Date(m.updatedAt).toLocaleString('ko-KR')}"`
-    );
-    const csv = [header, ...rows].join('\n');
-    await window.electronAPI.saveCsv(csv, `학생메모_${new Date().toISOString().slice(0, 10)}.csv`);
+    const rows = exportMemos.map(m => [
+      m.title || '',
+      joinStudents(getMemoStudents(m)),
+      m.content,
+      new Date(m.createdAt).toLocaleString('ko-KR'),
+      new Date(m.updatedAt).toLocaleString('ko-KR'),
+    ]);
+    await window.electronAPI.saveCsv(toCsv([header, ...rows]), `학생메모_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const allStudentOptions = Array.from(new Set([

@@ -11,6 +11,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
@@ -499,19 +500,17 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const downloadCSV = async () => {
-    const BOM = '\uFEFF';
     const header = ['학생명', '생성된 특기사항', '종목', '클럽명', '개별 활동내용'];
-    
+
     const rows = sportsState.students.map((s: StudentSportsData) => [
       s.name,
-      `"${`${s.generatedContent || ''}`.replace(/"/g, '""')}"`,
+      s.generatedContent || '',
       sportsState.sportName,
       sportsState.clubName,
-      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " ")
+      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " "),
     ]);
 
-    const csvContent = BOM + [header, ...rows].map(e => e.join(',')).join('\n');
-    await window.electronAPI.saveCsv(csvContent, `스포츠클럽_${sportsState.sportName}_${new Date().toISOString().slice(0,10)}.csv`);
+    await window.electronAPI.saveCsv(toCsv([header, ...rows]), `스포츠클럽_${sportsState.sportName}_${new Date().toISOString().slice(0,10)}.csv`);
   };
 
   return (

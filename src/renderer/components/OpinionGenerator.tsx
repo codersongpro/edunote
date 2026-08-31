@@ -12,6 +12,7 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
@@ -479,19 +480,17 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const downloadCSV = async () => {
-    const BOM = '\uFEFF';
     const header = ['학생명', '생성된 의견', '긍정적 특성', '보완할 점', '추가 관찰내용'];
 
     const rows: string[][] = opState.students.map((s: StudentOpinionData) => [
       s.name,
-      `"${`${s.generatedContent || ''}`.replace(/"/g, '""')}"`,
+      s.generatedContent || '',
       (s.positiveTags || []).join(', '),
       (s.negativeTags || []).join(', '),
-      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""')
+      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " "),
     ]);
 
-    const csvContent = BOM + [header, ...rows].map((e: string[]) => e.join(',')).join('\n');
-    await window.electronAPI.saveCsv(csvContent, `행동특성_종합의견_${new Date().toISOString().slice(0,10)}.csv`);
+    await window.electronAPI.saveCsv(toCsv([header, ...rows]), `행동특성_종합의견_${new Date().toISOString().slice(0,10)}.csv`);
   };
 
   return (

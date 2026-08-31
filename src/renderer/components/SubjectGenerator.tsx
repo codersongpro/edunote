@@ -12,6 +12,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
@@ -966,8 +967,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
         });
         if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
-        const csvContent = [header, ...rows].map(r => r.map(c => '"' + c.replace(/"/g, '""') + '"').join(',')).join('\n');
-        await window.electronAPI.saveCsv(csvContent, '전체교과_세특_' + new Date().toISOString().slice(0,10) + '.csv');
+        await window.electronAPI.saveCsv(toCsv([header, ...rows]), '전체교과_세특_' + new Date().toISOString().slice(0,10) + '.csv');
     } catch (e) {
         console.error("CSV download error:", e);
         notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
@@ -986,8 +986,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             return [s.name, s.generatedContent || '', tasksSummary, s.additionalContext || ''];
         });
         if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
-        const csvContent = [header, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-        await window.electronAPI.saveCsv(csvContent, `${subjectState.currentSubject}_세특_${new Date().toISOString().slice(0,10)}.csv`);
+        await window.electronAPI.saveCsv(toCsv([header, ...rows]), `${subjectState.currentSubject}_세특_${new Date().toISOString().slice(0,10)}.csv`);
     } catch (e) {
         console.error("CSV download error:", e);
         notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
