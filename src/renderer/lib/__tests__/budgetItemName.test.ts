@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../budgetItemName';
+import { buildNaraDisplayName, extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../budgetItemName';
 
 describe('나라장터 물품식별번호 판별', () => {
   it('숫자로만 된 값을 식별번호로 본다', () => {
@@ -68,5 +68,34 @@ describe('예산안 품목명 조합', () => {
 
   it('앞뒤 공백은 정리한다', () => {
     expect(formatItemNameWithIdNo('  가위  ', '23456789')).toBe('가위(23456789)');
+  });
+});
+
+describe('검색 결과에 보여줄 자세한 이름', () => {
+  it('세부품명과 규격을 이어 붙인다', () => {
+    expect(buildNaraDisplayName({
+      prdctClsfcNoNm: '복사용지',
+      dtilPrdctClsfcNoNm: '백상지복사용지',
+      prdctSpecNm: 'A4 80g/㎡',
+    })).toBe('백상지복사용지 A4 80g/㎡');
+  });
+
+  it('세부품명이 없으면 품명을 쓴다', () => {
+    expect(buildNaraDisplayName({ prdctClsfcNoNm: '복사용지', prdctSpecNm: 'A4 80g/㎡' }))
+      .toBe('복사용지 A4 80g/㎡');
+  });
+
+  it('규격이 없으면 이름만 쓴다', () => {
+    expect(buildNaraDisplayName({ dtilPrdctClsfcNoNm: '백상지복사용지' })).toBe('백상지복사용지');
+  });
+
+  it('이름에 이미 규격이 들어 있으면 덧붙이지 않는다', () => {
+    expect(buildNaraDisplayName({ dtilPrdctClsfcNoNm: '복사용지 A4', prdctSpecNm: 'A4' }))
+      .toBe('복사용지 A4');
+  });
+
+  it('이름이 될 값이 없으면 빈 문자열을 준다', () => {
+    expect(buildNaraDisplayName({ prdctSpecNm: 'A4 80g/㎡' })).toBe('');
+    expect(buildNaraDisplayName({})).toBe('');
   });
 });
