@@ -2,12 +2,9 @@
 // 식별번호가 함께 적혀 있으면 담당자가 나라장터에서 같은 물품을 바로 찾을 수 있고,
 // 품의·계약 단계에서 물품을 특정하기도 쉽다.
 
-// 나라장터 물품식별번호는 숫자 8자리다(예: 25262451).
-// 자릿수를 8자리로 못 박는 이유가 두 가지 있다.
-//  1) 앱이 내부적으로 쓰는 식별자(example-draft·ai-generated·market-... 등)가
-//     품목명에 섞여 들어가는 것을 막는다.
-//  2) 같은 응답에 들어 있는 물품분류번호(10자리, 예: 5610170301)를 식별번호로
-//     잘못 붙이는 것을 막는다. 둘 다 숫자여서 자릿수 말고는 구분할 방법이 없다.
+// 나라장터 물품식별번호는 숫자 8자리다(예: 20698349).
+// 앱이 내부적으로 쓰는 식별자(example-draft·ai-generated·market-... 등)가
+// 품목명에 섞여 들어가지 않도록 자릿수까지 확인한다.
 const NARA_ID_NO = /^\d{8}$/;
 
 export function extractNaraIdNo(thngCd?: unknown): string {
@@ -16,10 +13,11 @@ export function extractNaraIdNo(thngCd?: unknown): string {
 }
 
 // 응답 한 줄에서 물품식별번호를 찾는다.
-// 조달청 응답의 항목 이름은 서비스마다 조금씩 달라서 하나로 못 박기 어렵다.
-// 그래서 알려진 이름(prdctIdntNo)을 먼저 보고, 없으면 이름에 식별(idnt)이 들어간
-// 항목 중 값이 8자리 숫자인 것을 쓴다. 이름을 함께 보기 때문에 계약종료일(20261231)처럼
-// 우연히 8자리인 다른 값이 식별번호로 잘못 뽑히지 않는다.
+// 반드시 항목 이름을 함께 봐야 한다. 같은 응답에 8자리 숫자가 여럿 들어 있어서
+// 자릿수만으로는 고를 수 없기 때문이다 — 품명번호(prdctClsfcNo=14111507),
+// 계약일자·계약종료일(cntrctDate=20260115, cntrctEndDate=20261231)이 모두 8자리다.
+// 그래서 알려진 이름(prdctIdntNo)을 먼저 보고, 없을 때만 이름에 식별(idnt)이
+// 들어간 항목 중 값이 8자리 숫자인 것을 쓴다.
 export function pickNaraIdNo(row: Record<string, unknown>): string {
   const direct = extractNaraIdNo(row.prdctIdntNo);
   if (direct) return direct;
@@ -29,6 +27,21 @@ export function pickNaraIdNo(row: Record<string, unknown>): string {
     if (found) return found;
   }
   return '';
+}
+
+// 검색 결과 목록에만 쓰는 자세한 이름을 만든다.
+// 응답의 품명(prdctClsfcNoNm)은 "복사용지"처럼 뭉뚱그린 이름이라, 목록에서 물품을
+// 서로 구분하기 어렵다. 세부품명과 규격을 이어 붙여 "백상지복사용지 A4 80g/㎡"처럼
+// 보이게 한다. 예산안에는 이 이름을 넣지 않는다 — 예산안 품목명은 품의·계약 문서에
+// 그대로 쓰이므로 짧은 품명과 식별번호를 유지한다.
+export function buildNaraDisplayName(row: Record<string, unknown>): string {
+  const text = (value: unknown) => String(value ?? '').trim();
+  const name = text(row.dtilPrdctClsfcNoNm) || text(row.prdctClsfcNoNm) || text(row.prdctNm);
+  const spec = text(row.prdctSpecNm);
+  if (!name) return '';
+  // 규격이 없거나 이미 이름에 들어 있으면 덧붙이지 않는다.
+  if (!spec || name.includes(spec)) return name;
+  return `${name} ${spec}`;
 }
 
 // 품목명에 식별번호를 괄호로 덧붙인다. 식별번호가 없으면 품목명을 그대로 둔다.

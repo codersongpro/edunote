@@ -3,7 +3,7 @@ import { BudgetCategory, BudgetItem, BudgetPlan } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { parseJsonArrayFromAiText } from '../lib/aiJson';
 import { readApiItemCount, readNumericFieldSamples } from '../lib/openApiItems';
-import { extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../lib/budgetItemName';
+import { buildNaraDisplayName, extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../lib/budgetItemName';
 import { toNaraImageUrl } from '../lib/naraImage';
 import { toCsv } from '../lib/csv';
 import {
@@ -206,6 +206,8 @@ interface NaraItem {
   priceSource?: string;
   priceSourceUrl?: string;
   image?: string;
+  // 검색 결과 목록에만 쓰는 자세한 이름. 예산안에는 thngNm이 들어간다.
+  displayNm?: string;
 }
 
 type RecommendationStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -2007,8 +2009,8 @@ export default function BudgetPlannerScreen() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate">
-                              {item.thngNm}
+                            <p className="text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] truncate" title={item.displayNm || item.thngNm}>
+                              {item.displayNm || item.thngNm}
                               {item.priceSource === MARKET_PRICE_SOURCE_LABEL && (
                                 <span className="ml-1.5 align-middle rounded-full bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-300">참고가</span>
                               )}
@@ -2017,7 +2019,8 @@ export default function BudgetPlannerScreen() {
                               {[
                                 item.priceSource,
                                 extractNaraIdNo(item.thngCd) && `식별번호 ${extractNaraIdNo(item.thngCd)}`,
-                                item.spec,
+                                // 자세한 이름에 규격이 이미 들어가 있으면 아래에 또 적지 않는다.
+                                item.displayNm ? '' : item.spec,
                                 item.mnfctCorpNm,
                               ].filter(Boolean).join(' · ')}
                               {item.priceSourceUrl && (
@@ -2120,6 +2123,7 @@ function normalizeApiItems(data: any, preferPrice: boolean): NaraItem[] {
       mnfctCorpNm: row.cntrctCorpNm || row.mnfctCorpNm || row.prdctMakrNm || row.mnfctCmpyNm || '',
       unitPrice: preferPrice ? unitPrice : undefined,
       image: toNaraImageUrl(row.prdctImgUrl) || undefined,
+      displayNm: buildNaraDisplayName(row) || undefined,
     };
   });
 }
