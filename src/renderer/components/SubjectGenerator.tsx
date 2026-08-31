@@ -12,9 +12,11 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -24,6 +26,18 @@ interface DuplicateResult {
   sentence: string;
   students: string[];
 }
+
+const EMPTY_OBSERVATION_DETAILS: ObservationDetails = { process: '', attitude: '', skill: '', example: '' };
+
+// 관찰 세부 항목 네 가지를 사용자가 보는 '추가 관찰내용' 문단으로 합친다.
+const buildContextFromDetails = (details: ObservationDetails): string => {
+  const parts: string[] = [];
+  if (details.process) parts.push(`[개별 학습 과정]: ${details.process}`);
+  if (details.attitude) parts.push(`[태도 및 참여]: ${details.attitude}`);
+  if (details.skill) parts.push(`[기능 발달]: ${details.skill}`);
+  if (details.example) parts.push(`[구체적 사례]: ${details.example}`);
+  return parts.join('\n\n');
+};
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { startTour } = useTour();
@@ -491,8 +505,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const updateTaskContent = (index: number, content: string) => {
-    const newTasks = [...subjectState.activeTasks];
-    newTasks[index].task = content;
+    const newTasks = subjectState.activeTasks.map((t, i) =>
+      i === index ? { ...t, task: content } : t
+    );
     updateSubjectState({ activeTasks: newTasks });
   };
 
@@ -575,19 +590,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const handleDetailChange = (field: keyof ObservationDetails, value: string) => {
-    const newStudents = [...subjectState.activeStudents];
-    const student = newStudents[subjectState.currentStudentIndex];
-    if (!student.observationDetails) {
-        student.observationDetails = { process: '', attitude: '', skill: '', example: '' };
-    }
-    student.observationDetails[field] = value;
-    const details = student.observationDetails;
-    const parts = [];
-    if (details.process) parts.push(`[개별 학습 과정]: ${details.process}`);
-    if (details.attitude) parts.push(`[태도 및 참여]: ${details.attitude}`);
-    if (details.skill) parts.push(`[기능 발달]: ${details.skill}`);
-    if (details.example) parts.push(`[구체적 사례]: ${details.example}`);
-    student.additionalContext = parts.join('\n\n');
+    const idx = subjectState.currentStudentIndex;
+    const newStudents = subjectState.activeStudents.map((s, i) => {
+      if (i !== idx) return s;
+      const observationDetails = { ...EMPTY_OBSERVATION_DETAILS, ...s.observationDetails, [field]: value };
+      return { ...s, observationDetails, additionalContext: buildContextFromDetails(observationDetails) };
+    });
     updateSubjectState({ activeStudents: newStudents });
   };
 
@@ -618,19 +626,16 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         return;
       }
 
-      const newStudents = [...subjectState.activeStudents];
-      const student = newStudents[subjectState.currentStudentIndex];
-      if (!student.observationDetails) student.observationDetails = { process: '', attitude: '', skill: '', example: '' };
-      student.observationDetails.example = student.observationDetails.example
-        ? `${student.observationDetails.example}\n\n${extractedText.trim()}`
-        : extractedText.trim();
-      const details = student.observationDetails;
-      const parts = [];
-      if (details.process) parts.push(`[개별 학습 과정]: ${details.process}`);
-      if (details.attitude) parts.push(`[태도 및 참여]: ${details.attitude}`);
-      if (details.skill) parts.push(`[기능 발달]: ${details.skill}`);
-      if (details.example) parts.push(`[구체적 사례]: ${details.example}`);
-      student.additionalContext = parts.join('\n\n');
+      const idx = subjectState.currentStudentIndex;
+      const newStudents = subjectState.activeStudents.map((s, i) => {
+        if (i !== idx) return s;
+        const previous = { ...EMPTY_OBSERVATION_DETAILS, ...s.observationDetails };
+        const observationDetails = {
+          ...previous,
+          example: previous.example ? `${previous.example}\n\n${extractedText.trim()}` : extractedText.trim(),
+        };
+        return { ...s, observationDetails, additionalContext: buildContextFromDetails(observationDetails) };
+      });
       updateSubjectState({ activeStudents: newStudents });
       notifyToast({ type: 'success', title: '학생 기록물 분석이 완료되었습니다. 내용을 확인해주세요.' });
     } catch (err: any) {
@@ -643,16 +648,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const handleLevelChange = (taskId: string, level: '상' | '중' | '하') => {
-    const newStudents = [...subjectState.activeStudents];
-    const student = newStudents[subjectState.currentStudentIndex];
-    if (!student.evaluations) student.evaluations = [];
-    
-    const existingIndex = student.evaluations.findIndex(e => e.id === taskId);
-    if (existingIndex >= 0) {
-      student.evaluations[existingIndex].level = level;
-    } else {
-      student.evaluations.push({ id: taskId, level });
-    }
+    const idx = subjectState.currentStudentIndex;
+    const newStudents = subjectState.activeStudents.map((s, i) => {
+      if (i !== idx) return s;
+      const evaluations = s.evaluations ?? [];
+      return {
+        ...s,
+        evaluations: evaluations.some(e => e.id === taskId)
+          ? evaluations.map(e => (e.id === taskId ? { ...e, level } : e))
+          : [...evaluations, { id: taskId, level }],
+      };
+    });
     updateSubjectState({ activeStudents: newStudents });
   };
 
@@ -665,7 +671,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const toggleSelection = (index: number) => {
     if (isGlobalGenerating) return;
     const newStudents = [...subjectState.activeStudents];
-    newStudents[index].selected = !newStudents[index].selected;
+    newStudents[index] = { ...newStudents[index], selected: !newStudents[index].selected };
     updateSubjectState({ activeStudents: newStudents });
   };
 
@@ -707,9 +713,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: subjectState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
-              newStudents[i].generatedModel = model;
-              newStudents[i].privacyApplied = privacyApplied;
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('subject', student.name, result);
               completedCount++;
@@ -780,9 +784,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: subjectState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
-              newStudents[index].generatedModel = model;
-              newStudents[index].privacyApplied = privacyApplied;
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('subject', student.name, result);
               completedCount++;
@@ -845,9 +847,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
 
       const newStudents = [...subjectState.activeStudents];
-      newStudents[index].generatedContent = result;
-      newStudents[index].generatedModel = model;
-      newStudents[index].privacyApplied = privacyApplied;
+      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('subject', subjectState.activeStudents[index].name, result);
       updateSubjectState({ activeStudents: newStudents });
@@ -869,20 +869,18 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...subjectState.activeStudents];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateSubjectState({ activeStudents: newStudents });
   };
 
   const handleCopy = async (text: string, id: string) => {
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Failed to copy text: ', errorMessage);
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // 현재 교과의 모든 학생 결과를 한 번에 클립보드에 복사
@@ -892,13 +890,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       .map(s => `[${s.name}]\n${s.generatedContent}`)
       .join('\n\n');
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId('__ALL__');
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy all: ', err instanceof Error ? err.message : String(err));
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId('__ALL__');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const checkDuplicates = () => {
@@ -966,8 +963,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
         });
         if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
-        const csvContent = [header, ...rows].map(r => r.map(c => '"' + c.replace(/"/g, '""') + '"').join(',')).join('\n');
-        await window.electronAPI.saveCsv(csvContent, '전체교과_세특_' + new Date().toISOString().slice(0,10) + '.csv');
+        await window.electronAPI.saveCsv(toCsv([header, ...rows]), '전체교과_세특_' + new Date().toISOString().slice(0,10) + '.csv');
     } catch (e) {
         console.error("CSV download error:", e);
         notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
@@ -986,8 +982,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             return [s.name, s.generatedContent || '', tasksSummary, s.additionalContext || ''];
         });
         if (rows.length === 0) { notifyToast({ type: 'warning', title: "다운로드할 데이터가 없습니다." }); return; }
-        const csvContent = [header, ...rows].map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-        await window.electronAPI.saveCsv(csvContent, `${subjectState.currentSubject}_세특_${new Date().toISOString().slice(0,10)}.csv`);
+        await window.electronAPI.saveCsv(toCsv([header, ...rows]), `${subjectState.currentSubject}_세특_${new Date().toISOString().slice(0,10)}.csv`);
     } catch (e) {
         console.error("CSV download error:", e);
         notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });

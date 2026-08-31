@@ -12,9 +12,11 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -277,9 +279,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
-              newStudents[i].generatedModel = model;
-              newStudents[i].privacyApplied = privacyApplied;
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -341,9 +341,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: opState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
-              newStudents[index].generatedModel = model;
-              newStudents[index].privacyApplied = privacyApplied;
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('opinion', student.name, result);
               setGlobalProgress(Math.round((i + 1) / total * 100));
@@ -395,9 +393,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
 
       const newStudents = [...opState.students];
-      newStudents[index].generatedContent = result;
-      newStudents[index].generatedModel = model;
-      newStudents[index].privacyApplied = privacyApplied;
+      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('opinion', student.name, result);
       updateOpState({ students: newStudents });
@@ -418,20 +414,18 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...opState.students];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateOpState({ students: newStudents });
   };
 
   const handleCopy = async (text: string, id: string) => {
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Failed to copy text: ', errorMessage);
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // 생성된 모든 학생 결과를 "이름: 내용" 형식으로 한 번에 클립보드에 복사
@@ -441,13 +435,12 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
       .map(s => `[${s.name}]\n${s.generatedContent}`)
       .join('\n\n');
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId('__ALL__');
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy all: ', err instanceof Error ? err.message : String(err));
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId('__ALL__');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // --- Duplicate Check ---
@@ -479,19 +472,17 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const downloadCSV = async () => {
-    const BOM = '\uFEFF';
     const header = ['학생명', '생성된 의견', '긍정적 특성', '보완할 점', '추가 관찰내용'];
 
     const rows: string[][] = opState.students.map((s: StudentOpinionData) => [
       s.name,
-      `"${`${s.generatedContent || ''}`.replace(/"/g, '""')}"`,
+      s.generatedContent || '',
       (s.positiveTags || []).join(', '),
       (s.negativeTags || []).join(', '),
-      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""')
+      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " "),
     ]);
 
-    const csvContent = BOM + [header, ...rows].map((e: string[]) => e.join(',')).join('\n');
-    await window.electronAPI.saveCsv(csvContent, `행동특성_종합의견_${new Date().toISOString().slice(0,10)}.csv`);
+    await window.electronAPI.saveCsv(toCsv([header, ...rows]), `행동특성_종합의견_${new Date().toISOString().slice(0,10)}.csv`);
   };
 
   return (

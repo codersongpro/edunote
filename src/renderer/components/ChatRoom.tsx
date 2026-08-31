@@ -10,6 +10,8 @@ import {
 // (참고) 학생 화면(docs/chat/index.html)은 보안 규칙 검증을 위해 공개 메시지/귓속말을 별도 쿼리로 나눠 구독하지만,
 // 교사 화면은 isRoomOwner() 권한으로 항상 전체를 읽을 수 있어 쿼리를 나눌 필요가 없다.
 import { CHAT_FIREBASE_GUIDE_STEPS, CHAT_FIRESTORE_RULES, CHAT_STUDENT_PAGE_URL, CHAT_SETUP_GUIDE_VIDEO_URL } from '../lib/chatFirebaseGuide';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 // 이 화면은 두 가지 모드로 동작한다.
 //  - 'manage'      : 에듀노트 본 창(학급도구 → 채팅방 탭). Firebase 설정·채팅방 시작·QR/접속주소·지난 채팅방 관리를 맡고,
@@ -352,14 +354,20 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
   }, [view]);
 
   const handleCopyRules = async () => {
-    await navigator.clipboard.writeText(CHAT_FIRESTORE_RULES);
+    if (!await copyPlainTextToClipboard(CHAT_FIRESTORE_RULES)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
+    }
     setRulesCopied(true);
     setTimeout(() => setRulesCopied(false), 2000);
   };
 
   const handleCopyUrl = async () => {
     if (!joinUrl) return;
-    await navigator.clipboard.writeText(joinUrl);
+    if (!await copyPlainTextToClipboard(joinUrl)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
+    }
     setUrlCopied(true);
     setTimeout(() => setUrlCopied(false), 2000);
   };

@@ -4,6 +4,8 @@ import { generateCounselingLog } from '../services/geminiService';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심리상담', '기타'];
 
@@ -88,7 +90,10 @@ const CounselingLogGenerator: React.FC = () => {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(result);
+    if (!await copyPlainTextToClipboard(result)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

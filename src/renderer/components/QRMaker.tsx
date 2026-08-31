@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { QrCode, Download, Copy, AlertCircle, X } from 'lucide-react';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 const PRESET_SIZES = [200, 300, 400, 600];
 
@@ -55,7 +57,10 @@ const QRMaker: React.FC = () => {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback: copy URL text
-      await navigator.clipboard.writeText(url);
+      if (!await copyPlainTextToClipboard(url)) {
+        notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+        return;
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

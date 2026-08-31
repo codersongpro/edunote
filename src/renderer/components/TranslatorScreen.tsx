@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, Copy, Languages, Loader2 } from 'lucide-react';
 import { TRANSLATION_LANGUAGES, languageByCode, translateText } from '../lib/translation';
 import { notifyToast } from '../lib/toast';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 // 간단 번역 — 가정통신문 안내, 학부모 문자, 알림장 문구 등을 빠르게 번역한다.
 const TranslatorScreen: React.FC = () => {
@@ -31,8 +32,10 @@ const TranslatorScreen: React.FC = () => {
 
   const handleCopy = async () => {
     if (!output) return;
-    await navigator.clipboard.writeText(output);
-    notifyToast({ type: 'success', title: '번역문을 복사했습니다.' });
+    const copied = await copyPlainTextToClipboard(output);
+    notifyToast(copied
+      ? { type: 'success', title: '번역문을 복사했습니다.' }
+      : { type: 'error', title: '클립보드 복사에 실패했습니다.' });
   };
 
   return (

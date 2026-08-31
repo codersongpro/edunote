@@ -5,6 +5,7 @@ import { parseJsonArrayFromAiText } from '../lib/aiJson';
 import { readApiItemCount, readNumericFieldSamples } from '../lib/openApiItems';
 import { buildNaraDisplayName, extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../lib/budgetItemName';
 import { toNaraImageUrl } from '../lib/naraImage';
+import { toCsv } from '../lib/csv';
 import {
   MARKET_PRICE_SOURCE_LABEL,
   MARKET_PRICE_SYSTEM_INSTRUCTION,
@@ -1627,8 +1628,7 @@ export default function BudgetPlannerScreen() {
     rows.push(['', '', '합계', '', '', String(planTotalUsed)]);
     rows.push(['', '', '배정 예산', '', '', String(activePlan.totalBudget)]);
     rows.push(['', '', '잔액', '', '', String(planRemaining)]);
-    const csv = rows.map(row => row.map(col => `"${String(col).replace(/"/g, '""')}"`).join(',')).join('\n');
-    await window.electronAPI.saveCsv(csv, `${activePlan.title}_예산안작성`);
+    await window.electronAPI.saveCsv(toCsv(rows), `${activePlan.title}_예산안작성`);
   };
 
   const handleImportCsv = async () => {

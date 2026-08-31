@@ -6,6 +6,8 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { useTour } from '../TourContext';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { notifyToast } from '../lib/toast';
 
 const EXAMPLE_RESULT = `【 수업관찰기록 】
 
@@ -97,7 +99,10 @@ const LessonObservationGenerator: React.FC = () => {
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(result);
+    if (!await copyPlainTextToClipboard(result)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

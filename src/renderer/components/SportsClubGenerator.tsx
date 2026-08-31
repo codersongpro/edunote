@@ -11,9 +11,11 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
+import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
+import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -189,7 +191,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const toggleSelection = (index: number) => {
     if (isGlobalGenerating) return;
     const newStudents = [...sportsState.students];
-    newStudents[index].selected = !newStudents[index].selected;
+    newStudents[index] = { ...newStudents[index], selected: !newStudents[index].selected };
     updateSportsState({ students: newStudents });
   };
 
@@ -201,8 +203,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   // --- Config Handlers ---
   const handleContextChange = (text: string) => {
-    const newStudents = [...sportsState.students];
-    newStudents[sportsState.currentStudentIndex].additionalContext = text;
+    const idx = sportsState.currentStudentIndex;
+    const newStudents = sportsState.students.map((s, i) =>
+      i === idx ? { ...s, additionalContext: text } : s
+    );
     updateSportsState({ students: newStudents });
   };
 
@@ -289,9 +293,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: sportsState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[i].generatedContent = result;
-              newStudents[i].generatedModel = model;
-              newStudents[i].privacyApplied = privacyApplied;
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -360,9 +362,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   lengthUnit: sportsState.lengthUnit as LengthUnit,
                   ...extras
               }));
-              newStudents[index].generatedContent = result;
-              newStudents[index].generatedModel = model;
-              newStudents[index].privacyApplied = privacyApplied;
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('sports', student.name, result);
               completedCount++;
@@ -415,9 +415,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       });
 
       const newStudents = [...sportsState.students];
-      newStudents[index].generatedContent = result;
-      newStudents[index].generatedModel = model;
-      newStudents[index].privacyApplied = privacyApplied;
+      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
       queueViolationWarning(showToast, newStudents[index].name, result);
       saveHistory('sports', sportsState.students[index].name, result);
       updateSportsState({ students: newStudents });
@@ -438,20 +436,18 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleResultChange = (index: number, text: string) => {
     const newStudents = [...sportsState.students];
-    newStudents[index].generatedContent = text;
+    newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateSportsState({ students: newStudents });
   };
 
   const handleCopy = async (text: string, id: string) => {
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Failed to copy text: ', errorMessage);
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // 모든 학생 결과를 한 번에 클립보드에 복사
@@ -461,13 +457,12 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
       .map(s => `[${s.name}]\n${s.generatedContent}`)
       .join('\n\n');
     if (!text) return;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId('__ALL__');
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy all: ', err instanceof Error ? err.message : String(err));
+    if (!await copyPlainTextToClipboard(text)) {
+      notifyToast({ type: 'error', title: '클립보드 복사에 실패했습니다.' });
+      return;
     }
+    setCopiedId('__ALL__');
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   // --- Duplicate Check ---
@@ -499,19 +494,17 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const downloadCSV = async () => {
-    const BOM = '\uFEFF';
     const header = ['학생명', '생성된 특기사항', '종목', '클럽명', '개별 활동내용'];
-    
+
     const rows = sportsState.students.map((s: StudentSportsData) => [
       s.name,
-      `"${`${s.generatedContent || ''}`.replace(/"/g, '""')}"`,
+      s.generatedContent || '',
       sportsState.sportName,
       sportsState.clubName,
-      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " ")
+      `${s.additionalContext || ''}`.replace(/(\r\n|\n|\r)/gm, " "),
     ]);
 
-    const csvContent = BOM + [header, ...rows].map(e => e.join(',')).join('\n');
-    await window.electronAPI.saveCsv(csvContent, `스포츠클럽_${sportsState.sportName}_${new Date().toISOString().slice(0,10)}.csv`);
+    await window.electronAPI.saveCsv(toCsv([header, ...rows]), `스포츠클럽_${sportsState.sportName}_${new Date().toISOString().slice(0,10)}.csv`);
   };
 
   return (
