@@ -1,9 +1,10 @@
-import { ipcMain, dialog, shell, app, BrowserWindow, net, safeStorage, clipboard, nativeImage } from 'electron';
+import { ipcMain as electronIpcMain, dialog, shell, app, BrowserWindow, net, safeStorage, clipboard, nativeImage, type IpcMainInvokeEvent } from 'electron';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as https from 'https';
 import * as http from 'http';
+import { randomUUID } from 'crypto';
 import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
@@ -26,6 +27,15 @@ import {
 } from './naramarketRequest';
 import { buildEduReferenceSearchUrl } from './eduReferenceSearch';
 import { isPngDataUrl } from './clipboardImage';
+import { assertTrustedIpcSender } from './ipcSecurity';
+import { atomicWriteJsonSync } from './atomicFile';
+import {
+  MAX_BACKUP_BYTES,
+  applyBackupTransaction,
+  parseBackup,
+  type BackupSettingsStore,
+  type ParsedBackup,
+} from './backup';
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
@@ -166,7 +176,52 @@ function readOpenApiItems(data: any): any[] {
   return Array.isArray(rows) ? rows : (rows ? [rows] : []);
 }
 
-export function registerIpcHandlers(): void {
+export function registerIpcHandlers(trustedRendererUrl: string): void {
+  // 모든 invoke 채널에 동일한 호출자 검증을 적용합니다. 개별 handler가 검증을
+  // 빠뜨리는 실수를 막기 위해 electronIpcMain을 직접 사용하지 않습니다.
+  const ipcMain = {
+    handle: (
+      channel: string,
+      listener: (event: IpcMainInvokeEvent, ...args: any[]) => any,
+    ): void => {
+      electronIpcMain.handle(channel, (event, ...args) => {
+        assertTrustedIpcSender(event, trustedRendererUrl);
+        return listener(event, ...args);
+      });
+    },
+  };
+
+  const backupSettingsStore: BackupSettingsStore = {
+    has: key => store.has(key as never),
+    get: key => store.get(key as never),
+    set: (key, value) => store.set(key as any, value as any),
+    delete: key => store.delete(key as never),
+  };
+  const inspectionTtlMs = 5 * 60 * 1000;
+  const pendingBackupInspections = new Map<string, {
+    filePath: string;
+    backup: ParsedBackup;
+    expiresAt: number;
+  }>();
+  const pendingBackupRestores = new Map<string, {
+    rollback: () => void;
+    expiresAt: number;
+  }>();
+
+  const cleanupExpiredBackupOperations = (): void => {
+    const now = Date.now();
+    for (const [id, inspection] of pendingBackupInspections) {
+      if (inspection.expiresAt <= now) pendingBackupInspections.delete(id);
+    }
+    for (const [id, restore] of pendingBackupRestores) {
+      if (restore.expiresAt > now) continue;
+      try { restore.rollback(); } catch (error) {
+        console.error('[ipc:data:restore-backup] 만료된 복원 자동 복구 실패:', error);
+      }
+      pendingBackupRestores.delete(id);
+    }
+  };
+
   // ── AI Generation ─────────────────────────────────────────────────
   ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     validateGenerateArgs(prompt, systemInstruction, options);
@@ -409,7 +464,7 @@ export function registerIpcHandlers(): void {
     }
     const safeSettings = stripSecrets(store.store);
     try {
-      fs.writeFileSync(safeDataFile('user-settings'), JSON.stringify(safeSettings, null, 2), 'utf-8');
+      atomicWriteJsonSync(safeDataFile('user-settings'), safeSettings);
     } catch (e) {
       // 설정 저장 자체는 electron-store가 처리하므로 폴더 동기화 실패는 무시합니다.
       console.warn('[ipc:config:set] 설정 폴더 동기화 실패:', e);
@@ -451,7 +506,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('data:write-json', async (_e, name: string, data: unknown) => {
     const file = safeDataFile(name);
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
+    atomicWriteJsonSync(file, data);
     return file;
   });
 
@@ -495,7 +550,7 @@ export function registerIpcHandlers(): void {
     });
     if (result.canceled || !result.filePath) return null;
 
-    fs.writeFileSync(result.filePath, JSON.stringify(buildBackupPayload(localStorageDump), null, 2), 'utf-8');
+    atomicWriteJsonSync(result.filePath, buildBackupPayload(localStorageDump));
     return result.filePath;
   });
 
@@ -513,7 +568,7 @@ export function registerIpcHandlers(): void {
     const now = new Date();
     const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
     const filePath = path.join(backupDir, `edunote_backup_${stamp}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(buildBackupPayload(localStorageDump), null, 2), 'utf-8');
+    atomicWriteJsonSync(filePath, buildBackupPayload(localStorageDump));
     store.set('lastAutoBackupAt', now.toISOString());
 
     // 오래된 자동 백업은 최근 10개만 남긴다
@@ -538,58 +593,93 @@ export function registerIpcHandlers(): void {
     return filePath;
   });
 
-  ipcMain.handle('data:import-backup', async () => {
+  ipcMain.handle('data:inspect-backup', async () => {
+    cleanupExpiredBackupOperations();
     const result = await dialog.showOpenDialog({
       properties: ['openFile'],
       filters: [{ name: 'EduNote 백업 파일', extensions: ['json'] }],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
 
-    let backup;
+    const filePath = result.filePaths[0];
+    let fileSize: number;
     try {
-      backup = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf-8'));
+      fileSize = fs.statSync(filePath).size;
     } catch {
-      throw new Error('백업 파일이 손상되어 읽을 수 없습니다.');
+      throw new Error('백업 파일 정보를 읽을 수 없습니다.');
     }
-    if (backup?.app !== 'EduNote' || !backup.settings || !backup.dataFiles) {
-      throw new Error('EduNote 백업 파일 형식이 아닙니다.');
-    }
-
-    for (const [key, value] of Object.entries(backup.settings as Record<string, unknown>)) {
-      if (key === 'geminiApiKey' || key === 'geminiPaidApiKey') {
-        // Gemini 키는 백업에 포함된 적이 없고, 백업 파일로도 설정할 수 없다.
-        continue;
-      }
-      if (isSecretKey(key)) {
-        // 구버전 백업에 평문으로 남아 있던 시크릿은 암호화 저장으로 복원한다. 길이 상한은 일반 설정값과 동일.
-        if (typeof value === 'string' && value.trim() && value.length <= MAX_STRING_VALUE_CHARS) setSecret(key, value);
-        continue;
-      }
-      if (ALLOWED_CONFIG_KEYS.includes(key)) {
-        const safeValue = sanitizeConfigEntry(key, value);
-        if (safeValue === undefined) {
-          console.warn(`[ipc:data:import-backup] 무효한 설정값을 건너뜁니다: ${key}`);
-          continue;
-        }
-        store.set(key as any, safeValue as any);
-      }
+    if (fileSize > MAX_BACKUP_BYTES) {
+      throw new Error('백업 파일은 최대 50MiB까지 불러올 수 있습니다.');
     }
 
-    for (const [name, data] of Object.entries(backup.dataFiles as Record<string, unknown>)) {
-      const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
-      if (!safeName) continue;
-      fs.writeFileSync(safeDataFile(safeName), JSON.stringify(data, null, 2), 'utf-8');
+    let backup: ParsedBackup;
+    try {
+      backup = parseBackup(fs.readFileSync(filePath, 'utf8'), fileSize);
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error('백업 파일을 검사할 수 없습니다.');
     }
 
-    // 구버전(schemaVersion 1) 백업에는 localStorage가 없으므로 빈 객체로 처리합니다.
-    // 문자열 값만 추려 렌더러가 localStorage에 그대로 복원합니다.
-    const rawLocalStorage = (backup.localStorage && typeof backup.localStorage === 'object') ? backup.localStorage : {};
-    const localStorageData: Record<string, string> = {};
-    for (const [key, value] of Object.entries(rawLocalStorage as Record<string, unknown>)) {
-      if (typeof value === 'string') localStorageData[key] = value;
+    const inspectionId = randomUUID();
+    pendingBackupInspections.set(inspectionId, {
+      filePath,
+      backup,
+      expiresAt: Date.now() + inspectionTtlMs,
+    });
+    return {
+      inspectionId,
+      filePath,
+      schemaVersion: backup.schemaVersion,
+      settingsCount: Object.keys(backup.settings).length,
+      dataFileCount: Object.keys(backup.dataFiles).length,
+      localStorageCount: Object.keys(backup.localStorage).length,
+      warnings: backup.warnings,
+    };
+  });
+
+  ipcMain.handle('data:restore-backup', (_e, inspectionId: unknown) => {
+    cleanupExpiredBackupOperations();
+    if (typeof inspectionId !== 'string') throw new Error('백업 검사 정보가 올바르지 않습니다.');
+    const inspection = pendingBackupInspections.get(inspectionId);
+    pendingBackupInspections.delete(inspectionId);
+    if (!inspection || inspection.expiresAt <= Date.now()) {
+      throw new Error('백업 검사 시간이 만료되었습니다. 파일을 다시 선택해 주세요.');
     }
 
-    return { filePath: result.filePaths[0], localStorage: localStorageData };
+    const rollback = applyBackupTransaction(inspection.backup, {
+      // 백업의 appDataDir은 parseBackup에서 제외되므로 검사 당시의 현재 폴더에만 씁니다.
+      dataDir: getDataDir(),
+      settings: backupSettingsStore,
+      sanitizeSetting: (key, value) => {
+        if (!ALLOWED_CONFIG_KEYS.includes(key) || key === 'appDataDir' || key === 'saveDir') return undefined;
+        return sanitizeConfigEntry(key, value);
+      },
+    });
+    const restoreId = randomUUID();
+    pendingBackupRestores.set(restoreId, {
+      rollback,
+      expiresAt: Date.now() + inspectionTtlMs,
+    });
+
+    return {
+      restoreId,
+      filePath: inspection.filePath,
+      localStorage: inspection.backup.localStorage,
+    };
+  });
+
+  ipcMain.handle('data:commit-backup-restore', (_e, restoreId: unknown) => {
+    if (typeof restoreId !== 'string' || !pendingBackupRestores.delete(restoreId)) {
+      throw new Error('완료할 백업 복원 작업을 찾을 수 없습니다.');
+    }
+  });
+
+  ipcMain.handle('data:rollback-backup-restore', (_e, restoreId: unknown) => {
+    if (typeof restoreId !== 'string') throw new Error('백업 복원 정보가 올바르지 않습니다.');
+    const pending = pendingBackupRestores.get(restoreId);
+    pendingBackupRestores.delete(restoreId);
+    if (!pending) throw new Error('되돌릴 백업 복원 작업을 찾을 수 없습니다.');
+    pending.rollback();
   });
 
   // ── Dialog ────────────────────────────────────────────────────────

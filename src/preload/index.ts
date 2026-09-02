@@ -76,7 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeJsonData: (name: string, data: unknown) => ipcRenderer.invoke('data:write-json', name, data),
   getJsonDataPath: (name: string) => ipcRenderer.invoke('data:get-file-path', name),
   exportBackup: (localStorageDump?: Record<string, string>) => ipcRenderer.invoke('data:export-backup', localStorageDump),
-  importBackup: () => ipcRenderer.invoke('data:import-backup'),
+  inspectBackup: () => ipcRenderer.invoke('data:inspect-backup'),
+  restoreBackup: (inspectionId: string) => ipcRenderer.invoke('data:restore-backup', inspectionId),
+  commitBackupRestore: (restoreId: string) => ipcRenderer.invoke('data:commit-backup-restore', restoreId),
+  rollbackBackupRestore: (restoreId: string) => ipcRenderer.invoke('data:rollback-backup-restore', restoreId),
   autoBackup: (localStorageDump?: Record<string, string>) => ipcRenderer.invoke('data:auto-backup', localStorageDump),
 
   // Dialog

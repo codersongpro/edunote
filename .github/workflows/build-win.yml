@@ -1,27 +1,25 @@
-name: Build Windows EXE
+name: CI
 
-run-name: Release ${{ github.ref_name }}
+run-name: Verify ${{ github.ref_name }}
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
-      - 'RELEASE_NOTES.md'
-      - 'electron-builder.yml'
-      - 'electron.vite.config.ts'
-      - 'src/**'
-      - 'build/**'
-      - '.github/workflows/build-win.yml'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: windows-latest
     defaults:
       run:
@@ -29,14 +27,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          # Electron 43은 설치에 Node 22.12 이상을 요구한다
           node-version: '22'
           cache: 'npm'
 
@@ -53,60 +48,3 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: npm run build:win
-
-      - name: Get version
-        id: pkg
-        run: |
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-
-      - name: Create or update release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: v${{ steps.pkg.outputs.version }}
-        run: |
-          $releaseName = "EduNote $env:TAG_NAME"
-          $fullNotes = Get-Content RELEASE_NOTES.md -Raw
-          $currentNotes = ($fullNotes -split '\r?\n---')[0].Trim()
-          $currentNotes | Out-File -FilePath current_release.md -Encoding utf8
-          gh release view $env:TAG_NAME --repo $env:GITHUB_REPOSITORY *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release upload $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --clobber
-            gh release edit $env:TAG_NAME --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file current_release.md --latest
-          } else {
-            gh release create $env:TAG_NAME dist/*.exe --repo $env:GITHUB_REPOSITORY --title $releaseName --notes-file current_release.md --latest
-          }
-
-      # 소개 홈페이지(docs/index.html)에 이번 릴리즈의 버전·다운로드 정보를 직접 써넣는다.
-      # 페이지는 열릴 때 GitHub API로도 최신 정보를 가져오지만, API는 IP당 시간당 60회
-      # 제한이 있어 학교처럼 같은 공인 IP를 여럿이 쓰면 실패할 수 있다. 여기서 미리
-      # 넣어두면 API 호출이 실패해도 항상 최신 버전이 표시된다.
-      # docs/**는 이 워크플로의 paths 필터에 없으므로 이 커밋이 빌드를 다시 부르지 않는다.
-      - name: Update landing page release info
-        env:
-          TAG_NAME: v${{ steps.pkg.outputs.version }}
-        run: |
-          $exe = Get-ChildItem dist/*.exe | Select-Object -First 1
-          if (-not $exe) { Write-Host 'exe 없음 — 건너뜀'; exit 0 }
-          $downloadUrl = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:TAG_NAME/$($exe.Name)"
-          $sizeText = '{0:N1}MB' -f ($exe.Length / 1MB)
-          $meta = "Windows 10 / 11 (64비트) 전용 · $($exe.Name) · $sizeText"
-
-          $path = 'docs/index.html'
-          $html = Get-Content $path -Raw
-          $html = $html -replace '(?<=id="versionPill">)[^<]*', "$env:TAG_NAME 최신 버전"
-          $html = $html -replace '(?<=id="heroDownloadNote">)[^<]*', "최신 버전 $env:TAG_NAME 사용 가능"
-          $html = $html -replace '(?<=id="downloadMeta">)[^<]*', $meta
-          $html = $html -replace '(?<=id="heroDownloadBtn" href=")[^"]*', $downloadUrl
-          $html = $html -replace '(?<=id="downloadBtn" href=")[^"]*', $downloadUrl
-          Set-Content -Path $path -Value $html -NoNewline -Encoding utf8
-
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add $path
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) { Write-Host '변경 없음 — 커밋 건너뜀'; exit 0 }
-          git commit -m "소개 홈페이지 다운로드 정보를 $env:TAG_NAME 기준으로 갱신"
-          # 빌드 중 main이 움직였을 수 있으므로 재적용 후 푸시한다.
-          git pull --rebase origin main
-          git push origin HEAD:main

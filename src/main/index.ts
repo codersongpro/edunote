@@ -1,7 +1,10 @@
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog } from 'electron';
 import { existsSync } from 'fs';
 import { join } from 'path';
+import { pathToFileURL } from 'url';
 import { registerIpcHandlers, cleanupSessionTmpDir, migrateApiKeysToSafeStorage } from './ipcHandlers';
+import { isTrustedRendererUrl } from './ipcSecurity';
+import { focusFirstAppWindow } from './singleInstance';
 
 // 예기치 못한 메인 프로세스 오류를 조용히 흘려보내지 않고 로그로 남겨 진단을 돕는다(동작 변경 없음).
 process.on('uncaughtException', (err) => {
@@ -54,7 +57,19 @@ function createWindow(): void {
   }
 }
 
-registerIpcHandlers();
+const rendererEntryUrl = process.env['ELECTRON_RENDERER_URL']
+  ? new URL(process.env['ELECTRON_RENDERER_URL']).toString()
+  : pathToFileURL(join(__dirname, '../renderer/index.html')).toString();
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  registerIpcHandlers(rendererEntryUrl);
+  app.on('second-instance', () => {
+    focusFirstAppWindow(BrowserWindow.getAllWindows());
+  });
+}
 
 function buildAppMenu() {
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -156,19 +171,7 @@ app.on('web-contents-created', (_event, contents) => {
     });
 
     contents.on('will-navigate', (event, url) => {
-      const devUrl = process.env['ELECTRON_RENDERER_URL'];
-      let isAppOrigin = false;
-      try {
-        const target = new URL(url);
-        if (target.protocol === 'file:') {
-          isAppOrigin = true;
-        } else if (devUrl) {
-          isAppOrigin = target.origin === new URL(devUrl).origin;
-        }
-      } catch {
-        // 파싱 실패 시 앱 오리진이 아닌 것으로 간주한다.
-      }
-      if (isAppOrigin) return;
+      if (isTrustedRendererUrl(url, rendererEntryUrl)) return;
       event.preventDefault();
       try {
         if (['http:', 'https:'].includes(new URL(url).protocol)) shell.openExternal(url);
@@ -190,6 +193,7 @@ app.on('web-contents-created', (_event, contents) => {
 });
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
   // safeStorage는 app ready 이후에만 쓸 수 있으므로 여기서 평문 키를 암호화 저장으로 이관한다.
   migrateApiKeysToSafeStorage();
   buildAppMenu();

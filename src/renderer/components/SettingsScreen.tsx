@@ -9,6 +9,7 @@ import { notifyToast } from '../lib/toast';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
 import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
 import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
+import { collectStorage, replaceStorageTransactionally } from '../lib/backupStorage';
 import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
@@ -257,21 +258,9 @@ const SettingsScreen: React.FC = () => {
     window.electronAPI.openExternal(GEMINI_API_GUIDE_VIDEO_URL);
   };
 
-  // 렌더러 localStorage 전체를 {키:값} 형태로 수집합니다. (공문 히스토리·메뉴 순서·즐겨찾기 등)
-  const collectLocalStorage = (): Record<string, string> => {
-    const dump: Record<string, string> = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key === null) continue;
-      const value = localStorage.getItem(key);
-      if (value !== null) dump[key] = value;
-    }
-    return dump;
-  };
-
   const handleExportBackup = async () => {
     try {
-      const savedPath = await window.electronAPI.exportBackup(collectLocalStorage());
+      const savedPath = await window.electronAPI.exportBackup(collectStorage(localStorage));
       if (savedPath) {
         const backupTime = new Date().toISOString();
         await window.electronAPI.setConfig({ lastBackupAt: backupTime });
@@ -284,24 +273,41 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleImportBackup = async () => {
-    if (!window.confirm('백업 파일을 불러오면 현재 설정과 앱 자료가 백업 내용으로 덮어써집니다. 계속할까요?')) return;
+    let restored: Awaited<ReturnType<typeof window.electronAPI.restoreBackup>> | null = null;
+    let previousLocalStorage: Record<string, string> | null = null;
     try {
-      const loaded = await window.electronAPI.importBackup();
-      if (loaded) {
-        // 구버전 백업은 localStorage가 비어 있으므로 키가 있을 때만 덮어씁니다.
-        const restored = loaded.localStorage;
-        if (restored && Object.keys(restored).length > 0) {
-          localStorage.clear();
-          for (const [key, value] of Object.entries(restored)) {
-            localStorage.setItem(key, value);
-          }
-          setBackupStatus('백업 자료를 불러왔습니다. 잠시 후 화면을 새로고침합니다.');
-          setTimeout(() => window.location.reload(), 1200);
-        } else {
-          setBackupStatus('백업 자료를 불러왔습니다. 앱을 다시 실행하면 모든 화면에 반영됩니다.');
-        }
+      const inspection = await window.electronAPI.inspectBackup();
+      if (!inspection) return;
+
+      const warningText = inspection.warnings.length > 0
+        ? `\n\n검사 알림:\n${inspection.warnings.map(warning => `- ${warning}`).join('\n')}`
+        : '';
+      const confirmed = window.confirm(
+        '검사가 끝난 EduNote 백업을 불러옵니다.\n\n' +
+        `- 설정: ${inspection.settingsCount}개\n` +
+        `- 데이터 파일: ${inspection.dataFileCount}개\n` +
+        `- 브라우저 저장 항목: ${inspection.localStorageCount}개\n\n` +
+        '현재 설정과 앱 자료가 백업 내용으로 덮어써집니다. 계속할까요?' + warningText,
+      );
+      if (!confirmed) return;
+
+      restored = await window.electronAPI.restoreBackup(inspection.inspectionId);
+      if (Object.keys(restored.localStorage).length > 0) {
+        previousLocalStorage = collectStorage(localStorage);
+        replaceStorageTransactionally(localStorage, restored.localStorage);
       }
+      await window.electronAPI.commitBackupRestore(restored.restoreId);
+      restored = null;
+
+      setBackupStatus('백업 자료를 불러왔습니다. 잠시 후 화면을 새로고침합니다.');
+      setTimeout(() => window.location.reload(), 1200);
     } catch (error) {
+      if (restored) {
+        if (previousLocalStorage) {
+          try { replaceStorageTransactionally(localStorage, previousLocalStorage); } catch { /* 메인 롤백은 계속 시도합니다. */ }
+        }
+        try { await window.electronAPI.rollbackBackupRestore(restored.restoreId); } catch { /* 원래 오류를 사용자에게 표시합니다. */ }
+      }
       setBackupStatus(error instanceof Error ? error.message : '백업 불러오기 중 오류가 발생했습니다.');
     }
   };

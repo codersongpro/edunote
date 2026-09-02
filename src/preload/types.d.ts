@@ -14,6 +14,22 @@ export interface ModelDiagnostics {
   blocked: string[];
 }
 
+export interface BackupInspection {
+  inspectionId: string;
+  filePath: string;
+  schemaVersion: 1 | 2;
+  settingsCount: number;
+  dataFileCount: number;
+  localStorageCount: number;
+  warnings: string[];
+}
+
+export interface BackupRestoreResult {
+  restoreId: string;
+  filePath: string;
+  localStorage: Record<string, string>;
+}
+
 export interface ElectronAPI {
   aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
   aiGenerateMultipart(
@@ -56,7 +72,10 @@ export interface ElectronAPI {
   writeJsonData(name: string, data: unknown): Promise<string>;
   getJsonDataPath(name: string): Promise<string>;
   exportBackup(localStorageDump?: Record<string, string>): Promise<string | null>;
-  importBackup(): Promise<{ filePath: string; localStorage: Record<string, string> } | null>;
+  inspectBackup(): Promise<BackupInspection | null>;
+  restoreBackup(inspectionId: string): Promise<BackupRestoreResult>;
+  commitBackupRestore(restoreId: string): Promise<void>;
+  rollbackBackupRestore(restoreId: string): Promise<void>;
   autoBackup(localStorageDump?: Record<string, string>): Promise<string | null>;
 
   selectFolder(): Promise<string | null>;
