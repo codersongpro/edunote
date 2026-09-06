@@ -12,6 +12,13 @@ export interface ModelDiagnostics {
   available: string[];
   listFailed: boolean;
   blocked: string[];
+  selectedModel: string;
+  actualModel?: string;
+  verificationStatus: 'verified' | 'latest-unconfirmed';
+  checkedAt: string;
+  policyUpdatedAt: string;
+  policySource: string;
+  selectionReason: string;
 }
 
 export interface BackupInspection {

@@ -12,6 +12,7 @@ import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRo
 import { collectStorage, replaceStorageTransactionally } from '../lib/backupStorage';
 import { REVIEW_CHECKLIST_UPDATED_EVENT } from './ReviewChecklist';
 import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
+import { ModelDiagnosticsPanel } from './ModelDiagnosticsPanel';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
   opinion: '행동특성',
@@ -491,13 +492,13 @@ const SettingsScreen: React.FC = () => {
             <label className={labelClass}>API 사용 방식</label>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => { setApiTier('free'); window.electronAPI.setConfig({ apiTier: 'free' }); setTestStatus('idle'); }}
+                onClick={() => { setApiTier('free'); setModelInfo(null); setModelInfoError(''); window.electronAPI.setConfig({ apiTier: 'free' }); setTestStatus('idle'); }}
                 className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'free' ? 'border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'border-[#E7E5E4] text-[#78716C] dark:border-[#2E2822] dark:text-[#9C8F87]'}`}
               >
                 <span className="block font-bold">무료 Gmail 기본</span>
               </button>
               <button
-                onClick={() => { setApiTier('paid'); window.electronAPI.setConfig({ apiTier: 'paid' }); setTestStatus('idle'); }}
+                onClick={() => { setApiTier('paid'); setModelInfo(null); setModelInfoError(''); window.electronAPI.setConfig({ apiTier: 'paid' }); setTestStatus('idle'); }}
                 className={`rounded-md border p-2.5 text-left text-sm transition-all ${apiTier === 'paid' ? 'border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300' : 'border-[#E7E5E4] text-[#78716C] dark:border-[#2E2822] dark:text-[#9C8F87]'}`}
               >
                 <span className="block font-bold">유료 API</span>
@@ -525,29 +526,13 @@ const SettingsScreen: React.FC = () => {
               </button>
             </label>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-              모델은 고정되어 있지 않습니다. API 키로 실제 쓸 수 있는 모델을 확인해 최신 세대를 자동으로 먼저 사용하며,
-              구글이 새 모델을 내놓으면 별도 설정 없이 반영됩니다.
+              {apiTier === 'free' ? '확인된 무료 정식 모델 중 자동 선택' : '확인된 유료 정식 모델 중 자동 선택'}합니다.
+              새 모델은 공식 모델·가격·지원 상태를 확인한 앱 업데이트 이후 후보에 반영됩니다.
             </p>
             {modelInfoError && (
               <p className="mt-2 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">{modelInfoError}</p>
             )}
-            {modelInfo && (
-              <div className="mt-2 rounded-md border border-[#E7E5E4] bg-[#FAF9F7] p-2.5 text-xs text-[#44403C] dark:border-[#2E2822] dark:bg-[#171210] dark:text-[#C4B8B0]">
-                <p><strong>우선 사용 순서</strong>: {modelInfo.chain.join(' → ') || '없음'}</p>
-                {modelInfo.listFailed && (
-                  <p className="mt-1 text-amber-700 dark:text-amber-300">모델 목록을 불러오지 못해 기본 모델 하나로만 동작합니다. 네트워크 확인 후 다시 시도해 주세요.</p>
-                )}
-                {modelInfo.blocked.length > 0 && (
-                  <p className="mt-1 text-amber-700 dark:text-amber-300">일시 제외됨(한도 초과·접근 불가): {modelInfo.blocked.join(', ')}</p>
-                )}
-                {modelInfo.available.length > 0 && (
-                  <details className="mt-1">
-                    <summary className="cursor-pointer">이 키로 쓸 수 있는 모델 {modelInfo.available.length}개</summary>
-                    <p className="mt-1 break-all leading-relaxed">{modelInfo.available.join(', ')}</p>
-                  </details>
-                )}
-              </div>
-            )}
+            {modelInfo && <ModelDiagnosticsPanel info={modelInfo} />}
           </div>
 
           <div>
@@ -565,7 +550,7 @@ const SettingsScreen: React.FC = () => {
               className={inputClass}
               placeholder={apiTier === 'paid' ? '유료 결제 프로젝트의 API 키를 붙여넣으세요' : '개인 Gmail 무료 API 키를 붙여넣으세요'}
               value={apiTier === 'paid' ? paidApiKey : apiKey}
-              onChange={e => { apiTier === 'paid' ? setPaidApiKey(e.target.value) : setApiKey(e.target.value); setTestStatus('idle'); }}
+              onChange={e => { apiTier === 'paid' ? setPaidApiKey(e.target.value) : setApiKey(e.target.value); setModelInfo(null); setModelInfoError(''); setTestStatus('idle'); }}
             />
           </div>
 

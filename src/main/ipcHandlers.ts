@@ -10,6 +10,7 @@ import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
 import { assertSafeUrl } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache, getModelDiagnostics } from './GeminiService';
+import { selectActiveApiKey } from './apiKeySelection';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
 import { semverGt } from './versionCompare';
@@ -72,7 +73,9 @@ function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   const apiTier = (store.get('apiTier') || 'free') as ApiTier;
   const freeKey = getSecret('geminiApiKey');
   const paidKey = getSecret('geminiPaidApiKey');
-  const apiKey = apiTier === 'paid' ? (paidKey || freeKey) : (freeKey || paidKey);
+  // 무료 모드에서는 유료 키로 조용히 넘어가 과금될 가능성을 만들지 않는다.
+  // 유료 모드에서 유료 키가 없을 때만 기존 무료 키를 보조 경로로 유지한다.
+  const apiKey = selectActiveApiKey(apiTier, freeKey, paidKey);
   return { apiKey, apiTier };
 }
 
@@ -513,6 +516,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     const target = apiTier || store.get('apiTier') || 'free';
     if (target === 'paid') setSecret('geminiPaidApiKey', '');
     else setSecret('geminiApiKey', '');
+    resetModelCache();
   });
 
   ipcMain.handle('data:read-json', async (_e, name: string) => {

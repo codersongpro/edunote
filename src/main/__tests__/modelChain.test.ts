@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  FREE_MODEL_PREFERENCE,
-  PAID_MODEL_PREFERENCE,
-  FREE_TIER_ORDER,
-  PAID_TIER_ORDER,
+  type VerifiedModelPolicy,
+  MODEL_POLICY_UPDATED_AT,
+  VERIFIED_GENERAL_MODELS,
   buildModelChain,
-  buildDynamicPreference,
-  resolvePreference,
+  selectVerifiedModels,
+  LastVerifiedModelCache,
   getRetryDelayMs,
   isDailyQuotaError,
   isSearchGroundingUnavailableError,
@@ -15,116 +14,114 @@ import {
 describe('buildModelChain', () => {
   it('실제 제공되는 모델만 선호 순서대로 고른다', () => {
     const available = ['models/gemini-2.5-flash', 'models/gemini-2.5-flash-lite', 'models/gemini-embedding-001'];
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, available)).toEqual([
+    expect(buildModelChain(['gemini-2.5-flash-lite', 'gemini-2.5-flash'], available)).toEqual([
       'gemini-2.5-flash-lite',
       'gemini-2.5-flash',
     ]);
   });
 
   it('models/ 접두사가 없어도 동작한다', () => {
-    expect(buildModelChain(PAID_MODEL_PREFERENCE, ['gemini-2.5-pro'])).toEqual(['gemini-2.5-pro']);
+    expect(buildModelChain(['gemini-2.5-pro'], ['gemini-2.5-pro'])).toEqual(['gemini-2.5-pro']);
   });
 
-  it('목록 조회 실패(null) 시 기본 모델 1개로 동작한다', () => {
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, null)).toEqual([FREE_MODEL_PREFERENCE[0]]);
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, [])).toEqual([FREE_MODEL_PREFERENCE[0]]);
+  it('목록 조회 실패나 빈 목록이면 미등재 기본 모델을 추측하지 않는다', () => {
+    expect(buildModelChain(['gemini-3.8-flash'], null)).toEqual([]);
+    expect(buildModelChain(['gemini-3.8-flash'], [])).toEqual([]);
   });
 
-  it('선호 모델이 하나도 없으면 기본 모델 1개로 동작한다', () => {
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, ['models/some-unknown-model'])).toEqual([FREE_MODEL_PREFERENCE[0]]);
+  it('목록 조회가 성공해도 검증 후보가 없으면 미등재 모델로 폴백하지 않는다', () => {
+    expect(buildModelChain(['gemini-3.8-flash'], ['models/some-unknown-model'])).toEqual([]);
   });
 
   it('폴백 체인은 최대 3개로 제한한다', () => {
-    const all = FREE_MODEL_PREFERENCE.map(m => `models/${m}`);
-    expect(buildModelChain(FREE_MODEL_PREFERENCE, all)).toHaveLength(3);
+    const preferred = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
+    expect(buildModelChain(preferred, preferred.map(m => `models/${m}`))).toHaveLength(3);
   });
 });
 
-describe('buildDynamicPreference', () => {
-  // 회귀 방지: v1.20.1에서 세대(버전)를 등급보다 먼저 따지도록 만들었다가, 무료 키에서
-  // gemini-3.7-flash(무료 등급 미확인 모델)가 구세대 flash-lite보다 먼저 시도되어
-  // 생성이 느려지고 자주 실패하는 문제가 있었다. 등급이 항상 세대보다 우선해야 한다.
-  it('무료 등급은 구세대 flash-lite를 신세대 flash보다 우선한다', () => {
-    const available = ['models/gemini-2.5-flash-lite', 'models/gemini-3.7-flash'];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
-      'gemini-2.5-flash-lite',
-      'gemini-3.7-flash',
-    ]);
+describe('selectVerifiedModels', () => {
+  it('무료 여부를 먼저 검증한 뒤 새 무료 Flash를 오래된 Lite보다 앞세운다', () => {
+    expect(selectVerifiedModels('free', [
+      'models/gemini-3.5-flash-lite',
+      'models/gemini-3.8-flash',
+    ])).toEqual(['gemini-3.8-flash', 'gemini-3.5-flash-lite']);
   });
 
-  it('같은 등급 안에서는 최신 세대를 앞세운다 (신모델을 자동으로 1순위로)', () => {
-    const available = ['gemini-2.5-flash-lite', 'gemini-3.5-flash-lite'];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
-      'gemini-3.5-flash-lite',
-      'gemini-2.5-flash-lite',
-    ]);
-  });
-
-  it('같은 세대에서는 tierOrder를 따른다 (무료: flash-lite 우선)', () => {
-    const available = ['gemini-3.5-flash', 'gemini-3.5-flash-lite'];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
-      'gemini-3.5-flash-lite',
-      'gemini-3.5-flash',
-    ]);
-  });
-
-  it('유료 등급은 pro를 최우선으로 하되, 더 최신 세대가 있으면 그쪽을 앞세운다', () => {
-    const available = ['gemini-2.5-pro', 'gemini-3.1-pro', 'gemini-2.5-flash'];
-    expect(buildDynamicPreference(PAID_TIER_ORDER, available)).toEqual([
-      'gemini-3.1-pro',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-    ]);
-  });
-
-  // 구글이 소수점 없는 세대 이름을 내놓아도 자동 감지에서 빠지지 않아야 한다.
-  it('소수점 없는 세대 이름(gemini-4-flash-lite)도 인식한다', () => {
-    const available = ['gemini-3.5-flash-lite', 'gemini-4-flash-lite'];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
-      'gemini-4-flash-lite',
-      'gemini-3.5-flash-lite',
-    ]);
-  });
-
-  it('소수점 없는 이름은 minor 0으로 보아 같은 세대의 소수점 버전보다 뒤에 둔다', () => {
-    const available = ['gemini-4-flash-lite', 'gemini-4.1-flash-lite'];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual([
-      'gemini-4.1-flash-lite',
-      'gemini-4-flash-lite',
-    ]);
-  });
-
-  it('실험판·프리뷰·임베딩 등 정식 이름 규칙을 벗어난 모델은 제외한다', () => {
-    const available = [
-      'gemini-3.7-flash-preview',
-      'gemini-embedding-001',
-      'gemini-2.0-flash-exp-image-generation',
-      'gemini-2.5-flash',
+  it('Pro도 정책에서 무료로 확인되면 이름만으로 제외하지 않는다', () => {
+    const policy: VerifiedModelPolicy[] = [
+      { name: 'gemini-4-pro', releaseOrder: 400, free: true, paid: true, stable: true, generative: true },
+      { name: 'gemini-3.8-flash', releaseOrder: 380, free: true, paid: true, stable: true, generative: true },
     ];
-    expect(buildDynamicPreference(FREE_TIER_ORDER, available)).toEqual(['gemini-2.5-flash']);
+    expect(selectVerifiedModels('free', ['gemini-3.8-flash', 'gemini-4-pro'], policy)).toEqual([
+      'gemini-4-pro',
+      'gemini-3.8-flash',
+    ]);
   });
 
-  it('목록 조회 실패(null)면 빈 배열을 반환한다', () => {
-    expect(buildDynamicPreference(FREE_TIER_ORDER, null)).toEqual([]);
+  it('유료 모드는 기존 Pro → Flash → Lite 우선순위를 유지한다', () => {
+    const policy: VerifiedModelPolicy[] = [
+      { name: 'gemini-4-flash', releaseOrder: 400, free: false, paid: true, stable: true, generative: true, paidPriority: 1 },
+      { name: 'gemini-3-pro', releaseOrder: 300, free: false, paid: true, stable: true, generative: true, paidPriority: 0 },
+      { name: 'gemini-5-flash-lite', releaseOrder: 500, free: false, paid: true, stable: true, generative: true, paidPriority: 2 },
+    ];
+    expect(selectVerifiedModels('paid', policy.map(model => model.name), policy)).toEqual([
+      'gemini-3-pro',
+      'gemini-4-flash',
+      'gemini-5-flash-lite',
+    ]);
+  });
+
+  it('미리보기·실험판·비생성 모델과 정책에 없는 이름은 제외한다', () => {
+    expect(selectVerifiedModels('free', [
+      'gemini-3.8-flash-preview',
+      'gemini-3.8-flash-exp',
+      'gemini-embedding-001',
+      'gemini-9-flash',
+      'gemini-3.7-flash',
+    ])).toEqual(['gemini-3.7-flash']);
+  });
+
+  it('정책에 있어도 정식 또는 생성 가능 조건을 통과하지 못하면 제외한다', () => {
+    const policy: VerifiedModelPolicy[] = [
+      { name: 'gemini-4-flash-preview', releaseOrder: 400, free: true, paid: true, stable: false, generative: true },
+      { name: 'gemini-4-embed', releaseOrder: 401, free: true, paid: true, stable: true, generative: false },
+      { name: 'gemini-3.8-flash', releaseOrder: 380, free: true, paid: true, stable: true, generative: true },
+    ];
+    expect(selectVerifiedModels('free', policy.map(model => model.name), policy)).toEqual(['gemini-3.8-flash']);
+  });
+
+  it('공식 목록에 검증된 무료 후보가 없으면 빈 체인을 반환한다', () => {
+    expect(selectVerifiedModels('free', ['gemini-unknown'])).toEqual([]);
+  });
+
+  it('정책의 확인 시점과 현재 검증 목록을 명시한다', () => {
+    expect(MODEL_POLICY_UPDATED_AT).toBe('2026-09-06');
+    expect(VERIFIED_GENERAL_MODELS.some(model => model.name === 'gemini-3.8-flash' && model.free)).toBe(true);
   });
 });
 
-describe('resolvePreference', () => {
-  it('동적으로 감지한 최신 모델을 먼저 두고, 기존 고정 목록을 안전망으로 뒤에 붙인다', () => {
-    const available = ['gemini-3.7-flash'];
-    const result = resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, available);
-    expect(result[0]).toBe('gemini-3.7-flash');
-    expect(result).toEqual(['gemini-3.7-flash', ...FREE_MODEL_PREFERENCE]);
+describe('LastVerifiedModelCache', () => {
+  it('키와 요금제를 분리하고 수동 갱신으로 해당 키의 기록만 비운다', () => {
+    const cache = new LastVerifiedModelCache(1_000);
+    cache.set('key-a', 'free', ['gemini-3.8-flash'], 100);
+    cache.set('key-a', 'paid', ['gemini-3.7-flash'], 100);
+    cache.set('key-b', 'free', ['gemini-3.6-flash'], 100);
+
+    expect(cache.get('key-a', 'free', 500)).toEqual(['gemini-3.8-flash']);
+    expect(cache.get('key-a', 'paid', 500)).toEqual(['gemini-3.7-flash']);
+    cache.clearKey('key-a');
+    expect(cache.get('key-a', 'free', 500)).toBeNull();
+    expect(cache.get('key-a', 'paid', 500)).toBeNull();
+    expect(cache.get('key-b', 'free', 500)).toEqual(['gemini-3.6-flash']);
   });
 
-  it('동적 감지 결과와 고정 목록에 겹치는 이름은 중복 제거한다', () => {
-    const available = ['gemini-2.5-flash-lite'];
-    const result = resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, available);
-    expect(result.filter(m => m === 'gemini-2.5-flash-lite')).toHaveLength(1);
-  });
+  it('유효 시간이 지나거나 현재 정책에서 제외된 후보는 재사용하지 않는다', () => {
+    const cache = new LastVerifiedModelCache(1_000);
+    cache.set('key-a', 'free', ['gemini-3.8-flash'], 100);
+    expect(cache.get('key-a', 'free', 1_101)).toBeNull();
 
-  it('목록 조회 실패(null)면 기존 고정 목록만 그대로 반환한다', () => {
-    expect(resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, null)).toEqual(FREE_MODEL_PREFERENCE);
+    cache.set('key-a', 'free', ['gemini-3.8-flash'], 200);
+    expect(cache.get('key-a', 'free', 500, new Set(['gemini-3.7-flash']))).toBeNull();
   });
 });
 

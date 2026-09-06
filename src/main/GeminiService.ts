@@ -1,12 +1,13 @@
 import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
+import { createHash } from 'node:crypto';
 import { extractGroundingInfo, mergeGroundingInfo, type GroundingInfo } from './groundingSources';
 import {
-  FREE_MODEL_PREFERENCE,
-  PAID_MODEL_PREFERENCE,
-  FREE_TIER_ORDER,
-  PAID_TIER_ORDER,
-  buildModelChain,
-  resolvePreference,
+  MODEL_POLICY_SOURCE,
+  MODEL_POLICY_UPDATED_AT,
+  VERIFIED_GENERAL_MODELS,
+  LastVerifiedModelCache,
+  selectVerifiedModels,
+  type ApiTier,
   getRetryDelayMs,
   isDailyQuotaError,
   isSearchGroundingUnavailableError,
@@ -15,11 +16,7 @@ import { RetryableStreamError, isDegenerateStream, isRetryableStreamError } from
 import { RequestPacer } from './requestPacer';
 import { assertGenerationResponseAccepted, validateGeneratedResponse } from './generationResponseValidation';
 
-export type ApiTier = 'free' | 'paid';
-
-// 키 검증 등 단일 모델이 필요한 곳에서 쓰는 대표 모델
-const FREE_MODEL = FREE_MODEL_PREFERENCE[0];
-const PAID_MODEL = PAID_MODEL_PREFERENCE[0];
+export type { ApiTier } from './modelChain';
 
 // 권한 거부/모델 미지원으로 차단된 모델 → 차단 해제 시각(unix ms)
 // 1시간 후 자동 해제 → 상위 모델을 주기적으로 재시도하여 계정 상황 변화에 대응
@@ -59,41 +56,117 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 }
 
 // 조회한 모델 목록을 다시 확인하기까지의 유효 기간.
-// 앱을 며칠씩 켜둔 채로 써도 새로 출시된 모델이 반영되도록 주기적으로 다시 조회한다.
+// 앱을 오래 켜둔 채로 써도 키에서 실제 제공되는 모델 상태를 주기적으로 다시 확인한다.
 const MODEL_LIST_TTL_MS = 6 * 60 * 60 * 1000; // 6시간
-// 조회 실패는 짧게만 기억한다 — 일시적인 네트워크 문제로 오래 기본 모델 1개에 묶이지 않도록.
-const MODEL_LIST_FAILURE_TTL_MS = 10 * 60 * 1000; // 10분
+const LAST_VERIFIED_MODEL_TTL_MS = 24 * 60 * 60 * 1000;
 
-// 키에서 실제 사용 가능한 모델 이름 목록 (유효 기간 동안 캐시)
-let availableModelsCache: { keyId: string; names: string[] | null; fetchedAt: number } | null = null;
+interface AvailableModelsEntry {
+  names: string[];
+  fetchedAt: number;
+}
 
-async function getAvailableModelNames(ai: GoogleGenAI, apiKey: string): Promise<string[] | null> {
-  const keyId = apiKey;
-  const cached = availableModelsCache;
-  if (cached && cached.keyId === keyId) {
-    const ttl = cached.names === null ? MODEL_LIST_FAILURE_TTL_MS : MODEL_LIST_TTL_MS;
-    if (Date.now() - cached.fetchedAt < ttl) return cached.names;
+interface ModelDiscovery {
+  names: string[] | null;
+  checkedAt: number;
+  error?: unknown;
+}
+
+interface ModelSelection {
+  chain: string[];
+  available: string[];
+  listFailed: boolean;
+  verificationStatus: 'verified' | 'latest-unconfirmed';
+  checkedAt: number;
+  selectionReason: string;
+}
+
+const availableModelsCache = new Map<string, AvailableModelsEntry>();
+const lastVerifiedModels = new LastVerifiedModelCache(LAST_VERIFIED_MODEL_TTL_MS);
+const lastUsedModels = new Map<string, string>();
+
+function modelKeyId(apiKey: string): string {
+  return createHash('sha256').update(apiKey).digest('hex');
+}
+
+function tierKey(keyId: string, apiTier: ApiTier): string {
+  return `${keyId}:${apiTier}`;
+}
+
+async function discoverAvailableModelNames(
+  ai: GoogleGenAI,
+  apiKey: string,
+  forceRefresh = false,
+): Promise<ModelDiscovery> {
+  const keyId = modelKeyId(apiKey);
+  if (forceRefresh) availableModelsCache.delete(keyId);
+  const cached = availableModelsCache.get(keyId);
+  if (cached && Date.now() - cached.fetchedAt < MODEL_LIST_TTL_MS) {
+    return { names: [...cached.names], checkedAt: cached.fetchedAt };
   }
 
+  const checkedAt = Date.now();
   try {
     const names = await withTimeout((async () => {
       const collected: string[] = [];
       const pager = await ai.models.list({ config: { pageSize: 200 } });
       for await (const model of pager) {
         if (!model.name) continue;
-        // 임베딩 등 생성 미지원 모델 제외 — 지원 정보가 없으면 이름 교집합으로만 거른다.
         if (model.supportedActions && !model.supportedActions.includes('generateContent')) continue;
         collected.push(model.name);
       }
       return collected;
     })(), 10_000);
-    availableModelsCache = { keyId, names, fetchedAt: Date.now() };
+    availableModelsCache.set(keyId, { names: [...names], fetchedAt: checkedAt });
+    return { names, checkedAt };
   } catch (error: unknown) {
-    // 조회 실패 시 기본 모델 1개로만 동작 (종전과 동일한 안전한 동작)
-    console.warn('[GeminiService] 모델 목록 조회 실패 — 기본 모델만 사용:', (error as any)?.message ?? error);
-    availableModelsCache = { keyId, names: null, fetchedAt: Date.now() };
+    console.warn('[GeminiService] 모델 목록 조회 실패:', (error as any)?.message ?? error);
+    return { names: null, checkedAt, error };
   }
-  return availableModelsCache.names;
+}
+
+async function resolveModelSelection(
+  ai: GoogleGenAI,
+  apiKey: string,
+  apiTier: ApiTier,
+  forceRefresh = false,
+): Promise<ModelSelection> {
+  const discovery = await discoverAvailableModelNames(ai, apiKey, forceRefresh);
+  const keyId = modelKeyId(apiKey);
+  if (discovery.names !== null) {
+    const chain = selectVerifiedModels(apiTier, discovery.names);
+    if (chain.length === 0) {
+      throw new Error(
+        `모델 목록은 확인했지만 ${apiTier === 'free' ? '무료' : '유료'} 등급에서 공식 확인된 정식 생성 모델을 찾지 못했습니다. 앱의 모델 정책 업데이트가 필요할 수 있습니다.`,
+      );
+    }
+    lastVerifiedModels.set(keyId, apiTier, chain, discovery.checkedAt);
+    return {
+      chain,
+      available: discovery.names.map(name => name.replace(/^models\//, '')).filter(name => name.startsWith('gemini-')).sort(),
+      listFailed: false,
+      verificationStatus: 'verified',
+      checkedAt: discovery.checkedAt,
+      selectionReason: apiTier === 'free'
+        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 이 키의 모델 목록과 겹치는 최신 순서로 선택했습니다.'
+        : '공식 정책에서 유료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 기존 Pro → Flash → Lite 우선순위와 계열별 최신 순서로 선택했습니다.',
+    };
+  }
+
+  const allowed = new Set(
+    VERIFIED_GENERAL_MODELS
+      .filter(model => model.stable && model.generative && (apiTier === 'free' ? model.free : model.paid))
+      .map(model => model.name),
+  );
+  const chain = lastVerifiedModels.get(keyId, apiTier, discovery.checkedAt, allowed);
+  if (!chain?.length) throw discovery.error ?? new Error('모델 목록을 확인할 수 없습니다.');
+  return {
+    chain,
+    available: [],
+    listFailed: true,
+    verificationStatus: 'latest-unconfirmed',
+    checkedAt: discovery.checkedAt,
+    selectionReason: '이번 모델 목록 확인에 실패해, 24시간 안에 같은 키와 요금제로 확인한 후보만 사용합니다. 최신 여부는 확인되지 않았습니다.',
+  };
 }
 
 // 설정 화면의 모델 진단 — 이 키로 실제 쓸 수 있는 모델과, 지금 우선순위가
@@ -105,10 +178,17 @@ export interface ModelDiagnostics {
   chain: string[];
   // 이 키로 조회된 gemini 모델 전체
   available: string[];
-  // 모델 목록 조회 자체가 실패한 경우 (이때는 기본 모델 1개로만 동작)
+  // 이번 모델 목록 조회가 실패해 마지막 검증 후보를 쓰는 경우
   listFailed: boolean;
   // 쿼터·접근 오류로 지금 일시 제외된 모델
   blocked: string[];
+  selectedModel: string;
+  actualModel?: string;
+  verificationStatus: 'verified' | 'latest-unconfirmed';
+  checkedAt: string;
+  policyUpdatedAt: string;
+  policySource: string;
+  selectionReason: string;
 }
 
 export async function getModelDiagnostics(
@@ -116,24 +196,23 @@ export async function getModelDiagnostics(
   apiTier: ApiTier,
   forceRefresh = false,
 ): Promise<ModelDiagnostics> {
-  if (forceRefresh) availableModelsCache = null;
   const ai = new GoogleGenAI({ apiKey });
-  const names = await getAvailableModelNames(ai, apiKey);
-  const preference =
-    apiTier === 'paid'
-      ? resolvePreference(PAID_TIER_ORDER, PAID_MODEL_PREFERENCE, names)
-      : resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, names);
-  const available = (names ?? [])
-    .map(name => name.replace(/^models\//, ''))
-    .filter(name => name.startsWith('gemini-'))
-    .sort();
+  const selection = await resolveModelSelection(ai, apiKey, apiTier, forceRefresh);
   const blocked = [...permanentlyBlockedModels.keys(), ...quotaBlockedModels.keys()].filter(isBlocked);
+  const selectedModel = selection.chain.find(model => !blocked.includes(model)) ?? '';
   return {
     apiTier,
-    chain: buildModelChain(preference, names),
-    available,
-    listFailed: names === null,
+    chain: selection.chain,
+    available: selection.available,
+    listFailed: selection.listFailed,
     blocked,
+    selectedModel,
+    actualModel: lastUsedModels.get(tierKey(modelKeyId(apiKey), apiTier)),
+    verificationStatus: selection.verificationStatus,
+    checkedAt: new Date(selection.checkedAt).toISOString(),
+    policyUpdatedAt: MODEL_POLICY_UPDATED_AT,
+    policySource: MODEL_POLICY_SOURCE,
+    selectionReason: selection.selectionReason,
   };
 }
 
@@ -141,7 +220,9 @@ export async function getModelDiagnostics(
 export function resetModelCache(): void {
   permanentlyBlockedModels.clear();
   quotaBlockedModels.clear();
-  availableModelsCache = null;
+  availableModelsCache.clear();
+  lastVerifiedModels.clear();
+  lastUsedModels.clear();
 }
 
 // 특정 모델이 현재 차단 상태인지 확인 (만료 시 자동 해제)
@@ -240,20 +321,21 @@ async function generateWithModelChain<T>(
   usesTools = false,
   requireTools = false,
 ): Promise<{ result: T; model: string }> {
-  const availableNames = await getAvailableModelNames(ai, apiKey);
-  const preference =
-    apiTier === 'paid'
-      ? resolvePreference(PAID_TIER_ORDER, PAID_MODEL_PREFERENCE, availableNames)
-      : resolvePreference(FREE_TIER_ORDER, FREE_MODEL_PREFERENCE, availableNames);
-  const models = buildModelChain(preference, availableNames);
+  const selection = await resolveModelSelection(ai, apiKey, apiTier);
+  const models = selection.chain;
   let lastError: unknown = null;
+
+  const succeed = (result: T, model: string): { result: T; model: string } => {
+    lastUsedModels.set(tierKey(modelKeyId(apiKey), apiTier), model);
+    return { result, model };
+  };
 
   for (const model of models) {
     if (isBlocked(model)) continue;
 
     try {
       if (apiTier === 'free') await freeTierPacer.reserve();
-      return { result: await doCall(model, usesTools), model };
+      return succeed(await doCall(model, usesTools), model);
     } catch (error: unknown) {
       lastError = error;
 
@@ -270,7 +352,7 @@ async function generateWithModelChain<T>(
           await new Promise(resolve => setTimeout(resolve, retryMs + 500));
           try {
             if (apiTier === 'free') await freeTierPacer.reserve();
-            return { result: await doCall(model, usesTools), model };
+            return succeed(await doCall(model, usesTools), model);
           } catch (retryError: unknown) {
             lastError = retryError;
             if (!isQuotaError(retryError)) throw retryError;
@@ -293,7 +375,7 @@ async function generateWithModelChain<T>(
           try {
             if (apiTier === 'free') await freeTierPacer.reserve();
             console.warn(`[${model}] 검색 도구 요청이 거부됨 → 도구 없이 같은 모델로 재시도`);
-            return { result: await doCall(model, false), model };
+            return succeed(await doCall(model, false), model);
           } catch (retryError: unknown) {
             lastError = retryError;
           }
@@ -432,7 +514,7 @@ export async function generateContentMultipartStream(
 
 // API 키 유효성 검증 (설정 화면에서 호출)
 //
-// 검증 전략: 현재 요금제(free/paid)의 대표 모델 한 개로 실제 호출을 시도하고,
+// 검증 전략: 실제 생성과 같은 공식 검증 모델 체인을 조회해 순서대로 호출하고,
 // 실패 시 오류를 원인별로 분류해 정확한 안내를 제공한다.
 //   - 학교/조직 Workspace 차단 → 개인 Gmail 키 발급 안내
 //   - GCP 프로젝트 API 미활성화 → 활성화 방법 안내
@@ -440,7 +522,6 @@ export async function generateContentMultipartStream(
 //   - 그 외 → 원본 에러 메시지와 함께 일반 안내
 export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }> {
   const ai = new GoogleGenAI({ apiKey });
-  const testModel = apiTier === 'paid' ? PAID_MODEL : FREE_MODEL;
   const TIMEOUT_MS = 10_000;
 
   type ErrKind = 'invalid_key' | 'network' | 'timeout' | 'permission' | 'quota' | 'model_unavailable' | 'other';
@@ -511,7 +592,17 @@ export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Pro
       ),
     ]).catch((error: unknown) => classifyError(error, model));
 
-  const results: ModelResult[] = [await tryModel(testModel)];
+  let results: ModelResult[] = [];
+  try {
+    const selection = await resolveModelSelection(ai, apiKey, apiTier, true);
+    for (const model of selection.chain) {
+      const result = await tryModel(model);
+      results.push(result);
+      if (result.ok || result.kind === 'invalid_key' || result.kind === 'network' || result.kind === 'permission') break;
+    }
+  } catch (error: unknown) {
+    results = [classifyError(error, '모델 목록 조회')];
+  }
 
   // 디버그 로그 — 실제로 테스트가 이뤄졌는지 확인 가능
   console.log('[API키 테스트]', results.map((r) => `${r.model}: ${r.ok ? '✓' : r.kind}(${r.status})`).join(' | '));
