@@ -11,6 +11,7 @@ import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
+import { prepareAndRunWithAbort } from '../lib/cancellation';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
@@ -701,8 +702,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
-              const extras = await getStudentGenerationExtras(student.name);
-              const { text: result, model, privacyApplied } = await callWithAbort(() => generateSubjectReport({
+              const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
+                callWithAbort,
+                () => getStudentGenerationExtras(student.name),
+                extras => generateSubjectReport({
                   schoolLevel,
                   studentName: student.name,
                   subject: subjectState.currentSubject,
@@ -712,7 +715,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   customLength: subjectState.customLength as number,
                   lengthUnit: subjectState.lengthUnit as LengthUnit,
                   ...extras
-              }));
+                }),
+              );
               newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('subject', student.name, result);
@@ -772,8 +776,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             });
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
-              const extras = await getStudentGenerationExtras(student.name);
-              const { text: result, model, privacyApplied } = await callWithAbort(() => generateSubjectReport({
+              const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
+                callWithAbort,
+                () => getStudentGenerationExtras(student.name),
+                extras => generateSubjectReport({
                   schoolLevel,
                   studentName: student.name,
                   subject: subjectState.currentSubject,
@@ -783,7 +789,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   customLength: subjectState.customLength as number,
                   lengthUnit: subjectState.lengthUnit as LengthUnit,
                   ...extras
-              }));
+                }),
+              );
               newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('subject', student.name, result);
@@ -832,8 +839,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
       mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
 
-      const extras = await getStudentGenerationExtras(student.name);
-      const { text: result, model, privacyApplied } = await generateSubjectReport({
+      const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
+        callWithAbort,
+        () => getStudentGenerationExtras(student.name),
+        extras => generateSubjectReport({
           schoolLevel,
           studentName: student.name,
           subject: subjectState.currentSubject,
@@ -844,7 +853,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           lengthUnit: subjectState.lengthUnit as LengthUnit,
           avoidPhrases,
           ...extras
-      });
+        }),
+      );
 
       const newStudents = [...subjectState.activeStudents];
       newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
@@ -856,8 +866,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     } catch (err: any) {
       const error = err;
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(errorMessage);
-      notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
+      if (errorMessage !== 'CANCELLED') {
+        console.error(errorMessage);
+        notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
+      }
     } finally {
       setGeneratingIds((prev: Set<string>) => {
         const next = new Set(prev);

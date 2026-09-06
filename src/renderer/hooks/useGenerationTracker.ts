@@ -1,6 +1,7 @@
 import { useContext, useRef, useEffect } from 'react';
 import { GlobalStateContext } from '../GlobalStateContext';
 import { AppMode } from '../types';
+import { runWithAbortSignal } from '../lib/cancellation';
 
 export function useGenerationTracker(mode: AppMode) {
   const { setGeneratingMode, isCancelled, clearCancel, getCancelSignal } = useContext(GlobalStateContext);
@@ -70,17 +71,7 @@ export function useGenerationTracker(mode: AppMode) {
   const callWithAbort = <T>(fn: () => Promise<T>): Promise<T> => {
     const signal = getCancelSignal(mode);
     if (signal.aborted || isCancelled(mode)) return Promise.reject(new Error('CANCELLED'));
-    return new Promise<T>((resolve, reject) => {
-      const onAbort = () => reject(new Error('CANCELLED'));
-      signal.addEventListener('abort', onAbort, { once: true });
-      fn().then(value => {
-        // 중단 직후 새 신호를 받은 호출이 결과를 화면에 반영하지 않도록 한 번 더 확인한다.
-        if (isCancelled(mode)) reject(new Error('CANCELLED'));
-        else resolve(value);
-      }).catch(reject).finally(() => {
-        signal.removeEventListener('abort', onAbort);
-      });
-    });
+    return runWithAbortSignal(signal, fn);
   };
 
   return { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort };

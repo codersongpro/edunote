@@ -33,3 +33,18 @@ export async function clearAllStudentData(): Promise<void> {
     studentFemaleNames: '',
   });
 }
+
+interface StudentDataClearSteps {
+  stopPendingWork: () => Promise<void>;
+  clearStoredData: () => Promise<void>;
+  resetMemory: () => void;
+}
+
+export async function runStudentDataClear(steps: StudentDataClearSteps): Promise<void> {
+  await steps.stopPendingWork();
+  try {
+    await steps.clearStoredData();
+  } finally {
+    steps.resetMemory();
+  }
+}

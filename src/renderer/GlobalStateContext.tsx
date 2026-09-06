@@ -57,6 +57,10 @@ export const initialGlobalState: GlobalState = {
   },
 };
 
+export function createInitialGlobalState(): GlobalState {
+  return structuredClone(initialGlobalState);
+}
+
 export const GlobalStateContext = createContext<GlobalStateContextType>({
   state: initialGlobalState,
   setState: () => {},
@@ -75,6 +79,7 @@ export const GlobalStateContext = createContext<GlobalStateContextType>({
   showActivationModal: () => {},
   showToast: () => {},
   resetGenerationState: () => {},
+  clearStudentData: async () => {},
 });
 
 export const useGlobalState = () => useContext(GlobalStateContext);

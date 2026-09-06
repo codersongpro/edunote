@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ClipboardList, HelpCircle, Loader2, Copy, Download, AlertCircle } from 'lucide-react';
 import { generateLessonObservation } from '../services/geminiService';
 import { getRosterGenerationExtras } from '../lib/generationSafety';
+import { prepareAndRunWithAbort } from '../lib/cancellation';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -40,7 +41,7 @@ const EXAMPLE_RESULT = `【 수업관찰기록 】
   - 마무리 정리 시간을 5분 확보하면 학습 내용 정착에 도움이 될 것임.`;
 
 const LessonObservationGenerator: React.FC = () => {
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_OBSERVATION);
+  const { startGeneration, endGeneration, callWithAbort } = useGenerationTracker(AppMode.LESSON_OBSERVATION);
   const { startTour } = useTour();
   const [date, setDate] = useState('');
   const [subject, setSubject] = useState('');
@@ -84,14 +85,19 @@ const LessonObservationGenerator: React.FC = () => {
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
-      const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
-      const { text: output, model, privacyApplied } = await generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames });
+      const { text: output, model, privacyApplied } = await prepareAndRunWithAbort(
+        callWithAbort,
+        getRosterGenerationExtras,
+        ({ privacyModeEnabled, rosterNames }) => generateLessonObservation({ date, subject, unit, grade, observationNotes, teacherName, privacyModeEnabled, rosterNames }),
+      );
       setResult(output);
       setResultModel(model);
       setResultPrivacyApplied(privacyApplied);
       playSuccessSound();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
+      if (!(e instanceof Error && e.message === 'CANCELLED')) {
+        setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false);
       endGeneration();

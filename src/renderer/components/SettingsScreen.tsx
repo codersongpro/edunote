@@ -7,7 +7,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from '../lib/apiKeyGuide';
 import { notifyToast } from '../lib/toast';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
-import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
+import { STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
 import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
 import { collectStorage, replaceStorageTransactionally } from '../lib/backupStorage';
 import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
@@ -20,7 +20,7 @@ const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
 };
 
 const SettingsScreen: React.FC = () => {
-  const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState } = useGlobalState();
+  const { showToast, setApiKeyAvailability, showActivationModal, resetGenerationState, clearStudentData } = useGlobalState();
   const [apiKey, setApiKey] = useState('');
   const [paidApiKey, setPaidApiKey] = useState('');
   const [apiTier, setApiTier] = useState<'free' | 'paid'>('free');
@@ -328,7 +328,7 @@ const SettingsScreen: React.FC = () => {
 
     setIsClearingStudentData(true);
     try {
-      await clearAllStudentData();
+      await clearStudentData();
       notifyToast({ type: 'success', title: '학생 관련 데이터를 모두 삭제했습니다.' });
     } catch (error) {
       notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '삭제 중 오류가 발생했습니다.' });

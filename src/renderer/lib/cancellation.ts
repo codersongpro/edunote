@@ -27,3 +27,29 @@ export class CancellationRegistry {
     this.controllers.clear();
   }
 }
+
+export function runWithAbortSignal<T>(signal: AbortSignal, fn: () => Promise<T>): Promise<T> {
+  if (signal.aborted) return Promise.reject(new Error('CANCELLED'));
+
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new Error('CANCELLED'));
+    signal.addEventListener('abort', onAbort, { once: true });
+    fn().then(value => {
+      if (signal.aborted) reject(new Error('CANCELLED'));
+      else resolve(value);
+    }).catch(reject).finally(() => {
+      signal.removeEventListener('abort', onAbort);
+    });
+  });
+}
+
+type AbortRunner = <T>(fn: () => Promise<T>) => Promise<T>;
+
+export async function prepareAndRunWithAbort<TPrepared, TResult>(
+  callWithAbort: AbortRunner,
+  prepare: () => Promise<TPrepared>,
+  run: (prepared: TPrepared) => Promise<TResult>,
+): Promise<TResult> {
+  const prepared = await callWithAbort(prepare);
+  return callWithAbort(() => run(prepared));
+}

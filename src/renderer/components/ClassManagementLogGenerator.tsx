@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateClassManagementLog } from '../services/geminiService';
 import { getRosterGenerationExtras } from '../lib/generationSafety';
+import { prepareAndRunWithAbort } from '../lib/cancellation';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
@@ -32,7 +33,7 @@ const EXAMPLE_RESULT = `【 학급경영일지 】
   - 학급 환경 게시판 정비 예정임.`;
 
 const ClassManagementLogGenerator: React.FC = () => {
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.CLASS_LOG);
+  const { startGeneration, endGeneration, callWithAbort } = useGenerationTracker(AppMode.CLASS_LOG);
   const [week, setWeek] = useState('');
   const [dateRange, setDateRange] = useState('');
   const [grade, setGrade] = useState('');
@@ -71,23 +72,28 @@ const ClassManagementLogGenerator: React.FC = () => {
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 설정의 학생 명단에 있는 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
-      const { privacyModeEnabled, rosterNames } = await getRosterGenerationExtras();
-      const { text: generated, model, privacyApplied } = await generateClassManagementLog({
-        week,
-        dateRange,
-        grade,
-        keyActivities,
-        studentIssues,
-        teacherNotes,
-        privacyModeEnabled,
-        rosterNames,
-      });
+      const { text: generated, model, privacyApplied } = await prepareAndRunWithAbort(
+        callWithAbort,
+        getRosterGenerationExtras,
+        ({ privacyModeEnabled, rosterNames }) => generateClassManagementLog({
+          week,
+          dateRange,
+          grade,
+          keyActivities,
+          studentIssues,
+          teacherNotes,
+          privacyModeEnabled,
+          rosterNames,
+        }),
+      );
       setResult(generated);
       setResultModel(model);
       setResultPrivacyApplied(privacyApplied);
       playSuccessSound();
     } catch (err: any) {
-      setError(err?.message || '생성 중 오류가 발생했습니다.');
+      if (err?.message !== 'CANCELLED') {
+        setError(err?.message || '생성 중 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false);
       endGeneration();

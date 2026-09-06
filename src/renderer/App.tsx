@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
-import { GlobalStateContext, initialGlobalState } from './GlobalStateContext';
+import { createInitialGlobalState, GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { TourProvider } from './TourContext';
 import { safeSetItem } from './lib/safeStorage';
 import { CancellationRegistry } from './lib/cancellation';
@@ -44,7 +44,8 @@ import DocArchivePanel from './components/DocArchivePanel';
 import PrintFormScreen from './components/PrintFormScreen';
 import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel';
 import TranslatorScreen from './components/TranslatorScreen';
-import { loadWorkDraft, saveWorkDraft, WorkDraft } from './lib/workDraft';
+import { loadWorkDraft, saveWorkDraft, WorkDraft, WorkDraftSaveQueue } from './lib/workDraft';
+import { clearAllStudentData, runStudentDataClear } from './lib/studentDataCleanup';
 import RestoreDraftModal from './components/RestoreDraftModal';
 import { ApiKeyScopeNotice } from './components/ApiKeyScopeNotice';
 import {
@@ -112,8 +113,23 @@ const restoreMenuOrder = (section: string, items: SidebarMenuItem[]) => {
 const isDemoWindow = window.location.hash === '#demo';
 const isChatWindow = window.location.hash === '#chat';
 
+const STUDENT_DATA_MODES = new Set<AppMode>([
+  AppMode.SETTINGS,
+  AppMode.RECORD_CHATBOT,
+  AppMode.GENERATOR,
+  AppMode.SUBJECT_GENERATOR,
+  AppMode.SPORTS_CLUB_GENERATOR,
+  AppMode.CREATIVE_ACTIVITY_GENERATOR,
+  AppMode.TEACHER_RECORD,
+  AppMode.LESSON_OBSERVATION,
+  AppMode.COUNSELING_LOG,
+  AppMode.CLASS_LOG,
+  AppMode.STUDENT_MEMO,
+  AppMode.STUDENT_CARD,
+]);
+
 const App: React.FC = () => {
-  const [state, setState] = useState<GlobalState>(initialGlobalState);
+  const [state, setState] = useState<GlobalState>(createInitialGlobalState);
   const [isGlobalGenerating, setIsGlobalGenerating] = useState(false);
   const [globalProgress, setGlobalProgress] = useState(0);
 
@@ -158,6 +174,7 @@ const App: React.FC = () => {
     });
   }, []);
   const [mountedModes, setMountedModes] = useState<Set<AppMode>>(new Set([AppMode.HOME]));
+  const [studentDataRevision, setStudentDataRevision] = useState(0);
 
   // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
   const [apiKeyAvailability, setApiKeyAvailability] = useState<'unknown' | 'usable' | 'wait'>('unknown');
@@ -213,6 +230,8 @@ const App: React.FC = () => {
   const [pendingDraft, setPendingDraft] = useState<WorkDraft | null>(null);
   // 복원 여부를 정하기 전에는 자동 저장을 미룬다(빈 초기 상태가 초안을 덮어쓰는 것을 막는다).
   const draftReadyRef = useRef(false);
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftSaveQueueRef = useRef(new WorkDraftSaveQueue());
 
   useEffect(() => {
     if (isDemoWindow || isChatWindow) return;
@@ -228,8 +247,15 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isDemoWindow || isChatWindow) return;
     if (!draftReadyRef.current) return;
-    const timer = setTimeout(() => { void saveWorkDraft(state); }, 1500);
-    return () => clearTimeout(timer);
+    draftTimerRef.current = setTimeout(() => {
+      draftTimerRef.current = null;
+      if (!draftReadyRef.current) return;
+      void draftSaveQueueRef.current.enqueue(() => saveWorkDraft(state));
+    }, 1500);
+    return () => {
+      if (draftTimerRef.current !== null) clearTimeout(draftTimerRef.current);
+      draftTimerRef.current = null;
+    };
   }, [state]);
 
   const handleRestoreDraft = () => {
@@ -244,15 +270,35 @@ const App: React.FC = () => {
     void saveWorkDraft(initialGlobalState);
   };
 
+  const clearStudentData = useCallback(async () => {
+    draftReadyRef.current = false;
+    if (draftTimerRef.current !== null) {
+      clearTimeout(draftTimerRef.current);
+      draftTimerRef.current = null;
+    }
+    resetGenerationState();
+    await runStudentDataClear({
+      stopPendingWork: () => draftSaveQueueRef.current.invalidateAndWait(),
+      clearStoredData: clearAllStudentData,
+      resetMemory: () => {
+        setPendingDraft(null);
+        setState(createInitialGlobalState());
+        setStudentDataRevision(revision => revision + 1);
+        draftReadyRef.current = true;
+      },
+    });
+  }, [resetGenerationState]);
+
   // 컨텍스트 value를 메모이제이션해 생성 진행(600ms 간격) 중 불필요한 전역 리렌더를 줄인다.
   const globalStateValue = useMemo(() => ({
     state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress,
     generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
     apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState,
+    clearStudentData,
   }), [
     state, isGlobalGenerating, globalProgress, generatingModes, apiKeyAvailability,
     setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
-    showActivationModal, showToast, resetGenerationState,
+    showActivationModal, showToast, resetGenerationState, clearStudentData,
   ]);
 
   const goTo = (newMode: AppMode) => {
@@ -1788,7 +1834,7 @@ const App: React.FC = () => {
           {(Array.from(mountedModes) as AppMode[]).map(m => {
             const isVisible = m === mode || (m === AppMode.MY_AI_TOOLS && mode === AppMode.MY_AI_TOOLS_SHARED);
             return (
-              <div key={m} className={isVisible ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
+              <div key={`${m}-${STUDENT_DATA_MODES.has(m) ? studentDataRevision : 0}`} className={isVisible ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
                 {renderMode(m)}
               </div>
             );

@@ -17,6 +17,24 @@ export interface WorkDraft {
   state: GlobalState;
 }
 
+export class WorkDraftSaveQueue {
+  private revision = 0;
+  private pending: Promise<void> = Promise.resolve();
+
+  enqueue(save: () => Promise<void>): Promise<void> {
+    const revision = this.revision;
+    this.pending = this.pending.then(async () => {
+      if (revision === this.revision) await save();
+    });
+    return this.pending;
+  }
+
+  async invalidateAndWait(): Promise<void> {
+    this.revision += 1;
+    await this.pending;
+  }
+}
+
 function hasText(value: unknown): boolean {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -121,9 +139,5 @@ export async function saveWorkDraft(state: GlobalState): Promise<void> {
 }
 
 export async function clearWorkDraft(): Promise<void> {
-  try {
-    await window.electronAPI.writeJsonData(WORK_DRAFT_NAME, {});
-  } catch {
-    // 무시 — 다음 자동 저장이 빈 상태를 다시 기록한다.
-  }
+  await window.electronAPI.writeJsonData(WORK_DRAFT_NAME, {});
 }

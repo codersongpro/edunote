@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { clearAllStudentData, STUDENT_DATA_TARGET_LABELS } from '../studentDataCleanup';
+import { clearAllStudentData, runStudentDataClear, STUDENT_DATA_TARGET_LABELS } from '../studentDataCleanup';
 import { WORK_DRAFT_NAME } from '../workDraft';
 import { STUDENT_ROSTER_DATA_KEY } from '../studentRoster';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../generationHistory';
@@ -35,6 +35,11 @@ describe('clearAllStudentData', () => {
 
     expect(localStorage.getItem('eduNote_resources_v2')).toBe('[]');
     expect(localStorage.getItem('edunote_menu_favorites_v1')).toBe('[]');
+    const clearedFiles = writeJsonData.mock.calls.map(call => call[0]);
+    expect(clearedFiles).not.toContain('resource-library');
+    expect(clearedFiles).not.toContain('resource-categories');
+    expect(clearedFiles).not.toContain('my-tools');
+    expect(clearedFiles).not.toContain('doc-archive');
   });
 
   it('학생 메모 파일과 자동 저장된 작업 초안을 비운다', async () => {
@@ -58,8 +63,44 @@ describe('clearAllStudentData', () => {
     });
   });
 
+  it('초안 파일 삭제가 실패하면 전체 삭제 성공으로 처리하지 않는다', async () => {
+    const error = new Error('초안 파일 삭제 실패');
+    writeJsonData.mockImplementation((name: string) => (
+      name === WORK_DRAFT_NAME ? Promise.reject(error) : Promise.resolve('')
+    ));
+
+    await expect(clearAllStudentData()).rejects.toBe(error);
+  });
+
   it('사용자에게 보여줄 삭제 대상 목록을 제공한다', () => {
     expect(STUDENT_DATA_TARGET_LABELS.length).toBeGreaterThan(0);
     expect(STUDENT_DATA_TARGET_LABELS.join(' ')).toContain('작업 내용');
+  });
+});
+
+describe('runStudentDataClear', () => {
+  it('진행 중인 저장을 멈춘 뒤 저장소를 지우고 메모리를 초기화한다', async () => {
+    const calls: string[] = [];
+
+    await runStudentDataClear({
+      stopPendingWork: async () => { calls.push('stop'); },
+      clearStoredData: async () => { calls.push('clear'); },
+      resetMemory: () => { calls.push('reset'); },
+    });
+
+    expect(calls).toEqual(['stop', 'clear', 'reset']);
+  });
+
+  it('저장소 삭제가 실패해도 옛 메모리는 초기화하고 오류를 전달한다', async () => {
+    const error = new Error('저장소 삭제 실패');
+    const resetMemory = vi.fn();
+
+    await expect(runStudentDataClear({
+      stopPendingWork: vi.fn().mockResolvedValue(undefined),
+      clearStoredData: vi.fn().mockRejectedValue(error),
+      resetMemory,
+    })).rejects.toBe(error);
+
+    expect(resetMemory).toHaveBeenCalledTimes(1);
   });
 });

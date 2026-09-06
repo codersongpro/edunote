@@ -329,6 +329,8 @@ export interface GlobalStateContextType {
   showToast: (toast: Omit<ToastMessage, 'id'>) => void;
   // 새 API 키 확인 시 모든 생성 잠금 강제 해제
   resetGenerationState: () => void;
+  // 학생 데이터 삭제 시 예약 저장·메모리 상태·진행 중 생성을 함께 정리
+  clearStudentData: () => Promise<void>;
 }
 
 // ─── School Doc Types ─────────────────────────────────────────────

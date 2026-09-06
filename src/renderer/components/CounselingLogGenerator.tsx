@@ -6,6 +6,7 @@ import { AppMode } from '../types';
 import { playSuccessSound } from '../lib/soundEffect';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 import { notifyToast } from '../lib/toast';
+import { prepareAndRunWithAbort } from '../lib/cancellation';
 
 const COUNSELING_TYPES = ['학습상담', '생활상담', '진로상담', '심리상담', '기타'];
 
@@ -36,7 +37,7 @@ const EXAMPLE_RESULT = `【 상담일지 】
   - 지속될 경우 학교 상담 교사와 연계하기로 함.`;
 
 const CounselingLogGenerator: React.FC = () => {
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.COUNSELING_LOG);
+  const { startGeneration, endGeneration, callWithAbort } = useGenerationTracker(AppMode.COUNSELING_LOG);
   const [date, setDate] = useState('');
   const [counselingType, setCounselingType] = useState('생활상담');
   const [participants, setParticipants] = useState('');
@@ -75,14 +76,19 @@ const CounselingLogGenerator: React.FC = () => {
     startGeneration();
     try {
       // 개인정보 보호 모드(기본 켜짐): 학생 이름을 토큰으로 바꿔 AI에 보내고 결과에서 복원한다
-      const privacyMode = await window.electronAPI.getConfig('privacyModeEnabled').catch(() => true);
-      const { text: output, model, privacyApplied } = await generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan, privacyModeEnabled: privacyMode !== false });
+      const { text: output, model, privacyApplied } = await prepareAndRunWithAbort(
+        callWithAbort,
+        () => window.electronAPI.getConfig('privacyModeEnabled').catch(() => true),
+        privacyMode => generateCounselingLog({ date, counselingType, participants, studentName, counselingContent, followUpPlan, privacyModeEnabled: privacyMode !== false }),
+      );
       setResult(output);
       setResultModel(model);
       setResultPrivacyApplied(privacyApplied);
       playSuccessSound();
     } catch (e) {
-      setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
+      if (!(e instanceof Error && e.message === 'CANCELLED')) {
+        setError(e instanceof Error ? e.message : '생성 중 오류가 발생했습니다.');
+      }
     } finally {
       setIsLoading(false);
       endGeneration();

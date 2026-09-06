@@ -13,7 +13,7 @@ interface Props {
 }
 
 const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
-  const { startGeneration, endGeneration } = useGenerationTracker(AppMode.RECORD_CHATBOT);
+  const { startGeneration, endGeneration, callWithAbort } = useGenerationTracker(AppMode.RECORD_CHATBOT);
   const { startTour } = useTour();
   const { state, setState } = useGlobalState();
   const messages = state.recordChatbot.messages;
@@ -67,17 +67,19 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
     startGeneration();
 
     try {
-      const answer = await askRecordChatbot(schoolLevel, history, userMsg.text);
+      const answer = await callWithAbort(() => askRecordChatbot(schoolLevel, history, userMsg.text));
       setMessages(prev => [...prev, { role: 'model', text: answer, timestamp: Date.now() }]);
       playSuccessSound();
     } catch (error) {
-      setMessages(prev => [...prev, {
-        role: 'model',
-        text: error instanceof Error && error.message
-          ? error.message
-          : '죄송합니다. 오류가 발생했습니다. API 키 설정을 확인해 주세요.',
-        timestamp: Date.now(),
-      }]);
+      if (!(error instanceof Error && error.message === 'CANCELLED')) {
+        setMessages(prev => [...prev, {
+          role: 'model',
+          text: error instanceof Error && error.message
+            ? error.message
+            : '죄송합니다. 오류가 발생했습니다. API 키 설정을 확인해 주세요.',
+          timestamp: Date.now(),
+        }]);
+      }
     } finally {
       setIsLoading(false);
       endGeneration();

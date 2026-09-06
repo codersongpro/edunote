@@ -1,6 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { hasMeaningfulWork, parseWorkDraft, WORK_DRAFT_VERSION } from '../workDraft';
-import { initialGlobalState } from '../../GlobalStateContext';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  clearWorkDraft,
+  hasMeaningfulWork,
+  parseWorkDraft,
+  WorkDraftSaveQueue,
+  WORK_DRAFT_VERSION,
+} from '../workDraft';
+import { createInitialGlobalState, initialGlobalState } from '../../GlobalStateContext';
 import { GlobalState } from '../../types';
 
 function withOpinionStudent(overrides: Record<string, unknown>): GlobalState {
@@ -108,5 +114,47 @@ describe('parseWorkDraft', () => {
     // 빠진 구역은 초기값으로 채워진다
     expect(parsed!.state.sports).toEqual(initialGlobalState.sports);
     expect(parsed!.state.recordChatbot).toEqual(initialGlobalState.recordChatbot);
+  });
+});
+
+describe('학생 데이터 삭제 경계', () => {
+  it('삭제용 초안 비우기가 실패하면 호출자에게 오류를 전달한다', async () => {
+    const error = new Error('초안 파일을 쓸 수 없음');
+    (window as unknown as { electronAPI: unknown }).electronAPI = {
+      writeJsonData: vi.fn().mockRejectedValue(error),
+    };
+
+    await expect(clearWorkDraft()).rejects.toBe(error);
+  });
+
+  it('삭제 시작 전에 실행 중인 저장을 기다리고 예약된 옛 저장은 실행하지 않는다', async () => {
+    const queue = new WorkDraftSaveQueue();
+    let finishActiveSave: (() => void) | undefined;
+    const activeSave = vi.fn(() => new Promise<void>(resolve => { finishActiveSave = resolve; }));
+    const scheduledSave = vi.fn().mockResolvedValue(undefined);
+
+    void queue.enqueue(activeSave);
+    void queue.enqueue(scheduledSave);
+    await vi.waitFor(() => expect(activeSave).toHaveBeenCalledTimes(1));
+
+    let drained = false;
+    const drainPromise = queue.invalidateAndWait().then(() => { drained = true; });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+
+    finishActiveSave?.();
+    await drainPromise;
+
+    expect(scheduledSave).not.toHaveBeenCalled();
+  });
+
+  it('삭제 후 초기 상태는 기존 초기 상태와 내부 객체를 공유하지 않는다', () => {
+    const first = createInitialGlobalState();
+    const second = createInitialGlobalState();
+
+    first.opinion.students[0].name = '변경된 이름';
+
+    expect(second.opinion.students[0].name).toBe('학생 1');
+    expect(initialGlobalState.opinion.students[0].name).toBe('학생 1');
   });
 });
