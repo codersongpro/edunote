@@ -170,7 +170,7 @@ const FORMAL_PUBLIC_WRITING_INSTRUCTION = `
 const NO_FABRICATED_REFERENCES_INSTRUCTION = `
 [근거·출처 작성 규칙 — 반드시 지킬 것]
 - 사용자가 직접 제공하지 않은 법령명, 조항, 훈령·예규 번호, 교육청 공문번호, 정책·사업 명칭을 추측해서 쓰지 마세요.
-- '관련' 항목에 쓸 근거가 입력에 없으면 "(근거 공문·법령 입력 필요)"처럼 사용자가 채울 자리로 표시하세요.
+- '관련' 항목에 쓸 근거가 입력에 없으면 관련 항목을 생략하세요. 업로드한 양식의 필수 입력란이면 "[확인 필요: 관련 문서]"로 표시하세요.
 - 실존 여부가 불확실한 기관명, 인용문, 통계 수치를 만들어내지 마세요. 입력에 있는 사실만 사용하세요.`;
 
 // 웹 검색 그라운딩을 켰을 때는 근거를 아예 쓰지 못하게 막는 대신,
@@ -714,14 +714,14 @@ export const generateDocument = async (
       let outputExample = '';
 
       if (gongmunComplexity === GongmunComplexity.SIMPLE) {
-        complexityInstruction = `[작성 모드: 간단] 구성: 1.관련, 2.본문(시행문), 붙임. 본문에는 '~와 같이 (실시/안내/운영)합니다.'만 작성. 세부내용은 붙임 참조.`;
-        outputExample = `1. 관련: ${schoolYear}학년도 주요업무계획<br>2. 위 호와 관련하여 <strong>(핵심 건명)</strong>을(를) 붙임과 같이 (실시/안내)합니다.<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
+        complexityInstruction = `[작성 모드: 간단] 관련 문서가 입력된 경우 관련 항목, 시행문 본문, 실제 첨부가 있는 경우 붙임으로 구성. 본문은 한두 문장으로 간결하게 작성.`;
+        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문 &nbsp;<strong>(핵심 건명)</strong>을(를) (실시/안내)합니다.${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       } else if (gongmunComplexity === GongmunComplexity.MEDIUM) {
-        complexityInstruction = `[작성 모드: 중간] 구성: 1.관련, 2.본문, 개요(가,나,다 3~4항목), 붙임. 각 항목은 1줄 이내.`;
-        outputExample = `1. 관련: ${schoolYear}학년도 주요업무계획<br>2. 위 호와 관련하여 <strong>(핵심 건명)</strong>을(를) 다음과 같이 실시하고자 합니다.<br><br>&nbsp;&nbsp;가. 일시: ...<br>&nbsp;&nbsp;나. 장소: ...<br>&nbsp;&nbsp;다. 대상: ...<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
+        complexityInstruction = `[작성 모드: 중간] 관련 문서가 입력된 경우 관련 항목, 본문, 입력으로 확인된 개요, 실제 첨부가 있는 경우 붙임으로 구성. 각 항목은 1줄 이내.`;
+        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문 &nbsp;<strong>(핵심 건명)</strong>을(를) 다음과 같이 실시하고자 합니다.<br><br>&nbsp;&nbsp;가. 일시: [확인 필요: 일시]<br>&nbsp;&nbsp;나. 장소: [확인 필요: 장소]<br>&nbsp;&nbsp;다. 대상: [확인 필요: 대상]${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       } else {
-        complexityInstruction = `[작성 모드: 상세] 구성: 1.관련, 2.본문, 개요, 행정사항, 붙임. 표는 세부추진계획(일정·역할 분담 등 여러 항목을 줄 단위로 비교·정리해야 하는 내용)이 있을 때만, 그 부분에 한해 사용하세요. 그 외 행정사항이나 다른 항목은 가./나./다. 개조식 텍스트로 작성하고, 세부추진계획이 없거나 간단하면 공문 전체에 표를 넣지 마세요.`;
-        outputExample = `1. 관련: ...<br>2. 위 호와 관련하여 ... 다음과 같이 실시합니다.<br><br>가.일시: ... 나.장소: ... 다.대상: ... 라.주요내용: ... 마.행정사항(필요 시에만 표, 아니면 개조식)<br><br>${attachmentText || '붙임 &nbsp;운영 계획서 1부. &nbsp;끝.'}`;
+        complexityInstruction = `[작성 모드: 상세] 관련 문서가 입력된 경우 관련 항목, 본문, 입력으로 확인된 개요·행정사항, 실제 첨부가 있는 경우 붙임으로 구성. 표는 세부추진계획처럼 여러 항목을 비교할 때만 사용하세요.`;
+        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문을 입력 사실에 맞게 작성<br><br>가.일시: [확인 필요: 일시]<br>나.장소: [확인 필요: 장소]<br>다.대상: [확인 필요: 대상]${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       }
 
       specificInstruction = `
@@ -730,7 +730,7 @@ ${complexityInstruction}
 [공통 작성 규칙]
 1. 글자 색상: 무조건 검정색(#000000)만 사용.
 2. 발신 명의 제외.
-3. 마무리: '붙임' 표시 후 "끝."으로 마무리.
+3. 마무리: 실제 첨부가 있을 때만 '붙임'을 표시하고 "끝."으로 마무리.
 4. 항목 기호: ${numberingReinforcement}
 5. 본문 시행문은 반드시 "~합니다.", "~입니다.", "~습니다.", "~하고자 합니다." 등 합쇼체로 작성하고, "~함.", "~임."으로 끝내지 마세요.
 ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
@@ -796,9 +796,10 @@ ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
 1. 추진 개요: 가. 사업명, 나. 기간, 다. 대상, 라. 예산, 마. 추진 목적을 개조식으로 작성 (배경/목적 장황하게 반복 금지)
 2. 추진 실적: [계획 vs 결과 비교표] — 항목(일시/대상/횟수 등)별로 계획·결과 2열 표로 작성
 3. 세부 운영 결과: 가. 운영 내용, 나. 참여 현황, 다. 주요 성과를 개조식으로 요약한 뒤 회차별/활동별 진행 내용 표 + 하단에 사진 첨부 표(2×2 또는 2×N 셀, 셀 안에 '[사진 첨부]'와 사진 설명 텍스트 삽입)
-4. 만족도 조사 결과: 가. 조사 개요, 나. 주요 결과, 다. 개선 의견을 개조식으로 정리하고, 참여자 만족도 설문 결과 요약 표(항목·만족도·주요 의견) 포함 — 해당 정보가 없으면 '별도 조사 실시 예정'으로 기재
-5. 예산 정산: [목|세목|산출내역|계획액|집행액|잔액|비고] 7열 표, 합계 행 포함, 집행률 명시
+4. 만족도 조사 결과: 실제 조사 자료가 입력이나 첨부에 있을 때만 조사 개요·결과·개선 의견과 표를 작성. 자료가 없으면 항목을 생략하고 조사를 실시했거나 실시 예정이라고 만들지 말 것
+5. 예산 정산: 계획액·집행액 등 실제 예산 자료가 있을 때만 [목|세목|산출내역|계획액|집행액|잔액|비고] 표를 작성. 없는 금액·집행률을 계산하거나 만들지 말 것
 6. 운영 성과 및 제언: 가. 운영 성과, 나. 개선 사항, 다. 차기 계획을 개조식으로 작성. 구체적 수치가 있으면 포함
+[사실 구분] 자료 미제공과 실제 미실시를 구별하세요. 입력에 자료가 없다는 이유로 사업·조사·집행이 없었다고 단정하지 마세요.
 [개조식 작성 규칙] 표 앞뒤 설명도 긴 문단 금지. 각 항목은 반드시 가. 나. 다. 또는 표로 분리하세요. 각 항목은 한 문장 중심으로 작성하고, 장황하면 둘로 나누세요.
 - 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하고, 1)/2)/3) 아래는 가) 나) 다) 을 사용하세요.
 - 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
@@ -872,7 +873,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     case DocType.PROMOTION:
       specificInstruction = `
 작업: [홍보자료 및 보도자료 작성]
-[기본 구조] 제목, 본문(도입-전개-결론), 관계자 인터뷰 인용구 형식의 언론 보도자료.
+[기본 구조] 제목, 본문(도입-전개-결론)의 언론 보도자료. 실제 인용 내용이 입력이나 첨부에 있을 때만 직접 인용하고, 인터뷰 대상자 이름만으로 발언을 만들지 마세요.
 [문체] 객관적 언론 보도용 문체(~했다, ~밝혔다).
 [SNS 추가] 보도자료 아래에 [SNS 홍보용 요약]: 친근한 존댓말, 해시태그(#) 3~5개. 과장된 광고 문구는 피하세요.`;
       break;
@@ -881,7 +882,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
       specificInstruction = `
 작업: [학교 공고문 작성]
 [구조]
-1. 상단: 공고 제목(크고 진하게 중앙 정렬) + 공고번호 + 공고일
+1. 상단: 공고 제목(크고 진하게 중앙 정렬) + 공고번호 + 공고일. 번호나 공고일이 없으면 임의 생성하지 말고 [확인 필요: 공고 번호], [확인 필요: 공고일]로 표시
 2. 본문: 공고 내용 상세 서술 (1., 가., 1) 항목 기호 사용)
    - 접수 기간/마감일 명시
    - 지원 자격 및 방법
@@ -889,6 +890,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 3. 하단: 문의처, 날짜, 학교장 (직인란: "학 교 장 [직인]" 텍스트)
 [작성 규칙]
 - 공고 내용 요약을 바탕으로 학교 행정 공고문 형식에 맞게 완성.
+- 참고 기본정보의 오늘 날짜를 공고일로 확정하지 말고, 입력에 명시된 공고일만 사용하세요.
 - 항목 기호: ${numberingReinforcement}
 [첨부 파일 처리 규칙 — 반드시 준수]
 - 첨부 파일(계획서, 공문 등)은 공고문 작성에 참고할 자료입니다.
@@ -927,26 +929,28 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     for (const f of files) parts.push(fileToPart(f));
   }
 
-  const gonggoField = (value: string | undefined): string => (value?.trim() ? value : '(미입력)');
+  const gonggoField = (label: string, value: string | undefined, required = false): string =>
+    value?.trim() || (required ? `[확인 필요: ${label}]` : '(미입력 — 생략 가능)');
   const gonggoContext =
     docType === DocType.GONGGO && gonggoInputs
       ? `
 [공고 정보]
-- 공고 제목: ${gonggoField(gonggoInputs.title)}
-- 공고 번호: ${gonggoInputs.number || '제2026-001호 (임의 입력)'}
-- 공고 내용: ${gonggoField(gonggoInputs.content)}
-- 접수 기간/마감: ${gonggoField(gonggoInputs.deadline)}
-- 문의처: ${gonggoField(gonggoInputs.contact)}
-- 추가 사항: ${gonggoField(gonggoInputs.extraInfo)}`
+- 공고 제목: ${gonggoField('공고 제목', gonggoInputs.title, true)}
+- 공고 번호: ${gonggoField('공고 번호', gonggoInputs.number, true)}
+- 공고 내용: ${gonggoField('공고 내용', gonggoInputs.content, true)}
+- 접수 기간/마감: ${gonggoField('접수 기간/마감', gonggoInputs.deadline, true)}
+- 문의처: ${gonggoField('문의처', gonggoInputs.contact, true)}
+- 추가 사항: ${gonggoField('추가 사항', gonggoInputs.extraInfo)}`
       : '';
 
-  // 사용자가 모든 입력칸을 채우지 않아도 제목·주제에 어울리는 완성 문서가 나오도록
   const emptyFieldInstruction = `[미입력 항목 처리 — 반드시 준수]
-- 입력 정보에 "(미입력)"으로 표시되었거나 값이 비어 있는 항목은, 제목·주제와 문서 맥락에 어울리는 내용을 자연스럽게 추정하여 채워서 완성된 문서를 작성하세요.
-- "(미입력)", "미정", "추후 안내", "정보가 제공되지 않음" 같은 표시를 결과물에 절대 남기지 마세요.
-- 일시·기간이 비어 있으면 학년도와 오늘 날짜를 참고해 자연스러운 일정을 제안하고, 대상·장소 등은 학교 현장에서 일반적인 값으로 작성하세요.
-- 단, 사용자가 실제로 입력한 항목의 내용은 그대로 반영하고 임의로 바꾸지 마세요.
-- 법령명·공문번호·통계 등 근거·출처는 이 규칙의 예외입니다. [근거·출처 작성 규칙]에 따라 추측하지 말고 사용자가 채울 자리로 표시하세요.`;
+- 입력한 수치와 사실은 그대로 사용하고 임의로 바꾸거나 계산하지 마세요.
+- 입력이나 첨부에서 확인되지 않은 일정·장소·대상·인원·금액·집행액·만족도·회의 발언·인용문을 만들지 마세요.
+- 없어도 되는 항목은 생략하세요. 제출에 필요한 값이 없으면 "[확인 필요: 행사 일시]"처럼 누락 사실과 항목명을 표시하세요.
+- 계획의 활동 방법이나 운영 순서를 보완할 수는 있으나 반드시 제안으로 표시하고, 제안한 날짜를 확정 일정처럼 쓰지 마세요.
+- 보고서에서는 자료 미제공과 실제 미실시를 구별하고, 자료가 없다는 이유로 미실시했다고 단정하지 마세요.
+- 관련 문서와 붙임은 실제 입력이나 첨부가 있을 때만 작성하고 문서번호나 파일명을 만들지 마세요.
+- 참고 기본정보의 오늘 날짜를 공고일로 확정하지 말고, 사용자가 명시한 공고일만 사용하세요.`;
 
   try {
     let usedModel = '';
@@ -980,9 +984,12 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     const referencesInstruction = shouldRunTrainingResearch || finalUseSearchGrounding
       ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
       : NO_FABRICATED_REFERENCES_INSTRUCTION;
+    const inputContext = gonggoContext
+      ? [promptContext, gonggoContext].filter(context => context.trim()).join('\n\n')
+      : promptContext;
 
     parts.push({
-      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${gonggoContext || promptContext}\n\n${researchContext}`,
+      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n\n${templateInstruction}\n\n[입력 정보 및 요청사항]:\n${inputContext}\n\n${researchContext}`,
     });
 
     let finalGrounding: GroundingInfo | undefined;
