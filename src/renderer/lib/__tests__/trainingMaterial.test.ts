@@ -119,10 +119,12 @@ describe('연수자료 선택 항목', () => {
 
     expect(instruction).toContain('[항목 내용의 충실도 — 반드시 준수]');
     expect(instruction).toContain('내용을 짧게 줄이라는 뜻이 아닙니다');
-    expect(instruction).toContain('60자 이상으로 쓰세요');
+    expect(instruction).toContain('주어·조건·행동');
     expect(instruction).toContain('제목·라벨식 항목은 절대 쓰지 마세요');
-    expect(instruction).toContain('중항목을 4개 이상 배치하고');
+    expect(instruction).toContain('하위 항목을 억지로 만들지 마세요');
     expect(instruction).toContain('어미를 맞추려고 설명을 잘라 내지 마세요');
+    expect(instruction).not.toContain('60자 이상');
+    expect(instruction).not.toContain('중항목을 4개 이상');
   });
 
   it('출력 예시의 항목도 설명 문장 수준으로 제시한다', () => {
