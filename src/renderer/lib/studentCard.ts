@@ -1,7 +1,7 @@
 // 학생 카드 — 한 학생의 생기부 도우미 이력·메모를 한 화면에 모아 보여준다.
 // AI 호출이 전혀 없고, 기존에 저장된 데이터(eduHist_*, student-memos)만 재사용한다.
 
-import { getHistory, HistoryEntry } from './generationHistory';
+import { getHistory, getHistoryGroups, HistoryEntry } from './generationHistory';
 import { memoStudents, normalizeName, StudentMemoRecord } from './generationSafety';
 
 export type RecordMode = 'opinion' | 'subject' | 'sports' | 'creative';
@@ -49,12 +49,20 @@ async function loadMemoEntries(identifier: string): Promise<StudentCardEntry[]> 
 }
 
 function historyEntriesFor(mode: RecordMode, identifier: string): StudentCardEntry[] {
-  return getHistory(mode, identifier).map((entry: HistoryEntry) => ({
+  if (mode !== 'subject' && mode !== 'creative') {
+    return getHistory(mode, identifier).map((entry: HistoryEntry) => ({
+      kind: mode,
+      label: RECORD_MODE_LABELS[mode],
+      content: entry.content,
+      date: entry.date,
+    }));
+  }
+  return getHistoryGroups(mode, identifier).flatMap(group => group.entries.map(entry => ({
     kind: mode,
-    label: RECORD_MODE_LABELS[mode],
+    label: `${RECORD_MODE_LABELS[mode]} · ${group.label}`,
     content: entry.content,
     date: entry.date,
-  }));
+  })));
 }
 
 export async function loadStudentCard(identifier: string): Promise<StudentCardEntry[]> {

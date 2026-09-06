@@ -47,4 +47,19 @@ describe('loadStudentCard', () => {
     const entries = await loadStudentCard('1');
     expect(entries[0].label).toBe(RECORD_MODE_LABELS.sports);
   });
+
+  it('교과·창체의 여러 맥락과 이전 버전 이력을 구분해 모두 표시한다', async () => {
+    saveHistory('subject', '1', '국어 내용', '국어');
+    saveHistory('subject', '1', '수학 내용', '수학');
+    saveHistory('creative', '1', '동아리 내용', '동아리활동');
+    saveHistory('subject', '1', '이전 세특');
+
+    const entries = await loadStudentCard('1');
+    expect(entries.map(entry => entry.label)).toEqual(expect.arrayContaining([
+      '교과 세부능력 및 특기사항 · 국어',
+      '교과 세부능력 및 특기사항 · 수학',
+      '창의적 체험활동 · 동아리활동',
+      '교과 세부능력 및 특기사항 · 이전 버전 기록(과목/활동 미상)',
+    ]));
+  });
 });

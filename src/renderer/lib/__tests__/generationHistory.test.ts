@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { saveHistory, getHistory, clearAllHistory, DOCUMENT_HISTORY_KEY_PREFIX, clearDocumentHistory } from '../generationHistory';
+import { saveHistory, getHistory, getHistoryGroups, clearAllHistory, DOCUMENT_HISTORY_KEY_PREFIX, clearDocumentHistory } from '../generationHistory';
 
 afterEach(() => {
   localStorage.clear();
@@ -48,6 +48,36 @@ describe('saveHistory', () => {
     // 가장 오래된 학생0은 제거되고, 방금 저장한 신규학생은 남아야 한다.
     expect(getHistory('opinion', '학생0')).toHaveLength(0);
     expect(getHistory('opinion', '신규학생')).toHaveLength(1);
+  });
+
+  it('교과와 창체 이력을 과목·활동별로 분리하고 각 맥락마다 3개씩 보관한다', () => {
+    for (const value of ['국어1', '국어2', '국어3', '국어4']) saveHistory('subject', '홍길동', value, '국어');
+    for (const value of ['수학1', '수학2', '수학3', '수학4']) saveHistory('subject', '홍길동', value, '수학');
+    saveHistory('creative', '홍길동', '자율 내용', '자율활동');
+
+    expect(getHistory('subject', '홍길동', '국어').map(entry => entry.content)).toEqual(['국어4', '국어3', '국어2']);
+    expect(getHistory('subject', '홍길동', '수학').map(entry => entry.content)).toEqual(['수학4', '수학3', '수학2']);
+    expect(getHistory('creative', '홍길동', '자율활동').map(entry => entry.content)).toEqual(['자율 내용']);
+  });
+
+  it('구분자가 포함된 이름과 맥락도 키 충돌 없이 분리한다', () => {
+    saveHistory('subject', '가_나', '첫 내용', '다');
+    saveHistory('subject', '가', '둘째 내용', '나_다');
+    expect(getHistory('subject', '가_나', '다')[0].content).toBe('첫 내용');
+    expect(getHistory('subject', '가', '나_다')[0].content).toBe('둘째 내용');
+  });
+
+  it('이전 버전 이력은 맥락을 추측하거나 새 이력에 복제하지 않고 별도 그룹으로 보존한다', () => {
+    saveHistory('subject', '홍길동', '이전 버전 내용');
+    saveHistory('subject', '홍길동', '국어 새 내용', '국어');
+
+    const groups = getHistoryGroups('subject', '홍길동');
+    expect(groups).toEqual(expect.arrayContaining([
+      expect.objectContaining({ context: '국어', legacy: false }),
+      expect.objectContaining({ context: null, legacy: true, label: '이전 버전 기록(과목/활동 미상)' }),
+    ]));
+    expect(groups.flatMap(group => group.entries).map(entry => entry.content).sort())
+      .toEqual(['국어 새 내용', '이전 버전 내용'].sort());
   });
 });
 

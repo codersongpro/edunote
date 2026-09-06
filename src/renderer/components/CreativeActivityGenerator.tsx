@@ -10,7 +10,7 @@ import { useGlobalState } from '../GlobalStateContext';
 import { queueViolationWarning } from '../lib/guidelineCompliance';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
-import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
+import { saveHistory, getHistoryGroupsForContext } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { prepareAndRunWithAbort } from '../lib/cancellation';
 import { applyScopedRegenerationResult, RegenerationRequestRegistry } from '../lib/regenerationResult';
@@ -534,7 +534,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
               );
               newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[i].name, result);
-              saveHistory('creative', student.name, result);
+              saveHistory('creative', student.name, result, creativeState.currentActivityName);
               completedCount++;
               const pct = Math.round((completedCount / newStudents.length) * 100);
               updateProgress(pct);
@@ -605,7 +605,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
               );
               newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
               queueViolationWarning(showToast, newStudents[index].name, result);
-              saveHistory('creative', student.name, result);
+              saveHistory('creative', student.name, result, creativeState.currentActivityName);
               completedCount++;
               const pct = Math.round((completedCount / selectedIndices.length) * 100);
               updateProgress(pct);
@@ -703,7 +703,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         };
       });
       queueViolationWarning(showToast, student.name, result);
-      saveHistory('creative', student.name, result);
+      saveHistory('creative', student.name, result, activityName);
       playSuccessSound();
     } catch (err: any) {
       const error = err;
@@ -1492,8 +1492,9 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         )}
                                     </button>
                                     {(() => {
-                                      const hist = getHistory('creative', student.name);
-                                      return hist.length > 0 ? (
+                                      const groups = getHistoryGroupsForContext('creative', student.name, creativeState.currentActivityName);
+                                      const count = groups.reduce((sum, group) => sum + group.entries.length, 0);
+                                      return count > 0 ? (
                                         <button
                                           onClick={() => setExpandedHistory(prev => {
                                             const next = new Set(prev);
@@ -1502,7 +1503,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                           })}
                                           className="text-sm font-medium flex items-center px-3 py-1.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#3A332D] transition-colors"
                                         >
-                                          이전 기록 ({hist.length})
+                                          이전 기록 ({count})
                                         </button>
                                       ) : null;
                                     })()}
@@ -1539,14 +1540,14 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.creative} />
                              </div>
                              {expandedHistory.has(student.id) && (() => {
-                               const hist: HistoryEntry[] = getHistory('creative', student.name);
-                               return hist.length > 0 ? (
+                               const groups = getHistoryGroupsForContext('creative', student.name, creativeState.currentActivityName);
+                               return groups.length > 0 ? (
                                  <div className="mt-3 space-y-2">
                                    <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">이전 생성 기록</p>
-                                   {hist.map((entry, hi) => (
-                                     <div key={hi} className="rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210]/40 p-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
+                                   {groups.flatMap(group => group.entries.map((entry, hi) => (
+                                     <div key={`${group.label}-${hi}`} className="rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210]/40 p-3 text-sm text-[#78716C] dark:text-[#9C8F87]">
                                        <div className="flex justify-between items-center mb-1">
-                                         <span className="text-xs text-[#A8A29E]">{new Date(entry.date).toLocaleString('ko-KR')}</span>
+                                         <span className="text-xs text-[#A8A29E]">{group.label} · {new Date(entry.date).toLocaleString('ko-KR')}</span>
                                          <button
                                            onClick={() => { handleResultChange(idx, entry.content); setExpandedHistory(prev => { const next = new Set(prev); next.delete(student.id); return next; }); }}
                                            className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
@@ -1554,7 +1555,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                        </div>
                                        <p className="leading-relaxed line-clamp-3">{entry.content}</p>
                                      </div>
-                                   ))}
+                                   ))) }
                                  </div>
                                ) : null;
                              })()}

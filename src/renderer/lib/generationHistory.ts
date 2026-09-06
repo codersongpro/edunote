@@ -3,6 +3,8 @@ import { safeSetItem } from './safeStorage';
 
 const MAX_HISTORY = 3;
 const KEY_PREFIX = 'eduHist_';
+const CONTEXT_KEY_PREFIX = `${KEY_PREFIX}v2_`;
+export const LEGACY_HISTORY_LABEL = '이전 버전 기록(과목/활동 미상)';
 // 학생 × 기록 종류가 누적되면 키가 무한정 늘어나므로 총 키 개수를 제한하고,
 // 초과분은 가장 오래 갱신되지 않은 키부터 정리한다.
 const MAX_KEYS = 300;
@@ -12,8 +14,17 @@ export interface HistoryEntry {
   date: string; // ISO 문자열
 }
 
-function historyKey(mode: string, name: string): string {
+function legacyHistoryKey(mode: string, name: string): string {
   return `${KEY_PREFIX}${mode}_${name}`;
+}
+
+function contextualHistoryKey(mode: string, name: string, context: string): string {
+  return `${CONTEXT_KEY_PREFIX}${encodeURIComponent(JSON.stringify([mode, name, context]))}`;
+}
+
+function historyKey(mode: string, name: string, context?: string): string {
+  const cleanContext = context?.trim();
+  return cleanContext ? contextualHistoryKey(mode, name, cleanContext) : legacyHistoryKey(mode, name);
 }
 
 function parseEntries(raw: string | null): HistoryEntry[] {
@@ -50,9 +61,9 @@ function pruneHistoryKeys(keepKey: string): void {
   }
 }
 
-export function saveHistory(mode: string, name: string, content: string): void {
+export function saveHistory(mode: string, name: string, content: string, context?: string): void {
   if (!content.trim()) return;
-  const key = historyKey(mode, name);
+  const key = historyKey(mode, name, context);
   const entries = parseEntries(localStorage.getItem(key));
   // 동일한 내용은 중복 저장하지 않음
   if (entries[0]?.content === content) return;
@@ -62,8 +73,52 @@ export function saveHistory(mode: string, name: string, content: string): void {
   pruneHistoryKeys(key);
 }
 
-export function getHistory(mode: string, name: string): HistoryEntry[] {
-  return parseEntries(localStorage.getItem(historyKey(mode, name)));
+export function getHistory(mode: string, name: string, context?: string): HistoryEntry[] {
+  return parseEntries(localStorage.getItem(historyKey(mode, name, context)));
+}
+
+export interface HistoryGroup {
+  context: string | null;
+  label: string;
+  legacy: boolean;
+  entries: HistoryEntry[];
+}
+
+function parseContextKey(key: string): [string, string, string] | null {
+  if (!key.startsWith(CONTEXT_KEY_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(decodeURIComponent(key.slice(CONTEXT_KEY_PREFIX.length)));
+    return Array.isArray(parsed)
+      && parsed.length === 3
+      && parsed.every(value => typeof value === 'string')
+      ? parsed as [string, string, string]
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getHistoryGroups(mode: string, name: string): HistoryGroup[] {
+  const groups: HistoryGroup[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
+    const identity = parseContextKey(key);
+    if (!identity || identity[0] !== mode || identity[1] !== name) continue;
+    const entries = parseEntries(localStorage.getItem(key));
+    if (entries.length > 0) groups.push({ context: identity[2], label: identity[2], legacy: false, entries });
+  }
+  groups.sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+
+  const legacyEntries = getHistory(mode, name);
+  if (legacyEntries.length > 0) {
+    groups.push({ context: null, label: LEGACY_HISTORY_LABEL, legacy: true, entries: legacyEntries });
+  }
+  return groups;
+}
+
+export function getHistoryGroupsForContext(mode: string, name: string, context: string): HistoryGroup[] {
+  return getHistoryGroups(mode, name).filter(group => group.legacy || group.context === context.trim());
 }
 
 // 학생기록/문서 생성 결과 화면(GeneratedDisplay.tsx)이 버전별 결과를 저장할 때 쓰는 접두사.
