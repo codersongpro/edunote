@@ -319,20 +319,10 @@ const LessonMaterialGenerator: React.FC = () => {
     }
     setError(null);
     setIsGenerating(true);
-    if (contentType === 'SLIDE') {
-      setSlides(null);
-      setSlidesModel('');
-      setSlideImages({});
-      setGeneratingImageSlides(new Set());
-      setAllImagesProgress(null);
-      setIsPresentMode(false);
-    } else if (contentType === 'WORKSHEET') {
+    if (contentType === 'WORKSHEET') {
       setWorksheetHtml(null);
       setWorksheetModel('');
-    } else if (contentType === 'QUIZ') {
-      setQuizHtml(null);
-      setQuizModel('');
-    } else {
+    } else if (contentType === 'PLAN') {
       setPlanContent('');
       setPlanModel('');
     }
@@ -350,6 +340,10 @@ const LessonMaterialGenerator: React.FC = () => {
     try {
       if (contentType === 'SLIDE') {
         const { slides: result, model } = await generateLessonSlides(params, pageCount);
+        setSlideImages({});
+        setGeneratingImageSlides(new Set());
+        setAllImagesProgress(null);
+        setIsPresentMode(false);
         setSlides(result);
         setSlidesModel(model);
       } else if (contentType === 'WORKSHEET') {

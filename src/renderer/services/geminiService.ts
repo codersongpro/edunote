@@ -1297,6 +1297,36 @@ export interface LessonParams {
   details?: string;
 }
 
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const invalidSlides = (): never => {
+  throw new Error('슬라이드 생성 결과 형식이 올바르지 않습니다. 다시 시도해주세요.');
+};
+
+function validateLessonSlides(value: unknown, expectedCount: number): LessonSlide[] {
+  if (!Number.isInteger(expectedCount) || expectedCount <= 0 || !Array.isArray(value) || value.length !== expectedCount) {
+    return invalidSlides();
+  }
+
+  value.forEach((item, index) => {
+    if (!isObjectRecord(item)
+      || item.page !== index + 1
+      || typeof item.title !== 'string'
+      || !item.title.trim()
+      || !Array.isArray(item.content)
+      || item.content.length < 2
+      || item.content.length > 3
+      || !item.content.every(content => typeof content === 'string' && content.trim().length > 0)
+      || typeof item.notes !== 'string'
+      || (item.imagePrompt !== undefined && (typeof item.imagePrompt !== 'string' || !item.imagePrompt.trim()))) {
+      invalidSlides();
+    }
+  });
+
+  return value as LessonSlide[];
+}
+
 const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로서 교사의 수업 자료 제작을 돕는 보조자입니다.
 한국 국가교육과정 성취기준에 맞는 양질의 수업 자료를 생성하세요.
 학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.
@@ -1355,8 +1385,13 @@ ${gradeGuidance ? `\n${gradeGuidance}` : ''}
   const cleaned = response.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
   if (!arrayMatch) throw new Error('슬라이드 JSON 파싱 실패: 올바른 배열 형식이 아닙니다.');
-  const parsed = JSON.parse(arrayMatch[0]);
-  const slides = Array.isArray(parsed) && parsed.length > 0 ? parsed : (() => { throw new Error('슬라이드 생성 결과가 비어있습니다. 다시 시도해주세요.'); })();
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(arrayMatch[0]);
+  } catch {
+    throw new Error('슬라이드 JSON 파싱에 실패했습니다. 다시 시도해주세요.');
+  }
+  const slides = validateLessonSlides(parsed, pageCount);
   return { slides, model: usedModel };
 }
 
@@ -1436,15 +1471,63 @@ export interface QuizData {
   questions: QuizQuestion[];
 }
 
-function parseQuizJson(raw: string): QuizData {
-  let s = raw.trim().replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/m, '');
+const QUIZ_TYPE_BY_REQUEST: Record<QuizType, QuizQuestion['type']> = {
+  MULTIPLE_CHOICE: 'multiple-choice',
+  SHORT_ANSWER: 'short-answer',
+  OX: 'ox',
+};
+
+const invalidQuiz = (): never => {
+  throw new Error('퀴즈 데이터 형식이 올바르지 않습니다. 다시 시도해주세요.');
+};
+
+function parseQuizJson(raw: string, expectedCount: number, requestedTypes: QuizType[]): QuizData {
+  const s = raw.trim().replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/m, '');
   const m = s.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('퀴즈 데이터를 생성하지 못했습니다. 다시 시도해주세요.');
-  const data = JSON.parse(m[0]) as QuizData;
-  if (!data.title || !Array.isArray(data.questions) || data.questions.length === 0) {
-    throw new Error('퀴즈 데이터 형식이 올바르지 않습니다. 다시 시도해주세요.');
+  let data: unknown;
+  try {
+    data = JSON.parse(m[0]);
+  } catch {
+    throw new Error('퀴즈 JSON 파싱에 실패했습니다. 다시 시도해주세요.');
   }
-  return data;
+  if (!Number.isInteger(expectedCount)
+    || expectedCount <= 0
+    || !isObjectRecord(data)
+    || typeof data.title !== 'string'
+    || !data.title.trim()
+    || !Array.isArray(data.questions)
+    || data.questions.length !== expectedCount) {
+    return invalidQuiz();
+  }
+
+  const allowedTypes = new Set(requestedTypes.map(type => QUIZ_TYPE_BY_REQUEST[type]));
+  data.questions.forEach((item) => {
+    if (!isObjectRecord(item)
+      || (item.type !== 'multiple-choice' && item.type !== 'short-answer' && item.type !== 'ox')
+      || !allowedTypes.has(item.type)
+      || typeof item.question !== 'string'
+      || !item.question.trim()
+      || typeof item.answer !== 'string') {
+      invalidQuiz();
+    }
+
+    if (item.type === 'multiple-choice') {
+      if (!Array.isArray(item.options)
+        || item.options.length !== 4
+        || !item.options.every(option => typeof option === 'string' && option.trim().length > 0)
+        || new Set(item.options).size !== item.options.length
+        || !item.options.includes(item.answer)) {
+        invalidQuiz();
+      }
+    } else if (item.options !== undefined) {
+      invalidQuiz();
+    } else if (item.type === 'ox' && item.answer !== 'O' && item.answer !== 'X') {
+      invalidQuiz();
+    }
+  });
+
+  return data as unknown as QuizData;
 }
 
 function buildQuizHtml(data: QuizData): string {
@@ -1685,7 +1768,7 @@ ${typeLines}
 
   let usedModel = '';
   const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true }, (model) => { usedModel = model; });
-  const data = parseQuizJson(raw);
+  const data = parseQuizJson(raw, questionCount, types);
   return { text: buildQuizHtml(data), model: usedModel };
 }
 
