@@ -19,6 +19,7 @@ import { ByteCountBadge } from './ByteCountBadge';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { buildStudentAssessmentTasks } from '../lib/neisGradeValidation';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -435,7 +436,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
               const newTasks = res.tasks.map((t, i) => ({
                   id: `${Date.now()}-${subjectKey}-${currentTaskCount + i}`,
                   task: t,
-                  level: '상' 
+                  level: '상' as const,
+                  requiresStudentEvaluation: true,
               }));
               newDataStore[subjectKey].tasks.push(...newTasks);
 
@@ -696,6 +698,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const handleGenerateAll = async () => {
     if (!subjectState.currentSubject) return;
 
+    let preparedTasks: AssessmentTask[][];
+    try {
+      preparedTasks = subjectState.activeStudents.map(student => buildStudentAssessmentTasks(subjectState.activeTasks, student));
+    } catch (error) {
+      notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '학생별 평가값을 확인해주세요.' });
+      return;
+    }
+
     setIsGlobalGenerating(true);
     setIsGenerating(true);
     setGlobalProgress(0);
@@ -707,10 +717,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         for (let i = 0; i < newStudents.length; i++) {
             if (isCancelRequested()) break;
             const student = newStudents[i];
-            let mergedTasks = subjectState.activeTasks.map(t => {
-                const studentEval = student.evaluations?.find(e => e.id === t.id);
-                return { ...t, level: studentEval ? studentEval.level : '상' };
-            });
+            let mergedTasks = preparedTasks[i];
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
               const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
@@ -769,6 +776,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
     if (!subjectState.currentSubject) return;
 
+    let preparedTasks: Map<number, AssessmentTask[]>;
+    try {
+      preparedTasks = new Map(selectedIndices.map(index => [
+        index,
+        buildStudentAssessmentTasks(subjectState.activeTasks, subjectState.activeStudents[index]),
+      ]));
+    } catch (error) {
+      notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '학생별 평가값을 확인해주세요.' });
+      return;
+    }
+
     setIsGlobalGenerating(true);
     setIsGenerating(true);
     setGlobalProgress(0);
@@ -781,10 +799,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
-            let mergedTasks = subjectState.activeTasks.map(t => {
-                const studentEval = student.evaluations?.find(e => e.id === t.id);
-                return { ...t, level: studentEval ? studentEval.level : '상' };
-            });
+            let mergedTasks = preparedTasks.get(index) || [];
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
               const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
@@ -834,6 +849,13 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const handleRegenerateOne = async (index: number) => {
     const student = subjectState.activeStudents[index];
     const subjectName = subjectState.currentSubject;
+    let mergedTasks: AssessmentTask[];
+    try {
+      mergedTasks = buildStudentAssessmentTasks(subjectState.activeTasks, student);
+    } catch (error) {
+      notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '학생별 평가값을 확인해주세요.' });
+      return;
+    }
     const generationId = regenerationKey(subjectName, student.id);
     const request = regenerationRequestsRef.current.begin({
       scope: subjectName,
@@ -847,14 +869,6 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         : [];
 
     try {
-      let mergedTasks = subjectState.activeTasks.map(t => {
-          const studentEval = student.evaluations?.find(e => e.id === t.id);
-          return {
-              ...t,
-              level: studentEval ? studentEval.level : '상'
-          };
-      });
-
       mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
 
       const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
@@ -1048,7 +1062,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         const rows = subjectState.activeStudents.map((s: StudentSubjectData) => {
             const tasksSummary = subjectState.activeTasks.map((t: AssessmentTask) => {
                 const studentEval = s.evaluations?.find(e => e.id === t.id);
-                const level = studentEval ? studentEval.level : '상';
+                const level = studentEval?.level ?? (t.requiresStudentEvaluation ? '미확인' : t.level);
                 return `${t.task}(${level})`;
             }).join(' / ');
             return [s.name, s.generatedContent || '', tasksSummary, s.additionalContext || ''];

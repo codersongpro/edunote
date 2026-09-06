@@ -108,6 +108,7 @@ export interface AssessmentTask {
   id: string;
   task: string;
   level: '상' | '중' | '하';
+  requiresStudentEvaluation?: boolean;
 }
 
 export interface ParsedTaskData {

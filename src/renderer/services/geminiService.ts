@@ -17,6 +17,7 @@ import {
   CustomToolInput,
   TrainingMaterialSections,
 } from '../types';
+import { validateNeisGradeData } from '../lib/neisGradeValidation';
 import type { GroundingInfo } from '../../preload/types';
 import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIST } from '../constants';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
@@ -1309,14 +1310,17 @@ export const parseNeisGradeFiles = async (files: { data: string; mimeType: strin
   const prompt = `이 파일들은 나이스(NEIS)에서 내려받은 학생들의 개인별 성적 조회 파일입니다.
 파일 내용을 정밀 분석하여 다음 JSON 형식으로 반환하세요.
 [{ "semester": "1학기", "subject": "국어", "tasks": ["과제명"], "students": [{ "name": "홍길동", "evaluations": ["상"] }] }]
-- ◎=상, ○=중, △=하. 오직 JSON 데이터만 반환하세요.`;
+- ◎=상, ○=중, △=하로 기록하세요.
+- 평가 칸이 비어 있거나 읽을 수 없으면 해당 배열 위치에 null을 넣으세요. 임의로 "상"을 넣거나 학생별 평가를 생략하지 마세요.
+- evaluations 배열은 tasks 배열과 같은 개수와 순서를 유지하세요. 가운데 빈 칸이 있어도 뒤 평가를 앞으로 당기지 마세요.
+- 오직 JSON 데이터만 반환하세요.`;
   const parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }> = [];
   files.forEach((f) => parts.push({ inlineData: { mimeType: f.mimeType, data: f.data } }));
   parts.push({ text: prompt });
   const text = await aiGenerateMultipart(parts, undefined, { temperature: 0.1, responseJson: true });
   const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-  const parsed = JSON.parse(cleanJson);
-  return Array.isArray(parsed) ? parsed : [parsed];
+  const parsed: unknown = JSON.parse(cleanJson);
+  return validateNeisGradeData(parsed);
 };
 
 // 학생 개인의 활동 결과물·기록물(활동지, 수행평가 결과물, 실험/작품 사진, 관찰일지, 포트폴리오 등)을
