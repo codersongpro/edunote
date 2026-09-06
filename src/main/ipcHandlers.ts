@@ -33,6 +33,7 @@ import {
   MAX_BACKUP_BYTES,
   applyBackupTransaction,
   parseBackup,
+  writeValidatedBackup,
   type BackupSettingsStore,
   type ParsedBackup,
 } from './backup';
@@ -550,7 +551,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     });
     if (result.canceled || !result.filePath) return null;
 
-    atomicWriteJsonSync(result.filePath, buildBackupPayload(localStorageDump));
+    writeValidatedBackup(result.filePath, buildBackupPayload(localStorageDump));
     return result.filePath;
   });
 
@@ -563,12 +564,11 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     const dueMs = (interval === 'daily' ? 1 : 7) * 24 * 60 * 60 * 1000;
     if (Date.now() - last < dueMs) return null;
 
-    const backupDir = path.join(getDataDir(), 'backups');
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
     const now = new Date();
     const stamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const backupDir = path.join(getDataDir(), 'backups');
     const filePath = path.join(backupDir, `edunote_backup_${stamp}.json`);
-    atomicWriteJsonSync(filePath, buildBackupPayload(localStorageDump));
+    writeValidatedBackup(filePath, buildBackupPayload(localStorageDump));
     store.set('lastAutoBackupAt', now.toISOString());
 
     // 오래된 자동 백업은 최근 10개만 남긴다

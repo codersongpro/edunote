@@ -117,6 +117,23 @@ export function parseBackup(raw: string, sourceSizeBytes = Buffer.byteLength(raw
   return { schemaVersion: rawVersion, settings, dataFiles, localStorage, warnings };
 }
 
+/** 실제 파일에 기록할 문자열을 먼저 만들고, 같은 문자열을 복원 검증기로 확인합니다. */
+export function serializeValidatedBackup(payload: unknown): string {
+  const raw = JSON.stringify(payload, null, 2);
+  if (raw === undefined) throw new Error('백업 데이터를 JSON으로 변환할 수 없습니다.');
+  parseBackup(raw, Buffer.byteLength(raw, 'utf8'));
+  return raw;
+}
+
+export function writeValidatedBackup(
+  targetPath: string,
+  payload: unknown,
+  writeFile: (filePath: string, data: string, encoding: BufferEncoding) => void = atomicWriteFileSync,
+): void {
+  const raw = serializeValidatedBackup(payload);
+  writeFile(targetPath, raw, 'utf8');
+}
+
 /**
  * 설정과 JSON 파일을 한 트랜잭션처럼 적용합니다. 반환된 rollback은 renderer의
  * localStorage 복원이 실패한 경우 메인 프로세스 변경까지 되돌릴 때 사용합니다.
