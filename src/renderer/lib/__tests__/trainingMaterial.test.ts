@@ -96,7 +96,7 @@ describe('연수자료 선택 항목', () => {
     expect(instruction).toContain('"~합니다", "~입니다", "~됩니다", "~해야 합니다" 종결은 사용하지 마세요');
   });
 
-  it('말머리 단계마다 계획서와 같은 들여쓰기와 글자 크기를 인라인 style로 요구한다', () => {
+  it('말머리 단계마다 한 블록과 data-outline-level로 서식을 요구한다', () => {
     const instruction = buildTrainingMaterialInstruction(
       DEFAULT_TRAINING_MATERIAL_SECTIONS,
       2,
@@ -105,10 +105,11 @@ describe('연수자료 선택 항목', () => {
     expect(instruction).toContain('[HTML 서식 체계 — 계획서와 동일하게 반드시 인라인 style로 지정]');
     expect(instruction).toContain('font-size:22pt');
     expect(instruction).toContain('font-size:16pt');
-    expect(instruction).toContain('margin-left:14px; font-size:13pt;');
-    expect(instruction).toContain('margin-left:30px; font-size:12.5pt;');
-    expect(instruction).toContain('margin-left:46px; font-size:12pt;');
-    expect(instruction).toContain('들여쓰기는 &nbsp;가 아니라 위의 margin-left로 표현');
+    expect(instruction).toContain('data-outline-level="2" style="font-size:13pt;"');
+    expect(instruction).toContain('data-outline-level="3" style="font-size:12.5pt;"');
+    expect(instruction).toContain('data-outline-level="4" style="font-size:12pt;"');
+    expect(instruction).toContain('각 말머리 항목은 한 블록에 하나만 작성');
+    expect(instruction).toContain('반복 공백, margin-left, padding-left를 생성하지 마세요');
   });
 
   it('개조식을 이유로 설명이 짧아지지 않도록 항목 충실도를 요구한다', () => {
@@ -136,7 +137,7 @@ describe('연수자료 선택 항목', () => {
     // 서식을 설명하는 줄(- 로 시작)이 아니라 출력 예시 블록의 항목 줄만 검사한다.
     const exampleLines = instruction
       .split('\n')
-      .filter(line => /^\s+<div style="margin-left:(14|30|46)px/.test(line));
+      .filter(line => /^\s+<div data-outline-level="[234]"/.test(line));
 
     expect(exampleLines.length).toBeGreaterThan(0);
     for (const line of exampleLines) {

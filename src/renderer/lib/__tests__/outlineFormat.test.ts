@@ -27,6 +27,8 @@ describe('말머리 단계 판별', () => {
     expect(detectOutlineLevel('교직원 개인정보보호 연수')).toBeNull();
     // 연도로 시작하는 날짜 표기를 대항목으로 오인하지 않는다.
     expect(detectOutlineLevel('2026. 3. 2. 시행')).toBeNull();
+    expect(detectOutlineLevel('1.5배 증가')).toBeNull();
+    expect(detectOutlineLevel('3.14를 반올림')).toBeNull();
     expect(detectOutlineLevel('')).toBeNull();
   });
 });
@@ -39,8 +41,10 @@ describe('말머리 서식 보정', () => {
 
     ([1, 2, 3, 4] as const).forEach(level => {
       const line = lineOf(result, level);
-      expect(line?.style.paddingLeft).toBe(OUTLINE_LEVEL_STYLES[level].indent);
+      expect(line?.style.marginLeft).toBe(OUTLINE_LEVEL_STYLES[level].indent);
       expect(line?.style.fontSize).toBe(OUTLINE_LEVEL_STYLES[level].fontSize);
+      expect(line?.style.paddingLeft).not.toBe('');
+      expect(line?.style.textIndent).toMatch(/^-/);
     });
     expect(lineOf(result, 1)?.style.fontWeight).toBe('bold');
     expect(lineOf(result, 2)?.style.fontWeight).toBe('');
@@ -85,6 +89,56 @@ describe('말머리 서식 보정', () => {
     const twice = applyOutlineStyles(once);
 
     expect(parse(twice).querySelectorAll('[data-outline-level]')).toHaveLength(1);
+    expect(twice).toBe(once);
+  });
+
+  it('기존 부모 여백 대신 정규화 요소 하나만 단계 들여쓰기를 책임진다', () => {
+    const result = applyOutlineStyles(
+      '<h2 style="font-size:16pt">1. 운영 방법</h2>'
+      + '<div style="margin-left:14px">가. 대상별 안내</div>'
+      + '<div style="margin-left:30px">1) 안내 자료 확인</div>'
+      + '<div style="margin-left:46px">가) 제출 항목 점검</div>',
+    );
+    const doc = parse(result);
+
+    ([2, 3, 4] as const).forEach(level => {
+      const line = doc.querySelector<HTMLElement>(`[data-outline-level="${level}"]`);
+      expect(line?.style.marginLeft).toBe(OUTLINE_LEVEL_STYLES[level].indent);
+      expect(line?.parentElement?.style.marginLeft).toBe('');
+      expect(line?.parentElement?.style.paddingLeft).toBe('');
+    });
+  });
+
+  it('긴 항목은 내어쓰기로 둘째 줄을 항목 본문 시작점에 맞춘다', () => {
+    const result = applyOutlineStyles('<div>가. 대상별 안내 자료를 충분히 길게 작성하여 다음 줄로 넘어가는 항목</div>');
+    const line = lineOf(result, 2);
+
+    expect(line?.style.display).toBe('block');
+    expect(line?.style.paddingLeft).toBe('2.2em');
+    expect(line?.style.textIndent).toBe('-2.2em');
+  });
+
+  it('이미 data-outline-level이 있는 항목은 중첩 래퍼 없이 정규화한다', () => {
+    const result = applyOutlineStyles('<div data-outline-level="2" style="margin-left:14px;font-size:13pt;">가. 안내</div>');
+    const doc = parse(result);
+    const line = doc.querySelector<HTMLElement>('[data-outline-level="2"]');
+
+    expect(doc.querySelectorAll('[data-outline-level="2"]')).toHaveLength(1);
+    expect(line?.style.marginLeft).toBe('14px');
+    expect(line?.style.paddingLeft).toBe('2.2em');
+  });
+
+  it('강조 태그로 시작하는 항목과 표 앞의 직접 본문을 빠뜨리지 않는다', () => {
+    const result = applyOutlineStyles(
+      '<div><strong>가. 강조된 안내</strong></div>'
+      + '<div>1. 표 앞 본문<table><tbody><tr><td>1.5배 증가</td></tr></tbody></table></div>',
+    );
+    const doc = parse(result);
+
+    expect(doc.querySelectorAll('[data-outline-level="2"]')).toHaveLength(1);
+    expect(doc.querySelectorAll('[data-outline-level="1"]')).toHaveLength(1);
+    expect(doc.querySelector('strong')?.textContent).toBe('가. 강조된 안내');
+    expect(doc.querySelector('td [data-outline-level]')).toBeNull();
   });
 
   it('전체 HTML 문서로 와도 본문 서식만 보정한다', () => {
@@ -92,7 +146,7 @@ describe('말머리 서식 보정', () => {
       '<!DOCTYPE html><html><head><title>Document</title></head><body><div>가. 최소 수집 원칙 준수</div></body></html>',
     );
 
-    expect(lineOf(result, 2)?.style.paddingLeft).toBe(OUTLINE_LEVEL_STYLES[2].indent);
+    expect(lineOf(result, 2)?.style.marginLeft).toBe(OUTLINE_LEVEL_STYLES[2].indent);
     expect(result).not.toContain('<div data-outline-root>');
   });
 

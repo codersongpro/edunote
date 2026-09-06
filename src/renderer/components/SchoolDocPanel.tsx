@@ -500,6 +500,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       // 연수자료는 말머리 위계가 그대로 보여야 하므로, AI가 단계별 들여쓰기·글자 크기를
       // 빠뜨렸으면 계획서와 같은 서식으로 보정해서 보여준다.
       const displayContent = activeTab === DocType.TRAINING_MATERIAL
+        && uploadedTemplates.length === 0
+        && !templateText.trim()
         ? applyOutlineStyles(cleanContent)
         : cleanContent;
       setContentByTab(prev => ({ ...prev, [activeTab]: displayContent }));

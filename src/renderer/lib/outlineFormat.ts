@@ -36,7 +36,7 @@ const HANGUL_MARKERS = '가나다라마바사아자차카타파하';
 const LEADING_SPACE = /^[\s\u00a0]+/;
 
 const LEVEL_PATTERNS: Array<{ level: OutlineLevel; pattern: RegExp }> = [
-  { level: 1, pattern: /^\d{1,2}\.\s*\S/ },
+  { level: 1, pattern: /^\d{1,2}\.(?!\d)\s*\S/ },
   { level: 2, pattern: new RegExp(`^[${HANGUL_MARKERS}]\\.\\s*\\S`) },
   { level: 3, pattern: /^\d{1,2}\)\s*\S/ },
   { level: 4, pattern: new RegExp(`^[${HANGUL_MARKERS}]\\)\\s*\\S`) },
@@ -51,21 +51,33 @@ export function detectOutlineLevel(text: string): OutlineLevel | null {
   return null;
 }
 
-// 단계별 인라인 스타일 문자열을 만든다.
-// display:inline-block을 써야 줄이 길어져 넘어가도 들여쓰기 위치가 유지된다.
+const HANGING_INDENTS: Record<OutlineLevel, string> = {
+  1: '2.4em',
+  2: '2.2em',
+  3: '2.4em',
+  4: '2.2em',
+};
+
+// 단계별 인라인 스타일 문자열을 만든다. 한 요소가 단계 여백과 내어쓰기를 함께
+// 책임져야 부모 여백과 합산되지 않고, 긴 줄의 둘째 줄도 본문 시작점에 맞는다.
 export function buildOutlineLineStyle(level: OutlineLevel): string {
   const style = OUTLINE_LEVEL_STYLES[level];
-  return `display:inline-block; padding-left:${style.indent}; font-size:${style.fontSize};${style.bold ? ' font-weight:bold;' : ''}`;
+  const hangingIndent = HANGING_INDENTS[level];
+  return `display:block; margin-left:${style.indent}; padding-left:${hangingIndent}; text-indent:-${hangingIndent}; width:calc(100% - ${style.indent}); box-sizing:border-box; font-size:${style.fontSize};${style.bold ? ' font-weight:bold;' : ''}`;
 }
 
-// 문단 안에 다시 블록 요소가 들어 있으면 그 문단은 건너뛴다(중복 처리 방지).
-const BLOCK_CHILD_SELECTOR = 'div,p,table,ul,ol,h1,h2,h3,h4,h5,h6';
+const BLOCK_CHILD_TAGS = new Set(['DIV', 'P', 'TABLE', 'UL', 'OL', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']);
 
 // <br>을 기준으로 자식 노드를 한 줄씩 묶는다.
 function splitLines(block: Element): ChildNode[][] {
   const lines: ChildNode[][] = [];
   let current: ChildNode[] = [];
   Array.from(block.childNodes).forEach(node => {
+    if (node.nodeType === 1 && BLOCK_CHILD_TAGS.has((node as Element).tagName)) {
+      if (current.length > 0) lines.push(current);
+      current = [];
+      return;
+    }
     if (node.nodeName === 'BR') {
       lines.push(current);
       current = [];
@@ -77,30 +89,72 @@ function splitLines(block: Element): ChildNode[][] {
   return lines;
 }
 
+function firstTextNode(nodes: ChildNode[]): Text | null {
+  const visit = (node: ChildNode): Text | null => {
+    if (node.nodeType === 3) return node as Text;
+    for (const child of Array.from(node.childNodes)) {
+      const found = visit(child);
+      if (found) return found;
+    }
+    return null;
+  };
+  for (const node of nodes) {
+    const found = visit(node);
+    if (found) return found;
+  }
+  return null;
+}
+
+function normalizeOutlineElement(element: HTMLElement, level: OutlineLevel): void {
+  element.setAttribute('data-outline-level', String(level));
+  element.setAttribute('style', buildOutlineLineStyle(level));
+  const firstText = firstTextNode(Array.from(element.childNodes));
+  if (firstText?.textContent) firstText.textContent = firstText.textContent.replace(LEADING_SPACE, '');
+}
+
 // 한 줄의 말머리 단계를 판별해 들여쓰기·글자 크기를 가진 span으로 감싼다.
 function formatBlockLines(doc: Document, block: Element): void {
   if (block.closest('table')) return;
-  if (block.querySelector(BLOCK_CHILD_SELECTOR)) return;
+  const lines = splitLines(block);
+  const meaningfulLines = lines.filter(nodes => nodes.some(node => (node.textContent ?? '').trim()));
+  const allDirectLinesAreOutline = meaningfulLines.length > 0 && meaningfulLines.every(nodes => {
+    if (nodes.length === 1 && nodes[0].nodeType === 1 && (nodes[0] as Element).hasAttribute('data-outline-level')) return true;
+    return detectOutlineLevel(nodes.map(node => node.textContent ?? '').join('')) !== null;
+  });
 
-  splitLines(block).forEach(nodes => {
+  lines.forEach(nodes => {
     if (nodes.length === 0) return;
     const first = nodes[0];
-    if (nodes.length === 1 && first.nodeType === 1 && (first as Element).hasAttribute('data-outline-level')) return;
+    if (nodes.length === 1 && first.nodeType === 1 && (first as Element).hasAttribute('data-outline-level')) {
+      const existing = first as HTMLElement;
+      const level = Number(existing.getAttribute('data-outline-level')) as OutlineLevel;
+      if (OUTLINE_LEVEL_STYLES[level]) normalizeOutlineElement(existing, level);
+      return;
+    }
 
     const text = nodes.map(node => node.textContent ?? '').join('');
     const level = detectOutlineLevel(text);
     if (!level) return;
 
-    // AI가 &nbsp;로 직접 넣은 들여쓰기가 남아 있으면 우리 들여쓰기와 겹치므로 지운다.
-    if (first.nodeType === 3 && first.textContent) {
-      first.textContent = first.textContent.replace(LEADING_SPACE, '');
-    }
-
     const wrapper = doc.createElement('span');
-    wrapper.setAttribute('data-outline-level', String(level));
-    wrapper.setAttribute('style', buildOutlineLineStyle(level));
     block.insertBefore(wrapper, first);
     nodes.forEach(node => wrapper.appendChild(node));
+    normalizeOutlineElement(wrapper, level);
+  });
+
+  // 모든 직접 본문 줄이 정규화 대상이면 기존 부모 여백을 지운다. 표나 하위 블록의
+  // 사용자 서식은 건드리지 않으며, 단계 여백은 data-outline-level 요소 하나만 맡는다.
+  if (allDirectLinesAreOutline && block instanceof HTMLElement) {
+    block.style.removeProperty('margin-left');
+    block.style.removeProperty('padding-left');
+    if (!block.style.cssText) block.removeAttribute('style');
+  }
+
+  Array.from(block.children).forEach((child, index, children) => {
+    if (child.tagName !== 'BR') return;
+    const previous = children[index - 1];
+    const next = children[index + 1];
+    if (previous?.hasAttribute('data-outline-level') && next?.hasAttribute('data-outline-level')) child.remove();
   });
 }
 
@@ -113,7 +167,15 @@ function formatRoot(doc: Document, root: Element): void {
     if (!heading.style.fontWeight) heading.style.fontWeight = 'bold';
   });
 
-  root.querySelectorAll('div, p').forEach(block => formatBlockLines(doc, block));
+  root.querySelectorAll<HTMLElement>('[data-outline-level]').forEach(element => {
+    const level = Number(element.getAttribute('data-outline-level')) as OutlineLevel;
+    if (OUTLINE_LEVEL_STYLES[level]) normalizeOutlineElement(element, level);
+  });
+
+  root.querySelectorAll('div, p').forEach(block => {
+    if (block.hasAttribute('data-outline-level')) return;
+    formatBlockLines(doc, block);
+  });
 }
 
 // 생성된 문서 HTML에 말머리 단계별 들여쓰기와 글자 크기를 적용해 돌려준다.

@@ -78,17 +78,18 @@ const buildSelectedSectionInstructions = (sections: TrainingMaterialSections): s
   return instructions;
 };
 
-// 말머리 단계마다 들여쓰기와 글자 크기가 실제로 눈에 보이려면 태그만으로는 부족하고
-// 인라인 style이 있어야 한다. 계획서와 같은 서식 체계를 그대로 지정해 준다.
+// 말머리 단계는 data-outline-level로 표시하고, 생성 후 정규화기가 실제 여백과
+// 내어쓰기를 한 번만 적용한다. 모델이 공백 문자와 CSS 여백을 중복 생성하지 않게 한다.
 const TRAINING_MATERIAL_HTML_FORMAT_INSTRUCTION = `[HTML 서식 체계 — 계획서와 동일하게 반드시 인라인 style로 지정]
 - 본문 전체는 <div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.7; color:#000000;">로 감싸세요.
 - 제목: <h1 style="text-align:center; font-size:22pt; font-weight:bold; margin:0 0 10px;">
 - 기관명: <div style="text-align:right; font-size:12pt; font-weight:bold; margin-bottom:26px;">
 - 1단계 대항목(1. 2. 3.): <h2 style="font-size:16pt; font-weight:bold; margin:0 0 10px;">
-- 2단계 중항목(가. 나. 다.): <div style="margin-left:14px; font-size:13pt;"> 안에서 <br>로 줄을 나눠 작성
-- 3단계 소항목(1) 2) 3)): <div style="margin-left:30px; font-size:12.5pt;">
-- 4단계 세항목(가) 나) 다)): <div style="margin-left:46px; font-size:12pt;">
-- 들여쓰기는 &nbsp;가 아니라 위의 margin-left로 표현하고, 단계가 내려갈수록 들여쓰기는 넓어지고 글자 크기는 작아지게 하세요.
+- 2단계 중항목(가. 나. 다.): 각 항목을 <div data-outline-level="2" style="font-size:13pt;">로 별도 작성
+- 3단계 소항목(1) 2) 3)): 각 항목을 <div data-outline-level="3" style="font-size:12.5pt;">로 별도 작성
+- 4단계 세항목(가) 나) 다)): 각 항목을 <div data-outline-level="4" style="font-size:12pt;">로 별도 작성
+- 각 말머리 항목은 한 블록에 하나만 작성하세요. 같은 블록 안에 <br>로 여러 항목을 이어 쓰지 마세요.
+- 들여쓰기를 맞추기 위한 &nbsp;, 반복 공백, margin-left, padding-left를 생성하지 마세요. data-outline-level을 기준으로 생성 후 한 번만 적용합니다.
 - style 없이 태그만 쓰면 모든 단계가 같은 크기·같은 위치로 보이므로, 위 style을 빠뜨리지 마세요.
 [출력 예시 — 서식과 함께 항목의 설명 분량도 이 수준을 따르세요]
 <div style="font-family:'Dotum',sans-serif; font-size:13pt; line-height:1.7; color:#000000;">
@@ -96,9 +97,11 @@ const TRAINING_MATERIAL_HTML_FORMAT_INSTRUCTION = `[HTML 서식 체계 — 계�
   <div style="text-align:right; font-size:12pt; font-weight:bold; margin-bottom:26px;">기관명</div>
   <div style="margin-bottom:24px;">
     <h2 style="font-size:16pt; font-weight:bold; margin:0 0 10px;">1. 개인정보 처리의 기본 원칙</h2>
-    <div style="margin-left:14px; font-size:13pt;">가. 개인정보란 성명·생년월일·연락처처럼 그 자체로 또는 다른 정보와 결합하여 특정 개인을 알아볼 수 있는 정보를 말하며, 학교에서는 학생·학부모·교직원의 정보가 모두 해당함<br>나. 업무 수행에 반드시 필요한 최소한의 항목만 수집하는 것이 원칙이며, 수집 목적이 달라지면 기존 동의를 근거로 사용하지 못하고 별도 동의를 다시 받아야 함</div>
-    <div style="margin-left:30px; font-size:12.5pt;">1) 학생 대상 조사지는 필수 항목과 선택 항목을 구분해 표시하고, 선택 항목을 적지 않았다는 이유로 참여를 제한하거나 불이익을 주지 않는 것이 기준임<br>2) 보유 기간이 끝난 자료는 출력물과 저장 파일은 물론 임시 파일과 내려받기 폴더까지 함께 파기하고, 파기 일자와 담당자를 기록으로 남겨야 하는 절차임</div>
-    <div style="margin-left:46px; font-size:12pt;">가) 종이 문서는 파쇄, 전자 파일은 복구가 불가능한 방식의 영구 삭제가 필요하며, 단순 휴지통 이동은 파기로 인정되지 않음</div>
+    <div data-outline-level="2" style="font-size:13pt;">가. 개인정보란 성명·생년월일·연락처처럼 그 자체로 또는 다른 정보와 결합하여 특정 개인을 알아볼 수 있는 정보를 말하며, 학교에서는 학생·학부모·교직원의 정보가 모두 해당함</div>
+    <div data-outline-level="2" style="font-size:13pt;">나. 업무 수행에 반드시 필요한 최소한의 항목만 수집하는 것이 원칙이며, 수집 목적이 달라지면 기존 동의를 근거로 사용하지 못하고 별도 동의를 다시 받아야 함</div>
+    <div data-outline-level="3" style="font-size:12.5pt;">1) 학생 대상 조사지는 필수 항목과 선택 항목을 구분해 표시하고, 선택 항목을 적지 않았다는 이유로 참여를 제한하거나 불이익을 주지 않는 것이 기준임</div>
+    <div data-outline-level="3" style="font-size:12.5pt;">2) 보유 기간이 끝난 자료는 출력물과 저장 파일은 물론 임시 파일과 내려받기 폴더까지 함께 파기하고, 파기 일자와 담당자를 기록으로 남겨야 하는 절차임</div>
+    <div data-outline-level="4" style="font-size:12pt;">가) 종이 문서는 파쇄, 전자 파일은 복구가 불가능한 방식의 영구 삭제가 필요하며, 단순 휴지통 이동은 파기로 인정되지 않음</div>
   </div>
 </div>`;
 
@@ -137,6 +140,7 @@ ${selectedInstructions.length > 0 ? selectedInstructions.join('\n') : '- 선택 
 - 제목과 기관명에는 번호를 붙이지 말고, 연수 내용의 핵심 주제와 사용자가 체크한 선택 항목에만 1번부터 연속 번호를 붙이세요.
 - 모든 대항목은 문단형 설명을 바로 이어 쓰지 말고, 가. 나. 다. 형식의 개조식 중항목으로 구성하세요.
 - 중항목을 더 나눌 때는 1) 2) 3), 그 아래 세부 내용은 가) 나) 다) 순서로 구성하세요.
+- 하위 내용이 없으면 가. 또는 1) 항목을 억지로 만들지 말고, 상위 항목이 바뀌면 하위 번호를 처음부터 다시 시작하세요.
 [항목 기호 4단계 위계 — 반드시 준수]
   1단계(대항목): 1.  2.  3.  ...
   2단계(중항목): 가.  나.  다.  ...
