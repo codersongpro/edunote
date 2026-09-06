@@ -12,6 +12,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { prepareAndRunWithAbort } from '../lib/cancellation';
+import { applyScopedRegenerationResult, RegenerationRequestRegistry } from '../lib/regenerationResult';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
@@ -29,6 +30,7 @@ interface DuplicateResult {
 }
 
 const EMPTY_OBSERVATION_DETAILS: ObservationDetails = { process: '', attitude: '', skill: '', example: '' };
+const regenerationKey = (scope: string, studentId: string) => `${scope}\0${studentId}`;
 
 // 관찰 세부 항목 네 가지를 사용자가 보는 '추가 관찰내용' 문단으로 합친다.
 const buildContextFromDetails = (details: ObservationDetails): string => {
@@ -50,6 +52,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isParsingFile, setIsParsingFile] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const regenerationRequestsRef = useRef(new RegenerationRequestRegistry());
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const wasGenerating = useRef(false);
 
   useEffect(() => {
@@ -120,7 +125,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   // Switch subject handler
   const switchSubject = (newSubject: string) => {
-    if (isGlobalGenerating) {
+    if (isGenerating) {
         notifyToast({ type: 'warning', title: "생성 중에는 교과목을 전환할 수 없습니다." });
         return;
     }
@@ -210,6 +215,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const deleteSubject = (e: React.MouseEvent, subjectName: string) => {
       e.stopPropagation();
       if (!window.confirm(`'${subjectName}' 과목을 정말 삭제하시겠습니까? 입력된 모든 데이터가 사라집니다.`)) return;
+      regenerationRequestsRef.current.invalidateScope(subjectName);
+      setGeneratingIds(prev => new Set([...prev].filter(id => !id.startsWith(`${subjectName}\0`))));
 
       const newDataStore = { ...subjectState.dataStore };
       delete newDataStore[subjectName];
@@ -253,6 +260,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     if (!window.confirm("공통 학생 명단에 입력된 이름으로 현재 과목의 학생 이름을 업데이트하시겠습니까?\n(기존에 작성한 세특 내용과 평가 데이터는 유지됩니다.)")) {
       return;
     }
+    regenerationRequestsRef.current.invalidateScope(subjectState.currentSubject);
+    setGeneratingIds(prev => new Set([...prev].filter(id => !id.startsWith(`${subjectState.currentSubject}\0`))));
 
     const updatedActiveStudents = subjectState.commonStudents.map((commonStudent, index) => {
       const existingStudent = subjectState.activeStudents[index];
@@ -314,6 +323,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const initializeCommonStudents = () => {
+    regenerationRequestsRef.current.invalidateAll();
+    setGeneratingIds(new Set());
     const names = subjectState.nameInput
       .split(/,|\n/)
       .map(s => s.trim())
@@ -822,7 +833,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleRegenerateOne = async (index: number) => {
     const student = subjectState.activeStudents[index];
-    setGeneratingIds((prev: Set<string>) => new Set(prev).add(student.id));
+    const subjectName = subjectState.currentSubject;
+    const generationId = regenerationKey(subjectName, student.id);
+    const request = regenerationRequestsRef.current.begin({
+      scope: subjectName,
+      studentId: student.id,
+      expectedContent: student.generatedContent,
+    });
+    setGeneratingIds((prev: Set<string>) => new Set(prev).add(generationId));
 
     const avoidPhrases = student.generatedContent 
         ? student.generatedContent.split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 10)
@@ -845,7 +863,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         extras => generateSubjectReport({
           schoolLevel,
           studentName: student.name,
-          subject: subjectState.currentSubject,
+          subject: subjectName,
           tasks: mergedTasks,
           additionalContext: student.additionalContext,
           lengthOption: subjectState.lengthOption as LengthOption,
@@ -856,11 +874,43 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         }),
       );
 
-      const newStudents = [...subjectState.activeStudents];
-      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
-      queueViolationWarning(showToast, newStudents[index].name, result);
-      saveHistory('subject', subjectState.activeStudents[index].name, result);
-      updateSubjectState({ activeStudents: newStudents });
+      const generatedResult = { generatedContent: result, generatedModel: model, privacyApplied };
+      const latestSubject = stateRef.current.subject;
+      const preview = applyScopedRegenerationResult(
+        regenerationRequestsRef.current,
+        {
+          currentScope: latestSubject.currentSubject,
+          activeStudents: latestSubject.activeStudents,
+          dataStore: latestSubject.dataStore,
+        },
+        request,
+        generatedResult,
+      );
+      if (!preview.applied) return;
+
+      setState(prev => {
+        const applied = applyScopedRegenerationResult(
+          regenerationRequestsRef.current,
+          {
+            currentScope: prev.subject.currentSubject,
+            activeStudents: prev.subject.activeStudents,
+            dataStore: prev.subject.dataStore,
+          },
+          request,
+          generatedResult,
+        );
+        if (!applied.applied) return prev;
+        return {
+          ...prev,
+          subject: {
+            ...prev.subject,
+            activeStudents: applied.activeStudents,
+            dataStore: applied.dataStore,
+          },
+        };
+      });
+      queueViolationWarning(showToast, student.name, result);
+      saveHistory('subject', student.name, result);
       playSuccessSound();
 
     } catch (err: any) {
@@ -871,15 +921,25 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
       }
     } finally {
-      setGeneratingIds((prev: Set<string>) => {
-        const next = new Set(prev);
-        next.delete(student.id);
-        return next;
-      });
+      if (regenerationRequestsRef.current.isCurrent(request)) {
+        setGeneratingIds((prev: Set<string>) => {
+          const next = new Set(prev);
+          next.delete(generationId);
+          return next;
+        });
+      }
     }
   };
 
   const handleResultChange = (index: number, text: string) => {
+    const studentId = subjectState.activeStudents[index].id;
+    const generationId = regenerationKey(subjectState.currentSubject, studentId);
+    regenerationRequestsRef.current.invalidate({ scope: subjectState.currentSubject, studentId });
+    setGeneratingIds(prev => {
+      const next = new Set(prev);
+      next.delete(generationId);
+      return next;
+    });
     const newStudents = [...subjectState.activeStudents];
     newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateSubjectState({ activeStudents: newStudents });
@@ -1039,13 +1099,13 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 <div key={subj} className="relative group">
                     <button
                         onClick={() => switchSubject(subj)}
-                        disabled={isGlobalGenerating}
+                        disabled={isGenerating}
                         className={`px-4 py-2 pr-8 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${
                             subjectState.currentSubject === subj
                                 ? 'bg-purple-600 text-white border-purple-600 shadow-md'
                                 : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D]'
-                        } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={isGlobalGenerating ? "생성 중에는 전환할 수 없습니다." : subj}
+                        } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={isGenerating ? "일괄 생성 중에는 전환할 수 없습니다." : subj}
                     >
                         {subj}
                     </button>
@@ -1894,10 +1954,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
-                                        disabled={generatingIds.has(student.id) || isGlobalGenerating}
-                                        className={`text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors ${(generatingIds.has(student.id) || isGlobalGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGenerating}
+                                        className={`text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors ${(generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                        {generatingIds.has(student.id) ? (
+                                        {generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) ? (
                                             <>
                                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

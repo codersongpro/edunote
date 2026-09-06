@@ -11,6 +11,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { prepareAndRunWithAbort } from '../lib/cancellation';
+import { applyRegenerationResult, RegenerationRequestRegistry } from '../lib/regenerationResult';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
@@ -54,6 +55,9 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // Local UI State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const regenerationRequestsRef = useRef(new RegenerationRequestRegistry());
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const wasGenerating = useRef(false);
   const [traitMode, setTraitMode] = useState<'positive' | 'negative'>('positive');
 
@@ -130,6 +134,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const goToConfig = () => {
+    regenerationRequestsRef.current.invalidateAll();
+    setGeneratingIds(new Set());
     const names = sportsState.nameInput
       .split(/,|\n/)
       .map(s => s.trim())
@@ -400,6 +406,10 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleRegenerateOne = async (index: number) => {
     const student = sportsState.students[index];
+    const request = regenerationRequestsRef.current.begin({
+      studentId: student.id,
+      expectedContent: student.generatedContent,
+    });
     setGeneratingIds((prev: Set<string>) => new Set(prev).add(student.id));
     
     const avoidPhrases = student.generatedContent 
@@ -424,11 +434,27 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         }),
       );
 
-      const newStudents = [...sportsState.students];
-      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
-      queueViolationWarning(showToast, newStudents[index].name, result);
-      saveHistory('sports', sportsState.students[index].name, result);
-      updateSportsState({ students: newStudents });
+      const generatedResult = { generatedContent: result, generatedModel: model, privacyApplied };
+      const preview = applyRegenerationResult(
+        regenerationRequestsRef.current,
+        stateRef.current.sports.students,
+        request,
+        generatedResult,
+      );
+      if (!preview.applied) return;
+
+      setState(prev => {
+        const applied = applyRegenerationResult(
+          regenerationRequestsRef.current,
+          prev.sports.students,
+          request,
+          generatedResult,
+        );
+        if (!applied.applied) return prev;
+        return { ...prev, sports: { ...prev.sports, students: applied.students } };
+      });
+      queueViolationWarning(showToast, student.name, result);
+      saveHistory('sports', student.name, result);
       playSuccessSound();
     } catch (err: any) {
       const error = err;
@@ -438,15 +464,24 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
         notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
       }
     } finally {
-      setGeneratingIds((prev: Set<string>) => {
-        const next = new Set(prev);
-        next.delete(student.id);
-        return next;
-      });
+      if (regenerationRequestsRef.current.isCurrent(request)) {
+        setGeneratingIds((prev: Set<string>) => {
+          const next = new Set(prev);
+          next.delete(student.id);
+          return next;
+        });
+      }
     }
   };
 
   const handleResultChange = (index: number, text: string) => {
+    const studentId = sportsState.students[index].id;
+    regenerationRequestsRef.current.invalidate({ studentId });
+    setGeneratingIds(prev => {
+      const next = new Set(prev);
+      next.delete(studentId);
+      return next;
+    });
     const newStudents = [...sportsState.students];
     newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateSportsState({ students: newStudents });
@@ -995,8 +1030,8 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
-                                        disabled={generatingIds.has(student.id) || isGlobalGenerating}
-                                        className={`text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${(generatingIds.has(student.id) || isGlobalGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={generatingIds.has(student.id) || isGenerating}
+                                        className={`text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors ${(generatingIds.has(student.id) || isGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {generatingIds.has(student.id) ? (
                                             <>

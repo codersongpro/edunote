@@ -13,6 +13,7 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { saveHistory, getHistory, HistoryEntry } from '../lib/generationHistory';
 import { getStudentGenerationExtras } from '../lib/generationSafety';
 import { prepareAndRunWithAbort } from '../lib/cancellation';
+import { applyScopedRegenerationResult, RegenerationRequestRegistry } from '../lib/regenerationResult';
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
@@ -30,6 +31,7 @@ interface DuplicateResult {
 }
 
 const ACTIVITY_DOMAINS = ['자율활동', '동아리활동', '진로활동', '봉사활동'];
+const regenerationKey = (scope: string, studentId: string) => `${scope}\0${studentId}`;
 
 const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const { startTour } = useTour();
@@ -40,6 +42,9 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   // Local UI State
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const regenerationRequestsRef = useRef(new RegenerationRequestRegistry());
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const wasGeneratingCreative = useRef(false);
 
   useEffect(() => {
@@ -108,7 +113,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   // Switch Activity handler
   const switchActivity = (activityName: string) => {
-    if (isGlobalGenerating) {
+    if (isGenerating) {
         notifyToast({ type: 'warning', title: "생성 중에는 활동을 전환할 수 없습니다." });
         return;
     }
@@ -196,6 +201,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const deleteActivity = (e: React.MouseEvent, activityName: string) => {
       e.stopPropagation();
       if (!window.confirm(`'${activityName}' 활동을 정말 삭제하시겠습니까? 입력된 모든 데이터가 사라집니다.`)) return;
+      regenerationRequestsRef.current.invalidateScope(activityName);
+      setGeneratingIds(prev => new Set([...prev].filter(id => !id.startsWith(`${activityName}\0`))));
 
       const newDataStore = { ...creativeState.dataStore };
       delete newDataStore[activityName];
@@ -236,6 +243,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
     if (!window.confirm("공통 학생 명단에 입력된 이름으로 현재 활동의 학생 이름을 업데이트하시겠습니까?\n(기존에 작성한 개별 기록은 유지됩니다.)")) {
       return;
     }
+    regenerationRequestsRef.current.invalidateScope(creativeState.currentActivityName);
+    setGeneratingIds(prev => new Set([...prev].filter(id => !id.startsWith(`${creativeState.currentActivityName}\0`))));
 
     const updatedActiveStudents = creativeState.commonStudents.map((commonStudent, index) => {
       const existingStudent = creativeState.activeStudents[index];
@@ -388,6 +397,8 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const initializeCommonStudents = () => {
+    regenerationRequestsRef.current.invalidateAll();
+    setGeneratingIds(new Set());
     const names = creativeState.nameInput
       .split(/,|\n/)
       .map(s => s.trim())
@@ -623,7 +634,14 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleRegenerateOne = async (index: number) => {
     const student = creativeState.activeStudents[index];
-    setGeneratingIds((prev: Set<string>) => new Set(prev).add(student.id));
+    const activityName = creativeState.currentActivityName;
+    const generationId = regenerationKey(activityName, student.id);
+    const request = regenerationRequestsRef.current.begin({
+      scope: activityName,
+      studentId: student.id,
+      expectedContent: student.generatedContent,
+    });
+    setGeneratingIds((prev: Set<string>) => new Set(prev).add(generationId));
     
     const avoidPhrases = student.generatedContent 
         ? student.generatedContent.split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 10)
@@ -636,7 +654,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         extras => generateCreativeActivityReport({
         schoolLevel,
         studentName: student.name,
-        activityName: creativeState.currentActivityName,
+        activityName,
         activityType: creativeState.currentActivityType,
         annualPlan: creativeState.currentAnnualPlan || "특이사항 없음",
         keywords: student.selectedTags,
@@ -649,11 +667,43 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         }),
       );
 
-      const newStudents = [...creativeState.activeStudents];
-      newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
-      queueViolationWarning(showToast, newStudents[index].name, result);
-      saveHistory('creative', creativeState.activeStudents[index].name, result);
-      updateCreativeState({ activeStudents: newStudents });
+      const generatedResult = { generatedContent: result, generatedModel: model, privacyApplied };
+      const latestCreative = stateRef.current.creative;
+      const preview = applyScopedRegenerationResult(
+        regenerationRequestsRef.current,
+        {
+          currentScope: latestCreative.currentActivityName,
+          activeStudents: latestCreative.activeStudents,
+          dataStore: latestCreative.dataStore,
+        },
+        request,
+        generatedResult,
+      );
+      if (!preview.applied) return;
+
+      setState(prev => {
+        const applied = applyScopedRegenerationResult(
+          regenerationRequestsRef.current,
+          {
+            currentScope: prev.creative.currentActivityName,
+            activeStudents: prev.creative.activeStudents,
+            dataStore: prev.creative.dataStore,
+          },
+          request,
+          generatedResult,
+        );
+        if (!applied.applied) return prev;
+        return {
+          ...prev,
+          creative: {
+            ...prev.creative,
+            activeStudents: applied.activeStudents,
+            dataStore: applied.dataStore,
+          },
+        };
+      });
+      queueViolationWarning(showToast, student.name, result);
+      saveHistory('creative', student.name, result);
       playSuccessSound();
     } catch (err: any) {
       const error = err;
@@ -663,15 +713,25 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
         notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
       }
     } finally {
-      setGeneratingIds((prev: Set<string>) => {
-        const next = new Set(prev);
-        next.delete(student.id);
-        return next;
-      });
+      if (regenerationRequestsRef.current.isCurrent(request)) {
+        setGeneratingIds((prev: Set<string>) => {
+          const next = new Set(prev);
+          next.delete(generationId);
+          return next;
+        });
+      }
     }
   };
 
   const handleResultChange = (index: number, text: string) => {
+    const studentId = creativeState.activeStudents[index].id;
+    const generationId = regenerationKey(creativeState.currentActivityName, studentId);
+    regenerationRequestsRef.current.invalidate({ scope: creativeState.currentActivityName, studentId });
+    setGeneratingIds(prev => {
+      const next = new Set(prev);
+      next.delete(generationId);
+      return next;
+    });
     const newStudents = [...creativeState.activeStudents];
     newStudents[index] = { ...newStudents[index], generatedContent: text };
     updateCreativeState({ activeStudents: newStudents });
@@ -771,12 +831,12 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 <div key={act} className="relative group">
                     <button
                         onClick={() => switchActivity(act)}
-                        disabled={isGlobalGenerating}
+                        disabled={isGenerating}
                         className={`px-4 py-2 pr-8 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${
                             creativeState.currentActivityName === act
                                 ? 'bg-orange-500 text-white border-orange-500 shadow-md'
                                 : 'bg-white dark:bg-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#EDE8E1] dark:hover:bg-[#3A332D]'
-                        } ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {act}
                     </button>
@@ -1448,10 +1508,10 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
-                                        disabled={generatingIds.has(student.id) || isGlobalGenerating}
-                                        className={`text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${(generatingIds.has(student.id) || isGlobalGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGenerating}
+                                        className={`text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors ${(generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
-                                        {generatingIds.has(student.id) ? (
+                                        {generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) ? (
                                             <>
                                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
