@@ -19,6 +19,8 @@ export interface VerifiedModelPolicy {
   generative: boolean;
   // 유료 모드의 기존 품질 우선순위. 무료 자격 판정에는 사용하지 않는다.
   paidPriority?: number;
+  // 무료 Flash 한도 소진 뒤 사용할 수 있는 검증된 경량 안전 후보.
+  liteSafety?: boolean;
 }
 
 // 2026-09-06 공식 문서에서 정식·지원 중·일반 텍스트 생성·요금제 제공 여부를 확인한 목록.
@@ -28,8 +30,8 @@ export const VERIFIED_GENERAL_MODELS: readonly VerifiedModelPolicy[] = [
   { name: 'gemini-3.7-flash', releaseOrder: 370, free: true, paid: true, stable: true, generative: true, paidPriority: 1 },
   { name: 'gemini-3.6-flash', releaseOrder: 360, free: true, paid: true, stable: true, generative: true, paidPriority: 1 },
   { name: 'gemini-3.5-flash', releaseOrder: 350, free: true, paid: true, stable: true, generative: true, paidPriority: 1 },
-  { name: 'gemini-3.5-flash-lite', releaseOrder: 349, free: true, paid: true, stable: true, generative: true, paidPriority: 2 },
-  { name: 'gemini-3.1-flash-lite', releaseOrder: 310, free: true, paid: true, stable: true, generative: true, paidPriority: 2 },
+  { name: 'gemini-3.5-flash-lite', releaseOrder: 349, free: true, paid: true, stable: true, generative: true, paidPriority: 2, liteSafety: true },
+  { name: 'gemini-3.1-flash-lite', releaseOrder: 310, free: true, paid: true, stable: true, generative: true, paidPriority: 2, liteSafety: true },
 ];
 
 const MAX_CHAIN_LENGTH = 3;
@@ -46,7 +48,7 @@ export function selectVerifiedModels(
   policy: readonly VerifiedModelPolicy[] = VERIFIED_GENERAL_MODELS,
 ): string[] {
   const normalized = new Set(availableNames.map(name => name.replace(/^models\//, '')));
-  return policy
+  const eligible = policy
     .filter(model =>
       normalized.has(model.name) &&
       model.stable &&
@@ -57,9 +59,13 @@ export function selectVerifiedModels(
       tier === 'paid'
         ? (a.paidPriority ?? Number.MAX_SAFE_INTEGER) - (b.paidPriority ?? Number.MAX_SAFE_INTEGER) || b.releaseOrder - a.releaseOrder
         : b.releaseOrder - a.releaseOrder,
-    )
-    .map(model => model.name)
-    .slice(0, MAX_CHAIN_LENGTH);
+    );
+  const selected = eligible.slice(0, MAX_CHAIN_LENGTH);
+  if (tier === 'free') {
+    const latestLite = eligible.find(model => model.liteSafety);
+    if (latestLite && !selected.includes(latestLite)) selected[MAX_CHAIN_LENGTH - 1] = latestLite;
+  }
+  return selected.map(model => model.name);
 }
 
 interface LastVerifiedEntry {

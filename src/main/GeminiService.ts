@@ -147,7 +147,7 @@ async function resolveModelSelection(
       verificationStatus: 'verified',
       checkedAt: discovery.checkedAt,
       selectionReason: apiTier === 'free'
-        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 이 키의 모델 목록과 겹치는 최신 순서로 선택했습니다.'
+        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 최신 후보를 우선하고, Flash 한도 초과에 대비해 현재 키에서 제공되는 최신 검증 Lite를 안전 후보로 포함했습니다.'
         : '공식 정책에서 유료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 기존 Pro → Flash → Lite 우선순위와 계열별 최신 순서로 선택했습니다.',
     };
   }

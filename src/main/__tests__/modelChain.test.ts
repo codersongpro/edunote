@@ -47,6 +47,20 @@ describe('selectVerifiedModels', () => {
     ])).toEqual(['gemini-3.8-flash', 'gemini-3.5-flash-lite']);
   });
 
+  it('무료 후보가 많아도 최신 검증 Lite를 안전 후보로 포함한다', () => {
+    expect(selectVerifiedModels('free', [
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+    ])).toEqual([
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite',
+    ]);
+  });
+
   it('Pro도 정책에서 무료로 확인되면 이름만으로 제외하지 않는다', () => {
     const policy: VerifiedModelPolicy[] = [
       { name: 'gemini-4-pro', releaseOrder: 400, free: true, paid: true, stable: true, generative: true },

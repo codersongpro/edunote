@@ -15,6 +15,14 @@ vi.mock('@google/genai', async importOriginal => {
   };
 });
 
+vi.mock('../requestPacer', () => ({
+  RequestPacer: class {
+    reserve() {
+      return Promise.resolve();
+    }
+  },
+}));
+
 import { generateContent, getModelDiagnostics, resetModelCache, testApiKey } from '../GeminiService';
 
 function modelPager(names: string[]) {
@@ -64,19 +72,27 @@ describe('GeminiService 모델 선택 통합', () => {
     await expect(getModelDiagnostics('new-key', 'free', true)).rejects.toThrow('network down');
   });
 
-  it('최신 후보가 한도 초과면 다음 후보와 실제 성공 모델을 진단에 남긴다', async () => {
-    sdk.list.mockResolvedValue(modelPager(['gemini-3.8-flash', 'gemini-3.7-flash']));
+  it('무료 Flash 후보가 한도 초과면 최신 Lite로 폴백하고 실제 성공 모델을 남긴다', async () => {
+    sdk.list.mockResolvedValue(modelPager([
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+    ]));
     sdk.generateContent
+      .mockRejectedValueOnce({ status: 429, message: 'PerDay quota exceeded' })
       .mockRejectedValueOnce({ status: 429, message: 'PerDay quota exceeded' })
       .mockResolvedValueOnce({ text: '완료', candidates: [{ finishReason: 'STOP' }] });
 
-    await expect(generateContent('key-a', '작성', { apiTier: 'paid' })).resolves.toMatchObject({
+    await expect(generateContent('key-a', '작성', { apiTier: 'free' })).resolves.toMatchObject({
       text: '완료',
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.5-flash-lite',
     });
-    const info = await getModelDiagnostics('key-a', 'paid');
-    expect(info.actualModel).toBe('gemini-3.7-flash');
-    expect(info.selectedModel).toBe('gemini-3.7-flash');
+    const info = await getModelDiagnostics('key-a', 'free');
+    expect(info.actualModel).toBe('gemini-3.5-flash-lite');
+    expect(info.selectedModel).toBe('gemini-3.5-flash-lite');
     expect(info.blocked).toContain('gemini-3.8-flash');
+    expect(info.blocked).toContain('gemini-3.7-flash');
   });
 });
