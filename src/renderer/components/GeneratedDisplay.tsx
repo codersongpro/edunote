@@ -8,6 +8,7 @@ import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/tra
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 import type { GroundingInfo } from '../../preload/types';
+import { ReviewChecklist } from './ReviewChecklist';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -90,6 +91,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [translateLang, setTranslateLang] = React.useState('en');
   const [translating, setTranslating] = React.useState(false);
   const [hasTranslation, setHasTranslation] = React.useState(false);
+  const [editorRevision, setEditorRevision] = React.useState(0);
   // 번역 전 원문 — 다른 언어로 다시 번역하거나 원문으로 되돌릴 때 쓴다.
   const originalHtmlRef = useRef<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -793,6 +795,11 @@ h2,h3{page-break-after:avoid;}
               </div>
             )}
 
+            <ReviewChecklist
+              content={contentRef.current?.innerText || extractPlainText(content)}
+              resetKey={`${title || ''}:${content}:${selectedVersionId}:${editorRevision}`}
+            />
+
             {grounding && (grounding.sources.length > 0 || grounding.searchSuggestionHtml) && (
               <div className="bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg p-3 no-print">
                 <div className="flex items-center gap-2 mb-2">
@@ -858,6 +865,7 @@ h2,h3{page-break-after:avoid;}
             key="current-editor"
             ref={contentRef}
             contentEditable
+            onInput={() => setEditorRevision(revision => revision + 1)}
             suppressContentEditableWarning
             className={selectedVersion ? 'hidden' : 'prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full'}
             style={{ minHeight: '100%', color: '#000000' }}

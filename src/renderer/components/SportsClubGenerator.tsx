@@ -15,6 +15,7 @@ import { applyRegenerationResult, RegenerationRequestRegistry } from '../lib/reg
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
+import { ReviewChecklist } from './ReviewChecklist';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
@@ -1060,6 +1061,7 @@ const SportsClubGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.sports} />
                              </div>
+                             <ReviewChecklist content={student.generatedContent || ''} resetKey={`${student.id}:${student.generatedContent || ''}:${generatingIds.has(student.id) || isGlobalGenerating}`} />
                              {expandedHistory.has(student.id) && (() => {
                                const hist: HistoryEntry[] = getHistory('sports', student.name);
                                return hist.length > 0 ? (

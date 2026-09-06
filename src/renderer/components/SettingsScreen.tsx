@@ -10,6 +10,7 @@ import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValid
 import { STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
 import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
 import { collectStorage, replaceStorageTransactionally } from '../lib/backupStorage';
+import { REVIEW_CHECKLIST_UPDATED_EVENT } from './ReviewChecklist';
 import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
@@ -217,6 +218,7 @@ const SettingsScreen: React.FC = () => {
       reviewChecklistEnabled,
       cautionTerms,
     });
+    window.dispatchEvent(new CustomEvent(REVIEW_CHECKLIST_UPDATED_EVENT, { detail: reviewChecklistEnabled }));
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -884,6 +886,7 @@ const SettingsScreen: React.FC = () => {
               ) as Record<RecordKind, number>;
               setByteLimits(safeLimits);
               await window.electronAPI.setConfig({ privacyModeEnabled, reviewChecklistEnabled, cautionTerms, neisByteLimits: JSON.stringify(safeLimits) });
+              window.dispatchEvent(new CustomEvent(REVIEW_CHECKLIST_UPDATED_EVENT, { detail: reviewChecklistEnabled }));
               setSaved(true);
               setTimeout(() => setSaved(false), 2500);
             }}

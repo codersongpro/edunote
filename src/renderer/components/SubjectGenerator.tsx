@@ -16,6 +16,7 @@ import { applyScopedRegenerationResult, RegenerationRequestRegistry } from '../l
 import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLength';
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
+import { ReviewChecklist } from './ReviewChecklist';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
@@ -1999,6 +2000,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.subject} />
                              </div>
+                             <ReviewChecklist content={student.generatedContent || ''} resetKey={`${subjectState.currentSubject}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating}`} />
                              {expandedHistory.has(student.id) && (() => {
                                const groups = getHistoryGroupsForContext('subject', student.name, subjectState.currentSubject);
                                return groups.length > 0 ? (
