@@ -21,6 +21,16 @@ export interface ModelDiagnostics {
   selectionReason: string;
 }
 
+export interface ModelFallbackInfo {
+  fromModel: string;
+  reason: 'quota' | 'stream';
+}
+
+export interface ModelFallbackNoticePayload {
+  usedModel: string;
+  fallbacks: ModelFallbackInfo[];
+}
+
 export interface BackupInspection {
   inspectionId: string;
   filePath: string;
@@ -38,18 +48,19 @@ export interface BackupRestoreResult {
 }
 
 export interface ElectronAPI {
-  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
+  aiGenerate(prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }>;
   aiGenerateMultipart(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction?: string,
     options?: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean },
-  ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
+  ): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }>;
   aiGenerateMultipartStream(
     parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>,
     systemInstruction: string | undefined,
     options: { temperature?: number; maxOutputTokens?: number; responseJson?: boolean; useSearchGrounding?: boolean; requireSearchGrounding?: boolean } | undefined,
     onEvent: (event: { type: 'start' | 'chunk'; text?: string }) => void,
-  ): Promise<{ text: string; model: string; grounding?: GroundingInfo }>;
+  ): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }>;
+  onModelFallback(callback: (payload: ModelFallbackNoticePayload) => void): () => void;
   getModelInfo(forceRefresh?: boolean): Promise<ModelDiagnostics>;
   testApiKey(key: string, apiTier?: 'free' | 'paid'): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;
   testStoredApiKey(): Promise<{ ok: boolean; warning?: string; error?: string; wait?: boolean }>;

@@ -29,6 +29,7 @@ import AboutScreen from './components/AboutScreen';
 import { initAudioUnlock } from './lib/soundEffect';
 import { useEscapeKey } from './hooks/useEscapeKey';
 import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUIDE_STEPS, GEMINI_API_GUIDE_VIDEO_URL } from './lib/apiKeyGuide';
+import { buildModelFallbackNotice } from './lib/modelFallbackNotice';
 
 import {
   Bot, BookOpen, User2, Dumbbell, Palette,
@@ -404,6 +405,11 @@ const App: React.FC = () => {
     window.addEventListener('edunote-api-temporary-error', handleTemporaryApiError);
     return () => window.removeEventListener('edunote-api-temporary-error', handleTemporaryApiError);
   }, []);
+
+  useEffect(() => window.electronAPI.onModelFallback(payload => {
+    const notice = buildModelFallbackNotice(payload);
+    if (notice) showToast(notice);
+  }), [showToast]);
 
   useEffect(() => {
     const handler = () => {

@@ -9,7 +9,7 @@ import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
 import { assertSafeUrl } from './netGuard';
-import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache, getModelDiagnostics } from './GeminiService';
+import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache, getModelDiagnostics, type ModelFallbackInfo } from './GeminiService';
 import { selectActiveApiKey } from './apiKeySelection';
 import { generateHwpx } from './HwpxGenerator';
 import { resolveDialogPath, resolveOpenableDir, resolveAutoSavePath } from './pathSafety';
@@ -77,6 +77,15 @@ function getActiveApi(): { apiKey: string; apiTier: ApiTier } {
   // 유료 모드에서 유료 키가 없을 때만 기존 무료 키를 보조 경로로 유지한다.
   const apiKey = selectActiveApiKey(apiTier, freeKey, paidKey);
   return { apiKey, apiTier };
+}
+
+function sendModelFallbackNotice(
+  event: IpcMainInvokeEvent,
+  result: { model: string; fallbacks: ModelFallbackInfo[] },
+): void {
+  if (result.fallbacks.some(item => item.reason === 'quota') && !event.sender.isDestroyed()) {
+    event.sender.send('ai:model-fallback', { usedModel: result.model, fallbacks: result.fallbacks });
+  }
 }
 
 function safeDataFile(name: string): string {
@@ -249,18 +258,22 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
   };
 
   // ── AI Generation ─────────────────────────────────────────────────
-  ipcMain.handle('ai:generate', async (_e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
+  ipcMain.handle('ai:generate', async (e, prompt: string, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     validateGenerateArgs(prompt, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
-    return generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
+    const result = await generateContent(apiKey, prompt, { systemInstruction, ...options, apiTier });
+    sendModelFallbackNotice(e, result);
+    return result;
   });
 
-  ipcMain.handle('ai:generate-multipart', async (_e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
+  ipcMain.handle('ai:generate-multipart', async (e, parts: Array<{ text?: string; inlineData?: { data: string; mimeType: string } }>, systemInstruction?: string, options?: { temperature?: number; maxOutputTokens?: number; useSearchGrounding?: boolean; requireSearchGrounding?: boolean }) => {
     validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
-    return generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
+    const result = await generateContentMultipart(apiKey, parts, { systemInstruction, ...options, apiTier });
+    sendModelFallbackNotice(e, result);
+    return result;
   });
 
   // 스트리밍 생성 — 진행 중 텍스트를 'ai:stream-event'로 보내고 전체 텍스트를 반환한다.
@@ -271,9 +284,11 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     validateMultipartArgs(parts, systemInstruction, options);
     const { apiKey, apiTier } = getActiveApi();
     if (!apiKey) throw new Error('API 키가 설정되지 않았습니다. 설정에서 Gemini API 키를 입력해주세요.');
-    return generateContentMultipartStream(apiKey, parts, { systemInstruction, ...options, apiTier }, (event) => {
+    const result = await generateContentMultipartStream(apiKey, parts, { systemInstruction, ...options, apiTier }, (event) => {
       if (!e.sender.isDestroyed()) e.sender.send('ai:stream-event', { requestId, ...event });
     });
+    sendModelFallbackNotice(e, result);
+    return result;
   });
 
   // 어떤 모델이 왜 선택되는지 설정 화면에서 확인할 수 있게 한다.

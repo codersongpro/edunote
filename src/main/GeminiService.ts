@@ -288,6 +288,11 @@ export interface MultipartPart {
   inlineData?: { data: string; mimeType: string };
 }
 
+export interface ModelFallbackInfo {
+  fromModel: string;
+  reason: 'quota' | 'stream';
+}
+
 // withTools가 false면 검색 도구를 뺀 옵션을 돌려준다 (도구 미지원 모델 재시도용).
 function withToolsOption(options: GenerateOptions | undefined, withTools: boolean): GenerateOptions | undefined {
   if (withTools || !options?.useSearchGrounding) return options;
@@ -320,14 +325,21 @@ async function generateWithModelChain<T>(
   doCall: (model: string, withTools: boolean) => Promise<T>,
   usesTools = false,
   requireTools = false,
-): Promise<{ result: T; model: string }> {
+): Promise<{ result: T; model: string; fallbacks: ModelFallbackInfo[] }> {
   const selection = await resolveModelSelection(ai, apiKey, apiTier);
   const models = selection.chain;
   let lastError: unknown = null;
+  const fallbacks: ModelFallbackInfo[] = [];
 
-  const succeed = (result: T, model: string): { result: T; model: string } => {
+  const recordFallback = (fromModel: string, reason: ModelFallbackInfo['reason']) => {
+    if (!fallbacks.some(item => item.fromModel === fromModel && item.reason === reason)) {
+      fallbacks.push({ fromModel, reason });
+    }
+  };
+
+  const succeed = (result: T, model: string): { result: T; model: string; fallbacks: ModelFallbackInfo[] } => {
     lastUsedModels.set(tierKey(modelKeyId(apiKey), apiTier), model);
-    return { result, model };
+    return { result, model, fallbacks: [...fallbacks] };
   };
 
   for (const model of models) {
@@ -360,6 +372,7 @@ async function generateWithModelChain<T>(
         }
         const daily = isDailyQuotaError(lastError);
         quotaBlockedModels.set(model, Date.now() + (daily ? DAILY_QUOTA_COOLDOWN_MS : QUOTA_COOLDOWN_MS));
+        recordFallback(model, 'quota');
         console.warn(`[${model}] 쿼터 초과(${daily ? '일일 한도' : '분당 제한'}) → 차단 후 다음 모델로 폴백`);
         continue;
       }
@@ -387,6 +400,7 @@ async function generateWithModelChain<T>(
 
       // 비정상 반복 출력·스트리밍 중단 — 같은 모델 재시도는 무의미하므로 다음 모델로 폴백
       if (isRetryableStreamError(error)) {
+        recordFallback(model, 'stream');
         console.warn(`[${model}] 비정상 스트리밍 출력 → 다음 모델로 폴백:`, (error as Error).message);
         continue;
       }
@@ -424,9 +438,9 @@ export async function generateContent(
   apiKey: string,
   prompt: string,
   options?: GenerateOptions,
-): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
+  const { result, model, fallbacks } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
@@ -434,7 +448,7 @@ export async function generateContent(
     assertGenerationResponseAccepted(result);
     return { text: validateGeneratedResponse(result, result.text ?? ''), grounding: extractGroundingInfo(result) };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
-  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
+  return { text: result.text, model, fallbacks, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // 멀티파트(텍스트+파일) 생성 — 실제로 성공한 모델명을 함께 반환한다.
@@ -442,9 +456,9 @@ export async function generateContentMultipart(
   apiKey: string,
   parts: MultipartPart[],
   options?: GenerateOptions,
-): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
+  const { result, model, fallbacks } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     const result = await withTimeout(
       ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
@@ -452,7 +466,7 @@ export async function generateContentMultipart(
     assertGenerationResponseAccepted(result);
     return { text: validateGeneratedResponse(result, result.text ?? ''), grounding: extractGroundingInfo(result) };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
-  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
+  return { text: result.text, model, fallbacks, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // 스트리밍 생성 이벤트 — 'start'는 새 시도(폴백 포함) 시작을 뜻하므로 수신 측은 버퍼를 비운다
@@ -465,9 +479,9 @@ export async function generateContentMultipartStream(
   parts: MultipartPart[],
   options: GenerateOptions | undefined,
   onEvent: (event: StreamEvent) => void,
-): Promise<{ text: string; model: string; grounding?: GroundingInfo }> {
+): Promise<{ text: string; model: string; grounding?: GroundingInfo; fallbacks: ModelFallbackInfo[] }> {
   const ai = new GoogleGenAI({ apiKey });
-  const { result, model } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
+  const { result, model, fallbacks } = await generateWithModelChain(ai, apiKey, options?.apiTier === 'paid' ? 'paid' : 'free', async (model, withTools) => {
     onEvent({ type: 'start' });
     const stream = await withTimeout(
       ai.models.generateContentStream({ model, contents: { parts }, config: toGenerateConfig(withToolsOption(options, withTools)) }),
@@ -485,7 +499,8 @@ export async function generateContentMultipartStream(
         let next: IteratorResult<GenerateContentResponse>;
         try {
           next = await withTimeout(iterator.next(), STREAM_CHUNK_TIMEOUT_MS);
-        } catch {
+        } catch (error) {
+          if (isQuotaError(error)) throw error;
           throw new RetryableStreamError('생성 응답이 중간에 멈췄습니다.');
         }
         if (next.done) break;
@@ -509,7 +524,7 @@ export async function generateContentMultipartStream(
     validateGeneratedResponse(lastResponse ?? ({} as GenerateContentResponse), full);
     return { text: full, grounding };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
-  return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
+  return { text: result.text, model, fallbacks, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
 
 // API 키 유효성 검증 (설정 화면에서 호출)

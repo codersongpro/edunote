@@ -29,6 +29,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
       .finally(() => { ipcRenderer.removeListener('ai:stream-event', listener as never); });
   },
 
+  onModelFallback: (callback: (payload: { usedModel: string; fallbacks: Array<{ fromModel: string; reason: 'quota' | 'stream' }> }) => void) => {
+    const listener = (_event: unknown, payload: unknown) => {
+      if (!payload || typeof payload !== 'object') return;
+      const candidate = payload as { usedModel?: unknown; fallbacks?: unknown };
+      if (typeof candidate.usedModel !== 'string' || !Array.isArray(candidate.fallbacks)) return;
+      const fallbacks = candidate.fallbacks.filter((item): item is { fromModel: string; reason: 'quota' | 'stream' } => {
+        if (!item || typeof item !== 'object') return false;
+        const entry = item as { fromModel?: unknown; reason?: unknown };
+        return typeof entry.fromModel === 'string' && (entry.reason === 'quota' || entry.reason === 'stream');
+      });
+      callback({ usedModel: candidate.usedModel, fallbacks });
+    };
+    ipcRenderer.on('ai:model-fallback', listener as never);
+    return () => ipcRenderer.removeListener('ai:model-fallback', listener as never);
+  },
+
   getModelInfo: (forceRefresh?: boolean) => ipcRenderer.invoke('ai:model-info', forceRefresh),
   testApiKey: (key: string, apiTier?: 'free' | 'paid') => ipcRenderer.invoke('ai:test-key', key, apiTier),
   testStoredApiKey: () => ipcRenderer.invoke('ai:test-stored-key'),

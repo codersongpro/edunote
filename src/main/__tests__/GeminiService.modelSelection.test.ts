@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const sdk = vi.hoisted(() => ({
   list: vi.fn(),
   generateContent: vi.fn(),
+  generateContentStream: vi.fn(),
 }));
 
 vi.mock('@google/genai', async importOriginal => {
@@ -23,7 +24,7 @@ vi.mock('../requestPacer', () => ({
   },
 }));
 
-import { generateContent, getModelDiagnostics, resetModelCache, testApiKey } from '../GeminiService';
+import { generateContent, generateContentMultipartStream, getModelDiagnostics, resetModelCache, testApiKey } from '../GeminiService';
 
 function modelPager(names: string[]) {
   return {
@@ -38,6 +39,7 @@ describe('GeminiService 모델 선택 통합', () => {
     resetModelCache();
     sdk.list.mockReset();
     sdk.generateContent.mockReset();
+    sdk.generateContentStream.mockReset();
   });
 
   it('키 테스트도 고정 모델이 아니라 실제 생성과 같은 최신 검증 체인을 쓴다', async () => {
@@ -94,5 +96,57 @@ describe('GeminiService 모델 선택 통합', () => {
     expect(info.selectedModel).toBe('gemini-3.5-flash-lite');
     expect(info.blocked).toContain('gemini-3.8-flash');
     expect(info.blocked).toContain('gemini-3.7-flash');
+  });
+
+  it('스트림 중 429도 Flash를 차단하고 현재·다음 결과를 Lite로 완성한다', async () => {
+    sdk.list.mockResolvedValue(modelPager([
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite',
+    ]));
+    const interrupted = {
+      async *[Symbol.asyncIterator]() {
+        yield { text: '미완성', candidates: [{ finishReason: 'STOP' }] };
+        throw { status: 429, message: 'PerDay quota exceeded during stream' };
+      },
+    };
+    const complete = (text: string) => ({
+      async *[Symbol.asyncIterator]() {
+        yield { text, candidates: [{ finishReason: 'STOP' }] };
+      },
+    });
+    sdk.generateContentStream
+      .mockResolvedValueOnce(interrupted)
+      .mockRejectedValueOnce({ status: 429, message: 'PerDay quota exceeded' })
+      .mockResolvedValueOnce(complete('Lite 완성'))
+      .mockResolvedValueOnce(complete('다음 결과'));
+
+    const progress: string[] = [];
+    const first = await generateContentMultipartStream(
+      'key-a',
+      [{ text: '작성' }],
+      { apiTier: 'free' },
+      event => progress.push(event.type === 'chunk' ? event.text : event.type),
+    );
+    expect(first).toMatchObject({
+      text: 'Lite 완성',
+      model: 'gemini-3.5-flash-lite',
+      fallbacks: [
+        { fromModel: 'gemini-3.8-flash', reason: 'quota' },
+        { fromModel: 'gemini-3.7-flash', reason: 'quota' },
+      ],
+    });
+    expect(progress).toEqual(['start', '미완성', 'start', 'start', 'Lite 완성']);
+
+    const diagnostics = await getModelDiagnostics('key-a', 'free');
+    expect(diagnostics.blocked).toEqual(expect.arrayContaining(['gemini-3.8-flash', 'gemini-3.7-flash']));
+    expect(diagnostics.selectedModel).toBe('gemini-3.5-flash-lite');
+
+    await expect(generateContentMultipartStream(
+      'key-a',
+      [{ text: '다음 작성' }],
+      { apiTier: 'free' },
+      () => {},
+    )).resolves.toMatchObject({ text: '다음 결과', model: 'gemini-3.5-flash-lite' });
   });
 });
