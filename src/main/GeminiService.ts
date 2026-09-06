@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import { extractGroundingInfo, mergeGroundingInfo, type GroundingInfo } from './groundingSources';
 import {
   FREE_MODEL_PREFERENCE,
@@ -13,6 +13,7 @@ import {
 } from './modelChain';
 import { RetryableStreamError, isDegenerateStream, isRetryableStreamError } from './streamGuard';
 import { RequestPacer } from './requestPacer';
+import { assertGenerationResponseAccepted, validateGeneratedResponse } from './generationResponseValidation';
 
 export type ApiTier = 'free' | 'paid';
 
@@ -348,7 +349,8 @@ export async function generateContent(
       ai.models.generateContent({ model, contents: prompt, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
     );
-    return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
+    assertGenerationResponseAccepted(result);
+    return { text: validateGeneratedResponse(result, result.text ?? ''), grounding: extractGroundingInfo(result) };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
@@ -365,7 +367,8 @@ export async function generateContentMultipart(
       ai.models.generateContent({ model, contents: { parts }, config: toGenerateConfig(withToolsOption(options, withTools)) }),
       REQUEST_TIMEOUT_MS,
     );
-    return { text: result.text ?? '', grounding: extractGroundingInfo(result) };
+    assertGenerationResponseAccepted(result);
+    return { text: validateGeneratedResponse(result, result.text ?? ''), grounding: extractGroundingInfo(result) };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
 }
@@ -392,17 +395,20 @@ export async function generateContentMultipartStream(
     // 비정상 반복 감지 시 스트림을 명시적으로 닫기 위해서다.
     const iterator = stream[Symbol.asyncIterator]();
     let full = '';
+    let lastResponse: GenerateContentResponse | null = null;
     // 그라운딩 정보는 청크에 나눠 실려 오므로, 가장 정보가 많은 청크의 값을 남긴다.
     let grounding: GroundingInfo | null = null;
     try {
       while (true) {
-        let next: IteratorResult<{ text?: string }>;
+        let next: IteratorResult<GenerateContentResponse>;
         try {
           next = await withTimeout(iterator.next(), STREAM_CHUNK_TIMEOUT_MS);
         } catch {
           throw new RetryableStreamError('생성 응답이 중간에 멈췄습니다.');
         }
         if (next.done) break;
+        lastResponse = next.value;
+        assertGenerationResponseAccepted(next.value);
         grounding = mergeGroundingInfo(grounding, extractGroundingInfo(next.value));
         const text = next.value.text ?? '';
         if (text) {
@@ -418,6 +424,7 @@ export async function generateContentMultipartStream(
       await iterator.return?.(undefined).catch(() => undefined);
       throw error;
     }
+    validateGeneratedResponse(lastResponse ?? ({} as GenerateContentResponse), full);
     return { text: full, grounding };
   }, options?.useSearchGrounding === true, options?.requireSearchGrounding === true);
   return { text: result.text, model, ...(result.grounding ? { grounding: result.grounding } : {}) };
