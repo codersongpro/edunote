@@ -37,6 +37,12 @@ import {
   type BackupSettingsStore,
   type ParsedBackup,
 } from './backup';
+import { BoundedDownloadBuffer } from './downloadLimit';
+
+const MAX_URL_METADATA_BYTES = 1 * 1024 * 1024;
+const MAX_YOUTUBE_METADATA_BYTES = 2 * 1024 * 1024;
+const MAX_RESOURCE_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_SHARED_JSON_BYTES = 5 * 1024 * 1024;
 
 // 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 // config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
@@ -110,9 +116,9 @@ export function cleanupSessionTmpDir(): void {
 // 따라가 버려, 공인 도메인이 사설 IP·루프백으로 302를 보내는 SSRF를 막지 못한다.
 function fetchSafely(
   rawUrl: string,
-  options: { timeoutMs?: number; maxRedirects?: number } = {},
+  options: { timeoutMs?: number; maxRedirects?: number; maxBytes?: number } = {},
 ): Promise<{ buffer: Buffer; contentType: string }> {
-  const { timeoutMs = 10000, maxRedirects = 5 } = options;
+  const { timeoutMs = 10000, maxRedirects = 5, maxBytes = MAX_URL_METADATA_BYTES } = options;
   const deadline = Date.now() + timeoutMs;
   const encodeUrl = (s: string): string => s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
 
@@ -154,13 +160,29 @@ function fetchSafely(
       req.on('response', (res) => {
         if (res.statusCode && res.statusCode >= 400) {
           done(() => reject(new Error(`HTTP ${res.statusCode}`)));
+          req.abort();
           return;
         }
         const rawContentType = res.headers['content-type'];
         const contentType = Array.isArray(rawContentType) ? (rawContentType[0] || '') : (rawContentType || '');
-        const chunks: Buffer[] = [];
-        res.on('data', (c: Buffer) => chunks.push(c));
-        res.on('end', () => done(() => resolve({ buffer: Buffer.concat(chunks), contentType })));
+        const body = new BoundedDownloadBuffer(maxBytes, () => req.abort());
+        try {
+          body.assertContentLength(res.headers['content-length']);
+        } catch (error) {
+          done(() => reject(error));
+          return;
+        }
+        res.on('data', (chunk: Buffer) => {
+          if (settled) return;
+          try {
+            body.append(chunk);
+          } catch (error) {
+            res.removeAllListeners('data');
+            res.removeAllListeners('end');
+            done(() => reject(error));
+          }
+        });
+        res.on('end', () => done(() => resolve({ buffer: body.toBuffer(), contentType })));
         res.on('error', (e: Error) => done(() => reject(e)));
       });
 
@@ -695,7 +717,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
   ipcMain.handle('url:fetch-meta', async (_e, rawUrl: string) => {
     try {
       const parsed = new URL(rawUrl);
-      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000 });
+      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000, maxBytes: MAX_URL_METADATA_BYTES });
       const html = buffer.toString('utf-8').substring(0, 50000);
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
       const ogDesc = html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
@@ -720,7 +742,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
   // Fetch any image URL → base64 data URI (bypasses renderer CSP)
   ipcMain.handle('resource:fetch-image', async (_e, imageUrl: string) => {
     try {
-      const { buffer, contentType } = await fetchSafely(imageUrl, { timeoutMs: 10000 });
+      const { buffer, contentType } = await fetchSafely(imageUrl, { timeoutMs: 10000, maxBytes: MAX_RESOURCE_IMAGE_BYTES });
       const rawMime = contentType.split(';')[0].trim().toLowerCase();
       // content-type이 명시적으로 이미지가 아니면(예: 리다이렉트로 도달한 내부 페이지의 text/html) 거부한다.
       // content-type이 아예 없는 경우는 기존과 동일하게 image/jpeg로 간주한다.
@@ -738,7 +760,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     const videoId = match?.[1] || '';
     try {
       if (!videoId) return { title: '', description: '', thumbnail: '', videoId: '' };
-      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000 });
+      const { buffer } = await fetchSafely(rawUrl, { timeoutMs: 8000, maxBytes: MAX_YOUTUBE_METADATA_BYTES });
       const html = buffer.toString('utf-8').substring(0, 120000);
       const titleMatch = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -1009,65 +1031,12 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
   ipcMain.handle('data:fetch-url-json', async (_e, url: string) => {
     // 최초 URL과 리다이렉트 URL 모두에 assertSafeUrl(netGuard.ts)로 재검사한다.
     const safeUrl = assertSafeUrl(url);
-
-    const encodeUrl = (s: string): string =>
-      s.replace(/[^\x00-\x7F]/g, c => encodeURIComponent(c));
-
-    // 리다이렉트를 포함한 전체 요청에 하나의 마감 시각을 둔다(홉마다 리셋되지 않음).
-    const TOTAL_TIMEOUT_MS = 20000;
-    const deadline = Date.now() + TOTAL_TIMEOUT_MS;
-
-    const fetchUrl = (targetUrl: string, redirectsLeft: number): Promise<string> =>
-      new Promise((resolve, reject) => {
-        if (redirectsLeft <= 0) { reject(new Error('리다이렉트가 너무 많습니다')); return; }
-        try {
-          assertSafeUrl(targetUrl);
-        } catch (e) {
-          reject(e);
-          return;
-        }
-        const remaining = deadline - Date.now();
-        if (remaining <= 0) { reject(new Error('연결 시간이 초과되었습니다 (20초)')); return; }
-
-        const req = net.request({ url: encodeUrl(targetUrl), redirect: 'manual' });
-        req.setHeader('User-Agent', 'Mozilla/5.0 edunote-app');
-
-        let settled = false;
-        // 어떤 경로로 종료되든(응답·리다이렉트·오류·타임아웃) 타이머를 반드시 정리한다.
-        const done = (fn: () => void) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          fn();
-        };
-
-        const timer = setTimeout(() => {
-          done(() => reject(new Error('연결 시간이 초과되었습니다 (20초)')));
-          req.abort();
-        }, remaining);
-
-        req.on('redirect', (_code, _method, redirectUrl) => {
-          done(() => resolve(fetchUrl(redirectUrl, redirectsLeft - 1)));
-          req.abort();
-        });
-
-        req.on('response', (res) => {
-          if (res.statusCode && res.statusCode >= 400) {
-            done(() => reject(new Error(`HTTP ${res.statusCode}`)));
-            return;
-          }
-          const chunks: Buffer[] = [];
-          res.on('data', (c: Buffer) => chunks.push(c));
-          res.on('end', () => done(() => resolve(Buffer.concat(chunks).toString('utf-8'))));
-          res.on('error', (e) => done(() => reject(e)));
-        });
-
-        req.on('error', (e) => done(() => reject(e)));
-
-        req.end();
-      });
-
-    return await fetchUrl(safeUrl, 6);
+    const { buffer } = await fetchSafely(safeUrl, {
+      timeoutMs: 20000,
+      maxRedirects: 5,
+      maxBytes: MAX_SHARED_JSON_BYTES,
+    });
+    return buffer.toString('utf-8');
   });
 
   // ── 나라장터 물품 검색 ────────────────────────────────────────────
