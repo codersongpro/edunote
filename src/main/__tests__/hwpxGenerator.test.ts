@@ -89,12 +89,56 @@ describe('buildHwpxZip', () => {
     const html = '<p>1. 추진 배경</p><p>가. 세부 내용</p><p>1) 더 깊은 수준</p>';
     const buf = await buildHwpxZip('제목', html, {});
     const section = await readEntry(buf, 'Contents/section0.xml');
-    // "1." 수준 → 15pt(charPr 11), 들여쓰기 없음
+    // "1." 수준 → 15pt(charPr 11), 전용 문단 속성(18)
+    expect(section).toMatch(/paraPrIDRef="18"[^>]*>[\s\S]*?<hp:run charPrIDRef="11">/);
     expect(section).toContain('<hp:run charPrIDRef="11"><hp:t>1. 추진 배경</hp:t></hp:run>');
-    // "가." 수준 → 14pt(charPr 10), 두 칸 들여쓰기
-    expect(section).toContain('<hp:run charPrIDRef="10"><hp:t>  가. 세부 내용</hp:t></hp:run>');
-    // "1)" 수준 → 14pt, 네 칸 들여쓰기
-    expect(section).toContain('<hp:run charPrIDRef="10"><hp:t>    1) 더 깊은 수준</hp:t></hp:run>');
+    // "가."와 "1)" 수준 → 14pt(charPr 10), 서로 다른 문단 여백
+    expect(section).toMatch(/paraPrIDRef="19"[^>]*>[\s\S]*?<hp:run charPrIDRef="10"><hp:t>가\. 세부 내용<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="20"[^>]*>[\s\S]*?<hp:run charPrIDRef="10"><hp:t>1\) 더 깊은 수준<\/hp:t>/);
+  });
+
+  it('data-outline-level 네 단계가 서로 다른 문단 속성과 내어쓰기를 사용한다', async () => {
+    const html =
+      '<h2 data-outline-level="1">1. 운영 방법</h2>'
+      + '<div data-outline-level="2">가. 대상별 안내가 길어져 둘째 줄로 이어지는 내용</div>'
+      + '<div data-outline-level="3">1) 안내 자료 확인</div>'
+      + '<div data-outline-level="4">가) 제출 항목 점검</div>';
+    const buf = await buildHwpxZip('제목', html, {});
+    const section = await readEntry(buf, 'Contents/section0.xml');
+    const header = await readEntry(buf, 'Contents/header.xml');
+
+    expect(section).toMatch(/paraPrIDRef="18"[^>]*>[\s\S]*?<hp:t>1\. 운영 방법<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="19"[^>]*>[\s\S]*?<hp:t>가\. 대상별 안내/);
+    expect(section).toMatch(/paraPrIDRef="20"[^>]*>[\s\S]*?<hp:t>1\) 안내 자료 확인<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="21"[^>]*>[\s\S]*?<hp:t>가\) 제출 항목 점검<\/hp:t>/);
+    expect(section).not.toContain('<hp:t>  가. 대상별 안내');
+
+    expect(header).toMatch(/<hh:paraPr id="18"[\s\S]*?<hc:intent value="-1200"[\s\S]*?<hc:left value="1200"/);
+    expect(header).toMatch(/<hh:paraPr id="19"[\s\S]*?<hc:intent value="-1000"[\s\S]*?<hc:left value="2000"/);
+    expect(header).toMatch(/<hh:paraPr id="20"[\s\S]*?<hc:intent value="-1200"[\s\S]*?<hc:left value="3200"/);
+    expect(header).toMatch(/<hh:paraPr id="21"[\s\S]*?<hc:intent value="-1000"[\s\S]*?<hc:left value="4000"/);
+  });
+
+  it('data 속성이 없는 이전 HTML도 번호를 감지해 같은 문단 위계를 적용한다', async () => {
+    const html = '<p>1. 운영 방법</p><p>가. 대상별 안내</p><p>1) 안내 자료 확인</p><p>가) 제출 항목 점검</p>';
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+
+    expect(section).toMatch(/paraPrIDRef="18"[^>]*>[\s\S]*?<hp:t>1\. 운영 방법<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="19"[^>]*>[\s\S]*?<hp:t>가\. 대상별 안내<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="20"[^>]*>[\s\S]*?<hp:t>1\) 안내 자료 확인<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="21"[^>]*>[\s\S]*?<hp:t>가\) 제출 항목 점검<\/hp:t>/);
+  });
+
+  it('순서 목록의 시작 번호·개별 값·중첩 깊이를 보존하고 말머리를 이중 출력하지 않는다', async () => {
+    const html =
+      '<ol start="3"><li>셋째 항목</li><li value="7">일곱째 항목<ul><li>하위 항목</li></ul></li><li>1) 이미 표시된 항목</li></ol>';
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+
+    expect(section).toMatch(/paraPrIDRef="18"[^>]*>[\s\S]*?<hp:t>3\. 셋째 항목<\/hp:t>/);
+    expect(section).toContain('<hp:t>7. 일곱째 항목</hp:t>');
+    expect(section).toMatch(/paraPrIDRef="19"[^>]*>[\s\S]*?<hp:t>• 하위 항목<\/hp:t>/);
+    expect(section).toContain('<hp:t>1) 이미 표시된 항목</hp:t>');
+    expect(section).not.toContain('8. 1) 이미 표시된 항목');
   });
 
   it('h1 제목은 가운데 정렬·제목 서식으로, strong은 굵게 run으로 분리된다', async () => {
@@ -155,7 +199,7 @@ describe('buildHwpxZip', () => {
     const buf = await buildHwpxZip('제목', '<p>본문</p>', {});
     const header = await readEntry(buf, 'Contents/header.xml');
     expect(header).toContain('<hh:charProperties itemCnt="12">');
-    expect(header).toContain('<hh:paraProperties itemCnt="18">');
+    expect(header).toContain('<hh:paraProperties itemCnt="25">');
     expect(header).toContain('<hh:borderFills itemCnt="3">');
     expect(header).toMatch(/<hh:charPr id="7" height="2200"[\s\S]*?<hh:bold\/>/);
     // 본문 기본 14pt(굵게 아님), "1." 수준 15pt

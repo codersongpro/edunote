@@ -23,6 +23,17 @@ const CHAR_BODY = '10'; // 14pt — 본문 기본
 const CHAR_LEVEL1 = '11'; // 15pt — "1." 수준 문단
 const PARA_CENTER = '16'; // 가운데 정렬 문단
 const PARA_RIGHT = '17'; // 오른쪽 정렬 문단
+const OUTLINE_PARAGRAPHS: Record<number, { id: string; left: number; intent: number }> = {
+  // 화면에서 쓰는 1~4단계. left는 본문 시작점, intent는 말머리를 내어 쓰는 폭이다.
+  1: { id: '18', left: 1200, intent: -1200 },
+  2: { id: '19', left: 2000, intent: -1000 },
+  3: { id: '20', left: 3200, intent: -1200 },
+  4: { id: '21', left: 4000, intent: -1000 },
+  // 이전 문서에서 감지하던 추가 단계도 두 칸 간격 정책을 유지한다.
+  5: { id: '22', left: 5200, intent: -1200 },
+  6: { id: '23', left: 6000, intent: -1000 },
+  7: { id: '24', left: 7000, intent: -1000 },
+};
 const BORDER_TABLE = '3'; // 표 셀 테두리(SOLID)
 const BODY_WIDTH = 42520; // 골격 본문 폭 (HWPUNIT)
 
@@ -100,18 +111,30 @@ function paraXml(runs: string, paraPr: string, style: SectionStyle, width = BODY
 }
 
 // 공문 번호 체계 수준 감지: 1. → 가. → 1) → 가) → (1) → (가) → ①
-// 수준이 깊어질 때마다 두 칸씩 들여쓰고, "1." 수준은 15pt로 키운다.
+// 화면에서 쓰는 1~4단계 외에 이전 문서의 추가 단계도 같은 간격 정책으로 보존한다.
 const KOREAN_MARKERS = '가나다라마바사아자차카타파하';
-function levelOf(text: string): { prefix: string; charPr: string } {
+function levelOf(text: string): { level: number | null; charPr: string } {
   const t = text.trimStart();
-  if (/^\d{1,2}\.(?!\d)/.test(t)) return { prefix: '', charPr: CHAR_LEVEL1 };
-  if (new RegExp(`^[${KOREAN_MARKERS}]\\.(?!\\d)`).test(t)) return { prefix: '  ', charPr: CHAR_BODY };
-  if (/^\d{1,2}\)/.test(t)) return { prefix: '    ', charPr: CHAR_BODY };
-  if (new RegExp(`^[${KOREAN_MARKERS}]\\)`).test(t)) return { prefix: '      ', charPr: CHAR_BODY };
-  if (/^\(\d{1,2}\)/.test(t)) return { prefix: '        ', charPr: CHAR_BODY };
-  if (new RegExp(`^\\([${KOREAN_MARKERS}]\\)`).test(t)) return { prefix: '          ', charPr: CHAR_BODY };
-  if (/^[①-⑮㉮-㉻]/.test(t)) return { prefix: '            ', charPr: CHAR_BODY };
-  return { prefix: '', charPr: CHAR_BODY };
+  if (/^\d{1,2}\.(?!\d)/.test(t)) return { level: 1, charPr: CHAR_LEVEL1 };
+  if (new RegExp(`^[${KOREAN_MARKERS}]\\.(?!\\d)`).test(t)) return { level: 2, charPr: CHAR_BODY };
+  if (/^\d{1,2}\)/.test(t)) return { level: 3, charPr: CHAR_BODY };
+  if (new RegExp(`^[${KOREAN_MARKERS}]\\)`).test(t)) return { level: 4, charPr: CHAR_BODY };
+  if (/^\(\d{1,2}\)/.test(t)) return { level: 5, charPr: CHAR_BODY };
+  if (new RegExp(`^\\([${KOREAN_MARKERS}]\\)`).test(t)) return { level: 6, charPr: CHAR_BODY };
+  if (/^[①-⑮㉮-㉻]/.test(t)) return { level: 7, charPr: CHAR_BODY };
+  return { level: null, charPr: CHAR_BODY };
+}
+
+function explicitOutlineLevel(node: any): number | null {
+  const raw = Number(node?.getAttribute?.('data-outline-level'));
+  if (OUTLINE_PARAGRAPHS[raw]) return raw;
+  for (let i = 0; i < (node?.childNodes?.length || 0); i += 1) {
+    const child = node.childNodes.item(i);
+    if (!child || child.nodeType !== 1) continue;
+    const nested = explicitOutlineLevel(child);
+    if (nested) return nested;
+  }
+  return null;
 }
 
 // 강조(bold) 구간이 쓸 charPr — 기본 크기를 유지한 채 굵게만 바꾼다.
@@ -248,6 +271,7 @@ function inlineParas(
   style: SectionStyle,
   prefix = '',
   width = BODY_WIDTH,
+  forcedLevel: number | null = null,
 ): string[] {
   const segs: InlineSeg[] = [];
   collectInline(el, false, segs);
@@ -259,14 +283,16 @@ function inlineParas(
   if (lines.length > 1 && lines[lines.length - 1].length === 0) lines.pop();
   return lines.map((line, lineIdx) => {
     let lineChar = baseChar;
-    let indent = '';
-    if (baseChar === CHAR_BODY && !prefix) {
-      const level = levelOf(line.map(seg => seg.text).join(''));
-      lineChar = level.charPr;
-      indent = level.prefix;
+    let linePara = paraPr;
+    const lineText = line.map(seg => seg.text).join('');
+    const detectedLevel = forcedLevel ?? explicitOutlineLevel(el) ?? levelOf(lineText).level;
+    if (detectedLevel && OUTLINE_PARAGRAPHS[detectedLevel]) {
+      linePara = OUTLINE_PARAGRAPHS[detectedLevel].id;
+      if (baseChar === CHAR_BODY) lineChar = detectedLevel === 1 ? CHAR_LEVEL1 : CHAR_BODY;
     }
     const runs: string[] = [];
-    let buf = (lineIdx === 0 ? prefix : '') + indent;
+    const alreadyMarked = /^(?:\d{1,2}[.)]|[가-하][.)]|[•▪‣◦-])\s*/.test(lineText.trimStart());
+    let buf = lineIdx === 0 && !alreadyMarked ? prefix : '';
     let bufBold = false;
     const flush = () => {
       if (!buf) return;
@@ -279,18 +305,30 @@ function inlineParas(
       buf += seg.text;
     }
     flush();
-    return paraXml(runs.join(''), paraPr, style, width);
+    return paraXml(runs.join(''), linePara, style, width);
   });
 }
 
 function convertList(listEl: any, ordered: boolean, depth: number, style: SectionStyle, out: string[]): void {
-  let index = 1;
+  let index = ordered ? Math.max(1, parseInt(listEl.getAttribute?.('start') || '1', 10) || 1) : 1;
   for (let i = 0; i < (listEl.childNodes?.length || 0); i += 1) {
     const li = listEl.childNodes.item(i);
     if (!li || li.nodeType !== 1 || tagOf(li) !== 'li') continue;
-    const marker = `${'  '.repeat(depth)}${ordered ? `${index}. ` : '• '}`;
+    if (ordered) {
+      const itemValue = parseInt(li.getAttribute?.('value') || '', 10);
+      if (Number.isFinite(itemValue)) index = itemValue;
+    }
+    const marker = ordered ? `${index}. ` : '• ';
     index += 1;
-    out.push(...inlineParas(li, CHAR_BODY, style.paraPrIDRef, style, marker));
+    out.push(...inlineParas(
+      li,
+      CHAR_BODY,
+      style.paraPrIDRef,
+      style,
+      marker,
+      BODY_WIDTH,
+      Math.min(depth + 1, 7),
+    ));
     // li 안의 중첩 목록은 들여쓰기를 늘려 이어서 처리한다
     for (let j = 0; j < (li.childNodes?.length || 0); j += 1) {
       const nested = li.childNodes.item(j);
@@ -398,7 +436,8 @@ function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl
       const text = String(child.nodeValue || '').trim();
       if (text) {
         const level = levelOf(text);
-        out.push(paraXml(runXml(level.charPr, tXml(level.prefix + text)), style.paraPrIDRef, style));
+        const paraPr = level.level ? OUTLINE_PARAGRAPHS[level.level].id : style.paraPrIDRef;
+        out.push(paraXml(runXml(level.charPr, tXml(text)), paraPr, style));
       }
       continue;
     }
@@ -410,7 +449,16 @@ function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl
       continue;
     }
     if (tag === 'h2' || tag === 'h3' || tag === 'h4') {
-      out.push(...inlineParas(child, CHAR_HEADING, style.paraPrIDRef, style));
+      const tagLevel = explicitOutlineLevel(child);
+      out.push(...inlineParas(
+        child,
+        tag === 'h2' ? CHAR_HEADING : CHAR_BODY,
+        style.paraPrIDRef,
+        style,
+        '',
+        BODY_WIDTH,
+        tagLevel,
+      ));
       continue;
     }
     if (tag === 'table') {
@@ -463,6 +511,10 @@ function injectHeaderStyles(header: string, basePara: string): string | null {
     paraPrBase
       .replace(`id="${basePara}"`, `id="${id}"`)
       .replace(/horizontal="[A-Z_]+"/, `horizontal="${align}"`);
+  const mkOutlinePara = (id: string, left: number, intent: number) =>
+    mkPara(id, 'JUSTIFY')
+      .replace(/<hc:intent value="-?\d+"/g, `<hc:intent value="${intent}"`)
+      .replace(/<hc:left value="-?\d+"/g, `<hc:left value="${left}"`);
   const tableBorder = borderFill1
     .replace('id="1"', `id="${BORDER_TABLE}"`)
     .replace(/<hh:(leftBorder|rightBorder|topBorder|bottomBorder) type="NONE"/g, '<hh:$1 type="SOLID"');
@@ -473,12 +525,15 @@ function injectHeaderStyles(header: string, basePara: string): string | null {
     mkChar(CHAR_BOLD, '1400', true) +
     mkChar(CHAR_BODY, '1400', false) +
     mkChar(CHAR_LEVEL1, '1500', false);
+  const outlineParas = Object.values(OUTLINE_PARAGRAPHS)
+    .map(({ id, left, intent }) => mkOutlinePara(id, left, intent))
+    .join('');
   return header
     .replace('</hh:charProperties>', `${newChars}</hh:charProperties>`)
-    .replace('</hh:paraProperties>', `${mkPara(PARA_CENTER, 'CENTER')}${mkPara(PARA_RIGHT, 'RIGHT')}</hh:paraProperties>`)
+    .replace('</hh:paraProperties>', `${mkPara(PARA_CENTER, 'CENTER')}${mkPara(PARA_RIGHT, 'RIGHT')}${outlineParas}</hh:paraProperties>`)
     .replace('</hh:borderFills>', `${tableBorder}</hh:borderFills>`)
     .replace(/<hh:charProperties itemCnt="(\d+)">/, (_m, n) => `<hh:charProperties itemCnt="${Number(n) + 5}">`)
-    .replace(/<hh:paraProperties itemCnt="(\d+)">/, (_m, n) => `<hh:paraProperties itemCnt="${Number(n) + 2}">`)
+    .replace(/<hh:paraProperties itemCnt="(\d+)">/, (_m, n) => `<hh:paraProperties itemCnt="${Number(n) + 2 + Object.keys(OUTLINE_PARAGRAPHS).length}">`)
     .replace(/<hh:borderFills itemCnt="(\d+)">/, (_m, n) => `<hh:borderFills itemCnt="${Number(n) + 1}">`);
 }
 
