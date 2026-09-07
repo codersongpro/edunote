@@ -7,6 +7,7 @@ import { safeSetItem } from '../lib/safeStorage';
 import { TRANSLATION_LANGUAGES, languageByCode, translateHtml } from '../lib/translation';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
+import { convertHtmlToMarkdown } from '../lib/htmlToMarkdown';
 import type { GroundingInfo } from '../../preload/types';
 import { ReviewChecklist } from './ReviewChecklist';
 
@@ -485,7 +486,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       return;
     }
     if (copyFormat === 'md') {
-      await copyText(convertToMarkdown(currentHtml));
+      await copyText(convertHtmlToMarkdown(currentHtml));
       return;
     }
     await handleCopy();
@@ -546,59 +547,9 @@ h2,h3{page-break-after:avoid;}
     }
   };
 
-  const convertToMarkdown = (html: string): string => {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    doc.querySelectorAll('table').forEach(table => {
-      const rows = Array.from(table.querySelectorAll('tr')).map(row =>
-        Array.from(row.querySelectorAll('th,td')).map(cell => (cell.textContent || '').replace(/\s+/g, ' ').trim())
-      ).filter(row => row.length > 0);
-      if (rows.length === 0) return;
-      const width = Math.max(...rows.map(row => row.length));
-      const normalized = rows.map(row => [...row, ...Array(Math.max(0, width - row.length)).fill('')]);
-      const header = normalized[0];
-      const body = normalized.slice(1);
-      const mdTable = [
-        `| ${header.join(' | ')} |`,
-        `| ${header.map(() => '---').join(' | ')} |`,
-        ...body.map(row => `| ${row.join(' | ')} |`),
-      ].join('\n');
-      table.replaceWith(doc.createTextNode(`\n${mdTable}\n`));
-    });
-    doc.querySelectorAll('li').forEach(li => {
-      li.replaceWith(doc.createTextNode(`- ${(li.textContent || '').trim()}\n`));
-    });
-    doc.querySelectorAll('br').forEach(br => br.replaceWith(doc.createTextNode('\n')));
-
-    let md = doc.body.innerHTML;
-    md = md.replace(/<head>[\s\S]*?<\/head>/gi, '');
-    md = md.replace(/<style>[\s\S]*?<\/style>/gi, '');
-    md = md.replace(/<html>/gi, '').replace(/<\/html>/gi, '');
-    md = md.replace(/<body>/gi, '').replace(/<\/body>/gi, '');
-    md = md.replace(/<!DOCTYPE html>/gi, '');
-    md = md.replace(/<h1>(.*?)<\/h1>/gim, '# $1\n');
-    md = md.replace(/<h2>(.*?)<\/h2>/gim, '## $1\n');
-    md = md.replace(/<h3>(.*?)<\/h3>/gim, '### $1\n');
-    md = md.replace(/<strong>(.*?)<\/strong>/gim, '$1');
-    md = md.replace(/<b>(.*?)<\/b>/gim, '$1');
-    md = md.replace(/<br\s*\/?>/gim, '\n');
-    md = md.replace(/<\/div>/gim, '\n');
-    md = md.replace(/<div>/gim, '');
-    md = md.replace(/<p>/gim, '');
-    md = md.replace(/<\/p>/gim, '\n\n');
-    md = md.replace(/<ul>/gim, '');
-    md = md.replace(/<\/ul>/gim, '');
-    md = md.replace(/<li>(.*?)<\/li>/gim, '- $1\n');
-    md = md.replace(/&nbsp;/g, ' ');
-    md = md.replace(/&lt;/g, '<');
-    md = md.replace(/&gt;/g, '>');
-    md = md.replace(/&amp;/g, '&');
-    md = md.replace(/\n\s*\n/g, '\n\n');
-    return md.trim();
-  };
-
   const handleDownloadMarkdown = async () => {
     const currentHtml = getCurrentContent();
-    const mdContent = convertToMarkdown(currentHtml);
+    const mdContent = convertHtmlToMarkdown(currentHtml);
     await window.electronAPI.saveFile(mdContent, getFormattedFilename('md'), 'md');
   };
 
