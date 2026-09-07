@@ -1462,6 +1462,24 @@ ${periodLine}- 별도 시간 지정이 없으므로 ${explicitPeriods ? `차시�
 - 교수·학습 과정안의 각 단계 시간 합계를 반드시 ${totalMinutes}분으로 맞추세요.`;
 };
 
+const validateStudentWorksheetHtml = (raw: string): string => {
+  const html = stripGeneratedCodeFences(raw).trim();
+  const answerMaterialPattern = /(?:정답|해설|모범\s*답안|예시\s*답안|채점\s*기준)\s*[:：]/i;
+  const comments = html.match(/<!--[\s\S]*?-->/g) ?? [];
+  const hasHiddenMarkup = /\bhidden(?:\s|=|>)|display\s*:\s*none|visibility\s*:\s*hidden/i.test(html);
+  const visibleText = html
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ');
+
+  if (hasHiddenMarkup || comments.some(comment => answerMaterialPattern.test(comment)) || answerMaterialPattern.test(visibleText)) {
+    throw new Error('학생용 자료에 정답·해설 또는 숨김 내용이 포함되었습니다. 다시 생성해주세요.');
+  }
+
+  return html;
+};
+
 export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<{ slides: LessonSlide[]; model: string }> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `${getDateContext()}
@@ -1505,27 +1523,41 @@ export async function generateLessonWorksheet(
   insertImagePlaceholder = false,
 ): Promise<{ text: string; model: string }> {
   const typeLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
+  const countLabel = worksheetType === 'activity' ? '활동 수' : '문항 수';
   const baseFontSize = params.grade.includes('초등') ? '12pt' : params.grade.includes('중학') ? '11pt' : '10pt';
   const h1Size = params.grade.includes('초등') ? '18pt' : params.grade.includes('중학') ? '17pt' : '16pt';
   const h2Size = params.grade.includes('초등') ? '13pt' : params.grade.includes('중학') ? '12pt' : '11pt';
   const tableSize = params.grade.includes('초등') ? '11.5pt' : params.grade.includes('중학') ? '10.5pt' : '9.5pt';
   const gradeGuidance = getLessonGradeGuidance(params.grade);
+  const purposeGuidance = worksheetType === 'activity'
+    ? `[활동형 워크시트 목적]
+- 선택한 학습 목표를 연습하도록 관찰·조작·기록·설명의 순서가 드러나는 활동을 만드세요.
+- 학생이 스스로 수행할 수 있도록 필요한 도움과 단계를 제시하세요.
+- 교사가 요청한 예시나 힌트는 사용할 수 있지만, 학생이 바로 수행할 활동의 답을 알려 주는 힌트는 넣지 마세요.`
+    : `[학생용 평가지 목적]
+- 각 문항에서 확인할 평가 요소와 답변 조건을 분명하게 제시하세요.
+- 정답이 하나로 결정되는 문항은 조건과 보기를 모호하지 않게 작성하세요.
+- 정답이 결정되지 않는 질문을 정답 하나의 문항처럼 만들지 말고, 서술형이면 학생이 답해야 할 범위와 기준을 질문에 밝히세요.
+${includeScore ? '- 각 문항의 배점을 표시하고 문항별 배점의 합계가 총점과 일치하게 하세요.' : '- 점수와 배점은 표시하지 마세요.'}`;
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
 
 ${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
+[자료 목적]
+${purposeGuidance}
+
 [요구사항]
-- 활동 수: ${questionCount}개
-- 점수란 포함: ${includeScore ? '예 (각 활동에 점수 배점 표시)' : '아니오'}
-- ${questionCount <= 2 ? 'A4 용지를 꽉 채울 수 있도록 각 활동에 충분한 여백과 설명 공간을 배치하세요. 기본 폰트 크기보다 1~2pt 크게 설정하고 줄 간격도 넉넉하게 잡으세요' : questionCount <= 4 ? 'A4 용지를 균형 있게 채울 수 있도록 적당한 여백과 설명을 배치하세요' : '반드시 A4 용지 1장에 모든 내용이 들어가도록 간결하고 컴팩트하게 구성하세요'}
-- ${questionCount <= 2 ? '각 활동에 충분한 답변 공간(줄 5~8개)을 확보하여 A4를 꽉 채우세요' : questionCount <= 4 ? '각 활동에 적당한 답변 공간(줄 2~4개)을 배치하세요' : '각 활동은 핵심 내용만 최소한의 공간으로 구성하고, 답변 공간은 줄 1~3개로 제한하세요'}
+- ${countLabel}: ${questionCount}개
+- 점수란 포함: ${includeScore ? '예' : '아니오'}
+- 이 생성 결과는 학생에게 배포하는 학생용 결과입니다. 학생이 풀기 전에 보게 될 본문에 교사용 정답·해설·채점 기준을 넣지 마세요.
+- 교사용 내용을 CSS로 숨기거나 HTML 주석에 넣는 방식도 금지합니다. 빈 답안 작성선의 class 이름으로 answer-lines를 사용하는 것은 허용합니다.
+- 답안 공간은 문항 수만으로 일률적으로 줄이지 말고, 예상 응답의 길이와 활동 방식에 맞춰 충분히 확보하세요. 선택·단답형과 설명·서술·관찰 기록의 쓰기 공간을 구분하세요.
+- A4 한 장은 목표로 삼되, 아래에 지정한 글자 크기보다 작게 줄이지 마세요. 한 장에 모두 배치하기 어렵다면 글자와 답안 공간을 우선 보존하고, 앱의 분량 안내를 통해 문항 수 조정이나 재생성이 필요하다는 점을 알리세요.
 - 머리글 구조: 문서 제목(h1)에는 반드시 style="text-align:center;" 속성을 추가하세요. 학년/반/이름 기입란은 그 아래 별도 행에 '<div class="student-info" style="display:flex;gap:16pt;justify-content:flex-end;border-bottom:1pt solid #000;padding-bottom:3pt;margin-bottom:6pt;">' 형태로 오른쪽 정렬 배치하고, 각 항목은 '<span>학년: <span class="fill" style="display:inline-block;min-width:50pt;border-bottom:1pt solid #333;">&nbsp;</span></span>' 형태로 작성 공간이 밑줄로 표시되게 하세요.
 ${insertImagePlaceholder ? "- 학년/반/이름 기입란 바로 아래, 첫 번째 활동 시작 전에 반드시 '<div class=\"worksheet-image\">[WORKSHEET_IMAGE]</div>' 줄을 정확히 이 형태로 삽입하세요." : ''}
-- 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하세요
 - 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 자연스러운 학교 자료 문체로 작성하세요.
 ${insertImagePlaceholder ? "- 이미지는 반드시 '[WORKSHEET_IMAGE]' 플레이스홀더 하나로만 표시하고, 그 외 <img> 태그나 외부 이미지 URL은 절대 사용하지 마세요." : "- <img> 태그, 외부 이미지 URL, 이미지 파일 참조, '[그림: ...]' 형태의 그림 설명 텍스트를 절대 사용하지 마세요. 그림이 필요한 부분은 그림 없이 텍스트와 표만으로 구성하세요."}
-- 반드시 A4 용지 1장 안에 모든 내용이 들어가도록 여백과 폰트 크기를 조절하세요. 내용이 잘려 넘어가지 않도록 하세요.
 - 한글 단어 중간에서 줄바꿈이 일어나지 않도록 word-break: keep-all을 반드시 적용하고, 단어가 페이지 밖으로 넘치지 않도록 overflow-wrap: break-word도 적용하세요.
 
 반드시 완전한 HTML 문서로 응답하세요. <!DOCTYPE html>부터 </html>까지 포함하세요.
@@ -1551,7 +1583,7 @@ p { margin: 2pt 0; line-height: 1.5; }
 
   let usedModel = '';
   const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5 }, (model) => { usedModel = model; });
-  return { text: stripGeneratedCodeFences(raw), model: usedModel };
+  return { text: validateStudentWorksheetHtml(raw), model: usedModel };
 }
 
 export type QuizType = 'MULTIPLE_CHOICE' | 'SHORT_ANSWER' | 'OX';

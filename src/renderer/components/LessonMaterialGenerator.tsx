@@ -378,7 +378,9 @@ const LessonMaterialGenerator: React.FC = () => {
         // A4 한 장 기준을 넘는지 추정해 안내한다 (인쇄 시점에야 알게 되는 문제 예방)
         estimateA4Pages(finalHtml).then(pages => {
           if (pages > 1) {
-            setError(`생성된 워크시트가 A4 약 ${pages}장 분량으로 추정됩니다. 한 장에 맞추려면 활동 수를 줄이거나 다시 생성해 보세요.`);
+            const materialLabel = worksheetType === 'activity' ? '워크시트' : '평가지';
+            const countLabel = worksheetType === 'activity' ? '활동' : '문항';
+            setError(`생성된 ${materialLabel}가 A4 약 ${pages}장 분량으로 추정됩니다. 글자 크기와 답안 공간을 유지하려면 ${countLabel} 수를 줄이거나 다시 생성해 보세요. 실제 출력 쪽수는 인쇄 미리보기에서 확인해 주세요.`);
           }
         }).catch(() => {});
       } else if (contentType === 'QUIZ') {
@@ -675,15 +677,23 @@ li{margin-bottom:5pt;line-height:1.6;}
                       </button>
                     ))}
                   </div>
+                  <p className="mt-1.5 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#8A817A]">
+                    {worksheetType === 'activity'
+                      ? '관찰·조작·기록·설명 활동을 연습하는 학생용 자료입니다.'
+                      : '학습한 내용을 확인하는 학생용 평가 문항입니다. 정답·해설은 포함하지 않습니다.'}
+                  </p>
                 </div>
                 <div>
-                  <label className={labelClass}>활동 수</label>
+                  <label className={labelClass}>{worksheetType === 'activity' ? '활동 수' : '문항 수'}</label>
                   <input type="number" className={inputClass} min={1} max={10} value={worksheetCount} onChange={e => setWorksheetCount(Math.max(1, parseInt(e.target.value) || 2))} />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-[#78716C] dark:text-[#C4B8B0]">
                   <input type="checkbox" checked={includeScore} onChange={e => setIncludeScore(e.target.checked)} className="rounded" />
                   점수란 포함
                 </label>
+                <p className="text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#8A817A]">
+                  A4 한 장을 목표로 생성하지만, 읽기 쉬운 글자 크기와 답안 공간을 우선합니다. 초과 예상 시 활동·문항 수 조정 안내가 표시됩니다.
+                </p>
                 <div className="pt-1 space-y-2">
                   <label className="flex items-center gap-2 cursor-pointer text-sm text-[#78716C] dark:text-[#C4B8B0]">
                     <input type="checkbox" checked={worksheetImageEnabled} onChange={e => setWorksheetImageEnabled(e.target.checked)} className="rounded" />
