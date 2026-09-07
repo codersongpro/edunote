@@ -147,7 +147,7 @@ async function resolveModelSelection(
       verificationStatus: 'verified',
       checkedAt: discovery.checkedAt,
       selectionReason: apiTier === 'free'
-        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 최신 후보를 우선하고, Flash 한도 초과에 대비해 현재 키에서 제공되는 최신 검증 Lite를 안전 후보로 포함했습니다.'
+        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 Lite 중 최신 모델을 기본으로 사용하고, 다음 Lite와 다른 무료 정식 모델을 폴백 후보로 둡니다.'
         : '공식 정책에서 유료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 기존 Pro → Flash → Lite 우선순위와 계열별 최신 순서로 선택했습니다.',
     };
   }

@@ -42,13 +42,13 @@ describe('GeminiService 모델 선택 통합', () => {
     sdk.generateContentStream.mockReset();
   });
 
-  it('키 테스트도 고정 모델이 아니라 실제 생성과 같은 최신 검증 체인을 쓴다', async () => {
+  it('무료 키 테스트와 실제 생성 모두 최신 검증 Lite를 기본으로 쓴다', async () => {
     sdk.list.mockResolvedValue(modelPager(['gemini-3.5-flash-lite', 'gemini-3.8-flash']));
     sdk.generateContent.mockResolvedValue({ text: 'ok' });
 
     await expect(testApiKey('key-a', 'free')).resolves.toEqual({ ok: true });
     expect(sdk.generateContent).toHaveBeenCalledTimes(1);
-    expect(sdk.generateContent.mock.calls[0][0].model).toBe('gemini-3.8-flash');
+    expect(sdk.generateContent.mock.calls[0][0].model).toBe('gemini-3.5-flash-lite');
   });
 
   it('목록 조회 성공 시 검증 대상이 없으면 미등재 모델을 호출하지 않고 실패한다', async () => {
@@ -74,7 +74,7 @@ describe('GeminiService 모델 선택 통합', () => {
     await expect(getModelDiagnostics('new-key', 'free', true)).rejects.toThrow('network down');
   });
 
-  it('무료 Flash 후보가 한도 초과면 최신 Lite로 폴백하고 실제 성공 모델을 남긴다', async () => {
+  it('최신 Lite 한도 초과 시 다음 Lite와 Flash까지 순서대로 폴백한다', async () => {
     sdk.list.mockResolvedValue(modelPager([
       'gemini-3.8-flash',
       'gemini-3.7-flash',
@@ -89,20 +89,21 @@ describe('GeminiService 모델 선택 통합', () => {
 
     await expect(generateContent('key-a', '작성', { apiTier: 'free' })).resolves.toMatchObject({
       text: '완료',
-      model: 'gemini-3.5-flash-lite',
+      model: 'gemini-3.8-flash',
     });
     const info = await getModelDiagnostics('key-a', 'free');
-    expect(info.actualModel).toBe('gemini-3.5-flash-lite');
-    expect(info.selectedModel).toBe('gemini-3.5-flash-lite');
-    expect(info.blocked).toContain('gemini-3.8-flash');
-    expect(info.blocked).toContain('gemini-3.7-flash');
+    expect(info.actualModel).toBe('gemini-3.8-flash');
+    expect(info.selectedModel).toBe('gemini-3.8-flash');
+    expect(info.blocked).toContain('gemini-3.5-flash-lite');
+    expect(info.blocked).toContain('gemini-3.1-flash-lite');
   });
 
-  it('스트림 중 429도 Flash를 차단하고 현재·다음 결과를 Lite로 완성한다', async () => {
+  it('스트림 중 429도 Lite를 차단하고 다음 무료 후보에서 처음부터 완성한다', async () => {
     sdk.list.mockResolvedValue(modelPager([
       'gemini-3.8-flash',
       'gemini-3.7-flash',
       'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
     ]));
     const interrupted = {
       async *[Symbol.asyncIterator]() {
@@ -130,23 +131,23 @@ describe('GeminiService 모델 선택 통합', () => {
     );
     expect(first).toMatchObject({
       text: 'Lite 완성',
-      model: 'gemini-3.5-flash-lite',
+      model: 'gemini-3.8-flash',
       fallbacks: [
-        { fromModel: 'gemini-3.8-flash', reason: 'quota' },
-        { fromModel: 'gemini-3.7-flash', reason: 'quota' },
+        { fromModel: 'gemini-3.5-flash-lite', reason: 'quota' },
+        { fromModel: 'gemini-3.1-flash-lite', reason: 'quota' },
       ],
     });
     expect(progress).toEqual(['start', '미완성', 'start', 'start', 'Lite 완성']);
 
     const diagnostics = await getModelDiagnostics('key-a', 'free');
-    expect(diagnostics.blocked).toEqual(expect.arrayContaining(['gemini-3.8-flash', 'gemini-3.7-flash']));
-    expect(diagnostics.selectedModel).toBe('gemini-3.5-flash-lite');
+    expect(diagnostics.blocked).toEqual(expect.arrayContaining(['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']));
+    expect(diagnostics.selectedModel).toBe('gemini-3.8-flash');
 
     await expect(generateContentMultipartStream(
       'key-a',
       [{ text: '다음 작성' }],
       { apiTier: 'free' },
       () => {},
-    )).resolves.toMatchObject({ text: '다음 결과', model: 'gemini-3.5-flash-lite' });
+    )).resolves.toMatchObject({ text: '다음 결과', model: 'gemini-3.8-flash' });
   });
 });

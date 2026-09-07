@@ -526,7 +526,7 @@ const SettingsScreen: React.FC = () => {
               </button>
             </label>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-              {apiTier === 'free' ? '확인된 무료 정식 모델 중 자동 선택' : '확인된 유료 정식 모델 중 자동 선택'}합니다.
+              {apiTier === 'free' ? '최신 검증 Lite를 우선하고 필요하면 다른 무료 정식 모델로 자동 전환' : '확인된 유료 정식 모델 중 자동 선택'}합니다.
               새 모델은 공식 모델·가격·지원 상태를 확인한 앱 업데이트 이후 후보에 반영됩니다.
             </p>
             {modelInfoError && (

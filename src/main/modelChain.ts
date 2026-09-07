@@ -19,7 +19,7 @@ export interface VerifiedModelPolicy {
   generative: boolean;
   // 유료 모드의 기존 품질 우선순위. 무료 자격 판정에는 사용하지 않는다.
   paidPriority?: number;
-  // 무료 Flash 한도 소진 뒤 사용할 수 있는 검증된 경량 안전 후보.
+  // 무료 모드에서 우선 사용할 검증된 경량 후보.
   liteSafety?: boolean;
 }
 
@@ -58,14 +58,9 @@ export function selectVerifiedModels(
     .sort((a, b) =>
       tier === 'paid'
         ? (a.paidPriority ?? Number.MAX_SAFE_INTEGER) - (b.paidPriority ?? Number.MAX_SAFE_INTEGER) || b.releaseOrder - a.releaseOrder
-        : b.releaseOrder - a.releaseOrder,
+        : Number(Boolean(b.liteSafety)) - Number(Boolean(a.liteSafety)) || b.releaseOrder - a.releaseOrder,
     );
-  const selected = eligible.slice(0, MAX_CHAIN_LENGTH);
-  if (tier === 'free') {
-    const latestLite = eligible.find(model => model.liteSafety);
-    if (latestLite && !selected.includes(latestLite)) selected[MAX_CHAIN_LENGTH - 1] = latestLite;
-  }
-  return selected.map(model => model.name);
+  return eligible.slice(0, MAX_CHAIN_LENGTH).map(model => model.name);
 }
 
 interface LastVerifiedEntry {

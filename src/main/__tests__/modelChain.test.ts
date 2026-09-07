@@ -40,14 +40,14 @@ describe('buildModelChain', () => {
 });
 
 describe('selectVerifiedModels', () => {
-  it('무료 여부를 먼저 검증한 뒤 새 무료 Flash를 오래된 Lite보다 앞세운다', () => {
+  it('무료 모드는 최신 검증 Lite를 Flash보다 기본으로 사용한다', () => {
     expect(selectVerifiedModels('free', [
       'models/gemini-3.5-flash-lite',
       'models/gemini-3.8-flash',
-    ])).toEqual(['gemini-3.8-flash', 'gemini-3.5-flash-lite']);
+    ])).toEqual(['gemini-3.5-flash-lite', 'gemini-3.8-flash']);
   });
 
-  it('무료 후보가 많아도 최신 검증 Lite를 안전 후보로 포함한다', () => {
+  it('무료 후보가 많으면 최신 Lite부터 다음 Lite와 Flash 순으로 폴백한다', () => {
     expect(selectVerifiedModels('free', [
       'gemini-3.8-flash',
       'gemini-3.7-flash',
@@ -55,9 +55,9 @@ describe('selectVerifiedModels', () => {
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
     ])).toEqual([
-      'gemini-3.8-flash',
-      'gemini-3.7-flash',
       'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-3.8-flash',
     ]);
   });
 
