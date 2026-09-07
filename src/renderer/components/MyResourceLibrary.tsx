@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera, SearchIcon, ArrowLeft, ArrowRight, RefreshCw, PlusCircle } from 'lucide-react';
 import { safeSetItem } from '../lib/safeStorage';
+import { filterResourceUsage, type ResourceUsageRecord } from '../lib/workflowFeatures';
 
 declare global {
   namespace JSX {
@@ -22,10 +23,43 @@ interface Resource {
   tags: string;
   category: string;
   createdAt: number;
+  usageRecords?: ResourceUsageRecord[];
 }
 
 const STORAGE_KEY = 'eduNote_resources_v2';
 const CATEGORIES_KEY = 'eduNote_resource_categories_v1';
+
+function normalizeResource(raw: unknown): Resource | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const resource = raw as Partial<Resource>;
+  if (typeof resource.id !== 'string' || typeof resource.url !== 'string') return null;
+  const usageRecords = Array.isArray(resource.usageRecords)
+    ? resource.usageRecords.flatMap((rawUsage): ResourceUsageRecord[] => {
+        if (!rawUsage || typeof rawUsage !== 'object') return [];
+        const usage = rawUsage as Partial<ResourceUsageRecord>;
+        if (typeof usage.id !== 'string') return [];
+        return [{
+          id: usage.id,
+          usedAt: typeof usage.usedAt === 'string' ? usage.usedAt : '',
+          grade: typeof usage.grade === 'string' ? usage.grade : '',
+          unit: typeof usage.unit === 'string' ? usage.unit : '',
+          note: typeof usage.note === 'string' ? usage.note : '',
+        }];
+      })
+    : [];
+  return {
+    id: resource.id,
+    url: resource.url,
+    title: typeof resource.title === 'string' ? resource.title : resource.url,
+    description: typeof resource.description === 'string' ? resource.description : '',
+    thumbnail: typeof resource.thumbnail === 'string' ? resource.thumbnail : '',
+    type: resource.type === 'youtube' ? 'youtube' : 'web',
+    tags: typeof resource.tags === 'string' ? resource.tags : '',
+    category: typeof resource.category === 'string' ? resource.category : '',
+    createdAt: Number.isFinite(Number(resource.createdAt)) ? Number(resource.createdAt) : Date.now(),
+    usageRecords,
+  };
+}
 
 function extractYoutubeId(url: string): string | null {
   const patterns = [
@@ -44,7 +78,10 @@ function extractYoutubeId(url: string): string | null {
 function isYoutubeUrl(url: string): boolean { return !!extractYoutubeId(url); }
 
 function loadResources(): Resource[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.map(normalizeResource).filter((item): item is Resource => Boolean(item)) : [];
+  }
   catch { return []; }
 }
 function saveResources(list: Resource[]) { safeSetItem(STORAGE_KEY, JSON.stringify(list)); }
@@ -87,6 +124,8 @@ const MyResourceLibrary: React.FC = () => {
 
   const [showCatManager, setShowCatManager] = useState(false);
   const [newCatManagerInput, setNewCatManagerInput] = useState('');
+  const [expandedUsageIds, setExpandedUsageIds] = useState<Set<string>>(new Set());
+  const [usageDrafts, setUsageDrafts] = useState<Record<string, Partial<ResourceUsageRecord>>>({});
 
   const urlInputRef = useRef<HTMLInputElement>(null);
   const webviewRef = useRef<any>(null);
@@ -107,7 +146,7 @@ const MyResourceLibrary: React.FC = () => {
         ]);
         if (cancelled) return;
         setDataPath(filePath);
-        if (Array.isArray(savedResources)) setResources(savedResources as Resource[]);
+        if (Array.isArray(savedResources)) setResources(savedResources.map(normalizeResource).filter((item): item is Resource => Boolean(item)));
         if (Array.isArray(savedCategories)) setCategories(savedCategories as string[]);
         if (!savedResources) {
           window.electronAPI.writeJsonData('resource-library', loadResources()).catch(() => {});
@@ -308,6 +347,26 @@ const MyResourceLibrary: React.FC = () => {
 
   const handleDelete = (id: string) => setResources(prev => prev.filter(r => r.id !== id));
 
+  const addUsageRecord = (resourceId: string) => {
+    const draft = usageDrafts[resourceId] ?? {};
+    if (!draft.usedAt || !draft.grade?.trim() || !draft.unit?.trim()) return;
+    const record: ResourceUsageRecord = {
+      id: `usage-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      usedAt: draft.usedAt,
+      grade: draft.grade.trim(),
+      unit: draft.unit.trim(),
+      note: draft.note?.trim() ?? '',
+    };
+    setResources(previous => previous.map(resource => resource.id === resourceId
+      ? { ...resource, usageRecords: [...(resource.usageRecords ?? []), record] }
+      : resource));
+    setUsageDrafts(previous => ({ ...previous, [resourceId]: {} }));
+  };
+
+  const deleteUsageRecord = (resourceId: string, usageId: string) => setResources(previous => previous.map(resource => resource.id === resourceId
+    ? { ...resource, usageRecords: (resource.usageRecords ?? []).filter(record => record.id !== usageId) }
+    : resource));
+
   const handleEditSave = (id: string) => {
     setResources(prev => prev.map(r => r.id === id ? { ...r, title: editTitle, description: editDesc } : r));
     setEditId(null);
@@ -340,7 +399,8 @@ const MyResourceLibrary: React.FC = () => {
     if (!search) return true;
     const q = search.toLowerCase();
     return r.title.toLowerCase().includes(q) || r.description.toLowerCase().includes(q) ||
-      r.tags.toLowerCase().includes(q) || r.url.toLowerCase().includes(q);
+      r.tags.toLowerCase().includes(q) || r.url.toLowerCase().includes(q) ||
+      filterResourceUsage(r.usageRecords ?? [], q).length > 0;
   });
 
   const inputClass = 'w-full bg-white rounded-lg border border-[#E7E5E4] text-[#1C1917] text-sm focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none p-2.5 transition-all';
@@ -646,7 +706,7 @@ const MyResourceLibrary: React.FC = () => {
             <input
               type="text"
               className="w-full bg-white rounded-xl border border-[#EDE8E1] text-[#1C1917] text-sm focus:border-teal-500 outline-none pl-9 pr-9 py-2.5 shadow-sm"
-              placeholder="제목·설명·태그 검색"
+              placeholder="제목·설명·태그·활용 학년·단원 검색"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -772,11 +832,33 @@ const MyResourceLibrary: React.FC = () => {
                               <Tag className="w-2.5 h-2.5" />{tag}
                             </span>
                           ))}
+                          <button
+                            onClick={() => setExpandedUsageIds(previous => { const next = new Set(previous); next.has(r.id) ? next.delete(r.id) : next.add(r.id); return next; })}
+                            className="text-[10px] rounded-full px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200"
+                          >수업 활용 {r.usageRecords?.length ?? 0}회</button>
                         </div>
                       </>
                     )}
                   </div>
                 </div>
+                {expandedUsageIds.has(r.id) && (
+                  <div className="border-t border-[#EDE8E1] dark:border-[#2E2822] p-3 space-y-2">
+                    {(r.usageRecords ?? []).map(record => (
+                      <div key={record.id} className="flex gap-2 items-start text-xs rounded-lg bg-blue-50/60 dark:bg-blue-950/20 p-2">
+                        <span className="font-semibold text-blue-800 dark:text-blue-200">{record.usedAt} · {record.grade} · {record.unit}</span>
+                        <span className="flex-1 text-[#78716C] dark:text-[#9C8F87]">{record.note || '후기 없음'}</span>
+                        <button onClick={() => deleteUsageRecord(r.id, record.id)} className="text-red-500"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                    <div className="grid grid-cols-[135px_100px_120px_1fr_auto] gap-2">
+                      <input type="date" value={usageDrafts[r.id]?.usedAt ?? ''} onChange={event => setUsageDrafts(previous => ({ ...previous, [r.id]: { ...previous[r.id], usedAt: event.target.value } }))} className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                      <input value={usageDrafts[r.id]?.grade ?? ''} onChange={event => setUsageDrafts(previous => ({ ...previous, [r.id]: { ...previous[r.id], grade: event.target.value } }))} placeholder="학년" className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                      <input value={usageDrafts[r.id]?.unit ?? ''} onChange={event => setUsageDrafts(previous => ({ ...previous, [r.id]: { ...previous[r.id], unit: event.target.value } }))} placeholder="단원" className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                      <input value={usageDrafts[r.id]?.note ?? ''} onChange={event => setUsageDrafts(previous => ({ ...previous, [r.id]: { ...previous[r.id], note: event.target.value } }))} placeholder="활용 후기 (예: 앞 3분만 사용, 설명이 빠름)" className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                      <button onClick={() => addUsageRecord(r.id)} className="rounded bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">기록</button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

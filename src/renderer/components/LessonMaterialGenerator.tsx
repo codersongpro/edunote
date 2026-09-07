@@ -14,11 +14,13 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
   generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan,
+  generateWorksheetVariant, generateWorksheetTeacherGuide,
   LessonSlide, LessonParams, QuizType,
 } from '../services/geminiService';
 import { LESSON_LOADING_MESSAGES } from '../constants';
 import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
+import { contentFingerprint, ensureWorksheetQuestionIds, validateWorksheetVariantLinkage } from '../lib/workflowFeatures';
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
 
@@ -27,9 +29,21 @@ interface SavedWorksheet {
   title: string;
   grade: string;
   subject: string;
+  unit?: string;
+  topic?: string;
+  details?: string;
+  worksheetType?: 'activity' | 'assessment';
   html: string;
   createdAt: number;
   updatedAt: number;
+  version?: number;
+  fingerprint?: string;
+  sourceWorksheetId?: string;
+  variantType?: 'support' | 'challenge';
+  questionLinks?: Array<{ sourceId: string; targetId: string }>;
+  teacherGuide?: { html: string; model: string; sourceFingerprint: string; sourceVersion: number; sourceWorksheetId?: string; createdAt: number };
+  questionIds?: string[];
+  questionCount?: number;
 }
 
 interface LibraryResource {
@@ -193,6 +207,15 @@ const LessonMaterialGenerator: React.FC = () => {
   const [worksheetModel, setWorksheetModel] = useState('');
   const [savedWorksheets, setSavedWorksheets] = useState<SavedWorksheet[]>([]);
   const [worksheetTab, setWorksheetTab] = useState<'generate' | 'saved'>('generate');
+  const [worksheetId, setWorksheetId] = useState('');
+  const [worksheetVersion, setWorksheetVersion] = useState(1);
+  const [variantType, setVariantType] = useState<'support' | 'challenge'>('support');
+  const [variantHtml, setVariantHtml] = useState<string | null>(null);
+  const [variantModel, setVariantModel] = useState('');
+  const [variantQuestionLinks, setVariantQuestionLinks] = useState<Array<{ sourceId: string; targetId: string }>>([]);
+  const [teacherGuide, setTeacherGuide] = useState<{ html: string; model: string; sourceFingerprint: string; sourceVersion: number; sourceWorksheetId?: string; createdAt: number } | null>(null);
+  const [worksheetView, setWorksheetView] = useState<'student' | 'compare' | 'teacher'>('student');
+  const [isGeneratingSupplement, setIsGeneratingSupplement] = useState(false);
   const [quizHtml, setQuizHtml] = useState<string | null>(null);
   const [quizModel, setQuizModel] = useState('');
   const [planContent, setPlanContent] = useState<string>('');
@@ -374,7 +397,15 @@ const LessonMaterialGenerator: React.FC = () => {
           const altMatch = match.match(/alt=["']([^"']*)["']/i);
           return altMatch?.[1] ? `<span style="display:block;text-align:center;color:#888;font-style:italic;">[그림: ${altMatch[1]}]</span>` : '';
         });
+        const linkedWorksheet = ensureWorksheetQuestionIds(finalHtml, worksheetCount);
+        finalHtml = linkedWorksheet.html;
         setWorksheetHtml(finalHtml);
+        setWorksheetId(crypto.randomUUID());
+        setWorksheetVersion(1);
+        setVariantHtml(null);
+        setVariantQuestionLinks([]);
+        setTeacherGuide(null);
+        setWorksheetView('student');
         // A4 한 장 기준을 넘는지 추정해 안내한다 (인쇄 시점에야 알게 되는 문제 예방)
         estimateA4Pages(finalHtml).then(pages => {
           if (pages > 1) {
@@ -463,18 +494,102 @@ li{margin-bottom:5pt;line-height:1.6;}
   const handleSaveWorksheetToLibrary = async () => {
     if (!worksheetHtml) return;
     const ws: SavedWorksheet = {
-      id: crypto.randomUUID(),
+      id: worksheetId || crypto.randomUUID(),
       title: `${subject} - ${topic}`,
       grade: selectedGradeLabel,
       subject,
+      unit,
+      topic,
+      details,
+      worksheetType,
       html: worksheetHtml,
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      version: worksheetVersion,
+      fingerprint: contentFingerprint(worksheetHtml),
+      teacherGuide: teacherGuide ?? undefined,
+      questionIds: Array.from(new DOMParser().parseFromString(worksheetHtml, 'text/html').querySelectorAll<HTMLElement>('[data-question-id]')).map(node => node.dataset.questionId ?? '').filter(Boolean),
+      questionCount: worksheetCount,
     };
-    const updated = [ws, ...savedWorksheets];
+    const updated = [ws, ...savedWorksheets.filter(item => item.id !== ws.id)];
+    setWorksheetId(ws.id);
     setSavedWorksheets(updated);
     await window.electronAPI.writeJsonData('saved-worksheets', updated);
     notifyToast({ type: 'success', title: '워크시트가 저장되었습니다.' });
+  };
+
+  const lessonParams = (): LessonParams => ({
+    grade: selectedGradeLabel,
+    subject,
+    unit,
+    topic: topic.trim(),
+    details,
+    achievementStandard: selectedStandard ? { code: selectedStandard.code, text: selectedStandard.text } : undefined,
+  });
+
+  const handleGenerateVariant = async () => {
+    if (!worksheetHtml) return;
+    setIsGeneratingSupplement(true);
+    try {
+      const result = await generateWorksheetVariant(worksheetHtml, variantType, lessonParams());
+      const nextVariantHtml = extractHtml(result.text);
+      const links = validateWorksheetVariantLinkage(worksheetHtml, nextVariantHtml);
+      setVariantHtml(nextVariantHtml);
+      setVariantQuestionLinks(links);
+      setVariantModel(result.model);
+      setWorksheetView('compare');
+      playSuccessSound();
+    } catch (error) {
+      notifyToast({ type: 'error', title: error instanceof Error ? error.message : '변형 워크시트 생성에 실패했습니다.' });
+    } finally {
+      setIsGeneratingSupplement(false);
+    }
+  };
+
+  const handleSaveVariant = async () => {
+    if (!worksheetHtml || !variantHtml) return;
+    const id = crypto.randomUUID();
+    const questionLinks = validateWorksheetVariantLinkage(worksheetHtml, variantHtml);
+    const item: SavedWorksheet = {
+      id,
+      title: `${subject} - ${topic} (${variantType === 'support' ? '도움형' : '도전형'})`,
+      grade: selectedGradeLabel,
+      subject,
+      unit,
+      topic,
+      details,
+      worksheetType,
+      html: variantHtml,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      version: 1,
+      fingerprint: contentFingerprint(variantHtml),
+      sourceWorksheetId: worksheetId || 'unsaved-source',
+      variantType,
+      questionLinks,
+      questionIds: questionLinks.map(link => link.targetId),
+      questionCount: questionLinks.length,
+    };
+    const updated = [item, ...savedWorksheets];
+    setSavedWorksheets(updated);
+    await window.electronAPI.writeJsonData('saved-worksheets', updated);
+    notifyToast({ type: 'success', title: '원본 문항 연결 정보와 함께 변형본을 저장했습니다.' });
+  };
+
+  const handleGenerateTeacherGuide = async () => {
+    if (!worksheetHtml) return;
+    setIsGeneratingSupplement(true);
+    try {
+      const sourceFingerprint = contentFingerprint(worksheetHtml);
+      const result = await generateWorksheetTeacherGuide(worksheetHtml, worksheetType, lessonParams());
+      setTeacherGuide({ html: extractHtml(result.text), model: result.model, sourceFingerprint, sourceVersion: worksheetVersion, sourceWorksheetId: worksheetId || 'unsaved-source', createdAt: Date.now() });
+      setWorksheetView('teacher');
+      playSuccessSound();
+    } catch (error) {
+      notifyToast({ type: 'error', title: error instanceof Error ? error.message : '교사용 답안 생성에 실패했습니다.' });
+    } finally {
+      setIsGeneratingSupplement(false);
+    }
   };
 
   const handleDeleteWorksheet = async (id: string) => {
@@ -486,6 +601,19 @@ li{margin-bottom:5pt;line-height:1.6;}
 
   const handleLoadWorksheet = (ws: SavedWorksheet) => {
     setWorksheetHtml(ws.html);
+    setWorksheetId(ws.id);
+    setWorksheetVersion(ws.version ?? 1);
+    setSelectedGradeLabel(ws.grade);
+    setSubject(ws.subject);
+    setUnit(ws.unit ?? '');
+    setTopic(ws.topic ?? ws.title);
+    setDetails(ws.details ?? '');
+    setWorksheetType(ws.worksheetType ?? 'activity');
+    if (ws.questionCount) setWorksheetCount(ws.questionCount);
+    setTeacherGuide(ws.teacherGuide ?? null);
+    setVariantHtml(null);
+    setVariantQuestionLinks([]);
+    setWorksheetView('student');
     setWorksheetTab('generate');
   };
 
@@ -938,7 +1066,49 @@ li{margin-bottom:5pt;line-height:1.6;}
                 )}
               </div>
               {worksheetTab === 'generate' && worksheetHtml && (
-                <GeneratedDisplay content={worksheetHtml} title={`${topic} 워크시트`} model={worksheetModel} />
+                <div className="rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 p-2.5 space-y-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold text-amber-900 dark:text-amber-100">원본 v{worksheetVersion}</span>
+                    <select value={variantType} onChange={event => setVariantType(event.target.value as 'support' | 'challenge')} className="rounded border border-amber-200 bg-white dark:bg-[#221E1B] px-2 py-1 text-xs">
+                      <option value="support">도움형</option>
+                      <option value="challenge">도전형</option>
+                    </select>
+                    <button onClick={handleGenerateVariant} disabled={isGeneratingSupplement} className="rounded bg-amber-600 px-3 py-1 text-xs font-bold text-white disabled:opacity-40">변형본 생성</button>
+                    {variantHtml && <button onClick={() => setWorksheetView('compare')} className="rounded border border-amber-300 px-3 py-1 text-xs font-bold text-amber-800">원본과 비교</button>}
+                    {variantHtml && <button onClick={handleSaveVariant} className="rounded border border-emerald-300 px-3 py-1 text-xs font-bold text-emerald-700">변형본 저장</button>}
+                    <button onClick={handleGenerateTeacherGuide} disabled={isGeneratingSupplement} className="rounded bg-indigo-600 px-3 py-1 text-xs font-bold text-white disabled:opacity-40">교사용 답안·해설 생성</button>
+                    {teacherGuide && <button onClick={() => setWorksheetView('teacher')} className="rounded border border-indigo-300 px-3 py-1 text-xs font-bold text-indigo-700">교사용 자료 보기</button>}
+                    <button onClick={() => setWorksheetView('student')} className="rounded border border-[#E7E5E4] px-3 py-1 text-xs">학생용 보기</button>
+                  </div>
+                  <p className="text-[11px] text-[#78716C]">도움형·도전형은 같은 목표와 문항 ID를 유지합니다. 학생을 자동 분류하지 않으며 교사가 자료 형태를 선택합니다.</p>
+                  {teacherGuide && (teacherGuide.sourceFingerprint !== contentFingerprint(worksheetHtml) || (teacherGuide.sourceWorksheetId && teacherGuide.sourceWorksheetId !== (worksheetId || 'unsaved-source'))) && (
+                    <p className="text-[11px] font-semibold text-red-600">학생용 원본이 수정되어 이 답안은 이전 버전(v{teacherGuide.sourceVersion}) 기준입니다. 최신 답안으로 간주하지 마세요.</p>
+                  )}
+                </div>
+              )}
+              {worksheetTab === 'generate' && worksheetHtml && (
+                worksheetView === 'teacher' && teacherGuide ? (
+                  <div className="flex-1 min-h-0 flex flex-col gap-1">
+                    <p className="text-xs font-bold text-indigo-700">교사용 별도 결과 · 원본 v{teacherGuide.sourceVersion} · 학생용 파일에는 포함되지 않습니다.</p>
+                    <GeneratedDisplay content={teacherGuide.html} title={`${topic} 교사용 답안·해설`} model={teacherGuide.model} />
+                  </div>
+                ) : worksheetView === 'compare' && variantHtml ? (
+                  <div className="grid grid-cols-2 gap-2 flex-1 min-h-0 overflow-hidden">
+                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">원본 학생용</p><GeneratedDisplay content={worksheetHtml} title={`${topic} 원본`} model={worksheetModel} /></div>
+                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">{variantType === 'support' ? '도움형' : '도전형'} · 검증된 문항 연결 {variantQuestionLinks.length}개</p><GeneratedDisplay content={variantHtml} title={`${topic} ${variantType === 'support' ? '도움형' : '도전형'}`} model={variantModel} /></div>
+                  </div>
+                ) : (
+                  <GeneratedDisplay
+                    content={worksheetHtml}
+                    title={`${topic} 워크시트`}
+                    model={worksheetModel}
+                    onContentChange={content => {
+                      if (contentFingerprint(content) === contentFingerprint(worksheetHtml)) return;
+                      setWorksheetHtml(content);
+                      setWorksheetVersion(version => version + 1);
+                    }}
+                  />
+                )
               )}
               {worksheetTab === 'generate' && !worksheetHtml && (
                 <div className="flex-1 flex items-center justify-center text-[#A8A29E] dark:text-[#6B5E57] text-sm">아직 생성된 워크시트가 없습니다.</div>
@@ -955,7 +1125,11 @@ li{margin-bottom:5pt;line-height:1.6;}
                       <div key={ws.id} className="flex items-center gap-3 p-3 bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822]">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-[#1C1917] dark:text-[#C4B8B0] truncate">{ws.title}</p>
-                          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">{ws.grade} · {new Date(ws.createdAt).toLocaleDateString('ko-KR')}</p>
+                          <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
+                            {ws.grade} · v{ws.version ?? 1} · {new Date(ws.createdAt).toLocaleDateString('ko-KR')}
+                            {ws.variantType && ` · ${ws.variantType === 'support' ? '도움형' : '도전형'} · 원본 문항 ${ws.questionLinks?.length ?? 0}개 연결`}
+                            {ws.teacherGuide && ' · 교사용 답안 있음'}
+                          </p>
                         </div>
                         <button
                           onClick={() => handleLoadWorksheet(ws)}

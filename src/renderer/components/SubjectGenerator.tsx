@@ -21,6 +21,14 @@ import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 import { buildStudentAssessmentTasks } from '../lib/neisGradeValidation';
+import {
+  contentFingerprint,
+  generationStatusForError,
+  retryableStudentIds,
+  splitRecordSentences,
+  type EvidenceLink,
+  type ReviewStatus,
+} from '../lib/workflowFeatures';
 
 interface Props {
   schoolLevel: SchoolLevel;
@@ -88,6 +96,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const [duplicateResults, setDuplicateResults] = useState<DuplicateResult[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedHistory, setExpandedHistory] = useState<Set<string>>(new Set());
+  const [expandedEvidence, setExpandedEvidence] = useState<Set<string>>(new Set());
   const [studentPanelCollapsed, setStudentPanelCollapsed] = useState(false);
 
   // NEIS Upload States
@@ -543,15 +552,20 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             const subjName = res.subject || `분석된과목_${idx+1}`;
             if (idx === 0 && !firstSubjectName) firstSubjectName = subjName;
 
-            const subjectStudents = subjectState.commonStudents.map(s => ({
-                id: s.id,
-                name: s.name,
-                additionalContext: '',
-                observationDetails: { process: '', attitude: '', skill: '', example: '' },
-                evaluations: [],
-                generatedContent: undefined,
-                selected: false
-            }));
+            const existingStudents = new Map((newDataStore[subjName]?.students ?? []).map(student => [student.id, student]));
+            const subjectStudents = subjectState.commonStudents.map(s => {
+                const existing = existingStudents.get(s.id);
+                if (existing) return { ...existing, name: s.name };
+                return {
+                    id: s.id,
+                    name: s.name,
+                    additionalContext: '',
+                    observationDetails: { process: '', attitude: '', skill: '', example: '' },
+                    evaluations: [],
+                    generatedContent: undefined,
+                    selected: false
+                };
+            });
 
             newDataStore[subjName] = {
                 tasks: res.tasks,
@@ -696,12 +710,51 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     updateSubjectState({ activeStudents: newStudents });
   };
 
+  const updateReviewStatus = (index: number, reviewStatus: ReviewStatus) => {
+    const students = subjectState.activeStudents.map((student, studentIndex) => studentIndex === index
+      ? { ...student, reviewStatus, finalizedAt: reviewStatus === 'final' ? new Date().toISOString() : undefined }
+      : student);
+    updateSubjectState({ activeStudents: students });
+  };
+
+  const updateEvidenceLink = (index: number, sentence: string, sentenceIndex: number, sourceText: string, sourceLabel: string) => {
+    const students = subjectState.activeStudents.map((student, studentIndex) => {
+      if (studentIndex !== index) return student;
+      const existing = student.evidenceLinks ?? [];
+      const withoutSentence = existing.filter(link => link.sentenceIndex !== sentenceIndex);
+      const evidenceLinks: EvidenceLink[] = sourceText
+        ? [...withoutSentence, {
+            id: `evidence-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            sentence,
+            sentenceIndex,
+            sentenceFingerprint: contentFingerprint(sentence),
+            sourceText,
+            sourceLabel,
+            confirmed: true,
+          }]
+        : withoutSentence;
+      return { ...student, evidenceLinks, reviewStatus: student.reviewStatus === 'final' ? 'final' as const : 'draft' as const };
+    });
+    updateSubjectState({ activeStudents: students });
+  };
+
   const handleGenerateAll = async () => {
     if (!subjectState.currentSubject) return;
 
-    let preparedTasks: AssessmentTask[][];
+    const targetIndices = subjectState.activeStudents
+      .map((student, index) => student.reviewStatus === 'final' ? -1 : index)
+      .filter(index => index >= 0);
+    if (targetIndices.length === 0) {
+      notifyToast({ type: 'info', title: '모든 학생 기록이 최종본으로 고정되어 있습니다.' });
+      return;
+    }
+
+    let preparedTasks: Map<number, AssessmentTask[]>;
     try {
-      preparedTasks = subjectState.activeStudents.map(student => buildStudentAssessmentTasks(subjectState.activeTasks, student));
+      preparedTasks = new Map(targetIndices.map(index => [
+        index,
+        buildStudentAssessmentTasks(subjectState.activeTasks, subjectState.activeStudents[index]),
+      ]));
     } catch (error) {
       notifyToast({ type: 'warning', title: error instanceof Error ? error.message : '학생별 평가값을 확인해주세요.' });
       return;
@@ -712,13 +765,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     setGlobalProgress(0);
     startGeneration(0);
     const newStudents = [...subjectState.activeStudents];
-    let completedCount = 0;
 
     try {
-        for (let i = 0; i < newStudents.length; i++) {
+        for (let targetIndex = 0; targetIndex < targetIndices.length; targetIndex++) {
             if (isCancelRequested()) break;
+            const i = targetIndices[targetIndex];
             const student = newStudents[i];
-            let mergedTasks = preparedTasks[i];
+            newStudents[i] = { ...student, generationStatus: 'running', generationError: undefined };
+            let mergedTasks = preparedTasks.get(i) ?? [];
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
               const { text: result, model, privacyApplied } = await prepareAndRunWithAbort(
@@ -736,16 +790,22 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
                 }),
               );
-              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied };
+              newStudents[i] = { ...newStudents[i], generatedContent: result, generatedModel: model, privacyApplied, generationStatus: 'completed', generationError: undefined, reviewStatus: 'draft' };
               queueViolationWarning(showToast, newStudents[i].name, result);
               saveHistory('subject', student.name, result, subjectState.currentSubject);
-              completedCount++;
-              const pct = Math.round((completedCount / newStudents.length) * 100);
+              const pct = Math.round(((targetIndex + 1) / targetIndices.length) * 100);
               setGlobalProgress(pct);
               updateProgress(pct);
             } catch (err) {
-              if (err instanceof Error && err.message === 'CANCELLED') break;
-              throw err;
+              if (err instanceof Error && err.message === 'CANCELLED') {
+                newStudents[i] = { ...newStudents[i], generationStatus: newStudents[i].generatedContent?.trim() ? 'completed' : 'idle', generationError: undefined };
+                break;
+              }
+              newStudents[i] = { ...newStudents[i], generationStatus: generationStatusForError(err), generationError: err instanceof Error ? err.message : String(err) };
+              updateSubjectState({ activeStudents: [...newStudents], step: 'RESULT' });
+              const pct = Math.round(((targetIndex + 1) / targetIndices.length) * 100);
+              setGlobalProgress(pct);
+              updateProgress(pct);
             }
         }
 
@@ -767,13 +827,18 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
 
   const handleGenerateSelected = async () => {
     const selectedIndices = subjectState.activeStudents
-        .map((s, i) => s.selected ? i : -1)
+        .map((s, i) => s.selected && s.reviewStatus !== 'final' ? i : -1)
         .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
         notifyToast({ type: 'warning', title: "선택된 학생이 없습니다." });
         return;
     }
+
+    await handleGenerateIndices(selectedIndices);
+  };
+
+  const handleGenerateIndices = async (selectedIndices: number[]) => {
 
     if (!subjectState.currentSubject) return;
 
@@ -793,13 +858,14 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     setGlobalProgress(0);
     startGeneration(0);
     const newStudents = [...subjectState.activeStudents];
-    let completedCount = 0;
 
     try {
         for (let i = 0; i < selectedIndices.length; i++) {
             if (isCancelRequested()) break;
             const index = selectedIndices[i];
             const student = newStudents[index];
+            if (student.reviewStatus === 'final') continue;
+            newStudents[index] = { ...student, generationStatus: 'running', generationError: undefined };
             let mergedTasks = preparedTasks.get(index) || [];
             mergedTasks = mergedTasks.sort(() => Math.random() - 0.5);
             try {
@@ -818,16 +884,22 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                   ...extras
                 }),
               );
-              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied };
+              newStudents[index] = { ...newStudents[index], generatedContent: result, generatedModel: model, privacyApplied, generationStatus: 'completed', generationError: undefined, reviewStatus: 'draft' };
               queueViolationWarning(showToast, newStudents[index].name, result);
               saveHistory('subject', student.name, result, subjectState.currentSubject);
-              completedCount++;
-              const selPct = Math.round((completedCount / selectedIndices.length) * 100);
+              const selPct = Math.round(((i + 1) / selectedIndices.length) * 100);
               setGlobalProgress(selPct);
               updateProgress(selPct);
             } catch (err) {
-              if (err instanceof Error && err.message === 'CANCELLED') break;
-              throw err;
+              if (err instanceof Error && err.message === 'CANCELLED') {
+                newStudents[index] = { ...newStudents[index], generationStatus: newStudents[index].generatedContent?.trim() ? 'completed' : 'idle', generationError: undefined };
+                break;
+              }
+              newStudents[index] = { ...newStudents[index], generationStatus: generationStatusForError(err), generationError: err instanceof Error ? err.message : String(err) };
+              updateSubjectState({ activeStudents: [...newStudents], step: 'RESULT' });
+              const selPct = Math.round(((i + 1) / selectedIndices.length) * 100);
+              setGlobalProgress(selPct);
+              updateProgress(selPct);
             }
         }
 
@@ -847,8 +919,23 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
   };
 
+  const handleRetryIncomplete = async () => {
+    const ids = new Set(retryableStudentIds(subjectState.activeStudents));
+    const indices = subjectState.activeStudents.map((student, index) => ids.has(student.id) ? index : -1).filter(index => index >= 0);
+    if (indices.length === 0) {
+      notifyToast({ type: 'info', title: '재시도할 미생성·실패 항목이 없습니다.' });
+      return;
+    }
+    updateSubjectState({ activeStudents: subjectState.activeStudents.map(student => ({ ...student, selected: ids.has(student.id) })) });
+    await handleGenerateIndices(indices);
+  };
+
   const handleRegenerateOne = async (index: number) => {
     const student = subjectState.activeStudents[index];
+    if (student.reviewStatus === 'final') {
+      notifyToast({ type: 'warning', title: '최종본 고정을 해제한 뒤 재생성할 수 있습니다.' });
+      return;
+    }
     const subjectName = subjectState.currentSubject;
     let mergedTasks: AssessmentTask[];
     try {
@@ -864,6 +951,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       expectedContent: student.generatedContent,
     });
     setGeneratingIds((prev: Set<string>) => new Set(prev).add(generationId));
+    updateSubjectState({ activeStudents: subjectState.activeStudents.map((item, itemIndex) => itemIndex === index ? { ...item, generationStatus: 'running', generationError: undefined } : item) });
 
     const avoidPhrases = student.generatedContent 
         ? student.generatedContent.split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 10)
@@ -889,7 +977,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         }),
       );
 
-      const generatedResult = { generatedContent: result, generatedModel: model, privacyApplied };
+      const generatedResult = { generatedContent: result, generatedModel: model, privacyApplied, generationStatus: 'completed' as const, generationError: undefined, reviewStatus: 'draft' as const };
       const latestSubject = stateRef.current.subject;
       const preview = applyScopedRegenerationResult(
         regenerationRequestsRef.current,
@@ -934,6 +1022,29 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       if (errorMessage !== 'CANCELLED') {
         console.error(errorMessage);
         notifyToast({ type: 'error', title: "재생성 중 오류가 발생했습니다." });
+        const failureResult = { generationStatus: generationStatusForError(err), generationError: errorMessage };
+        setState(prev => {
+          const applied = applyScopedRegenerationResult(
+            regenerationRequestsRef.current,
+            { currentScope: prev.subject.currentSubject, activeStudents: prev.subject.activeStudents, dataStore: prev.subject.dataStore },
+            request,
+            failureResult,
+          );
+          if (!applied.applied) return prev;
+          return { ...prev, subject: { ...prev.subject, activeStudents: applied.activeStudents, dataStore: applied.dataStore } };
+        });
+      } else {
+        const cancelledResult = { generationStatus: student.generatedContent?.trim() ? 'completed' as const : 'idle' as const, generationError: undefined };
+        setState(prev => {
+          const applied = applyScopedRegenerationResult(
+            regenerationRequestsRef.current,
+            { currentScope: prev.subject.currentSubject, activeStudents: prev.subject.activeStudents, dataStore: prev.subject.dataStore },
+            request,
+            cancelledResult,
+          );
+          if (!applied.applied) return prev;
+          return { ...prev, subject: { ...prev.subject, activeStudents: applied.activeStudents, dataStore: applied.dataStore } };
+        });
       }
     } finally {
       if (regenerationRequestsRef.current.isCurrent(request)) {
@@ -947,6 +1058,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   };
 
   const handleResultChange = (index: number, text: string) => {
+    if (subjectState.activeStudents[index].reviewStatus === 'final') return;
     const studentId = subjectState.activeStudents[index].id;
     const generationId = regenerationKey(subjectState.currentSubject, studentId);
     regenerationRequestsRef.current.invalidate({ scope: subjectState.currentSubject, studentId });
@@ -956,7 +1068,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
       return next;
     });
     const newStudents = [...subjectState.activeStudents];
-    newStudents[index] = { ...newStudents[index], generatedContent: text };
+    newStudents[index] = { ...newStudents[index], generatedContent: text, reviewStatus: 'draft', generationStatus: text.trim() ? 'completed' : 'idle', evidenceLinks: [] };
     updateSubjectState({ activeStudents: newStudents });
   };
 
@@ -1074,6 +1186,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
         console.error("CSV download error:", e);
         notifyToast({ type: 'error', title: "파일 생성 중 오류가 발생했습니다." });
     }
+  };
+
+  const downloadFinalizedCsv = async () => {
+    const rows = subjectState.activeStudents
+      .filter(student => student.reviewStatus === 'final' && student.generatedContent?.trim())
+      .map(student => [subjectState.currentSubject, student.name, student.generatedContent ?? '', student.finalizedAt ?? '']);
+    if (rows.length === 0) {
+      notifyToast({ type: 'warning', title: '최종본으로 고정한 학생 기록이 없습니다.' });
+      return;
+    }
+    await window.electronAPI.saveCsv(toCsv([['교과', '학생명', '최종본', '확정일시'], ...rows]), `${subjectState.currentSubject}_최종본_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const nextStep = () => {
@@ -1850,6 +1973,21 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                         <span className="text-purple-600 dark:text-purple-400">[{subjectState.currentSubject}]</span> 생성 결과
                     </h3>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleRetryIncomplete}
+                            disabled={isGlobalGenerating || retryableStudentIds(subjectState.activeStudents).length === 0}
+                            className="px-4 py-2 bg-sky-600 disabled:bg-[#E7E5E4] dark:disabled:bg-[#2E2822] text-white text-sm font-bold rounded-lg hover:bg-sky-700 transition-colors"
+                            title="완료·안전 차단·최종본은 건드리지 않고 미생성·실패 항목만 다시 생성합니다."
+                        >
+                            남은 항목 재시도 ({retryableStudentIds(subjectState.activeStudents).length})
+                        </button>
+                        <button
+                            onClick={downloadFinalizedCsv}
+                            disabled={isGlobalGenerating}
+                            className="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                            최종본만 CSV
+                        </button>
                          <button
                             onClick={handleCopyAll}
                             disabled={isGlobalGenerating}
@@ -1913,6 +2051,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                             {student.generatedModel}
                                         </span>
                                     )}
+                                    <span className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${
+                                      student.reviewStatus === 'final'
+                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                        : student.reviewStatus === 'reviewed'
+                                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                                          : 'bg-stone-200 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
+                                    }`}>
+                                      {student.reviewStatus === 'final' ? '최종본 고정' : student.reviewStatus === 'reviewed' ? '검토 완료' : '초안'}
+                                    </span>
+                                    {student.generationStatus === 'failed' && <span className="ml-2 text-xs text-red-600">생성 실패</span>}
+                                    {student.generationStatus === 'blocked' && <span className="ml-2 text-xs text-amber-700">안전 차단 · 자동 재시도 제외</span>}
                                     {student.generatedModel && (
                                         <span
                                             className={`ml-2 text-xs font-normal px-2 py-0.5 rounded-full ${
@@ -1927,6 +2076,30 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     )}
                                 </h4>
                                 <div className="flex items-center gap-2">
+                                    {student.reviewStatus !== 'final' ? (
+                                      <>
+                                        <button
+                                          onClick={() => updateReviewStatus(idx, student.reviewStatus === 'reviewed' ? 'draft' : 'reviewed')}
+                                          disabled={!student.generatedContent?.trim() || isGlobalGenerating}
+                                          className="text-xs px-2.5 py-1.5 rounded-lg border border-blue-200 text-blue-700 disabled:opacity-40"
+                                        >{student.reviewStatus === 'reviewed' ? '검토 취소' : '검토 완료'}</button>
+                                        <button
+                                          onClick={() => updateReviewStatus(idx, 'final')}
+                                          disabled={student.reviewStatus !== 'reviewed' || isGlobalGenerating}
+                                          className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white disabled:opacity-40"
+                                        >최종본 고정</button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => updateReviewStatus(idx, 'reviewed')}
+                                        disabled={isGlobalGenerating}
+                                        className="text-xs px-2.5 py-1.5 rounded-lg border border-amber-300 text-amber-700"
+                                      >고정 해제</button>
+                                    )}
+                                    <button
+                                      onClick={() => setExpandedEvidence(prev => { const next = new Set(prev); next.has(student.id) ? next.delete(student.id) : next.add(student.id); return next; })}
+                                      className="text-xs px-2.5 py-1.5 rounded-lg border border-purple-200 text-purple-700"
+                                    >근거 확인 ({student.evidenceLinks?.length ?? 0})</button>
                                     <button
                                         onClick={() => handleCopy(student.generatedContent || '', student.id)}
                                         disabled={isGlobalGenerating}
@@ -1970,7 +2143,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     })()}
                                     <button
                                         onClick={() => handleRegenerateOne(idx)}
-                                        disabled={generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGenerating}
+                                        disabled={student.reviewStatus === 'final' || generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGenerating}
                                         className={`text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 font-medium flex items-center px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors ${(generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGenerating) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) ? (
@@ -1996,11 +2169,49 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <textarea
                                     value={student.generatedContent || ''}
                                     onChange={(e) => handleResultChange(idx, e.target.value)}
-                                    className="w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y text-sm leading-relaxed"
+                                    readOnly={student.reviewStatus === 'final'}
+                                    className={`w-full min-h-[120px] p-4 rounded-xl border border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-purple-500 focus:outline-none resize-y text-sm leading-relaxed ${student.reviewStatus === 'final' ? 'cursor-not-allowed opacity-80' : ''}`}
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.subject} />
                              </div>
                              <ReviewChecklist content={student.generatedContent || ''} resetKey={`${subjectState.currentSubject}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating}`} />
+                             {expandedEvidence.has(student.id) && (
+                               <div className="mt-3 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-950/20 p-3 space-y-3">
+                                 <div className="grid grid-cols-2 gap-3 text-xs font-bold text-purple-800 dark:text-purple-200">
+                                   <span>생성 문장</span><span>교사가 확인한 관찰 근거</span>
+                                 </div>
+                                 {splitRecordSentences(student.generatedContent ?? '').map((sentence, sentenceIndex) => {
+                                   const sources = [
+                                     ['학습 과정', student.observationDetails?.process ?? ''],
+                                     ['태도 및 참여', student.observationDetails?.attitude ?? ''],
+                                     ['기능 발달', student.observationDetails?.skill ?? ''],
+                                     ['구체적 사례', student.observationDetails?.example ?? ''],
+                                   ].filter((source): source is [string, string] => Boolean(source[1].trim()));
+                                   const linked = student.evidenceLinks?.find(link => link.sentenceIndex === sentenceIndex && link.sentenceFingerprint === contentFingerprint(sentence));
+                                   return (
+                                     <div key={`${sentenceIndex}:${contentFingerprint(sentence)}`} className="grid grid-cols-2 gap-3 items-start text-xs">
+                                       <p className="text-[#44403C] dark:text-[#C4B8B0] leading-relaxed">{sentence}</p>
+                                       <div>
+                                         <select
+                                           value={linked?.sourceText ?? ''}
+                                           disabled={student.reviewStatus === 'final'}
+                                           onChange={event => {
+                                             const selected = sources.find(source => source[1] === event.target.value);
+                                             updateEvidenceLink(idx, sentence, sentenceIndex, event.target.value, selected?.[0] ?? '');
+                                           }}
+                                           className="w-full rounded-md border border-purple-200 bg-white dark:bg-[#221E1B] px-2 py-1.5"
+                                         >
+                                           <option value="">근거 미연결</option>
+                                           {sources.map(([label, value]) => <option key={`${label}:${value}`} value={value}>{label}: {value.slice(0, 45)}</option>)}
+                                         </select>
+                                         {linked && <p className="mt-1 text-emerald-700">교사 확인 · {linked.sourceLabel}</p>}
+                                       </div>
+                                     </div>
+                                   );
+                                 })}
+                                 <p className="text-[11px] text-[#78716C]">연결된 근거는 교사가 선택한 원본 메모이며, AI가 사실 확인을 완료했다는 의미가 아닙니다.</p>
+                               </div>
+                             )}
                              {expandedHistory.has(student.id) && (() => {
                                const groups = getHistoryGroupsForContext('subject', student.name, subjectState.currentSubject);
                                return groups.length > 0 ? (

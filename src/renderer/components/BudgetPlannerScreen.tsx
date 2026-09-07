@@ -6,6 +6,7 @@ import { readApiItemCount, readNumericFieldSamples } from '../lib/openApiItems';
 import { buildNaraDisplayName, extractNaraIdNo, formatItemNameWithIdNo, pickNaraIdNo } from '../lib/budgetItemName';
 import { toNaraImageUrl } from '../lib/naraImage';
 import { toCsv } from '../lib/csv';
+import { calculateBudgetActuals, type ActualExpense } from '../lib/workflowFeatures';
 import {
   MARKET_PRICE_SOURCE_LABEL,
   MARKET_PRICE_SYSTEM_INSTRUCTION,
@@ -573,7 +574,7 @@ function parseCsvRows(text: string): string[][] {
   return rows;
 }
 
-function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudget: number | null } {
+export function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudget: number | null } {
   const rows = parseCsvRows(text);
   const headerIndex = rows.findIndex(row => row.includes('예산 과목') && row.includes('품목'));
   if (headerIndex < 0) throw new Error('예산안작성 CSV 형식이 아닙니다.');
@@ -584,10 +585,14 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
   const specIdx = idx('규격');
   const priceIdx = idx('단가(원)');
   const qtyIdx = idx('수량');
-  const subtotalIdx = idx('소계(원)');
+  const subtotalIdx = idx('소계(원)') >= 0 ? idx('소계(원)') : idx('계획액(원)');
+  if (subtotalIdx < 0) throw new Error('계획액 열을 찾을 수 없습니다.');
+  const paidAtIdx = idx('지급일');
+  const actualAmountIdx = idx('실제 지출액(원)');
+  const expenseMemoIdx = idx('지출 메모');
   const items: BudgetItem[] = [];
   const lastByDepth = new Map<number, string>();
-  const summaryLabels = ['합계', '배정 예산', '잔액', '집행 합계'];
+  const summaryLabels = ['합계', '배정 예산', '잔액', '집행 합계', '계획 합계', '실제 지출 합계', '계획 잔액', '실제 잔액'];
   let totalBudget: number | null = null;
 
   for (const row of rows.slice(headerIndex + 1)) {
@@ -609,6 +614,15 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
 
     const unitPrice = parseInt((row[priceIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 0;
     const quantity = Math.max(1, parseInt((row[qtyIdx] ?? '').replace(/[^0-9]/g, ''), 10) || 1);
+    const paidDates = paidAtIdx >= 0 ? (row[paidAtIdx] ?? '').split(' / ').map(value => value.trim()) : [];
+    const actualAmounts = actualAmountIdx >= 0 ? (row[actualAmountIdx] ?? '').split(' / ').map(value => parseInt(value.replace(/[^0-9]/g, ''), 10) || 0) : [];
+    const expenseMemos = expenseMemoIdx >= 0 ? (row[expenseMemoIdx] ?? '').split(' / ').map(value => value.trim()) : [];
+    const actualExpenses: ActualExpense[] = actualAmounts.flatMap((actualAmount, expenseIndex) => actualAmount > 0 ? [{
+      id: genId(),
+      paidAt: paidDates[expenseIndex] ?? '',
+      amount: actualAmount,
+      memo: expenseMemos[expenseIndex] ?? '',
+    }] : []);
     // 2단계는 과목 루트(정규화 시 연결), 3단계는 바로 위 품목을 부모로 둔다.
     const parentId = depth > 2 ? lastByDepth.get(depth - 1) : undefined;
     const item: BudgetItem = {
@@ -621,6 +635,7 @@ function readBudgetItemsFromCsv(text: string): { items: BudgetItem[]; totalBudge
       quantity,
       subtotal: unitPrice * quantity,
       parentId,
+      actualExpenses,
     };
     items.push(item);
     lastByDepth.set(depth, item.id);
@@ -722,6 +737,14 @@ function normalizeBudgetItem(item: BudgetItem): BudgetItem | null {
     quantity,
     unitPrice,
     subtotal: unitPrice * quantity,
+    actualExpenses: Array.isArray(item.actualExpenses)
+      ? item.actualExpenses.filter(expense => expense && typeof expense.id === 'string').map(expense => ({
+          id: expense.id,
+          paidAt: typeof expense.paidAt === 'string' ? expense.paidAt : '',
+          amount: Number.isFinite(Number(expense.amount)) ? Math.max(0, Number(expense.amount)) : 0,
+          memo: typeof expense.memo === 'string' ? expense.memo : '',
+        }))
+      : [],
   };
 }
 
@@ -1044,6 +1067,8 @@ export default function BudgetPlannerScreen() {
   const [recommendationMessage, setRecommendationMessage] = useState('');
   const [collapsedBudgetIds, setCollapsedBudgetIds] = useState<Set<string>>(new Set());
   const [inputSidebarCollapsed, setInputSidebarCollapsed] = useState(false);
+  const [showActualExpenses, setShowActualExpenses] = useState(false);
+  const [expenseDrafts, setExpenseDrafts] = useState<Record<string, Partial<ActualExpense>>>({});
 
   // 품목 검색 패널 상태
   const [priceSearchQuery, setPriceSearchQuery] = useState('');
@@ -1106,6 +1131,8 @@ export default function BudgetPlannerScreen() {
   const countablePlanItems = useMemo(() => countableItems(activePlan?.items ?? []), [activePlan]);
   const planTotalUsed = countablePlanItems.reduce((sum, item) => sum + item.subtotal, 0);
   const planRemaining = (activePlan?.totalBudget ?? 0) - planTotalUsed;
+  const actualSpent = countablePlanItems.reduce((sum, item) => sum + calculateBudgetActuals(item.subtotal, item.actualExpenses ?? []).spent, 0);
+  const actualBalance = (activePlan?.totalBudget ?? 0) - actualSpent;
   const examplePreviewItems = useMemo(() => buildExampleBudgetItems(), []);
   const examplePreviewTotal = countableItems(examplePreviewItems).reduce((sum, item) => sum + item.subtotal, 0);
   const examplePreviewBudget = parseMoney(DEFAULT_BUDGET_TOTAL);
@@ -1604,15 +1631,41 @@ export default function BudgetPlannerScreen() {
     setRecommendationMessage('예산안을 저장했습니다.');
   };
 
+  const addActualExpense = (itemId: string) => {
+    if (!activePlan) return;
+    const draft = expenseDrafts[itemId] ?? {};
+    const amount = Number(draft.amount);
+    if (!draft.paidAt || !Number.isFinite(amount) || amount <= 0) return;
+    const expense: ActualExpense = {
+      id: `expense-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      paidAt: draft.paidAt,
+      amount,
+      memo: draft.memo?.trim() ?? '',
+    };
+    updatePlanItems(activePlan.items.map(item => item.id === itemId
+      ? { ...item, actualExpenses: [...(item.actualExpenses ?? []), expense] }
+      : item));
+    setExpenseDrafts(previous => ({ ...previous, [itemId]: {} }));
+  };
+
+  const deleteActualExpense = (itemId: string, expenseId: string) => {
+    if (!activePlan) return;
+    updatePlanItems(activePlan.items.map(item => item.id === itemId
+      ? { ...item, actualExpenses: (item.actualExpenses ?? []).filter(expense => expense.id !== expenseId) }
+      : item));
+  };
+
   const handleExportCsv = async () => {
     if (!activePlan) return;
     const items = activePlan.items;
     const parentIds = parentIdsWithChildren(items);
-    const rows: string[][] = [['순', '예산 과목', '품목', '단가(원)', '수량', '소계(원)']];
+    const rows: string[][] = [['순', '예산 과목', '품목', '단가(원)', '수량', '계획액(원)', '지급일', '실제 지출액(원)', '지출 메모', '품목 잔액(원)']];
     items.forEach((item, idx) => {
       const depth = getItemDepth(items, item);
       const blank = isCategoryRow(item) || parentIds.has(item.id); // 상위 행은 단가·수량 빈칸
       const indent = '   '.repeat(Math.max(0, depth - 1));
+      const actuals = calculateBudgetActuals(item.subtotal, item.actualExpenses ?? []);
+      const expenses = item.actualExpenses ?? [];
       rows.push([
         String(idx + 1),
         item.budgetCategory,
@@ -1620,14 +1673,20 @@ export default function BudgetPlannerScreen() {
         blank ? '' : String(item.unitPrice),
         blank ? '' : String(item.quantity),
         String(displaySubtotal(item, items)),
+        expenses.map(expense => expense.paidAt).join(' / '),
+        expenses.map(expense => String(expense.amount)).join(' / '),
+        expenses.map(expense => expense.memo).join(' / '),
+        String(actuals.balance),
       ]);
     });
     for (const category of CATEGORIES) {
-      rows.push(['', category, '집행 합계', '', '', String(usedByCategory[category])]);
+      rows.push(['', category, '계획 합계', '', '', String(usedByCategory[category]), '', '', '', '']);
     }
-    rows.push(['', '', '합계', '', '', String(planTotalUsed)]);
-    rows.push(['', '', '배정 예산', '', '', String(activePlan.totalBudget)]);
-    rows.push(['', '', '잔액', '', '', String(planRemaining)]);
+    rows.push(['', '', '계획 합계', '', '', String(planTotalUsed), '', '', '', '']);
+    rows.push(['', '', '실제 지출 합계', '', '', '', '', String(actualSpent), '', '']);
+    rows.push(['', '', '배정 예산', '', '', String(activePlan.totalBudget), '', '', '', '']);
+    rows.push(['', '', '계획 잔액', '', '', String(planRemaining), '', '', '', '']);
+    rows.push(['', '', '실제 잔액', '', '', '', '', '', '', String(actualBalance)]);
     await window.electronAPI.saveCsv(toCsv(rows), `${activePlan.title}_예산안작성`);
   };
 
@@ -2098,6 +2157,41 @@ export default function BudgetPlannerScreen() {
                       updatePlanItems(activePlan.items.filter(item => !removeIds.has(item.id)));
                     }}
                   />
+                </section>
+                <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-[#221E1B] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">실제 지출 기록</h3>
+                      <p className="text-[11px] text-[#78716C]">계획액 {fmt(planTotalUsed)}원 · 실제 지출 {fmt(actualSpent)}원 · 배정 예산 기준 잔액 {fmt(actualBalance)}원</p>
+                    </div>
+                    <button onClick={() => setShowActualExpenses(previous => !previous)} className="rounded-md border border-emerald-300 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                      {showActualExpenses ? '접기' : '지출 입력'}
+                    </button>
+                  </div>
+                  {showActualExpenses && (
+                    <div className="mt-3 space-y-3">
+                      {countablePlanItems.map(item => {
+                        const totals = calculateBudgetActuals(item.subtotal, item.actualExpenses ?? []);
+                        return (
+                          <div key={item.id} className="rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 p-2.5 space-y-2">
+                            <div className="flex justify-between text-xs"><strong>{item.thngNm}</strong><span>계획 {fmt(totals.planned)}원 · 지출 {fmt(totals.spent)}원 · 잔액 {fmt(totals.balance)}원</span></div>
+                            {(item.actualExpenses ?? []).map(expense => (
+                              <div key={expense.id} className="flex items-center gap-2 text-xs text-[#78716C]">
+                                <span>{expense.paidAt}</span><span>{fmt(expense.amount)}원</span><span className="flex-1">{expense.memo}</span>
+                                <button onClick={() => deleteActualExpense(item.id, expense.id)} className="text-red-500"><Trash2 className="w-3 h-3" /></button>
+                              </div>
+                            ))}
+                            <div className="grid grid-cols-[135px_130px_1fr_auto] gap-2">
+                              <input type="date" value={expenseDrafts[item.id]?.paidAt ?? ''} onChange={event => setExpenseDrafts(previous => ({ ...previous, [item.id]: { ...previous[item.id], paidAt: event.target.value } }))} className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                              <input type="number" min="1" value={expenseDrafts[item.id]?.amount ?? ''} onChange={event => setExpenseDrafts(previous => ({ ...previous, [item.id]: { ...previous[item.id], amount: Number(event.target.value) } }))} placeholder="지출액" className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                              <input value={expenseDrafts[item.id]?.memo ?? ''} onChange={event => setExpenseDrafts(previous => ({ ...previous, [item.id]: { ...previous[item.id], memo: event.target.value } }))} placeholder="메모" className="rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                              <button onClick={() => addActualExpense(item.id)} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white">추가</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               </div>
             </>

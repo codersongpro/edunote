@@ -18,6 +18,7 @@ async function captureDocumentPrompt(
   promptContext = '[작성 내용]: 테스트',
   pageCount = 1,
   templateText = '',
+  savedFormatText = '',
 ): Promise<{ system: string; user: string; combined: string }> {
   await generateDocument(
     docType,
@@ -29,6 +30,11 @@ async function captureDocumentPrompt(
     [],
     templateText,
     GongmunComplexity.MEDIUM,
+    undefined,
+    undefined,
+    false,
+    undefined,
+    savedFormatText,
   );
   const [parts, system] = aiGenerateMultipart.mock.calls.at(-1) as [Array<{ text?: string }>, string];
   const user = parts.map(part => part.text ?? '').join('\n');
@@ -89,6 +95,15 @@ describe('문서 유형별 최종 프롬프트 호환성', () => {
     expect(user).toContain(template);
     expect(user).toContain('기본 목차를 추가하지 마세요');
     expect(user).not.toContain('[필수 구성]');
+  });
+
+  it('직접 입력 양식과 저장한 기관 서식을 분리하고 적용 우선순위를 명시한다', async () => {
+    const { user } = await captureDocumentPrompt(DocType.PLAN, '[주제]: 독서교육', 2, '현재 입력 양식', '저장 기관 양식');
+    expect(user).toContain('1. 업로드한 지정 양식');
+    expect(user).toContain('2. 사용자가 현재 직접 입력한 양식');
+    expect(user).toContain('3. 저장한 기관 서식');
+    expect(user).toContain('[사용자가 직접 입력한 양식 정보/구조]:\n현재 입력 양식');
+    expect(user).toContain('[저장한 기관 서식 — 업로드 양식과 현재 직접 입력한 양식이 없을 때 적용]:\n저장 기관 양식');
   });
 
   it('보도자료에는 기사체와 SNS 존댓말만 적용하고 보고서용 종결을 섞지 않는다', async () => {

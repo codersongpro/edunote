@@ -27,6 +27,7 @@ interface GeneratedDisplayProps {
   model?: string;
   // 웹 검색 참조로 생성한 경우의 출처 정보 — 주어지면 결과 위에 참조 자료 목록을 표시한다.
   grounding?: GroundingInfo;
+  onContentChange?: (content: string) => void;
 }
 
 interface SavedGeneratedVersion {
@@ -80,7 +81,7 @@ function applyDocumentStyles(el: HTMLElement): void {
   });
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding, onContentChange }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -117,6 +118,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       );
       // 번역으로 새로 들어온 표에도 고정 레이아웃·셀 줄바꿈을 다시 적용해 화면 밖 넘침을 막는다.
       applyDocumentStyles(el);
+      onContentChange?.(el.innerHTML);
       setHasTranslation(true);
       notifyToast({ type: 'success', title: `${lang.label} 번역을 원문 아래에 추가했습니다.` });
     } catch (error) {
@@ -134,6 +136,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     const el = contentRef.current;
     if (el && originalHtmlRef.current !== null) {
       el.innerHTML = originalHtmlRef.current;
+      onContentChange?.(el.innerHTML);
       originalHtmlRef.current = null;
       setHasTranslation(false);
     }
@@ -514,6 +517,7 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
     if (!selectedVersion || !contentRef.current) return;
     saveGeneratedSnapshot(getCurrentContent());
     contentRef.current.innerHTML = sanitizeHtml(selectedVersion.html || markdownOrHtmlToHtml(selectedVersion.text));
+    onContentChange?.(contentRef.current.innerHTML);
     setSelectedVersionId('');
   };
 
@@ -817,6 +821,7 @@ h2,h3{page-break-after:avoid;}
             ref={contentRef}
             contentEditable
             onInput={() => setEditorRevision(revision => revision + 1)}
+            onBlur={event => onContentChange?.(event.currentTarget.innerHTML)}
             suppressContentEditableWarning
             className={selectedVersion ? 'hidden' : 'prose max-w-none text-black leading-relaxed outline-none focus:outline-none ring-0 w-full'}
             style={{ minHeight: '100%', color: '#000000' }}

@@ -17,6 +17,12 @@ import {
   TRAINING_SECTION_OPTIONS,
   buildTrainingMaterialPromptContext,
 } from '../lib/trainingMaterial';
+import {
+  buildDocumentComparison,
+  normalizeInstitutionFormat,
+  type DocumentCompareField,
+  type InstitutionFormat,
+} from '../lib/workflowFeatures';
 
 // ─── Example Documents ───────────────────────────────────────────────────────
 
@@ -146,6 +152,13 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [templatesByTab, setTemplatesByTab] = useState<Record<DocType, FileData[]>>(initTabMap([]));
   const [templateTextByTab, setTemplateTextByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [templateFavorites, setTemplateFavorites] = useState<DocTemplateFavorite[]>([]);
+  const [institutionFormats, setInstitutionFormats] = useState<InstitutionFormat[]>([]);
+  const [selectedFormatId, setSelectedFormatId] = useState('');
+  const [formatDraft, setFormatDraft] = useState({ name: '', outline: '', bulletStyle: '가.', fontSize: 13, endingStyle: '~함' });
+  const [showDocumentCompare, setShowDocumentCompare] = useState(false);
+  const [compareLeft, setCompareLeft] = useState('');
+  const [compareRight, setCompareRight] = useState('');
+  const [compareFields, setCompareFields] = useState<Set<DocumentCompareField>>(new Set(['date', 'time', 'place', 'target', 'amount']));
   const [hwpxFillDataByTab, setHwpxFillDataByTab] = useState<Record<DocType, any[] | null>>(initTabMap(null));
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
@@ -161,6 +174,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const generatedGrounding = groundingByTab[activeTab];
   const hwpxFillData = hwpxFillDataByTab[activeTab] ?? null;
   const activeTemplateFavorites = templateFavorites.filter(item => item.docType === activeTab);
+  const activeInstitutionFormats = institutionFormats.filter(item => item.docType === activeTab);
+  const selectedInstitutionFormat = activeInstitutionFormats.find(item => item.id === selectedFormatId);
+  const comparisonResults = buildDocumentComparison(compareLeft, compareRight, Array.from(compareFields));
 
   useEffect(() => {
     try {
@@ -171,6 +187,44 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       setTemplateFavorites([]);
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    window.electronAPI.readJsonData('institution-formats')
+      .then(data => {
+        if (cancelled) return;
+        const formats = Array.isArray(data)
+          ? data.filter(item => item && typeof item === 'object').map(item => normalizeInstitutionFormat(item as Record<string, unknown>))
+          : [];
+        setInstitutionFormats(formats);
+      })
+      .catch(() => { if (!cancelled) setInstitutionFormats([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => { setSelectedFormatId(''); }, [activeTab]);
+
+  const saveInstitutionFormats = async (formats: InstitutionFormat[]) => {
+    setInstitutionFormats(formats);
+    await window.electronAPI.writeJsonData('institution-formats', formats);
+  };
+
+  const handleSaveInstitutionFormat = async () => {
+    if (!formatDraft.name.trim()) return;
+    const format = normalizeInstitutionFormat({
+      id: `format-${Date.now()}`,
+      docType: activeTab,
+      ...formatDraft,
+    });
+    await saveInstitutionFormats([format, ...institutionFormats.filter(item => !(item.docType === activeTab && item.name === format.name))]);
+    setSelectedFormatId(format.id);
+  };
+
+  const handleDeleteInstitutionFormat = async () => {
+    if (!selectedFormatId) return;
+    await saveInstitutionFormats(institutionFormats.filter(item => item.id !== selectedFormatId));
+    setSelectedFormatId('');
+  };
 
   const saveTemplateFavorites = (next: DocTemplateFavorite[]) => {
     safeSetItem(DOC_TEMPLATE_FAVORITES_KEY, JSON.stringify(next.slice(0, 20)));
@@ -459,6 +513,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
     startGeneration(`SCHOOL_DOC_${activeTab}`);
     // 웹 검색 참조는 연수자료에서 사용자가 켠 경우에만 쓴다.
     const withWebSearch = activeTab === DocType.TRAINING_MATERIAL && useWebSearch;
+    const savedFormatInstruction = selectedInstitutionFormat
+      ? `서식명: ${selectedInstitutionFormat.name}\n목차: ${selectedInstitutionFormat.outline}\n글머리표: ${selectedInstitutionFormat.bulletStyle}\n기본 글자 크기: ${selectedInstitutionFormat.fontSize}pt\n문장 종결: ${selectedInstitutionFormat.endingStyle}`
+      : '';
     try {
       let result: { text: string; model: string; grounding?: GroundingInfo };
       if (activeTab === DocType.GONGGO) {
@@ -475,6 +532,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           gonggoData,
           setStreamPreview,
           withWebSearch,
+          undefined,
+          savedFormatInstruction,
         );
       } else {
         const context = buildContextWithProfile();
@@ -494,6 +553,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
           setStreamPreview,
           withWebSearch,
           activeTab === DocType.TRAINING_MATERIAL ? trainingMaterialData.sections : undefined,
+          savedFormatInstruction,
         );
       }
       const { cleanContent, fillData } = extractResult(result.text);
@@ -502,6 +562,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
       const displayContent = activeTab === DocType.TRAINING_MATERIAL
         && uploadedTemplates.length === 0
         && !templateText.trim()
+        && !savedFormatInstruction.trim()
         ? applyOutlineStyles(cleanContent)
         : cleanContent;
       setContentByTab(prev => ({ ...prev, [activeTab]: displayContent }));
@@ -1220,6 +1281,63 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   value={templateText}
                   onChange={e => setTemplateTextByTab(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 />
+                <div className="mt-3 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/20 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-xs text-blue-800 dark:text-blue-200">기관별 작성 서식</strong>
+                    <span className="text-[10px] text-blue-600">우선순위: 업로드 양식 → 현재 입력 → 저장 서식 → 기본값</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <select value={selectedFormatId} onChange={event => setSelectedFormatId(event.target.value)} className="flex-1 rounded-md border border-blue-200 bg-white dark:bg-[#221E1B] px-2 py-1.5 text-xs">
+                      <option value="">저장 서식 사용 안 함</option>
+                      {activeInstitutionFormats.map(format => <option key={format.id} value={format.id}>{format.name}</option>)}
+                    </select>
+                    <button onClick={handleDeleteInstitutionFormat} disabled={!selectedFormatId} className="rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 disabled:opacity-40">삭제</button>
+                  </div>
+                  {selectedInstitutionFormat && (
+                    <div className="rounded-md bg-white dark:bg-[#221E1B] border border-blue-100 dark:border-blue-900 p-2" style={{ fontSize: `${selectedInstitutionFormat.fontSize}px` }}>
+                      <strong>{selectedInstitutionFormat.outline || 'Ⅰ. 문서 제목'}</strong>
+                      <p className="mt-1">{selectedInstitutionFormat.bulletStyle || '가.'} 기관 서식 미리보기 문장{selectedInstitutionFormat.endingStyle || '~함'}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={formatDraft.name} onChange={event => setFormatDraft(previous => ({ ...previous, name: event.target.value }))} placeholder="서식 이름" className="rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                    <input value={formatDraft.outline} onChange={event => setFormatDraft(previous => ({ ...previous, outline: event.target.value }))} placeholder="목차 (예: Ⅰ. 목적 / Ⅱ. 방침)" className="rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                    <input value={formatDraft.bulletStyle} onChange={event => setFormatDraft(previous => ({ ...previous, bulletStyle: event.target.value }))} placeholder="글머리 (예: 가.)" className="rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                    <div className="flex gap-2">
+                      <input type="number" min="8" max="30" value={formatDraft.fontSize} onChange={event => setFormatDraft(previous => ({ ...previous, fontSize: Number(event.target.value) }))} title="기본 글자 크기" className="w-20 rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                      <input value={formatDraft.endingStyle} onChange={event => setFormatDraft(previous => ({ ...previous, endingStyle: event.target.value }))} placeholder="종결 방식" className="flex-1 rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                    </div>
+                  </div>
+                  <button onClick={handleSaveInstitutionFormat} disabled={!formatDraft.name.trim()} className="w-full rounded-md bg-blue-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40">현재 문서 종류의 서식으로 저장</button>
+                  <p className="text-[10px] text-[#78716C]">서식 규칙만 저장하며 문서 본문·학생 정보·인명은 저장하지 않습니다. 서식 변경은 이미 편집한 본문을 자동으로 바꾸지 않습니다.</p>
+                </div>
+                <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-900/60 p-3 space-y-2">
+                  <button onClick={() => setShowDocumentCompare(previous => !previous)} className="w-full text-left text-xs font-bold text-amber-800 dark:text-amber-200">관련 문서 날짜·대상·금액 비교 {showDocumentCompare ? '접기' : '열기'}</button>
+                  {showDocumentCompare && (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {([['date', '날짜'], ['time', '시간'], ['place', '장소'], ['target', '대상'], ['amount', '금액']] as Array<[DocumentCompareField, string]>).map(([field, label]) => (
+                          <label key={field} className="flex items-center gap-1 text-[11px]"><input type="checkbox" checked={compareFields.has(field)} onChange={() => setCompareFields(previous => { const next = new Set(previous); next.has(field) ? next.delete(field) : next.add(field); return next; })} />{label}</label>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <textarea value={compareLeft} onChange={event => setCompareLeft(event.target.value)} placeholder="첫 번째 문서 붙여넣기" className="min-h-28 rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                        <textarea value={compareRight} onChange={event => setCompareRight(event.target.value)} placeholder="두 번째 문서 붙여넣기" className="min-h-28 rounded-md border px-2 py-1.5 text-xs dark:bg-[#221E1B]" />
+                      </div>
+                      {compareLeft.trim() && compareRight.trim() && (
+                        <div className="space-y-1">
+                          {comparisonResults.map(item => (
+                            <div key={item.field} className={`rounded-md border p-2 text-[11px] ${item.status === 'mismatch' ? 'border-red-200 bg-red-50 dark:bg-red-950/20' : item.status === 'match' ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20' : 'border-amber-200 bg-amber-50 dark:bg-amber-950/20'}`}>
+                              <strong>{item.label} · {item.status === 'mismatch' ? '불일치 후보' : item.status === 'match' ? '일치' : '확인 필요'}</strong>
+                              <div className="grid grid-cols-2 gap-2 mt-1"><span>{item.leftExcerpt || '찾지 못함'}</span><span>{item.rightExcerpt || '찾지 못함'}</span></div>
+                            </div>
+                          ))}
+                          <p className="text-[10px] text-[#78716C]">자동 수정하지 않습니다. 문서 표현이나 표 구조에 따라 값이 누락되거나 잘못 잡힐 수 있으므로 원문을 확인하세요. 계획액과 집행액처럼 달라도 되는 값은 교사가 적용 여부를 결정합니다.</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
                 <div className="hidden">
                   <button
                     type="button"

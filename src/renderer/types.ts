@@ -1,4 +1,5 @@
 import React from 'react';
+import type { EvidenceLink, GenerationItemStatus, ReviewStatus } from './lib/workflowFeatures';
 
 // ─── School Level ──────────────────────────────────────────────────
 export enum SchoolLevel {
@@ -162,6 +163,11 @@ export interface StudentSubjectData extends Student {
   generatedModel?: string;
   privacyApplied?: boolean;
   selected?: boolean;
+  reviewStatus?: ReviewStatus;
+  finalizedAt?: string;
+  evidenceLinks?: EvidenceLink[];
+  generationStatus?: GenerationItemStatus;
+  generationError?: string;
 }
 
 export interface StudentSportsData extends Student {
@@ -514,6 +520,7 @@ export interface BudgetItem {
   quantityLocked?: boolean;
   unitPriceLocked?: boolean;
   quantityAdjusted?: boolean;
+  actualExpenses?: import('./lib/workflowFeatures').ActualExpense[];
 }
 
 export interface BudgetPlan {

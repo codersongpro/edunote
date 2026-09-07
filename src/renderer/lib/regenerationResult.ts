@@ -9,9 +9,11 @@ export interface RegenerationRequest extends RegenerationTarget {
 }
 
 interface GeneratedResult {
-  generatedContent: string;
-  generatedModel: string;
-  privacyApplied: boolean;
+  generatedContent?: string;
+  generatedModel?: string;
+  privacyApplied?: boolean;
+  generationStatus?: 'idle' | 'running' | 'completed' | 'failed' | 'blocked';
+  generationError?: string;
 }
 
 interface StudentResultFields {

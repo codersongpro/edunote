@@ -10,6 +10,16 @@ export interface DocTodo {
   memo: string;
   done: boolean;
   createdAt: string;
+  submissions?: DocSubmission[];
+}
+
+export interface DocSubmission {
+  id: string;
+  name: string;
+  prepared: boolean;
+  submitted: boolean;
+  destination: string;
+  submittedAt: string;
 }
 
 const DATA_NAME = 'doc-todos';
@@ -17,7 +27,36 @@ const DATA_NAME = 'doc-todos';
 export async function loadDocTodos(): Promise<DocTodo[]> {
   try {
     const data = await window.electronAPI.readJsonData(DATA_NAME);
-    return Array.isArray(data) ? (data as DocTodo[]) : [];
+    if (!Array.isArray(data)) return [];
+    return data.flatMap((raw): DocTodo[] => {
+      if (!raw || typeof raw !== 'object') return [];
+      const item = raw as Partial<DocTodo>;
+      if (typeof item.id !== 'string' || typeof item.title !== 'string') return [];
+      const submissions = Array.isArray(item.submissions)
+        ? item.submissions.flatMap((rawSubmission): DocSubmission[] => {
+            if (!rawSubmission || typeof rawSubmission !== 'object') return [];
+            const submission = rawSubmission as Partial<DocSubmission>;
+            if (typeof submission.id !== 'string' || typeof submission.name !== 'string') return [];
+            return [{
+              id: submission.id,
+              name: submission.name,
+              prepared: submission.prepared === true,
+              submitted: submission.submitted === true,
+              destination: typeof submission.destination === 'string' ? submission.destination : '',
+              submittedAt: typeof submission.submittedAt === 'string' ? submission.submittedAt : '',
+            }];
+          })
+        : [];
+      return [{
+        id: item.id,
+        title: item.title,
+        deadline: typeof item.deadline === 'string' ? item.deadline : '',
+        memo: typeof item.memo === 'string' ? item.memo : '',
+        done: item.done === true,
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date(0).toISOString(),
+        submissions,
+      }];
+    });
   } catch {
     return [];
   }
@@ -50,6 +89,8 @@ const DocTodoPanel: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDeadline, setNewDeadline] = useState('');
+  const [expandedSubmissionIds, setExpandedSubmissionIds] = useState<Set<string>>(new Set());
+  const [newSubmissionNames, setNewSubmissionNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const reload = () => loadDocTodos().then(items => {
@@ -89,6 +130,29 @@ const DocTodoPanel: React.FC = () => {
   const handleToggle = (id: string) => update(todos.map(t => (t.id === id ? { ...t, done: !t.done } : t)));
 
   const handleDelete = (id: string) => update(todos.filter(t => t.id !== id));
+
+  const updateSubmission = (todoId: string, submissionId: string, patch: Partial<DocSubmission>) => update(todos.map(todo => todo.id === todoId
+    ? { ...todo, submissions: (todo.submissions ?? []).map(item => item.id === submissionId ? { ...item, ...patch } : item) }
+    : todo));
+
+  const addSubmission = (todoId: string) => {
+    const name = (newSubmissionNames[todoId] ?? '').trim();
+    if (!name) return;
+    const submission: DocSubmission = {
+      id: `submission-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name,
+      prepared: false,
+      submitted: false,
+      destination: '',
+      submittedAt: '',
+    };
+    void update(todos.map(todo => todo.id === todoId ? { ...todo, submissions: [...(todo.submissions ?? []), submission] } : todo));
+    setNewSubmissionNames(previous => ({ ...previous, [todoId]: '' }));
+  };
+
+  const deleteSubmission = (todoId: string, submissionId: string) => update(todos.map(todo => todo.id === todoId
+    ? { ...todo, submissions: (todo.submissions ?? []).filter(item => item.id !== submissionId) }
+    : todo));
 
   // 미완료(마감 빠른 순) → 완료 순으로 보여준다. 마감 없는 항목은 미완료 뒤쪽.
   const sorted = [...todos].sort((a, b) => {
@@ -156,16 +220,17 @@ const DocTodoPanel: React.FC = () => {
             return (
               <div
                 key={todo.id}
-                className={`bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] p-3.5 flex items-start gap-3 ${todo.done ? 'opacity-60' : ''}`}
+                className={`bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] p-3.5 ${todo.done ? 'opacity-60' : ''}`}
               >
-                <button
-                  onClick={() => handleToggle(todo.id)}
-                  className="mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0"
-                  title={todo.done ? '미완료로 되돌리기' : '완료로 표시'}
-                >
-                  {todo.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-                </button>
-                <div className="flex-1 min-w-0">
+                <div className="flex items-start gap-3">
+                  <button
+                    onClick={() => handleToggle(todo.id)}
+                    className="mt-0.5 text-emerald-600 dark:text-emerald-400 shrink-0"
+                    title={todo.done ? '미완료로 되돌리기' : '완료로 표시'}
+                  >
+                    {todo.done ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
                   <p className={`text-sm font-semibold text-[#1C1917] dark:text-[#F0EBE6] break-words ${todo.done ? 'line-through' : ''}`}>
                     {todo.title}
                   </p>
@@ -182,15 +247,39 @@ const DocTodoPanel: React.FC = () => {
                     {!todo.done && badge && (
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${badge.className}`}>{badge.label}</span>
                     )}
+                    <button
+                      onClick={() => setExpandedSubmissionIds(previous => { const next = new Set(previous); next.has(todo.id) ? next.delete(todo.id) : next.add(todo.id); return next; })}
+                      className="text-[11px] font-semibold text-blue-700 dark:text-blue-300"
+                    >제출 서류 {(todo.submissions ?? []).filter(item => item.submitted).length}/{(todo.submissions ?? []).length}</button>
                   </div>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(todo.id)}
+                    className="p-1.5 text-[#A8A29E] dark:text-[#6B5E57] hover:text-red-600 dark:hover:text-red-400 shrink-0"
+                    title="삭제"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(todo.id)}
-                  className="p-1.5 text-[#A8A29E] dark:text-[#6B5E57] hover:text-red-600 dark:hover:text-red-400 shrink-0"
-                  title="삭제"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {expandedSubmissionIds.has(todo.id) && (
+                  <div className="mt-3 ml-8 border-t border-[#EDE8E1] dark:border-[#2E2822] pt-3 space-y-2">
+                    {(todo.submissions ?? []).map(submission => (
+                      <div key={submission.id} className="grid grid-cols-[minmax(120px,1fr)_auto_auto_minmax(100px,0.8fr)_140px_auto] gap-2 items-center text-xs">
+                        <input value={submission.name} onChange={event => updateSubmission(todo.id, submission.id, { name: event.target.value })} className="rounded border px-2 py-1.5 dark:bg-[#171210]" aria-label="제출물 이름" />
+                        <label className="flex items-center gap-1"><input type="checkbox" checked={submission.prepared} onChange={event => updateSubmission(todo.id, submission.id, { prepared: event.target.checked })} />준비</label>
+                        <label className="flex items-center gap-1"><input type="checkbox" checked={submission.submitted} onChange={event => updateSubmission(todo.id, submission.id, { submitted: event.target.checked, submittedAt: event.target.checked ? submission.submittedAt || new Date().toISOString().slice(0, 10) : '' })} />제출</label>
+                        <input value={submission.destination} onChange={event => updateSubmission(todo.id, submission.id, { destination: event.target.value })} placeholder="제출처" className="rounded border px-2 py-1.5 dark:bg-[#171210]" />
+                        <input type="date" value={submission.submittedAt} onChange={event => updateSubmission(todo.id, submission.id, { submittedAt: event.target.value })} className="rounded border px-2 py-1.5 dark:bg-[#171210]" />
+                        <button onClick={() => deleteSubmission(todo.id, submission.id)} className="text-red-500" title="제출물 삭제"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <input value={newSubmissionNames[todo.id] ?? ''} onChange={event => setNewSubmissionNames(previous => ({ ...previous, [todo.id]: event.target.value }))} onKeyDown={event => { if (event.key === 'Enter') addSubmission(todo.id); }} placeholder="제출물 추가 (예: 신청서, 학생 명단)" className="flex-1 rounded border px-2 py-1.5 text-xs dark:bg-[#171210]" />
+                      <button onClick={() => addSubmission(todo.id)} className="rounded bg-blue-600 px-3 py-1.5 text-xs font-bold text-white">추가</button>
+                    </div>
+                    <p className="text-[11px] text-[#78716C]">준비 완료와 실제 제출 완료를 각각 확인합니다.</p>
+                  </div>
+                )}
               </div>
             );
           })}
