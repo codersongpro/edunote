@@ -1340,6 +1340,10 @@ export interface LessonParams {
   unit: string;
   topic: string;
   details?: string;
+  achievementStandard?: {
+    code: string;
+    text: string;
+  };
 }
 
 const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
@@ -1373,31 +1377,89 @@ function validateLessonSlides(value: unknown, expectedCount: number): LessonSlid
 }
 
 const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로서 교사의 수업 자료 제작을 돕는 보조자입니다.
-한국 국가교육과정 성취기준에 맞는 양질의 수업 자료를 생성하세요.
+사용자가 선택한 성취기준이 있으면 그 코드와 원문을 바꾸지 말고 수업 자료에 반영하세요. 선택한 성취기준이 없으면 공식 코드나 원문을 만들어 내지 마세요.
 학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.
 ${NATURAL_WRITING_INSTRUCTION}`;
 
 const getLessonGradeGuidance = (grade: string): string => {
   if (grade.includes('초등')) {
-    return `[학년 적합성 - 초등학교]
-- 어휘: 쉽고 친숙한 일상 언어, 개념 설명 시 구체적 예시와 비유 활용
-- 분량: 슬라이드당 핵심 내용 2~3개, 활동지 활동 1~2개씩 간결하게
-- 방식: 놀이·체험·조작 활동 중심, 그림/도표로 시각화
-- 수업 시간: 40분 기준으로 도입 5분·전개 25분·정리 10분`;
+    const gradeNumber = Number(grade.match(/(\d+)\s*학년/)?.[1] ?? 0);
+    if (gradeNumber > 0 && gradeNumber <= 2) {
+      return `[학년 적합성 - 초등학교 저학년]
+- 어휘와 설명: 생활 속 낱말과 짧고 구체적인 문장을 사용하고, 한 문장에는 한 가지 개념만 담으세요.
+- 학습 방법: 놀이·조작·관찰과 그림 자료를 활용해 직접 확인하게 하세요.`;
+    }
+    if (gradeNumber >= 5) {
+      return `[학년 적합성 - 초등학교 고학년]
+- 어휘와 설명: 교과 기본 용어의 뜻을 풀어서 설명하고, 구체적 사례와 원리를 연결하세요.
+- 학습 방법: 탐구·협력·비교 활동을 활용해 근거를 말하거나 쓰게 하세요.`;
+    }
+    return `[학년 적합성 - 초등학교 중학년]
+- 어휘와 설명: 친숙한 표현에서 교과 용어로 자연스럽게 이어가고, 구체적 사례를 먼저 제시하세요.
+- 학습 방법: 관찰·분류·간단한 탐구 활동으로 개념을 확인하게 하세요.`;
   } else if (grade.includes('중학')) {
     return `[학년 적합성 - 중학교]
-- 어휘: 교과 기본 용어 도입, 기초 학술 언어와 일상 언어 혼용
-- 분량: 슬라이드당 핵심 내용 3~4개, 활동지 활동 2~3개
-- 방식: 탐구·토의 활동 포함, 실생활 연계 예시로 흥미 유발
-- 수업 시간: 45분 기준으로 도입 5분·전개 30분·정리 10분`;
+- 어휘와 설명: 교과 기본 용어와 기초 학술 언어를 사용하되 처음 나오는 용어는 쉽게 풀어 설명하세요.
+- 학습 방법: 탐구·토의와 실생활 사례를 연결하고, 학생이 근거를 들어 설명하게 하세요.`;
   } else if (grade.includes('고등')) {
     return `[학년 적합성 - 고등학교]
-- 어휘: 교과 전문 용어 적극 활용, 학술적·분석적 표현
-- 분량: 슬라이드당 핵심 내용 4~5개, 활동지 활동 3~4개 심화
-- 방식: 심화 탐구·논술·비판적 사고 포함, 입시와 연계 가능한 활동
-- 수업 시간: 50분 기준으로 도입 5분·전개 35분·정리 10분`;
+- 어휘와 설명: 교과 전문 용어와 학술적·분석적 표현을 정확하게 사용하고 개념 간 관계를 드러내세요.
+- 학습 방법: 자료 해석·심화 탐구·논증을 통해 비판적 사고와 독립적인 판단을 이끌어 내세요.`;
   }
   return '';
+};
+
+const getLessonTopicLabel = (params: LessonParams): string =>
+  params.topic.trim() || (params.achievementStandard ? '(미입력 — 선택한 성취기준 중심)' : '(미입력)');
+
+const buildAchievementStandardBlock = (params: LessonParams): string => {
+  if (!params.achievementStandard) {
+    return `[선택한 성취기준]
+- 선택된 성취기준 없음
+- 공식 코드나 원문을 추정하거나 만들어 내지 마세요.`;
+  }
+
+  return `[선택한 성취기준 — 코드와 원문을 그대로 유지]
+- 코드: ${params.achievementStandard.code}
+- 원문: ${params.achievementStandard.text}
+- 코드와 원문을 수정·요약·보완하지 마세요.
+- 주제와 성취기준이 충돌하면 억지로 연계하지 말고, 불일치를 명시한 뒤 성취기준에 맞는 활동과 평가를 제안하세요.`;
+};
+
+const buildLessonInputBlock = (params: LessonParams): string => `[수업 정보]
+- 학년: ${params.grade}
+- 교과: ${params.subject}
+- 단원: ${params.unit || ''}
+- 주제/수업명: ${getLessonTopicLabel(params)}
+${params.details ? `- 추가 요청사항: ${params.details}\n` : ''}
+${buildAchievementStandardBlock(params)}`;
+
+const getDefaultLessonMinutes = (grade: string): number => {
+  if (grade.includes('초등')) return 40;
+  if (grade.includes('고등')) return 50;
+  return 45;
+};
+
+const buildLessonDurationGuidance = (params: LessonParams): string => {
+  const details = params.details ?? '';
+  const explicitMinutes = details.match(/(\d+)\s*분(?:\s*(?:수업|동안))?/);
+  const explicitPeriods = details.match(/(\d+)\s*차시/);
+  const periodLine = explicitPeriods
+    ? `- 사용자가 명시한 차시 수: ${explicitPeriods[1]}차시\n`
+    : '';
+
+  if (explicitMinutes) {
+    return `[수업 시간]
+- 사용자가 명시한 총 수업 시간: ${explicitMinutes[1]}분
+${periodLine}- 사용자 지정 시간을 다른 기본값으로 바꾸지 말고, 각 단계 시간의 합계는 반드시 ${explicitMinutes[1]}분이 되게 하세요.`;
+  }
+
+  const defaultMinutes = getDefaultLessonMinutes(params.grade);
+  const periodCount = explicitPeriods ? Number(explicitPeriods[1]) : 1;
+  const totalMinutes = defaultMinutes * periodCount;
+  return `[수업 시간]
+${periodLine}- 별도 시간 지정이 없으므로 ${explicitPeriods ? `차시당 ${defaultMinutes}분, 총 ${totalMinutes}분` : `총 ${defaultMinutes}분`}을 기본값으로 사용하세요.
+- 교수·학습 과정안의 각 단계 시간 합계를 반드시 ${totalMinutes}분으로 맞추세요.`;
 };
 
 export async function generateLessonSlides(params: LessonParams, pageCount: number): Promise<{ slides: LessonSlide[]; model: string }> {
@@ -1405,20 +1467,15 @@ export async function generateLessonSlides(params: LessonParams, pageCount: numb
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 프레젠테이션 슬라이드 ${pageCount}장을 생성해주세요.
 
-[수업 정보]
-- 학년: ${params.grade}
-- 교과: ${params.subject}
-- 단원: ${params.unit}
-- 주제/수업명: ${params.topic}
-${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 
 [요구사항]
 1. 반드시 ${pageCount}장의 슬라이드를 생성하세요.
 2. 첫 번째 슬라이드는 제목 슬라이드로 구성하세요.
 3. 각 슬라이드의 content는 2~3개의 짧고 임팩트 있는 핵심 bullet point로만 구성하세요. 각 항목은 20자 이내로 간결하게 작성하세요. 뒷자리 학생도 한눈에 읽을 수 있어야 합니다.
-4. notes에는 교사용 발표 참고 내용을 작성하세요.
-5. 한국 교육과정 성취기준에 맞게 작성하세요.
+4. notes에는 학생용 bullet point를 되풀이하지 말고, 개념 설명·구체적 예시·질문·선택한 성취기준과의 관계 등 교사가 말로 보충할 내용을 충분히 작성하세요.
+5. 선택한 성취기준이 있으면 코드와 원문을 그대로 유지하며 반영하고, 없으면 공식 성취기준을 추정하지 마세요.
 6. imagePrompt에는 해당 슬라이드 내용을 시각적으로 표현하는 영어 이미지 생성 프롬프트를 20단어 이내로 작성하세요. 교육적이고 텍스트가 없는 이미지를 묘사하세요. 예시: "colorful diagram of photosynthesis in a plant leaf, educational illustration, no text, no labels" / "Korean middle school students conducting science experiment, bright classroom, photorealistic"
 7. 슬라이드 제목과 내용에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 마세요.
 
@@ -1456,12 +1513,7 @@ export async function generateLessonWorksheet(
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 ${typeLabel}를 HTML 형식으로 생성해주세요.
 
-[수업 정보]
-- 학년: ${params.grade}
-- 교과: ${params.subject}
-- 단원: ${params.unit || ''}
-- 주제/수업명: ${params.topic}
-${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [요구사항]
 - 활동 수: ${questionCount}개
@@ -1787,19 +1839,15 @@ export async function generateLessonQuiz(params: LessonParams, questionCount: nu
 
   const prompt = `다음 수업 정보를 바탕으로 퀴즈 데이터를 JSON으로 생성해주세요.
 
-[수업 정보]
-- 학년: ${params.grade}
-- 교과: ${params.subject}
-- 단원: ${params.unit}
-- 주제/수업명: ${params.topic}
-${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}` : ''}
 [요구사항]
 - 문항 수: ${questionCount}개
 - 사용할 문항 유형:
 ${typeLines}
-- 문항은 수업 내용과 관련 있고 학년 수준에 맞게 출제
-- 객관식 오답 보기는 그럴듯하게 작성
+- 문항은 수업에서 실제로 다룬 개념과 활동을 확인하고 학년 수준에 맞게 출제하세요.
+- 객관식 정답은 정확히 하나만 성립하도록 만들고 answer에는 그 보기의 문구를 정확히 넣으세요.
+- 객관식 오답은 그럴듯하되, 각 오답이 왜 틀렸는지 교사가 설명할 수 있도록 개념상 분명한 오류가 있어야 합니다.
 
 반드시 아래 JSON 형식으로만 응답하세요. 설명이나 마크다운 없이 JSON만:
 {
@@ -1819,24 +1867,24 @@ ${typeLines}
 
 export async function generateLessonPlan(params: LessonParams): Promise<{ text: string; model: string }> {
   const gradeGuidance = getLessonGradeGuidance(params.grade);
+  const durationGuidance = buildLessonDurationGuidance(params);
   const prompt = `${getDateContext()}
 다음 수업 정보를 바탕으로 상세한 수업 계획서를 HTML 형식으로 생성해주세요.
 
-[수업 정보]
-- 학년: ${params.grade}
-- 교과: ${params.subject}
-- 단원: ${params.unit}
-- 주제/수업명: ${params.topic}
-${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
+${durationGuidance}
+
 [필수 구성 요소]
 1. 수업 개요 (학년, 교과, 단원, 주제, 차시)
-2. 학습 목표 (지식, 기능, 태도 영역)
+2. 관찰 가능한 학습 목표
 3. 교수·학습 과정안 (도입-전개-정리 단계별 표로 작성)
    - 단계, 학습활동, 교수·학습 활동, 시간(분), 자료/유의점 포함
 4. 평가 계획 (평가 기준, 방법)
 5. 준비물 및 참고자료
 
+선택한 성취기준이 있으면 성취기준 → 관찰 가능한 학습 목표 → 연습 활동 → 평가의 관계가 한눈에 이어지도록 작성하세요. 목표를 지식·기능·태도의 세 영역으로 억지로 나누지 마세요.
+주제와 성취기준이 맞지 않으면 일치한다고 꾸미지 말고 불일치를 명시한 뒤, 성취기준을 달성할 수 있는 활동과 평가를 제안하세요.
 수업 개요, 학습 목표, 교수·학습 과정안, 평가 계획, 준비물 및 참고자료는 모두 표 형태로 작성하세요.
 긴 문단 설명보다 한눈에 보기 쉬운 표를 우선 사용하세요.
 본문에는 이모지, Markdown 기호, 장식용 특수기호를 넣지 말고 실제 수업 계획서 문체로 작성하세요.
@@ -1989,12 +2037,7 @@ export async function generateLessonGame(params: LessonParams): Promise<string> 
   const gradeGuidance = getLessonGradeGuidance(params.grade);
   const prompt = `다음 수업 주제를 바탕으로 학생들이 직접 플레이할 수 있는 교육용 미니 게임을 HTML 형식으로 만들어주세요.
 
-[수업 정보]
-- 학년: ${params.grade}
-- 교과: ${params.subject}
-- 단원: ${params.unit || ''}
-- 주제/수업명: ${params.topic}
-${params.details ? `- 추가 요청사항: ${params.details}` : ''}
+${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [게임 요구사항]
 - 게임 유형: 수업 주제와 학년에 가장 어울리는 형식을 아래 중 하나 이상 선택해 완성도 있게 만드세요.

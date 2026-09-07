@@ -328,13 +328,15 @@ const LessonMaterialGenerator: React.FC = () => {
     }
     startGeneration();
 
-    const standardText = selectedStandard
-      ? `[성취기준: ${selectedStandard.code} ${selectedStandard.text}]`
-      : '';
-    const effectiveTopic = topic.trim() || (selectedStandard ? `${selectedStandard.code} 성취기준 수업` : '수업');
     const params: LessonParams = {
-      grade: selectedGradeLabel, subject, unit, topic: effectiveTopic,
-      details: `${standardText}${standardText && details ? '\n' : ''}${details}`,
+      grade: selectedGradeLabel,
+      subject,
+      unit,
+      topic: topic.trim(),
+      details,
+      achievementStandard: selectedStandard
+        ? { code: selectedStandard.code, text: selectedStandard.text }
+        : undefined,
     };
 
     try {
