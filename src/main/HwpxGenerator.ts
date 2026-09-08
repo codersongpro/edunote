@@ -145,10 +145,10 @@ function boldCharFor(base: string): string {
 }
 
 function htmlToText(content: string): string {
-  const normalized = content
+  const normalized = decodeHtmlEntities(dropNonContentBlocks(content))
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|h1|h2|h3|li|tr)>/gi, '\n')
-    .replace(/<\/td>/gi, '\t');
+    .replace(/<\/(td|th)>/gi, '\t');
 
   try {
     const doc = new DOMParser().parseFromString(`<root>${normalized}</root>`, 'text/xml');
@@ -190,20 +190,181 @@ function makeParagraphs(text: string, style: SectionStyle): string {
 // 구조 템플릿은 한글 11이 직접 저장한 .hwpx 파일에서 실측해 가져왔다.
 // ---------------------------------------------------------------------------
 
+// 블록 요소 — 자식으로 들어 있으면 문단을 나눠 변환한다.
+// html·body가 빠져 있으면 AI가 만든 전체 HTML 문서의 본문 전체가
+// 한 문단으로 뭉쳐 나오므로 문서 골격 태그도 함께 넣는다.
 const BLOCK_TAGS = new Set([
-  'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'table',
+  'html', 'body', 'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'table',
   'blockquote', 'section', 'article', 'header', 'footer', 'main', 'hr',
+  'form', 'fieldset', 'nav', 'aside', 'figure', 'figcaption', 'dl', 'pre', 'details',
 ]);
 
-function parseHtml(content: string): any | null {
-  const normalized = content
+// ---------------------------------------------------------------------------
+// HTML → XML 정규화
+// AI가 만든 HTML(과 브라우저가 직렬화한 미리보기 HTML)에는 XML 규칙에 어긋나는
+// 곳이 많다. XML 파서는 그런 곳에서 치명적 오류를 내고, 그러면 서식 유지 경로 대신
+// 평문 폴백으로 떨어져 표와 서식이 모두 사라진다. 여기서 XML로 읽히게 고친다.
+// ---------------------------------------------------------------------------
+
+// 닫는 태그가 없는 HTML 빈 요소 — XML에서는 스스로 닫혀 있어야 한다.
+// 워크시트의 <colgroup><col>과 체크박스 <input>이 실제 파싱 실패 원인이었다.
+const VOID_TAGS = new Set([
+  'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+  'link', 'meta', 'param', 'source', 'track', 'wbr',
+]);
+
+// 본문이 아니므로 내용까지 통째로 버리는 요소.
+// <style>의 CSS가 본문 문단으로 새어 나오던 문제를 여기서 막는다.
+const DROPPED_TAGS = new Set([
+  'style', 'script', 'noscript', 'head', 'title', 'template',
+  'svg', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'img',
+]);
+
+// 새로 열릴 때 앞의 형제 태그를 암시적으로 닫는 HTML 규칙 (</li>·</td> 생략 대응)
+const AUTO_CLOSE: Record<string, string[]> = {
+  p: ['p'],
+  li: ['li'],
+  dt: ['dt', 'dd'],
+  dd: ['dt', 'dd'],
+  td: ['td', 'th'],
+  th: ['td', 'th'],
+  tr: ['td', 'th', 'tr'],
+  thead: ['td', 'th', 'tr'],
+  tbody: ['td', 'th', 'tr', 'thead'],
+  tfoot: ['td', 'th', 'tr', 'tbody'],
+  option: ['option'],
+};
+
+// XML이 기본으로 아는 다섯 개(amp·lt·gt·quot·apos) 외의 이름 있는 엔티티는
+// XML 파서가 풀지 못해 "&mdash;"처럼 글자 그대로 남는다. 미리 실제 문자로 바꾼다.
+const NAMED_ENTITIES: Record<string, string> = {
+  nbsp: '\u00A0', ensp: '\u2002', emsp: '\u2003', thinsp: '\u2009', shy: '',
+  mdash: '—', ndash: '–', hellip: '…', middot: '·', bull: '•',
+  lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”', sbquo: '‚', bdquo: '„',
+  prime: '′', Prime: '″', times: '×', divide: '÷', minus: '−', plusmn: '±', sdot: '⋅',
+  deg: '°', frac12: '½', frac14: '¼', frac34: '¾', sup2: '²', sup3: '³',
+  larr: '←', rarr: '→', uarr: '↑', darr: '↓', harr: '↔',
+  le: '≤', ge: '≥', ne: '≠', asymp: '≈', infin: '∞', radic: '√',
+  copy: '©', reg: '®', trade: '™', sect: '§', para: '¶',
+  dagger: '†', Dagger: '‡', permil: '‰',
+  laquo: '«', raquo: '»', euro: '€', pound: '£', yen: '¥', cent: '¢',
+  hearts: '♥', diams: '◆', clubs: '♣', spades: '♠',
+};
+
+function decodeHtmlEntities(html: string): string {
+  return html.replace(/&([A-Za-z][A-Za-z0-9]*);/g, (match, name: string) => {
+    const decoded = NAMED_ENTITIES[name];
+    return decoded === undefined ? match : decoded;
+  });
+}
+
+// 본문이 아닌 블록을 내용까지 제거한다.
+// 파싱이 실패해 평문 폴백으로 가더라도 CSS가 본문에 섞이지 않게 하는 안전장치다.
+function dropNonContentBlocks(html: string): string {
+  return String(html ?? '')
     .replace(/<!DOCTYPE[^>]*>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<br(\s[^>]*)?\/?>/gi, '<br/>')
-    .replace(/<hr(\s[^>]*)?\/?>/gi, '<hr/>')
-    .replace(/<img[^>]*?\/?>/gi, '')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&(?![a-zA-Z]+;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
+    .replace(/<(style|script|noscript|head|title|template)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+    // 닫는 태그가 없는 <style>·<script>는 그 뒤가 모두 코드이므로 끝까지 버린다
+    .replace(/<(style|script)\b[^>]*>[\s\S]*$/i, '');
+}
+
+// XML 1.0에서 허용되지 않는 제어문자 제거 (탭·개행 제외)
+function stripControlChars(value: string): string {
+  return value.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+}
+
+function escapeAmpersand(value: string): string {
+  return value.replace(/&(?!(?:amp|lt|gt|quot|apos);|#\d+;|#x[0-9A-Fa-f]+;)/g, '&amp;');
+}
+
+function escapeAttrValue(value: string): string {
+  return escapeAmpersand(stripControlChars(value))
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function escapeTextNode(text: string): string {
+  return escapeAmpersand(stripControlChars(text))
+    // 태그로 인식되지 않은 부등호(예: "5 < 7")도 텍스트로 살린다
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// 속성을 XML 형태로 다시 쓴다: 이름 소문자화, 값 따옴표 통일,
+// 중복 속성 제거(XML은 같은 속성이 두 번 나오면 치명적 오류), 값 없는 속성 보정.
+function normalizeAttributes(raw: string): string {
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  const attrRe = /([A-Za-z_:][-A-Za-z0-9_:.]*)\s*(?:=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  let match: RegExpExecArray | null;
+  while ((match = attrRe.exec(raw))) {
+    const name = match[1].toLowerCase();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const value = match[2] ?? match[3] ?? match[4] ?? name;
+    parts.push(` ${name}="${escapeAttrValue(value)}"`);
+  }
+  return parts.join('');
+}
+
+// 태그를 스택으로 훑어 XML로 읽을 수 있는 마크업을 만든다.
+// - 빈 요소는 스스로 닫고, 본문이 아닌 요소는 내용까지 버린다
+// - 닫히지 않은 태그는 자동으로 닫고, 짝 없는 종료 태그는 버린다
+function repairMarkup(html: string): string {
+  const out: string[] = [];
+  const stack: string[] = [];
+  const tagRe = /<\/?([A-Za-z][A-Za-z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g;
+  let dropTag = '';
+  let dropDepth = 0;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  while ((match = tagRe.exec(html))) {
+    if (!dropTag) out.push(escapeTextNode(html.slice(last, match.index)));
+    last = tagRe.lastIndex;
+    const tag = match[1].toLowerCase();
+    const rawAttrs = match[2];
+    const closing = match[0].startsWith('</');
+    const selfClosed = /\/\s*$/.test(rawAttrs);
+    if (dropTag) {
+      // 버리는 요소 안이면 같은 이름의 중첩만 세어 끝나는 지점을 찾는다
+      if (tag !== dropTag) continue;
+      if (closing) dropDepth -= 1;
+      else if (!selfClosed && !VOID_TAGS.has(tag)) dropDepth += 1;
+      if (dropDepth <= 0) dropTag = '';
+      continue;
+    }
+    if (closing) {
+      const openedAt = stack.lastIndexOf(tag);
+      if (openedAt < 0) continue; // 짝 없는 종료 태그
+      while (stack.length > openedAt) out.push(`</${stack.pop()}>`);
+      continue;
+    }
+    if (DROPPED_TAGS.has(tag)) {
+      if (!VOID_TAGS.has(tag) && !selfClosed) {
+        dropTag = tag;
+        dropDepth = 1;
+      }
+      continue;
+    }
+    const attrs = normalizeAttributes(rawAttrs);
+    if (VOID_TAGS.has(tag) || selfClosed) {
+      out.push(`<${tag}${attrs}/>`);
+      continue;
+    }
+    const closes = AUTO_CLOSE[tag] ?? (BLOCK_TAGS.has(tag) ? ['p'] : []);
+    while (stack.length && closes.includes(stack[stack.length - 1])) out.push(`</${stack.pop()}>`);
+    out.push(`<${tag}${attrs}>`);
+    stack.push(tag);
+  }
+  out.push(escapeTextNode(html.slice(last)));
+  while (stack.length) out.push(`</${stack.pop()}>`);
+  return out.join('');
+}
+
+function parseHtml(content: string): any | null {
+  const normalized = repairMarkup(decodeHtmlEntities(dropNonContentBlocks(content)));
   try {
     const doc = new DOMParser({
       onError: (level: string, msg: string) => {
@@ -236,8 +397,20 @@ function alignOf(el: any): string {
 
 type InlineSeg = { text: string; bold: boolean } | 'break';
 
+// flex 배치는 CSS 간격(gap)으로 항목을 띄우므로 HTML에는 공백이 없다.
+// 한글에는 그 간격이 없어 "2학년반:이름:"처럼 붙어 버리므로 한 칸을 넣어 준다.
+function isSpacedContainer(node: any): boolean {
+  return /display\s*:\s*(?:inline-)?flex/i.test(String(node?.getAttribute?.('style') || ''));
+}
+
+function endsWithSpace(out: InlineSeg[]): boolean {
+  const last = out[out.length - 1];
+  return !last || last === 'break' || /\s$/.test(last.text);
+}
+
 // 블록 요소 내부의 인라인 콘텐츠를 (텍스트, 굵게 여부) 조각과 줄바꿈으로 수집한다.
 function collectInline(node: any, bold: boolean, out: InlineSeg[]): void {
+  const spaced = isSpacedContainer(node);
   for (let i = 0; i < (node.childNodes?.length || 0); i += 1) {
     const child = node.childNodes.item(i);
     if (!child) continue;
@@ -255,7 +428,15 @@ function collectInline(node: any, bold: boolean, out: InlineSeg[]): void {
       out.push('break');
       continue;
     }
+    if (tag === 'input') {
+      // 워크시트의 선택 항목 — 한글에는 입력 요소가 없으므로 기호로 남긴다
+      const type = String(child.getAttribute?.('type') || '').toLowerCase();
+      if (type === 'checkbox') out.push({ text: '☐', bold });
+      else if (type === 'radio') out.push({ text: '○', bold });
+      continue;
+    }
     if (tag === 'style' || tag === 'script' || tag === 'ul' || tag === 'ol' || tag === 'table') continue;
+    if (spaced && !endsWithSpace(out)) out.push({ text: ' ', bold });
     collectInline(child, bold || tag === 'b' || tag === 'strong', out);
   }
 }

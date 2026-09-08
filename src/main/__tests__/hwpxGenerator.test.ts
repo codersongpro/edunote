@@ -225,6 +225,58 @@ describe('buildHwpxZip', () => {
     }
   });
 
+  // ── AI가 만든 HTML은 XML로는 어긋난 곳이 많다 ─────────────────────────
+  // 아래 경우들에서 XML 파싱이 실패하면 평문 폴백으로 떨어져 표·서식이 사라지고
+  // <style>의 CSS까지 본문 문단으로 새어 나왔다 (워크시트 HWPX 저장 문제).
+
+  it('전체 HTML 문서를 저장해도 style·head 내용이 본문에 들어가지 않는다', async () => {
+    const html =
+      '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>워크시트</title><style>\n'
+      + '@page { size: A4; margin: 12mm 14mm; }\n'
+      + 'body { font-family: \'Malgun Gothic\'; font-size: 12pt; }\n'
+      + '</style></head><body><h1>씨앗 심기 순서</h1><p>본문</p></body></html>';
+    const section = await readEntry(await buildHwpxZip('워크시트', html, {}), 'Contents/section0.xml');
+
+    expect(section).not.toContain('@page');
+    expect(section).not.toContain('font-family');
+    expect(section).not.toContain('워크시트'); // head의 <title>은 본문이 아니다
+    // 서식 유지 경로를 그대로 쓴다 — h1은 제목 서식(7) + 가운데 정렬(16)
+    expect(section).toMatch(/paraPrIDRef="16"[^>]*><hp:run charPrIDRef="7"><hp:t>씨앗 심기 순서<\/hp:t>/);
+  });
+
+  it('닫히지 않는 빈 요소(col·input·meta)가 있어도 표와 서식을 유지한다', async () => {
+    const html =
+      '<style>@page { size: A4; }</style>'
+      + '<h1>학습지</h1>'
+      + '<table><colgroup><col style="width:30%"><col></colgroup>'
+      + '<tr><th>구분</th><td>내용</td></tr></table>'
+      + '<p><input type="checkbox"> 확인</p>';
+    const section = await readEntry(await buildHwpxZip('학습지', html, {}), 'Contents/section0.xml');
+
+    expect(section).not.toContain('@page');
+    expect(section).toMatch(/<hp:tbl [^>]*rowCnt="1" colCnt="2"/);
+    expect(section).toContain('<hp:t>구분</hp:t>');
+    // 한글에는 입력 요소가 없으므로 체크박스는 기호로 남긴다
+    expect(section).toContain('<hp:t>☐ 확인</hp:t>');
+  });
+
+  it('닫히지 않은 태그와 짝 없는 종료 태그, 중복 속성을 복구한다', async () => {
+    const html = '<ul><li>하나<li>둘</ul><p class="a" class="b">셋</div></span>';
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+
+    expect(section).toContain('<hp:t>• 하나</hp:t>');
+    expect(section).toContain('<hp:t>• 둘</hp:t>');
+    expect(section).toContain('<hp:t>셋</hp:t>');
+  });
+
+  it('이름 있는 HTML 엔티티를 실제 문자로 바꾼다', async () => {
+    const html = '<p>가&mdash;나&middot;다&hellip;라&nbsp;마 &amp; 5 &lt; 7</p>';
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+
+    expect(section).toContain('<hp:t>가—나·다…라\u00A0마 &amp; 5 &lt; 7</hp:t>');
+    expect(section).not.toContain('mdash');
+  });
+
   it('section과 header 외의 항목은 골격과 바이트 단위로 동일하다', async () => {
     const buf = await buildHwpxZip('제목', '본문', {});
     const zip = await JSZip.loadAsync(buf);
