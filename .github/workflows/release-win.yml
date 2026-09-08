@@ -1,11 +1,20 @@
 name: Release Windows EXE
 
-run-name: Release ${{ github.ref_name }}
+run-name: Release ${{ inputs.version && format('v{0}', inputs.version) || github.ref_name }}
 
 on:
   push:
     tags:
       - 'v*'
+  # 태그를 직접 올릴 수 없는 환경에서도 릴리즈할 수 있도록 수동 실행을 허용한다.
+  # 실행 조건은 태그 릴리즈와 동일하다 — main에서만, package.json 버전과 일치할 때만,
+  # 같은 버전의 릴리즈가 없을 때만 진행하고, 태그는 워크플로가 직접 만든다.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '릴리즈할 버전 (예: 1.27.1). package.json 버전과 다르면 중단합니다.'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -33,20 +42,33 @@ jobs:
           cache: 'npm'
 
       - name: Validate immutable release version
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $expectedTag = "v$packageVersion"
-          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            if ($env:GITHUB_REF_NAME -ne 'main') {
+              throw "수동 릴리즈는 main에서만 실행할 수 있습니다. 현재: $env:GITHUB_REF_NAME"
+            }
+            if ($env:INPUT_VERSION -ne $packageVersion) {
+              throw "입력한 버전($env:INPUT_VERSION)이 package.json 버전($packageVersion)과 일치하지 않습니다."
+            }
+          }
+          elseif ($env:GITHUB_REF_NAME -ne $expectedTag) {
             throw "태그($env:GITHUB_REF_NAME)와 package.json 버전($expectedTag)이 일치하지 않습니다."
           }
 
-          gh release view $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY *> $null
+          gh release view $expectedTag --repo $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -eq 0) {
             throw "동일 버전의 GitHub Release가 이미 존재합니다. 기존 자산을 덮어쓸 수 없습니다."
           }
           $global:LASTEXITCODE = 0
+
+          "tag=$expectedTag" | Out-File $env:GITHUB_OUTPUT -Append -Encoding utf8NoBOM
 
       - name: Install dependencies
         run: npm ci
@@ -76,19 +98,42 @@ jobs:
         with:
           subject-path: dist/*.exe
 
+      # 수동 실행일 때만 태그를 만든다. 검증과 빌드를 모두 통과한 뒤에 만들어야
+      # 실패한 실행이 태그를 남기지 않는다. 이미 있는 태그는 같은 커밋일 때만 재사용한다.
+      - name: Create release tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $existing = gh api "repos/$env:GITHUB_REPOSITORY/git/ref/tags/$env:TAG" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $existingSha = ($existing | ConvertFrom-Json).object.sha
+            if ($existingSha -ne $env:GITHUB_SHA) {
+              throw "태그 $env:TAG 가 이미 다른 커밋($existingSha)을 가리킵니다."
+            }
+          }
+          else {
+            $global:LASTEXITCODE = 0
+            gh api "repos/$env:GITHUB_REPOSITORY/git/refs" `
+              -f "ref=refs/tags/$env:TAG" `
+              -f "sha=$env:GITHUB_SHA" *> $null
+          }
+
       - name: Create immutable release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           $exe = Get-ChildItem dist/*.exe | Select-Object -First 1
           $fullNotes = Get-Content RELEASE_NOTES.md -Raw
           $currentNotes = ($fullNotes -split '\r?\n---')[0].Trim()
           $currentNotes | Out-File current_release.md -Encoding utf8NoBOM
-          gh release create $env:GITHUB_REF_NAME `
+          gh release create $env:TAG `
             $exe.FullName `
             dist/SHA256SUMS.txt `
             --repo $env:GITHUB_REPOSITORY `
             --verify-tag `
-            --title "EduNote $env:GITHUB_REF_NAME" `
+            --title "EduNote $env:TAG" `
             --notes-file current_release.md `
             --latest
