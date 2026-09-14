@@ -17,6 +17,7 @@ async function captureDocumentPrompt(
   docType: DocType,
   promptContext: string,
   gonggoInputs?: GonggoInputs,
+  gongmunComplexity: GongmunComplexity = GongmunComplexity.MEDIUM,
 ): Promise<string> {
   await generateDocument(
     docType,
@@ -27,7 +28,7 @@ async function captureDocumentPrompt(
     [],
     [],
     '',
-    GongmunComplexity.MEDIUM,
+    gongmunComplexity,
     gonggoInputs,
   );
   const [parts, systemInstruction] = aiGenerateMultipart.mock.calls[0] as [Array<{ text?: string }>, string];
@@ -90,16 +91,16 @@ describe('문서 생성 미입력 사실 처리', () => {
     expect(text).toContain('입력한 수치와 사실은 그대로 사용');
   });
 
-  it('목적·방침·내용 같은 서술 항목은 주제에 맞게 직접 작성하도록 요구한다', async () => {
+  it('서술 항목은 주제에 맞게 직접 작성하도록 요구한다', async () => {
     const text = await captureDocumentPrompt(
       DocType.GONGMUN,
       '[공문 유형]: 내부결재\n[제목]: 2026. 독서교육 운영계획\n[본문 요청사항]: (미입력)',
     );
     expect(text).toContain('서술 항목 — 주제에 맞게 직접 작성');
     expect(text).toContain('"[확인 필요: ...]"를 쓰지 말고');
-    expect(text).toContain('목적·방침·내용·기대효과는 제목과 주제만 있어도 학교 현장에 맞게 직접 작성');
+    expect(text).toContain('제목과 주제만 있어도 학교 현장에 맞게 직접 작성');
     // 예시가 서술 항목을 자리표시자로 보여주면 모델이 그대로 따라 쓴다.
-    expect(text).not.toContain('[확인 필요: 목적]');
+    expect(text).not.toContain('[확인 필요: 주요내용]');
     expect(text).not.toContain('[확인 필요: 대상]');
   });
 

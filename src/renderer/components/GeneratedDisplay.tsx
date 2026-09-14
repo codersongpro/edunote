@@ -9,7 +9,7 @@ import { DOCUMENT_HISTORY_KEY_PREFIX } from '../lib/generationHistory';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 import { convertHtmlToMarkdown } from '../lib/htmlToMarkdown';
 import type { GroundingInfo } from '../../preload/types';
-import { ReviewChecklist } from './ReviewChecklist';
+import { ReviewChecklist, type ReviewChecklistKind } from './ReviewChecklist';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -27,6 +27,8 @@ interface GeneratedDisplayProps {
   model?: string;
   // 웹 검색 참조로 생성한 경우의 출처 정보 — 주어지면 결과 위에 참조 자료 목록을 표시한다.
   grounding?: GroundingInfo;
+  // 사용 전 체크리스트에 어느 영역의 확인 항목을 보여줄지 — 생략하면 교무행정 문서 기준.
+  reviewKind?: ReviewChecklistKind;
   onContentChange?: (content: string) => void;
 }
 
@@ -81,7 +83,7 @@ function applyDocumentStyles(el: HTMLElement): void {
   });
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding, onContentChange }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding, reviewKind, onContentChange }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -751,6 +753,7 @@ h2,h3{page-break-after:avoid;}
             )}
 
             <ReviewChecklist
+              kind={reviewKind}
               content={contentRef.current?.innerText || extractPlainText(content)}
               resetKey={`${title || ''}:${content}:${selectedVersionId}:${editorRevision}`}
             />

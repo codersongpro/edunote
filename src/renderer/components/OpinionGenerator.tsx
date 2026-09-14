@@ -1022,7 +1022,7 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.opinion} />
                              </div>
-                             <ReviewChecklist content={student.generatedContent || ''} resetKey={`${student.id}:${student.generatedContent || ''}:${generatingIds.has(student.id) || isGlobalGenerating}`} />
+                             <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${student.id}:${student.generatedContent || ''}:${generatingIds.has(student.id) || isGlobalGenerating}`} />
                              {expandedHistory.has(student.id) && (() => {
                                const hist: HistoryEntry[] = getHistory('opinion', student.name);
                                return hist.length > 0 ? (
