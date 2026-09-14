@@ -46,7 +46,9 @@ describe('겉공문 구성', () => {
     const text = await captureGongmunPrompt(GongmunComplexity.SIMPLE);
     expect(text).toContain('[작성 모드: 간단] 구성: 1.관련(입력된 경우만), 2.본문(시행문), 붙임(실제 첨부가 있을 때만).');
     expect(text).toContain('개요(가.나.다.)와 행정사항을 만들지 마세요');
-    expect(text).not.toContain('바. 행정사항');
+    // 출력 예시에 개요·행정사항 줄이 없어야 한다(표기 규칙 설명의 '바. 행정사항:'은 모든 모드에 남는다).
+    expect(text).not.toContain('바. 행정사항: (협조·제출 사항');
+    expect(text).not.toContain('가. 행 사 명: (입력된');
   });
 
   it('중간 모드는 개요를 3~5항목 요구하고 행정사항은 빼게 한다', async () => {
@@ -61,7 +63,7 @@ describe('겉공문 구성', () => {
     const text = await captureGongmunPrompt(GongmunComplexity.DETAILED);
     expect(text).toContain("개요(가.나.다. 5~7항목, 마지막 항목을 '행정사항'으로)");
     expect(text).toContain('행정사항은 별도 대항목(3.)으로 빼지 말고 개요의 마지막 항목');
-    expect(text).toContain('바. 행정사항:');
+    expect(text).toContain('바. 행정사항: (협조·제출 사항');
     // 1.관련 / 2.본문 외에 3.으로 시작하는 대항목을 예시에 두지 않는다.
     expect(text).not.toContain('<br><br>3. 행정사항');
   });
@@ -73,6 +75,7 @@ describe('겉공문 구성', () => {
     expect(text).toContain('"부서명-문서번호(YYYY. M. D.)" 형식');
     expect(text).toContain('2026. 11. 6.(금) ~ 11. 7.(토)');
     expect(text).toContain('콜론(:) 위치가 세로로 맞도록');
+    expect(text).toContain('4글자(행정사항·작품접수 등): 띄우지 않고');
     expect(text).toContain("'※'로 적으세요");
     expect(text).toContain('근거가 1건이면 "1. 관련: ○○" 한 줄로, 2건 이상이면');
   });
