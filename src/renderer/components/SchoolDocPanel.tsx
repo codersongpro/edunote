@@ -11,7 +11,7 @@ import { LOADING_MESSAGES } from '../constants';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
-import { applyOutlineStyles } from '../lib/outlineFormat';
+import { applyOutlineStyles, OUTLINE_FORMATTED_DOC_TYPES } from '../lib/outlineFormat';
 import {
   DEFAULT_TRAINING_MATERIAL_SECTIONS,
   TRAINING_SECTION_OPTIONS,
@@ -95,7 +95,8 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const [contentByTab, setContentByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [modelByTab, setModelByTab] = useState<Record<DocType, string>>(initTabMap(''));
   const [groundingByTab, setGroundingByTab] = useState<Record<DocType, GroundingInfo | undefined>>(initTabMap(undefined));
-  // 연수자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되므로 기본은 꺼둔 상태로 저장한다.
+  // 연수자료의 웹 검색 참조 여부 — 검색 건수만큼 과금되고 무료 키는 한도를 넘으면 생성이
+  // 실패하므로, 이전에 켰더라도 앱을 다시 열면 항상 꺼진 상태로 시작한다.
   const [useWebSearch, setUseWebSearch] = useState(false);
 
   const uploadedFiles = filesByTab[activeTab] ?? [];
@@ -285,7 +286,6 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
 
   // Load saved user info from config on mount
   useEffect(() => {
-    window.electronAPI.getConfig('eduMaterialWebSearch').then(value => setUseWebSearch(value === true));
     Promise.all([
       window.electronAPI.getConfig('institution'),
       window.electronAPI.getConfig('schoolName'),
@@ -337,7 +337,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   const buildPromptContext = (): string => {
     switch (activeTab) {
       case DocType.GONGMUN: {
-        const gongmunTypeLabel = gongmunData.type === GongmunType.INTERNAL ? '내부결재' : '수신자 참조(발송 공문)';
+        const gongmunTypeLabel = gongmunData.type === GongmunType.INTERNAL ? '내부결재' : '외부발송';
         return `[공문 유형]: ${gongmunTypeLabel}\n${field('제목', gongmunData.title)}\n${field('본문 요청사항', gongmunData.bodyContext)}`;
       }
       case DocType.PLAN:
@@ -490,9 +490,9 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
         );
       }
       const { cleanContent, fillData } = extractResult(result.text);
-      // 연수자료는 말머리 위계가 그대로 보여야 하므로, AI가 단계별 들여쓰기·글자 크기를
-      // 빠뜨렸으면 계획서와 같은 서식으로 보정해서 보여준다.
-      const displayContent = activeTab === DocType.TRAINING_MATERIAL
+      // 계획서·보고서·연수자료·공고문은 1. → 가. → 1) → 가) 말머리 위계가 그대로 보여야
+      // 하므로, AI가 단계별 들여쓰기·글자 크기를 빠뜨렸으면 같은 서식으로 보정해서 보여준다.
+      const displayContent = OUTLINE_FORMATTED_DOC_TYPES.includes(activeTab)
         && uploadedTemplates.length === 0
         && !templateText.trim()
         && !savedFormatInstruction.trim()
@@ -636,7 +636,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                   <div className="flex gap-2">
                     {[
                       { val: GongmunType.INTERNAL, label: '내부결재', tooltip: '기관 안에서 결재만 받는 공문.\n수신은 (내부결재)로, 본문은 "~하고자 합니다."로 끝납니다.' },
-                      { val: GongmunType.EXTERNAL, label: '수신자 참조', tooltip: '다른 기관·학교로 보내는 공문.\n제목에 [안내]·[알림] 같은 말머리가 붙고, 본문은 "~하여 주시기 바랍니다."로 끝납니다.' },
+                      { val: GongmunType.EXTERNAL, label: '외부발송', tooltip: '다른 기관·학교로 보내는 공문.\n수신은 "수신자 참조"로 쓰고, 제목에 [안내]·[알림] 같은 말머리가 붙으며, 본문은 "~하여 주시기 바랍니다."로 끝납니다.' },
                     ].map(opt => (
                       <div key={opt.val} className="flex-1 relative group">
                         <button
@@ -783,10 +783,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                     <input
                       type="checkbox"
                       checked={useWebSearch}
-                      onChange={e => {
-                        setUseWebSearch(e.target.checked);
-                        window.electronAPI.setConfig({ eduMaterialWebSearch: e.target.checked });
-                      }}
+                      onChange={e => setUseWebSearch(e.target.checked)}
                       className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
                     />
                     <span className="text-xs leading-relaxed text-[#44403C] dark:text-[#C4B8B0]">
