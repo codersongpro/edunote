@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildDocumentComparison,
+  buildInstitutionFormatInstruction,
   calculateBudgetActuals,
   contentFingerprint,
   filterResourceUsage,
@@ -35,25 +35,28 @@ describe('workflowFeatures', () => {
     expect(generationStatusForError(new Error('network error'))).toBe('failed');
   });
 
-  it('두 문서의 날짜·시간·장소·대상·금액을 원문 발췌와 함께 비교한다', () => {
-    const result = buildDocumentComparison(
-      '일시: 2026년 9월 10일 14:00\n장소: 시청각실\n대상: 5학년\n금액: 200,000원',
-      '일시: 2026년 9월 11일 15:00\n장소: 체육관\n대상: 5학년\n금액: 170,000원',
-      ['date', 'time', 'place', 'target', 'amount'],
-    );
-    expect(result.map(item => item.status)).toEqual(['mismatch', 'mismatch', 'mismatch', 'match', 'mismatch']);
-    expect(result[2].leftExcerpt).toContain('장소: 시청각실');
+  it('선택한 기관 서식을 생성 프롬프트 문장으로 만든다', () => {
+    expect(buildInstitutionFormatInstruction({
+      name: '학교 계획서(번호식)',
+      outline: '1. 추진 배경 / 2. 목적',
+      bulletStyle: '1. → 가. → 1)',
+      fontSize: 13,
+      endingStyle: '명사형 개조식(~함, ~임)',
+    })).toBe([
+      '서식명: 학교 계획서(번호식)',
+      '목차: 1. 추진 배경 / 2. 목적',
+      '글머리표: 1. → 가. → 1)',
+      '기본 글자 크기: 13pt',
+      '문장 종결: 명사형 개조식(~함, ~임)',
+    ].join('\n'));
   });
 
-  it('같은 필드가 여러 번 나오면 첫 값뿐 아니라 전체 후보를 비교한다', () => {
-    const [date] = buildDocumentComparison(
-      '일시: 2026년 9월 10일\n추가 날짜: 2026년 9월 12일',
-      '일시: 2026년 9월 10일\n추가 날짜: 2026년 9월 13일',
-      ['date'],
-    );
-    expect(date.status).toBe('mismatch');
-    expect(date.leftExcerpt).toContain('2026년 9월 12일');
-    expect(date.rightExcerpt).toContain('2026년 9월 13일');
+  it('채우지 않은 항목은 서식 문장에서 빼고, 목차·글머리표·종결이 모두 비면 서식으로 보지 않는다', () => {
+    expect(buildInstitutionFormatInstruction({ name: '', outline: '', bulletStyle: '가.', fontSize: 13, endingStyle: '' }))
+      .toBe('글머리표: 가.\n기본 글자 크기: 13pt');
+    // 글자 크기만 남으면 기본 말머리 서식 보정을 끄지 않도록 빈 문자열을 돌려준다.
+    expect(buildInstitutionFormatInstruction({ name: '이름만 있음', outline: '', bulletStyle: '', fontSize: 15, endingStyle: '' })).toBe('');
+    expect(buildInstitutionFormatInstruction({})).toBe('');
   });
 
   it('계획액과 여러 실제 지출의 합계·잔액을 분리한다', () => {

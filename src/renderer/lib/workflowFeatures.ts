@@ -34,18 +34,6 @@ export interface ResourceUsageRecord {
   note: string;
 }
 
-export type DocumentCompareField = 'date' | 'time' | 'place' | 'target' | 'amount';
-
-export interface DocumentComparisonItem {
-  field: DocumentCompareField;
-  label: string;
-  leftValue: string;
-  rightValue: string;
-  leftExcerpt: string;
-  rightExcerpt: string;
-  status: 'match' | 'mismatch' | 'missing';
-}
-
 export interface InstitutionFormat {
   id: string;
   docType: string;
@@ -55,49 +43,6 @@ export interface InstitutionFormat {
   fontSize: number;
   endingStyle: string;
 }
-
-const compareLabels: Record<DocumentCompareField, string> = {
-  date: '날짜',
-  time: '시간',
-  place: '장소',
-  target: '대상',
-  amount: '금액',
-};
-
-const fieldMatchers: Record<DocumentCompareField, RegExp[]> = {
-  date: [/(?:일시|날짜|기간)\s*[:：]?\s*([^\n]*(?:\d{4}[.년/-]\s*\d{1,2}[.월/-]\s*\d{1,2}(?:일)?)[^\n]*)/i, /(\d{4}\s*년\s*\d{1,2}\s*월\s*\d{1,2}\s*일)/],
-  time: [/(?:일시|시간)\s*[:：]?\s*([^\n]*\d{1,2}\s*:\s*\d{2}[^\n]*)/i, /(\d{1,2}\s*:\s*\d{2}(?:\s*[~-]\s*\d{1,2}\s*:\s*\d{2})?)/],
-  place: [/(?:장소|위치)\s*[:：]\s*([^\n]+)/i],
-  target: [/(?:대상|참석 대상)\s*[:：]\s*([^\n]+)/i],
-  amount: [/(?:금액|예산|비용|강사료)\s*[:：]?\s*([^\n]*\d[\d,]*\s*원[^\n]*)/i, /(\d[\d,]*\s*원)/],
-};
-
-const normalizedValue = (field: DocumentCompareField, value: string): string => {
-  const base = value.toLowerCase().replace(/\s+/g, ' ').trim();
-  if (field === 'amount') return base.replace(/[^0-9]/g, '');
-  if (field === 'time') {
-    const match = base.match(/\d{1,2}\s*:\s*\d{2}(?:\s*[~-]\s*\d{1,2}\s*:\s*\d{2})?/);
-    return match?.[0].replace(/\s+/g, '') ?? base;
-  }
-  if (field === 'date') {
-    const match = base.match(/\d{4}\D+\d{1,2}\D+\d{1,2}/);
-    return match?.[0].replace(/\D+/g, '-') ?? base;
-  }
-  return base.replace(/[.,。]/g, '');
-};
-
-const extractField = (text: string, field: DocumentCompareField): { values: string[]; excerpts: string[] } => {
-  const matches = text.split(/\r?\n/).flatMap(line => {
-    for (const matcher of fieldMatchers[field]) {
-      const match = line.match(matcher);
-      if (!match) continue;
-      return [{ value: (match[1] ?? match[0]).trim(), excerpt: match[0].trim() }];
-    }
-    return [];
-  });
-  const unique = matches.filter((item, index) => matches.findIndex(candidate => normalizedValue(field, candidate.value) === normalizedValue(field, item.value)) === index);
-  return { values: unique.map(item => item.value), excerpts: unique.map(item => item.excerpt) };
-};
 
 export function retryableStudentIds(students: RetryableStudent[]): string[] {
   return students
@@ -118,33 +63,6 @@ export function splitRecordSentences(text: string): string[] {
     .split(/\n+/)
     .map(sentence => sentence.trim())
     .filter(Boolean);
-}
-
-export function buildDocumentComparison(
-  left: string,
-  right: string,
-  fields: DocumentCompareField[],
-): DocumentComparisonItem[] {
-  return fields.map(field => {
-    const leftItem = extractField(left, field);
-    const rightItem = extractField(right, field);
-    const leftNormalized = leftItem.values.map(value => normalizedValue(field, value)).sort();
-    const rightNormalized = rightItem.values.map(value => normalizedValue(field, value)).sort();
-    const status = leftNormalized.length === 0 || rightNormalized.length === 0
-      ? 'missing'
-      : JSON.stringify(leftNormalized) === JSON.stringify(rightNormalized)
-        ? 'match'
-        : 'mismatch';
-    return {
-      field,
-      label: compareLabels[field],
-      leftValue: leftItem.values.join(' / '),
-      rightValue: rightItem.values.join(' / '),
-      leftExcerpt: leftItem.excerpts.join('\n'),
-      rightExcerpt: rightItem.excerpts.join('\n'),
-      status,
-    };
-  });
 }
 
 export function calculateBudgetActuals(planned: number, expenses: ActualExpense[]) {
@@ -171,6 +89,28 @@ export function normalizeInstitutionFormat(raw: Record<string, unknown>): Instit
     fontSize: Number.isFinite(fontSize) ? Math.min(30, Math.max(8, fontSize)) : 13,
     endingStyle: typeof raw.endingStyle === 'string' ? raw.endingStyle.slice(0, 80) : '',
   };
+}
+
+// 선택한 기관 서식을 생성 프롬프트에 넣을 문장으로 만든다.
+// 저장하지 않고 화면에서 고쳐 쓴 값도 그대로 쓰이므로, 채운 항목만 넣고
+// 목차·글머리표·문장 종결이 모두 비어 있으면 서식이 없는 것으로 본다
+// (글자 크기만 남은 상태로 기본 서식 보정을 끄지 않기 위해서다).
+export function buildInstitutionFormatInstruction(format: Partial<InstitutionFormat>): string {
+  const outline = String(format.outline ?? '').trim();
+  const bulletStyle = String(format.bulletStyle ?? '').trim();
+  const endingStyle = String(format.endingStyle ?? '').trim();
+  if (!outline && !bulletStyle && !endingStyle) return '';
+
+  const name = String(format.name ?? '').trim();
+  const fontSize = Number(format.fontSize);
+  const lines = [
+    name ? `서식명: ${name}` : '',
+    outline ? `목차: ${outline}` : '',
+    bulletStyle ? `글머리표: ${bulletStyle}` : '',
+    Number.isFinite(fontSize) && fontSize > 0 ? `기본 글자 크기: ${fontSize}pt` : '',
+    endingStyle ? `문장 종결: ${endingStyle}` : '',
+  ];
+  return lines.filter(Boolean).join('\n');
 }
 
 export function contentFingerprint(content: string): string {
