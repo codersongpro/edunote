@@ -54,7 +54,7 @@ export const ReviewChecklist: React.FC<ReviewChecklistProps> = ({ content, reset
           </label>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">이 항목은 자동 인증이 아니라, 교사가 직접 확인하기 위한 메모입니다.</p>
+      <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">이 항목은 자동검토 방식이 아니라, 교사가 직접 확인하기 위한 체크리스트 입니다.</p>
     </div>
   );
 };

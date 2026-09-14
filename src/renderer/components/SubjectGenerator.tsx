@@ -109,6 +109,17 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     ? ELEMENTARY_SUBJECT_LIST 
     : SECONDARY_SUBJECT_LIST;
 
+  // '과목 추가'를 눌렀을 때 교과목 입력란으로 시선을 옮겨 동작했음을 알린다.
+  const subjectFieldRef = useRef<HTMLSelectElement | HTMLInputElement | null>(null);
+  const focusSubjectField = () => {
+    requestAnimationFrame(() => {
+      const field = subjectFieldRef.current;
+      if (!field) return;
+      field.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      field.focus();
+    });
+  };
+
   // Helpers to update global state
   const updateSubjectState = (updates: Partial<typeof state.subject>) => {
     setState(prev => ({
@@ -135,14 +146,15 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   }, [subjectState.activeTasks, subjectState.activeStudents]); 
 
   // Switch subject handler
-  const switchSubject = (newSubject: string) => {
+  // keepStep: 과제 설정 화면에서 탭을 눌러 전환할 때는 그 화면에 머물게 한다.
+  const switchSubject = (newSubject: string, keepStep = false) => {
     if (isGenerating) {
         notifyToast({ type: 'warning', title: "생성 중에는 교과목을 전환할 수 없습니다." });
         return;
     }
 
     if (newSubject === subjectState.currentSubject) return;
-    
+
     const currentDataStore = { ...subjectState.dataStore };
     if (subjectState.currentSubject) {
         currentDataStore[subjectState.currentSubject] = {
@@ -152,10 +164,12 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
     }
 
     const savedData = currentDataStore[newSubject];
-    
+
     if (savedData) {
       const hasGeneratedContent = savedData.students.some(s => s.generatedContent && s.generatedContent.trim().length > 0);
-      const nextStep = hasGeneratedContent ? 'RESULT' : 'INDIVIDUAL_CONTEXT'; 
+      const nextStep = keepStep
+        ? subjectState.step
+        : hasGeneratedContent ? 'RESULT' : 'INDIVIDUAL_CONTEXT';
 
       updateSubjectState({
         dataStore: currentDataStore,
@@ -184,7 +198,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             activeStudents: initializedStudents,
             currentStudentIndex: 0,
             isDirectInput: !currentSubjectList.includes(newSubject),
-            step: 'INDIVIDUAL_CONTEXT'
+            step: keepStep ? subjectState.step : 'INDIVIDUAL_CONTEXT'
         });
     }
   };
@@ -221,6 +235,53 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
               }
           }
       }));
+  };
+
+  // '과목 추가' — 현재 과목 작업분을 보관하고 이름을 고르지 않은 새 교과목 입력 상태로 되돌린다.
+  // 이미 새 교과목 입력 상태이면 상태를 갈아엎는 대신 교과목 입력란으로 안내한다
+  // (그대로 두면 아무 변화가 없어 버튼이 동작하지 않는 것처럼 보인다).
+  const startNewSubject = () => {
+      if (isGlobalGenerating) {
+          notifyToast({ type: 'warning', title: '생성 중에는 교과목을 추가할 수 없습니다.' });
+          return;
+      }
+
+      if (!subjectState.currentSubject && subjectState.step === 'GLOBAL_SETUP') {
+          notifyToast({
+              type: 'info',
+              title: '새 교과목을 추가할 준비가 되어 있습니다.',
+              description: '아래 교과목 칸에서 과목을 선택하거나 직접 입력해 주세요.',
+          });
+          focusSubjectField();
+          return;
+      }
+
+      const newDataStore = { ...subjectState.dataStore };
+      if (subjectState.currentSubject) {
+          newDataStore[subjectState.currentSubject] = {
+              tasks: subjectState.activeTasks,
+              students: subjectState.activeStudents
+          };
+      }
+
+      updateSubjectState({
+          dataStore: newDataStore,
+          currentSubject: '',
+          isDirectInput: false,
+          step: 'GLOBAL_SETUP',
+          currentStudentIndex: 0,
+          activeTasks: [{ id: (Date.now()).toString(), task: '', level: '상' }],
+          activeStudents: subjectState.commonStudents.map(s => ({
+              id: s.id,
+              name: s.name,
+              additionalContext: '',
+              observationDetails: { process: '', attitude: '', skill: '', example: '' },
+              evaluations: [],
+              generatedContent: undefined,
+              selected: false,
+          }))
+      });
+      focusSubjectField();
   };
 
   const deleteSubject = (e: React.MouseEvent, subjectName: string) => {
@@ -502,7 +563,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
   const handleSubjectChange = (val: string, isDirect: boolean) => {
       if (val && !isDirect) {
           if (subjectState.dataStore[val]) {
-              switchSubject(val);
+              // 과제 설정 화면에서 고른 교과목은 같은 화면에서 이어서 설정하게 한다.
+              switchSubject(val, subjectState.step === 'GLOBAL_SETUP');
           } else {
               createNewSubject(val);
           }
@@ -1231,12 +1293,15 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
           allTabs.push(subjectState.currentSubject);
       }
 
+      // 교과목 이름을 아직 고르지 않은 상태(과목 추가 직후)를 탭으로도 보여준다.
+      const isAddingSubject = !subjectState.currentSubject && subjectState.step === 'GLOBAL_SETUP';
+
       return (
         <div className="flex items-center space-x-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
             {allTabs.map((subj) => (
                 <div key={subj} className="relative group">
                     <button
-                        onClick={() => switchSubject(subj)}
+                        onClick={() => switchSubject(subj, subjectState.step === 'GLOBAL_SETUP')}
                         disabled={isGenerating}
                         className={`px-4 py-2 pr-8 rounded-lg text-sm font-bold whitespace-nowrap transition-all border ${
                             subjectState.currentSubject === subj
@@ -1260,30 +1325,16 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     </button>
                 </div>
             ))}
+            {isAddingSubject && (
+                <div className="px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap border border-dashed border-purple-400 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-300">
+                    새 교과목 (이름 선택 중)
+                </div>
+            )}
             <button
-                onClick={() => {
-                    if (isGlobalGenerating) return;
-                    
-                    const newDataStore = { ...subjectState.dataStore };
-                    if (subjectState.currentSubject) {
-                        newDataStore[subjectState.currentSubject] = {
-                            tasks: subjectState.activeTasks,
-                            students: subjectState.activeStudents
-                        };
-                    }
-
-                    updateSubjectState({
-                        dataStore: newDataStore,
-                        currentSubject: '',
-                        isDirectInput: false,
-                        step: 'GLOBAL_SETUP',
-                        activeTasks: [{ id: (Date.now()).toString(), task: '', level: '상' }],
-                        activeStudents: subjectState.commonStudents.map(s => ({...s, additionalContext: '', observationDetails: { process: '', attitude: '', skill: '', example: '' }, evaluations: [], selected: false }))
-                    });
-                }}
+                onClick={startNewSubject}
                 disabled={isGlobalGenerating}
                 className={`px-3 py-2 rounded-lg bg-[#EDE8E1] dark:bg-[#221E1B] text-[#78716C] dark:text-[#9C8F87] border border-dashed border-[#E7E5E4] dark:border-[#2E2822] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors flex items-center ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                title="새 교과목 추가"
+                title={isGlobalGenerating ? '생성 중에는 교과목을 추가할 수 없습니다.' : '새 교과목 추가'}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 mr-1">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1593,6 +1644,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     {subjectState.isDirectInput ? (
                                         <>
                                             <input
+                                                ref={subjectFieldRef as React.RefObject<HTMLInputElement>}
                                                 type="text"
                                                 value={subjectState.currentSubject}
                                                 onChange={(e) => updateSubjectState({ currentSubject: e.target.value })}
@@ -1609,6 +1661,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         </>
                                     ) : (
                                         <select
+                                            ref={subjectFieldRef as React.RefObject<HTMLSelectElement>}
                                             value={currentSubjectList.includes(subjectState.currentSubject) ? subjectState.currentSubject : ''}
                                             onChange={(e) => {
                                                 if (e.target.value === 'direct') {

@@ -294,10 +294,10 @@ const App: React.FC = () => {
   const globalStateValue = useMemo(() => ({
     state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress,
     generatingModes, setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
-    apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState,
+    hasApiKey, apiKeyAvailability, setApiKeyAvailability, showActivationModal, showToast, resetGenerationState,
     clearStudentData,
   }), [
-    state, isGlobalGenerating, globalProgress, generatingModes, apiKeyAvailability,
+    state, isGlobalGenerating, globalProgress, generatingModes, hasApiKey, apiKeyAvailability,
     setGeneratingMode, requestCancel, isCancelled, clearCancel, getCancelSignal,
     showActivationModal, showToast, resetGenerationState, clearStudentData,
   ]);
@@ -395,6 +395,17 @@ const App: React.FC = () => {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // 설정 화면에서 키를 저장·삭제하면 앱 전체가 같은 저장 여부를 보게 다시 조회한다.
+  useEffect(() => {
+    const refreshApiKeyPresence = () => {
+      window.electronAPI.hasApiKey()
+        .then(has => setHasApiKey(has as boolean))
+        .catch(() => {});
+    };
+    window.addEventListener(API_KEY_UPDATED_EVENT, refreshApiKeyPresence);
+    return () => window.removeEventListener(API_KEY_UPDATED_EVENT, refreshApiKeyPresence);
   }, []);
 
   useEffect(() => {

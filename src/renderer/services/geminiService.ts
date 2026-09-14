@@ -736,10 +736,10 @@ export const generateDocument = async (
         outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문 &nbsp;<strong>(핵심 건명)</strong>을(를) (실시/안내)합니다.${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       } else if (gongmunComplexity === GongmunComplexity.MEDIUM) {
         complexityInstruction = `[작성 모드: 중간] 관련 문서가 입력된 경우 관련 항목, 본문, 입력으로 확인된 개요, 실제 첨부가 있는 경우 붙임으로 구성. 각 항목은 1줄 이내.`;
-        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문 &nbsp;<strong>(핵심 건명)</strong>을(를) 다음과 같이 실시하고자 합니다.<br><br>&nbsp;&nbsp;가. 일시: [확인 필요: 일시]<br>&nbsp;&nbsp;나. 장소: [확인 필요: 장소]<br>&nbsp;&nbsp;다. 대상: [확인 필요: 대상]${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
+        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문 &nbsp;<strong>(핵심 건명)</strong>을(를) 다음과 같이 실시하고자 합니다.<br><br>&nbsp;&nbsp;가. 목적: (주제에 맞게 직접 작성)<br>&nbsp;&nbsp;나. 대상: (입력에 있으면 그대로, 없으면 주제에 맞는 범위로 작성)<br>&nbsp;&nbsp;다. 내용: (주제에 맞게 직접 작성)<br>&nbsp;&nbsp;라. 일시: (입력에 있을 때만 작성, 꼭 필요하면 [확인 필요: 일시])${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       } else {
         complexityInstruction = `[작성 모드: 상세] 관련 문서가 입력된 경우 관련 항목, 본문, 입력으로 확인된 개요·행정사항, 실제 첨부가 있는 경우 붙임으로 구성. 표는 세부추진계획처럼 여러 항목을 비교할 때만 사용하세요.`;
-        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문을 입력 사실에 맞게 작성<br><br>가.일시: [확인 필요: 일시]<br>나.장소: [확인 필요: 장소]<br>다.대상: [확인 필요: 대상]${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
+        outputExample = `입력된 관련 문서가 있을 때만 관련 항목 작성<br>본문을 입력 사실에 맞게 작성<br><br>가.목적: (주제에 맞게 직접 작성)<br>나.방침: (주제에 맞게 직접 작성)<br>다.내용: (주제에 맞게 직접 작성)<br>라.일시·장소: (입력에 있을 때만 작성, 꼭 필요하면 [확인 필요: 일시])${attachmentText ? `<br><br>${attachmentText}` : '<br><br>끝.'}`;
       }
 
       specificInstruction = `
@@ -751,6 +751,7 @@ ${complexityInstruction}
 3. 마무리: 실제 첨부가 있을 때만 '붙임'을 표시하고 "끝."으로 마무리.
 4. 항목 기호: ${numberingReinforcement}
 5. 본문 시행문은 반드시 "~합니다.", "~입니다.", "~습니다.", "~하고자 합니다." 등 합쇼체로 작성하고, "~함.", "~임."으로 끝내지 마세요.
+6. 개요의 목적·방침·내용·기대효과는 제목과 주제만 있어도 학교 현장에 맞게 직접 작성하세요. 이 항목을 "[확인 필요: ...]"로 남기지 마세요. 일시·장소·예산처럼 확인이 필요한 사실만 [확인 필요] 표시 대상입니다.
 ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
 - 첨부된 문서는 이 겉공문의 '붙임' 항목에 기재될 계획서·문서입니다.
 - 첨부 문서를 그대로 재작성하거나 복사하는 것은 절대 금지입니다.
@@ -973,26 +974,42 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     for (const f of files) parts.push(fileToPart(f));
   }
 
-  const gonggoField = (label: string, value: string | undefined, required = false): string =>
-    value?.trim() || (required ? `[확인 필요: ${label}]` : '(미입력 — 생략 가능)');
+  // 'fact'  — 지어내면 안 되는 값. 비어 있으면 확인이 필요하다고 표시한다.
+  // 'write' — 제목·주제로 쓸 수 있는 서술 항목. 비어 있으면 직접 작성하게 한다.
+  // 'skip'  — 없어도 되는 항목.
+  const gonggoField = (
+    label: string,
+    value: string | undefined,
+    kind: 'fact' | 'write' | 'skip' = 'skip',
+  ): string => {
+    if (value?.trim()) return value;
+    if (kind === 'fact') return `[확인 필요: ${label}]`;
+    if (kind === 'write') return '(미입력 — 공고 제목과 주제에 맞게 직접 작성)';
+    return '(미입력 — 생략 가능)';
+  };
   const gonggoContext =
     docType === DocType.GONGGO && gonggoInputs
       ? `
 [공고 정보]
-- 공고 제목: ${gonggoField('공고 제목', gonggoInputs.title, true)}
-- 공고 번호: ${gonggoField('공고 번호', gonggoInputs.number, true)}
-- 공고 내용: ${gonggoField('공고 내용', gonggoInputs.content, true)}
-- 접수 기간/마감: ${gonggoField('접수 기간/마감', gonggoInputs.deadline, true)}
-- 문의처: ${gonggoField('문의처', gonggoInputs.contact, true)}
+- 공고 제목: ${gonggoField('공고 제목', gonggoInputs.title, 'fact')}
+- 공고 번호: ${gonggoField('공고 번호', gonggoInputs.number, 'fact')}
+- 공고 내용: ${gonggoField('공고 내용', gonggoInputs.content, gonggoInputs.title?.trim() ? 'write' : 'fact')}
+- 접수 기간/마감: ${gonggoField('접수 기간/마감', gonggoInputs.deadline, 'fact')}
+- 문의처: ${gonggoField('문의처', gonggoInputs.contact, 'fact')}
 - 추가 사항: ${gonggoField('추가 사항', gonggoInputs.extraInfo)}`
       : '';
 
   const emptyFieldInstruction = `[미입력 항목 처리 — 반드시 준수]
 - 입력한 수치와 사실은 그대로 사용하고 임의로 바꾸거나 계산하지 마세요.
-- 입력이나 첨부에서 확인되지 않은 일정·장소·대상·인원·금액·집행액·만족도·회의 발언·인용문을 만들지 마세요.
-- 없어도 되는 항목은 생략하세요. 제출에 필요한 값이 없으면 "[확인 필요: 행사 일시]"처럼 누락 사실과 항목명을 표시하세요.
-- 계획의 활동 방법이나 운영 순서를 보완할 수는 있으나 반드시 제안으로 표시하고, 제안한 날짜를 확정 일정처럼 쓰지 마세요.
-- 보고서에서는 자료 미제공과 실제 미실시를 구별하고, 자료가 없다는 이유로 미실시했다고 단정하지 마세요.
+- "(미입력)"으로 표시된 항목은 아래 두 갈래로 나누어 처리하고, 어느 쪽이든 "(미입력)"이라는 말 자체는 출력하지 마세요.
+  (1) [서술 항목 — 주제에 맞게 직접 작성] 목적, 필요성, 추진 배경, 운영 방침, 주요 내용, 세부 활동, 운영 방법, 지도 중점, 유의 사항, 협조 사항, 기대 효과.
+      제목과 주제만 있어도 학교 현장에서 통용되는 일반적인 내용으로 충실히 작성하세요.
+      이 항목에는 "[확인 필요: ...]"를 쓰지 말고, 빈칸이나 자리표시자로 남기지도 마세요.
+  (2) [사실 항목 — 지어내기 금지] 일시·기간, 장소, 대상 인원수, 예산·금액·집행액, 공문번호·공고번호, 법령·지침·사업 명칭, 통계·만족도 수치, 회의 발언, 인용문, 참석자 명단, 붙임 파일명.
+      입력이나 첨부에서 확인되지 않으면 만들지 말고, 문서 제출에 꼭 필요한 값만 "[확인 필요: 행사 일시]"처럼 항목명과 함께 표시하세요. 없어도 되는 항목은 아예 생략하세요.
+- 서술 항목을 작성할 때도 (2)에 해당하는 구체적인 날짜·금액·인원·기관명을 확정된 사실처럼 끼워 넣지 마세요. 대상과 시기는 "전교생", "학기 중"처럼 입력 범위 안에서만 일반적으로 표현하세요.
+- 계획의 활동 방법이나 운영 순서는 주제에 맞게 보완해도 되지만, 보완한 날짜를 확정 일정처럼 쓰지 마세요.
+- 보고서에서는 자료 미제공과 실제 미실시를 구별하고, 자료가 없다는 이유로 미실시했다고 단정하지 마세요. 보고서의 실적·결과는 (2) 사실 항목이므로 입력에서 확인된 내용만 쓰세요.
 - 관련 문서와 붙임은 실제 입력이나 첨부가 있을 때만 작성하고 문서번호나 파일명을 만들지 마세요.
 - 참고 기본정보의 오늘 날짜를 공고일로 확정하지 말고, 사용자가 명시한 공고일만 사용하세요.`;
 

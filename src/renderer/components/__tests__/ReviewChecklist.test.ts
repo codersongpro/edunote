@@ -35,6 +35,7 @@ describe('ReviewChecklist', () => {
     expect(container.textContent).toContain('관찰 근거·과장');
     expect(container.textContent).toContain('적용 지침');
     expect(container.textContent).toContain('교사가 직접 확인');
+    expect(container.textContent).toContain('자동검토 방식이 아니라, 교사가 직접 확인하기 위한 체크리스트');
   });
 
   it('설정이 꺼졌거나 결과가 비어 있으면 표시하지 않는다', async () => {

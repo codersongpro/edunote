@@ -327,6 +327,8 @@ export interface GlobalStateContextType {
   clearCancel: (modeKey: string) => void;
   // AI 호출 즉시 중단을 위한 AbortSignal 공급 — 화면(modeKey)별로 분리된 신호를 돌려준다
   getCancelSignal: (modeKey: string) => AbortSignal;
+  // API 키 저장 여부 (실제 호출 성공 확인과는 별개)
+  hasApiKey: boolean;
   // API 키 실제 사용 가능 여부 (단순 저장 여부와 구분)
   apiKeyAvailability: ApiKeyAvailability;
   setApiKeyAvailability: (v: ApiKeyAvailability) => void;
