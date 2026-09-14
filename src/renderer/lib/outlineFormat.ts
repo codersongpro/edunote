@@ -3,6 +3,19 @@
 // 보이도록 보정한다. 프롬프트만으로는 서식이 반영되지 않는 경우가 있어, 생성된
 // HTML을 한 번 더 훑어 단계별 들여쓰기와 글자 크기를 직접 넣어 준다.
 
+import { DocType } from '../types';
+
+// 1. → 가. → 1) → 가) 말머리 위계로 쓰는 문서 종류.
+// 이 문서들만 생성 결과에 단계별 들여쓰기·글자 크기를 보정한다.
+// 겉공문은 개요 항목명을 &nbsp;로 정렬하고, 품의서·회의록·가정통신문·문자·홍보자료는
+// 표나 편지글 등 다른 배치를 쓰므로 보정 대상에서 뺀다.
+export const OUTLINE_FORMATTED_DOC_TYPES: DocType[] = [
+  DocType.PLAN,
+  DocType.REPORT,
+  DocType.TRAINING_MATERIAL,
+  DocType.GONGGO,
+];
+
 export type OutlineLevel = 1 | 2 | 3 | 4;
 
 export interface OutlineLevelStyle {
