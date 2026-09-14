@@ -15,7 +15,7 @@ interface HwpxMetadata {
 // 골격 header.xml에 런타임으로 주입하는 스타일 ID (injectHeaderStyles와 일치해야 함).
 // 골격(blank.hwpx)의 기존 ID 범위: charPr 0~6, paraPr 0~15, borderFill 1~2.
 // 기본 포맷: 제목 22pt 가운데 / 기관명·본문·표 14pt / "1." 수준 15pt /
-// "가." 이하 수준은 단계마다 두 칸씩 들여쓰기.
+// "가." 이하 수준은 말머리를 단계마다 두 칸씩 들여쓰고, 둘째 줄은 말머리 너비만큼 내어쓴다.
 const CHAR_TITLE = '7'; // 22pt 굵게 — 문서 제목(h1)
 const CHAR_HEADING = '8'; // 15pt 굵게 — 절 제목(h2~h4)
 const CHAR_BOLD = '9'; // 14pt 굵게 — 본문 강조(strong/b, th)
@@ -23,17 +23,39 @@ const CHAR_BODY = '10'; // 14pt — 본문 기본
 const CHAR_LEVEL1 = '11'; // 15pt — "1." 수준 문단
 const PARA_CENTER = '16'; // 가운데 정렬 문단
 const PARA_RIGHT = '17'; // 오른쪽 정렬 문단
-const OUTLINE_PARAGRAPHS: Record<number, { id: string; left: number; intent: number }> = {
-  // 화면에서 쓰는 1~4단계. left는 본문 시작점, intent는 말머리를 내어 쓰는 폭이다.
-  1: { id: '18', left: 1200, intent: -1200 },
-  2: { id: '19', left: 2000, intent: -1000 },
-  3: { id: '20', left: 3200, intent: -1200 },
-  4: { id: '21', left: 4000, intent: -1000 },
-  // 이전 문서에서 감지하던 추가 단계도 두 칸 간격 정책을 유지한다.
-  5: { id: '22', left: 5200, intent: -1200 },
-  6: { id: '23', left: 6000, intent: -1000 },
-  7: { id: '24', left: 7000, intent: -1000 },
+// 단계별 말머리 시작 위치(HWPUNIT)와 그 단계가 쓰는 대표 말머리·글자 크기.
+// 말머리 시작 위치는 상위 단계보다 두 칸씩 들여 쓰는 기존 간격을 그대로 유지한다.
+const OUTLINE_MARKERS: Record<number, { id: string; start: number; marker: string; height: number }> = {
+  // 화면에서 쓰는 1~4단계
+  1: { id: '18', start: 0, marker: '1. ', height: 1500 },
+  2: { id: '19', start: 1000, marker: '가. ', height: 1400 },
+  3: { id: '20', start: 2000, marker: '1) ', height: 1400 },
+  4: { id: '21', start: 3000, marker: '가) ', height: 1400 },
+  // 이전 문서에서 감지하던 추가 단계
+  5: { id: '22', start: 4000, marker: '(1) ', height: 1400 },
+  6: { id: '23', start: 5000, marker: '(가) ', height: 1400 },
+  7: { id: '24', start: 6000, marker: '① ', height: 1400 },
 };
+
+// 말머리 기호와 그 뒤 공백 한 칸이 차지하는 너비(HWPUNIT).
+// 한글·원문자 같은 전각은 글자 크기만큼, 숫자·괄호·마침표·공백 같은 반각은 절반을 차지한다.
+function markerWidth(marker: string, height: number): number {
+  let width = 0;
+  for (let i = 0; i < marker.length; i += 1) {
+    width += marker.charCodeAt(i) < 0x2000 ? height * 0.5 : height;
+  }
+  return Math.round(width);
+}
+
+// left는 본문 시작점, intent는 말머리를 내어 쓰는 폭이다.
+// 공문서 서식은 항목이 두 줄 이상일 때 둘째 줄을 항목 본문 첫 글자에 맞추므로,
+// 내어쓰기 폭을 단계마다 고정한 값이 아니라 그 단계 말머리 너비로 잡는다.
+const OUTLINE_PARAGRAPHS: Record<number, { id: string; left: number; intent: number }> = Object.fromEntries(
+  Object.entries(OUTLINE_MARKERS).map(([level, { id, start, marker, height }]) => {
+    const width = markerWidth(marker, height);
+    return [Number(level), { id, left: start + width, intent: -width }];
+  }),
+);
 const BORDER_TABLE = '3'; // 표 셀 테두리(SOLID)
 const BODY_WIDTH = 42520; // 골격 본문 폭 (HWPUNIT)
 
@@ -441,6 +463,17 @@ function collectInline(node: any, bold: boolean, out: InlineSeg[]): void {
   }
 }
 
+// 말머리 줄 앞의 들여쓰기용 공백·&nbsp;를 지운다. 문단 속성이 단계 들여쓰기와
+// 내어쓰기를 모두 책임지므로, 그대로 두면 첫 줄만 더 밀려 둘째 줄과 어긋난다.
+function stripLeadingSpace(line: { text: string; bold: boolean }[]): { text: string; bold: boolean }[] {
+  const out = line.map(seg => ({ ...seg }));
+  for (const seg of out) {
+    seg.text = seg.text.replace(/^[\s\u00a0]+/, '');
+    if (seg.text) break;
+  }
+  return out;
+}
+
 // 인라인 콘텐츠를 <br> 기준으로 나눠 문단들로 만든다.
 // 굵은 구간은 별도 run으로 분리한다 (기본 스타일이 이미 굵으면 그대로 둔다).
 // 본문 기본 스타일일 때는 줄머리 기호(1., 가., 1)…)로 수준을 감지해
@@ -467,10 +500,13 @@ function inlineParas(
     let linePara = paraPr;
     const lineText = line.map(seg => seg.text).join('');
     const detectedLevel = forcedLevel ?? explicitOutlineLevel(el) ?? levelOf(lineText).level;
-    if (detectedLevel && OUTLINE_PARAGRAPHS[detectedLevel]) {
+    const isOutlineLine = Boolean(detectedLevel && OUTLINE_PARAGRAPHS[detectedLevel]);
+    if (detectedLevel && isOutlineLine) {
       linePara = OUTLINE_PARAGRAPHS[detectedLevel].id;
       if (baseChar === CHAR_BODY) lineChar = detectedLevel === 1 ? CHAR_LEVEL1 : CHAR_BODY;
     }
+    // 겉공문처럼 HTML에서 &nbsp;로 들여쓴 줄은 문단 들여쓰기와 겹치므로 앞 공백을 지운다.
+    const body = isOutlineLine ? stripLeadingSpace(line) : line;
     const runs: string[] = [];
     const alreadyMarked = /^(?:\d{1,2}[.)]|[가-하][.)]|[•▪‣◦-])\s*/.test(lineText.trimStart());
     let buf = lineIdx === 0 && !alreadyMarked ? prefix : '';
@@ -480,7 +516,7 @@ function inlineParas(
       runs.push(runXml(bufBold ? boldCharFor(lineChar) : lineChar, tXml(buf)));
       buf = '';
     };
-    for (const seg of line) {
+    for (const seg of body) {
       if (seg.bold !== bufBold) flush();
       bufBold = seg.bold;
       buf += seg.text;

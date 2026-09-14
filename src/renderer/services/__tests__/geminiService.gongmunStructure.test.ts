@@ -44,7 +44,7 @@ describe('겉공문 구성', () => {
 
   it('간단 모드는 관련·본문·붙임만 쓰고 개요와 행정사항을 만들지 않는다', async () => {
     const text = await captureGongmunPrompt(GongmunComplexity.SIMPLE);
-    expect(text).toContain('[작성 모드: 간단] 구성: 1.관련(입력된 경우만), 2.본문(시행문), 붙임(실제 첨부가 있을 때만).');
+    expect(text).toContain('[작성 모드: 간단] 구성: 1.관련(항상 포함), 2.본문(시행문), 붙임(실제 첨부가 있을 때만).');
     expect(text).toContain('개요(가.나.다.)와 행정사항을 만들지 마세요');
     // 출력 예시에 개요·행정사항 줄이 없어야 한다(표기 규칙 설명의 '바. 행정사항:'은 모든 모드에 남는다).
     expect(text).not.toContain('바. 행정사항: (협조·제출 사항');
@@ -98,10 +98,22 @@ describe('겉공문 구성', () => {
     expect(text).toContain('2건 이상이면 "붙임  1. ○○ 1부." 아래로 번호를 매기고');
   });
 
-  it('근거가 없는 관련 항목과 붙임 파일명을 지어내지 않는다', async () => {
+  it('관련 항목을 항상 1.로 두고 본문은 2.부터 쓰게 한다', async () => {
+    for (const complexity of Object.values(GongmunComplexity)) {
+      const text = await captureGongmunPrompt(complexity);
+      expect(text).toContain('구성: 1.관련(항상 포함)');
+      expect(text).toContain('겉공문은 언제나 "1. 관련:"으로 시작하고 본문(시행문)은 2.부터 씁니다');
+      expect(text).toContain('관련 항목을 빼거나 본문을 1.로 올리지 마세요');
+      // 출력 예시도 1.관련 → 2.본문 순서를 보여 준다.
+      expect(text).toContain('1. 관련:');
+      expect(text).toContain('<br>2. ');
+    }
+  });
+
+  it('근거를 확인할 수 없으면 문서번호를 지어내지 않고 채울 자리만 남기게 한다', async () => {
     const text = await captureGongmunPrompt(GongmunComplexity.DETAILED);
-    expect(text).toContain('입력된 근거 문서가 있을 때만 쓰고');
-    expect(text).toContain('문서번호나 사업명을 지어내지 마세요');
+    expect(text).toContain('문서번호·날짜·사업명을 지어내지 말고');
+    expect(text).toContain('"1. 관련: ○○과-○○○호(○○○○. ○. ○.)"처럼 교사가 채울 자리만 남기세요');
     expect(text).not.toContain('2026학년도 주요업무계획');
     expect(text).not.toContain('운영 계획서 1부');
   });

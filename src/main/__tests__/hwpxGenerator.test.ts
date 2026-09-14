@@ -113,10 +113,21 @@ describe('buildHwpxZip', () => {
     expect(section).toMatch(/paraPrIDRef="21"[^>]*>[\s\S]*?<hp:t>가\) 제출 항목 점검<\/hp:t>/);
     expect(section).not.toContain('<hp:t>  가. 대상별 안내');
 
-    expect(header).toMatch(/<hh:paraPr id="18"[\s\S]*?<hc:intent value="-1200"[\s\S]*?<hc:left value="1200"/);
-    expect(header).toMatch(/<hh:paraPr id="19"[\s\S]*?<hc:intent value="-1000"[\s\S]*?<hc:left value="2000"/);
-    expect(header).toMatch(/<hh:paraPr id="20"[\s\S]*?<hc:intent value="-1200"[\s\S]*?<hc:left value="3200"/);
-    expect(header).toMatch(/<hh:paraPr id="21"[\s\S]*?<hc:intent value="-1000"[\s\S]*?<hc:left value="4000"/);
+    // 내어쓰기 폭은 그 단계 말머리("1. ", "가. ", "1) ", "가) ")의 너비와 같아야
+    // 둘째 줄이 항목 본문 첫 글자에 맞는다. left - |intent| 가 말머리 시작 위치다.
+    expect(header).toMatch(/<hh:paraPr id="18"[\s\S]*?<hc:intent value="-2250"[\s\S]*?<hc:left value="2250"/);
+    expect(header).toMatch(/<hh:paraPr id="19"[\s\S]*?<hc:intent value="-2800"[\s\S]*?<hc:left value="3800"/);
+    expect(header).toMatch(/<hh:paraPr id="20"[\s\S]*?<hc:intent value="-2100"[\s\S]*?<hc:left value="4100"/);
+    expect(header).toMatch(/<hh:paraPr id="21"[\s\S]*?<hc:intent value="-2800"[\s\S]*?<hc:left value="5800"/);
+  });
+
+  it('겉공문처럼 &nbsp;로 들여쓴 말머리 줄은 앞 공백을 지우고 문단 들여쓰기만 남긴다', async () => {
+    const html = '<div>2. 본문입니다.<br>&nbsp;&nbsp;가. 행 사 명: 연수<br>&nbsp;&nbsp;&nbsp;&nbsp;1) 세부 안내</div>';
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+
+    expect(section).toMatch(/paraPrIDRef="19"[^>]*>[\s\S]*?<hp:t>가\. 행 사 명: 연수<\/hp:t>/);
+    expect(section).toMatch(/paraPrIDRef="20"[^>]*>[\s\S]*?<hp:t>1\) 세부 안내<\/hp:t>/);
+    expect(section).not.toMatch(/<hp:t>[\s\u00a0]+(가\.|1\))/);
   });
 
   it('data 속성이 없는 이전 HTML도 번호를 감지해 같은 문단 위계를 적용한다', async () => {
