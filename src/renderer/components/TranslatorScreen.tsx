@@ -54,7 +54,7 @@ const TranslatorScreen: React.FC = () => {
         </div>
 
         <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-2 leading-relaxed">
-          ⚠️ 입력한 내용은 개인정보 보호 모드와 무관하게 원본 그대로 AI에 전송됩니다. 사람 이름·연락처는 번역하지 않고 그대로 남습니다.
+          ⚠️ 입력한 내용은 개인정보 보호 모드와 무관하게 원본 그대로 AI에 전송됩니다. 사람 이름·연락처·숫자는 그대로 남고, 날짜·시간·기관명·지명은 번역 언어의 표기로 바뀝니다(기관명·지명은 원문 병기).
         </p>
 
         <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] p-4 flex flex-wrap items-center gap-2">

@@ -611,7 +611,7 @@ h2,h3{page-break-after:avoid;}
                 onClick={handleTranslate}
                 disabled={translating}
                 className="inline-flex items-center gap-1 rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                title="선택한 언어 번역문을 원문 아래에 추가합니다 (다문화 가정 배포용)."
+                title="선택한 언어 번역문을 원문 아래에 추가합니다 (다문화 가정 배포용). 날짜·시간·기관명·지명은 그 언어의 표기로 바뀝니다."
               >
                 {translating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
                 {translating ? '번역 중' : '번역'}
