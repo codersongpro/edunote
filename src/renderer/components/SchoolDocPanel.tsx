@@ -1427,6 +1427,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               enableTranslation={activeTab === DocType.NEWSLETTER || activeTab === DocType.MESSAGE}
               model={generatedModel}
               grounding={generatedGrounding}
+              reviewKind="document"
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">

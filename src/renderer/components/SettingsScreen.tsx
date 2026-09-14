@@ -824,7 +824,7 @@ const SettingsScreen: React.FC = () => {
             />
             <span>
               <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과 검토 체크리스트</span>
-              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">생성 결과 화면에서 개인정보, 과장 표현, 최신 지침 확인 항목을 함께 표시합니다.</span>
+              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">생성 결과 화면에 `사용 전 체크리스트`를 표시합니다. 개인정보·보안 확인은 공통이고, 학생기록·교무행정·수업자료는 영역에 맞는 확인 항목이 따로 나옵니다.</span>
             </span>
           </label>
           <div>

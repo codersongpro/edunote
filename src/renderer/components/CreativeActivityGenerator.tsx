@@ -1540,7 +1540,7 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.creative} />
                              </div>
-                             <ReviewChecklist content={student.generatedContent || ''} resetKey={`${creativeState.currentActivityName}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGlobalGenerating}`} />
+                             <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${creativeState.currentActivityName}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGlobalGenerating}`} />
                              {expandedHistory.has(student.id) && (() => {
                                const groups = getHistoryGroupsForContext('creative', student.name, creativeState.currentActivityName);
                                return groups.length > 0 ? (

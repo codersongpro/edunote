@@ -2227,7 +2227,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  />
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.subject} />
                              </div>
-                             <ReviewChecklist content={student.generatedContent || ''} resetKey={`${subjectState.currentSubject}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating}`} />
+                             <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${subjectState.currentSubject}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating}`} />
                              {expandedEvidence.has(student.id) && (
                                <div className="mt-3 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-950/20 p-3 space-y-3">
                                  <div className="grid grid-cols-2 gap-3 text-xs font-bold text-purple-800 dark:text-purple-200">

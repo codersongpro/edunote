@@ -429,7 +429,7 @@ const MyToolEditor: React.FC<MyToolEditorProps> = ({ initial, onSave, onCancel }
 
             {testResult && (
               <div className="h-[420px]">
-                <GeneratedDisplay content={testResult} title={name.trim() || '미리보기'} model={testResultModel} />
+                <GeneratedDisplay content={testResult} title={name.trim() || '미리보기'} model={testResultModel} reviewKind={category === 'lesson' ? 'lesson' : category === 'student' ? 'student' : 'document'} />
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { CustomTool, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
+import type { ReviewChecklistKind } from './ReviewChecklist';
 import { runCustomTool } from '../services/geminiService';
 import { ChevronLeft, Zap, AlertTriangle, Pencil, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useGlobalState } from '../GlobalStateContext';
@@ -81,6 +82,14 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
 
   const handleCancel = () => {
     abortControllerRef.current?.abort();
+  };
+
+  // 도구 분류에 맞는 사용 전 체크리스트를 보여준다. 분류가 없는 도구는 문서 기준.
+  const reviewKindByCategory: Record<CustomTool['category'], ReviewChecklistKind> = {
+    admin: 'document',
+    lesson: 'lesson',
+    student: 'student',
+    other: 'document',
   };
 
   const categoryLabel: Record<string, string> = {
@@ -255,7 +264,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
       <div className="flex-1 overflow-hidden flex flex-col bg-[#FAF9F7] dark:bg-[#171210]">
         {result ? (
           <div className="flex-1 overflow-hidden p-4">
-            <GeneratedDisplay content={result} title={tool.name} model={resultModel} />
+            <GeneratedDisplay content={result} title={tool.name} model={resultModel} reviewKind={reviewKindByCategory[tool.category] ?? 'document'} />
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center text-center p-8">

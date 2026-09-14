@@ -1090,18 +1090,19 @@ li{margin-bottom:5pt;line-height:1.6;}
                 worksheetView === 'teacher' && teacherGuide ? (
                   <div className="flex-1 min-h-0 flex flex-col gap-1">
                     <p className="text-xs font-bold text-indigo-700">교사용 별도 결과 · 원본 v{teacherGuide.sourceVersion} · 학생용 파일에는 포함되지 않습니다.</p>
-                    <GeneratedDisplay content={teacherGuide.html} title={`${topic} 교사용 답안·해설`} model={teacherGuide.model} />
+                    <GeneratedDisplay content={teacherGuide.html} title={`${topic} 교사용 답안·해설`} model={teacherGuide.model} reviewKind="lesson" />
                   </div>
                 ) : worksheetView === 'compare' && variantHtml ? (
                   <div className="grid grid-cols-2 gap-2 flex-1 min-h-0 overflow-hidden">
-                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">원본 학생용</p><GeneratedDisplay content={worksheetHtml} title={`${topic} 원본`} model={worksheetModel} /></div>
-                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">{variantType === 'support' ? '도움형' : '도전형'} · 검증된 문항 연결 {variantQuestionLinks.length}개</p><GeneratedDisplay content={variantHtml} title={`${topic} ${variantType === 'support' ? '도움형' : '도전형'}`} model={variantModel} /></div>
+                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">원본 학생용</p><GeneratedDisplay content={worksheetHtml} title={`${topic} 원본`} model={worksheetModel} reviewKind="lesson" /></div>
+                    <div className="min-w-0 flex flex-col"><p className="text-xs font-bold mb-1">{variantType === 'support' ? '도움형' : '도전형'} · 검증된 문항 연결 {variantQuestionLinks.length}개</p><GeneratedDisplay content={variantHtml} title={`${topic} ${variantType === 'support' ? '도움형' : '도전형'}`} model={variantModel} reviewKind="lesson" /></div>
                   </div>
                 ) : (
                   <GeneratedDisplay
                     content={worksheetHtml}
                     title={`${topic} 워크시트`}
                     model={worksheetModel}
+                    reviewKind="lesson"
                     onContentChange={content => {
                       if (contentFingerprint(content) === contentFingerprint(worksheetHtml)) return;
                       setWorksheetHtml(content);
@@ -1229,6 +1230,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               content={planContent}
               title={`${topic} 수업 계획서`}
               model={planModel}
+              reviewKind="lesson"
             />
           )}
 
