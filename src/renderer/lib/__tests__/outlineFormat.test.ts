@@ -113,9 +113,29 @@ describe('말머리 서식 보정', () => {
     const result = applyOutlineStyles('<div>가. 대상별 안내 자료를 충분히 길게 작성하여 다음 줄로 넘어가는 항목</div>');
     const line = lineOf(result, 2);
 
+    // "가. " = 전각 1 + 반각 2 = 2em
     expect(line?.style.display).toBe('block');
-    expect(line?.style.paddingLeft).toBe('2.2em');
-    expect(line?.style.textIndent).toBe('-2.2em');
+    expect(line?.style.paddingLeft).toBe('2em');
+    expect(line?.style.textIndent).toBe('-2em');
+  });
+
+  it('내어쓰기 폭을 단계가 아니라 그 줄의 말머리 너비로 맞춘다', () => {
+    const result = applyOutlineStyles(
+      '<div>1. 대항목 내용<br>가. 중항목 내용<br>1) 소항목 내용<br>가) 세항목 내용</div>',
+    );
+
+    // 말머리 기호가 바뀌면 내어쓰기 폭도 함께 바뀐다. "1. "·"1) "는 1.5em, "가. "·"가) "는 2em.
+    expect(lineOf(result, 1)?.style.paddingLeft).toBe('1.5em');
+    expect(lineOf(result, 2)?.style.paddingLeft).toBe('2em');
+    expect(lineOf(result, 3)?.style.paddingLeft).toBe('1.5em');
+    expect(lineOf(result, 4)?.style.paddingLeft).toBe('2em');
+  });
+
+  it('두 자리 번호 말머리는 그만큼 더 내어쓴다', () => {
+    const result = applyOutlineStyles('<div>10. 대항목 내용<br>10) 소항목 내용</div>');
+
+    expect(lineOf(result, 1)?.style.paddingLeft).toBe('2em');
+    expect(lineOf(result, 3)?.style.paddingLeft).toBe('2em');
   });
 
   it('이미 data-outline-level이 있는 항목은 중첩 래퍼 없이 정규화한다', () => {
@@ -125,7 +145,7 @@ describe('말머리 서식 보정', () => {
 
     expect(doc.querySelectorAll('[data-outline-level="2"]')).toHaveLength(1);
     expect(line?.style.marginLeft).toBe('14px');
-    expect(line?.style.paddingLeft).toBe('2.2em');
+    expect(line?.style.paddingLeft).toBe('2em');
   });
 
   it('강조 태그로 시작하는 항목과 표 앞의 직접 본문을 빠뜨리지 않는다', () => {

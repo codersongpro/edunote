@@ -49,33 +49,53 @@ const HANGUL_MARKERS = '가나다라마바사아자차카타파하';
 const LEADING_SPACE = /^[\s\u00a0]+/;
 
 const LEVEL_PATTERNS: Array<{ level: OutlineLevel; pattern: RegExp }> = [
-  { level: 1, pattern: /^\d{1,2}\.(?!\d)\s*\S/ },
-  { level: 2, pattern: new RegExp(`^[${HANGUL_MARKERS}]\\.\\s*\\S`) },
-  { level: 3, pattern: /^\d{1,2}\)\s*\S/ },
-  { level: 4, pattern: new RegExp(`^[${HANGUL_MARKERS}]\\)\\s*\\S`) },
+  { level: 1, pattern: /^(\d{1,2}\.)(?!\d)\s*\S/ },
+  { level: 2, pattern: new RegExp(`^([${HANGUL_MARKERS}]\\.)\\s*\\S`) },
+  { level: 3, pattern: /^(\d{1,2}\))\s*\S/ },
+  { level: 4, pattern: new RegExp(`^([${HANGUL_MARKERS}]\\))\\s*\\S`) },
 ];
 
-// 문장 맨 앞의 말머리 기호로 항목 단계를 판별한다. 말머리가 없으면 null.
-export function detectOutlineLevel(text: string): OutlineLevel | null {
+// 문장 맨 앞의 말머리를 찾아 단계와 기호("1.", "가.", "1)", "가)")를 함께 돌려준다.
+export function detectOutlineMarker(text: string): { level: OutlineLevel; marker: string } | null {
   const trimmed = String(text ?? '').replace(LEADING_SPACE, '');
   for (const { level, pattern } of LEVEL_PATTERNS) {
-    if (pattern.test(trimmed)) return level;
+    const marker = trimmed.match(pattern)?.[1];
+    if (marker) return { level, marker };
   }
   return null;
 }
 
-const HANGING_INDENTS: Record<OutlineLevel, string> = {
-  1: '2.4em',
-  2: '2.2em',
-  3: '2.4em',
-  4: '2.2em',
+// 문장 맨 앞의 말머리 기호로 항목 단계를 판별한다. 말머리가 없으면 null.
+export function detectOutlineLevel(text: string): OutlineLevel | null {
+  return detectOutlineMarker(text)?.level ?? null;
+}
+
+// 말머리 기호와 그 뒤 공백 한 칸이 차지하는 너비(em).
+// 한글 같은 전각 글자는 1em, 숫자·괄호·마침표·공백 같은 반각 글자는 0.5em으로 본다.
+// 공문서 서식은 줄이 넘어갈 때 둘째 줄을 항목 본문 첫 글자에 맞추므로,
+// 내어쓰기 폭은 단계마다 고정한 값이 아니라 이 말머리 너비여야 한다.
+export function markerIndentEm(marker: string): number {
+  let width = 0.5; // 기호 뒤 공백 한 칸
+  for (const ch of String(marker ?? '')) {
+    width += (ch.codePointAt(0) ?? 0) < 0x2000 ? 0.5 : 1;
+  }
+  return Number(width.toFixed(2));
+}
+
+// 말머리 기호를 알아내지 못했을 때 쓰는 단계별 기본 내어쓰기(em).
+// 각 단계의 대표 말머리("1. ", "가. ", "1) ", "가) ") 너비와 같다.
+const DEFAULT_HANGING_INDENTS: Record<OutlineLevel, number> = {
+  1: 1.5,
+  2: 2,
+  3: 1.5,
+  4: 2,
 };
 
 // 단계별 인라인 스타일 문자열을 만든다. 한 요소가 단계 여백과 내어쓰기를 함께
 // 책임져야 부모 여백과 합산되지 않고, 긴 줄의 둘째 줄도 본문 시작점에 맞는다.
-export function buildOutlineLineStyle(level: OutlineLevel): string {
+export function buildOutlineLineStyle(level: OutlineLevel, marker?: string): string {
   const style = OUTLINE_LEVEL_STYLES[level];
-  const hangingIndent = HANGING_INDENTS[level];
+  const hangingIndent = `${marker ? markerIndentEm(marker) : DEFAULT_HANGING_INDENTS[level]}em`;
   return `display:block; margin-left:${style.indent}; padding-left:${hangingIndent}; text-indent:-${hangingIndent}; width:calc(100% - ${style.indent}); box-sizing:border-box; font-size:${style.fontSize};${style.bold ? ' font-weight:bold;' : ''}`;
 }
 
@@ -119,8 +139,10 @@ function firstTextNode(nodes: ChildNode[]): Text | null {
 }
 
 function normalizeOutlineElement(element: HTMLElement, level: OutlineLevel): void {
+  // 내어쓰기 폭은 그 줄이 실제로 쓴 말머리("1.", "가.", "1)", "가)") 너비로 맞춘다.
+  const marker = detectOutlineMarker(element.textContent ?? '')?.marker;
   element.setAttribute('data-outline-level', String(level));
-  element.setAttribute('style', buildOutlineLineStyle(level));
+  element.setAttribute('style', buildOutlineLineStyle(level, marker));
   const firstText = firstTextNode(Array.from(element.childNodes));
   if (firstText?.textContent) firstText.textContent = firstText.textContent.replace(LEADING_SPACE, '');
 }

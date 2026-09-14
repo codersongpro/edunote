@@ -120,10 +120,18 @@ describe('문서 생성 미입력 사실 처리', () => {
     expect(text).toContain('학년도·학사 일정과 어긋나는 날짜');
   });
 
-  it('첨부가 없는 겉공문에 관련 문서나 붙임 파일명을 만들지 않는다', async () => {
+  it('첨부가 없는 겉공문에 관련 문서번호나 붙임 파일명을 만들지 않는다', async () => {
     const text = await captureDocumentPrompt(DocType.GONGMUN, '[제목]: 안전교육 안내');
-    expect(text).toContain('관련 문서와 붙임은 실제 입력이나 첨부가 있을 때만');
+    expect(text).toContain('붙임은 실제 첨부가 있을 때만 작성하고 파일명을 만들지 마세요');
+    expect(text).toContain('관련 근거도 입력이나 첨부에서 확인된 것만 쓰고 문서번호를 지어내지 마세요');
     expect(text).not.toContain('운영 계획서 1부');
     expect(text).not.toContain('2026학년도 주요업무계획');
+  });
+
+  it('근거가 없어도 겉공문의 관련 항목은 채울 자리를 남겨 유지한다', async () => {
+    const text = await captureDocumentPrompt(DocType.GONGMUN, '[제목]: 안전교육 안내');
+    expect(text).toContain('겉공문은 "1. 관련:" 항목 자체를 반드시 두고 본문을 2.부터 씁니다');
+    expect(text).toContain('문서번호와 날짜 자리만 ○로 비워 교사가 채우게 하세요');
+    expect(text).toContain('이 자리는 위 자리표시자 금지의 예외입니다');
   });
 });
