@@ -91,7 +91,7 @@ interface HtmlAppCreatorProps {
 }
 
 const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCancel }) => {
-  const { apiKeyAvailability } = useGlobalState();
+  const { apiKeyAvailability, hasApiKey } = useGlobalState();
   const { startTour } = useTour();
   const parsed = parseDescription(initial?.description ?? '');
   const [appType, setAppType] = useState(parsed.appType);
@@ -109,6 +109,8 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
 
   const description = buildDescription(appType, features, extra);
   const canGenerate = appType.trim().length > 0 && !isGenerating && apiKeyAvailability !== 'wait';
+  // 키가 저장되어 있는데 아직 확인 전('unknown')인 상태는 오류가 아니므로 경고하지 않는다.
+  const showApiKeyNotice = !hasApiKey || apiKeyAvailability === 'wait';
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
@@ -213,17 +215,17 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
         </div>
       </div>
 
-      {apiKeyAvailability !== 'usable' && (
+      {showApiKeyNotice && (
         <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
-              {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키를 설정하거나 확인해 주세요'}
+              {apiKeyAvailability === 'wait' ? 'API가 일시적으로 제한되었습니다' : 'API 키를 설정해 주세요'}
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5 leading-relaxed">
               {apiKeyAvailability === 'wait'
                 ? '잠시 후 다시 시도하거나 설정에서 API 키를 변경해 주세요.'
-                : 'Gemini API 키가 없거나 아직 확인되지 않았습니다. 설정에서 API 키를 입력하거나 한 번 생성해 보세요.'}
+                : '저장된 Gemini API 키가 없습니다. 설정에서 API 키를 입력해 주세요.'}
             </p>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('edunote-goto-settings'))}
