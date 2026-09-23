@@ -47,7 +47,9 @@ interface PinnedMessage {
 }
 
 // 마지막 접속 신호(lastSeen)가 이 시간(ms) 안이면 "접속 중"으로 본다.
-const PRESENCE_TIMEOUT_MS = 40_000;
+// 학생 화면(docs/chat/index.html)은 학교망 동시 연결을 아끼려고 75초마다 신호를 보내므로,
+// 신호 한 번이 늦거나 빠져도 "접속 끊김"으로 깜빡이지 않도록 두 번 분량 이상으로 잡는다.
+const PRESENCE_TIMEOUT_MS = 170_000;
 
 const FIREBASE_APP_NAME = 'edunote-chat';
 const ROOM_ID_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -172,7 +174,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ view = 'manage' }) => {
       appRef.current = getApps().find(a => a.name === FIREBASE_APP_NAME) ?? initializeApp(config, FIREBASE_APP_NAME);
       // 학교망 프록시가 실시간 스트리밍(WebChannel)을 버퍼링해 메시지가 즉시 전달되지 않는 문제가 있어,
       // 변경마다 독립적인 요청/응답으로 주고받는 롱폴링을 강제해 실시간 수신이 끊기지 않게 한다.
-      dbRef.current = initializeFirestore(appRef.current, { experimentalForceLongPolling: true });
+      // 롱폴링 대기 연결을 10초마다 돌려줘, 본 창·대화 창이 함께 쓰는 연결 수가 프록시 한도에 묶이지 않게 한다.
+      dbRef.current = initializeFirestore(appRef.current, {
+        experimentalForceLongPolling: true,
+        experimentalLongPollingOptions: { timeoutSeconds: 10 },
+      });
     }
     return { db: dbRef.current! };
   };
