@@ -19,11 +19,11 @@ const OPEN_SOURCE_NOTICES: { name: string; license: string; holder: string }[] =
   { name: 'Pretendard 글꼴', license: 'OFL-1.1', holder: 'Kil Hyung-jin' },
 ];
 
-// EduNote 자체 라이선스·이용약관. 같은 파일이 배포 패키지에도 함께 들어간다.
+// EduNote 자체 라이선스·이용약관 웹페이지(docs/legal). 같은 원문 파일이 배포 패키지에도 함께 들어간다.
 const LEGAL_LINKS: { label: string; url: string }[] = [
-  { label: '라이선스', url: 'https://github.com/codersongpro/edunote/blob/main/LICENSE' },
-  { label: '이용약관', url: 'https://github.com/codersongpro/edunote/blob/main/EULA.md' },
-  { label: '오픈소스 고지', url: 'https://github.com/codersongpro/edunote/blob/main/THIRD-PARTY-NOTICES.md' },
+  { label: '라이선스', url: 'https://ednote.vercel.app/legal/#license' },
+  { label: '이용약관', url: 'https://ednote.vercel.app/legal/#eula' },
+  { label: '오픈소스 고지', url: 'https://ednote.vercel.app/legal/#notices' },
 ];
 
 interface UpdateInfo {
