@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { LEGAL_PAGE_PATH, renderLegalPage } from '../../../scripts/legal-page.mjs';
 
 const rootDir = process.cwd();
-const committed = readFileSync(resolve(rootDir, LEGAL_PAGE_PATH), 'utf8');
+// Windows 체크아웃(core.autocrlf)에서는 줄바꿈이 CRLF로 바뀌므로 비교 전에 LF로 맞춘다.
+const committed = readFileSync(resolve(rootDir, LEGAL_PAGE_PATH), 'utf8').replace(/\r\n/g, '\n');
 const page = new DOMParser().parseFromString(committed, 'text/html');
 
 describe('라이선스·이용약관 웹페이지', () => {
