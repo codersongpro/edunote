@@ -15,7 +15,7 @@ EduNote는 아래 오픈소스 소프트웨어를 사용합니다. 각 구성요
 ### Apache License 2.0
 
 - **@google/genai** — Copyright Google LLC — https://github.com/googleapis/js-genai
-- **firebase** (및 @firebase/*, @grpc/*, google-auth-library, gaxios 등 관련 구성요소) — Copyright Google LLC — https://github.com/firebase/firebase-js-sdk
+- **firebase** (및 `@firebase/*`, `@grpc/*`, google-auth-library, gaxios 등 관련 구성요소) — Copyright Google LLC — https://github.com/firebase/firebase-js-sdk
 - **hwpxlib** — Copyright Neolord0 및 기여자 — https://github.com/neolord0/hwpxlib
   - EduNote의 `src/main/hwpxSkeleton.ts`에 포함된 빈 HWPX 문서 골격(base64)은
     hwpxlib 프로젝트의 테스트 픽스처(`testFile/tool/blank.hwpx`)에서 파생한 것입니다.
