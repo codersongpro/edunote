@@ -1043,6 +1043,18 @@ const ShareModal: React.FC<{
           </div>
         </div>
 
+        {/* 공유 조건 (이용약관 제6조) */}
+        <p className="text-[11px] text-[#78716C] dark:text-[#9C8F87] leading-relaxed break-keep">
+          등록하면 다른 선생님이 이 도구를 무료로 내려받아 사용·수정·공유할 수 있도록 허락하는 것으로 봅니다.
+          학생 등 다른 사람의 개인정보나 허락받지 않은 저작물은 넣지 마세요.{' '}
+          <button
+            onClick={() => window.electronAPI.openExternal('https://github.com/codersongpro/edunote/blob/main/EULA.md')}
+            className="underline underline-offset-2 hover:text-pink-500"
+          >
+            이용약관
+          </button>
+        </p>
+
         {/* 공유 단계 */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-[#A8A29E] dark:text-[#6B5E57] uppercase tracking-wide">공유 방법 (2단계)</p>

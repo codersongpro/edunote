@@ -16,6 +16,10 @@ extraResources:
     to: build/icon.png
   - from: THIRD-PARTY-NOTICES.md
     to: THIRD-PARTY-NOTICES.md
+  - from: LICENSE
+    to: LICENSE.txt
+  - from: EULA.md
+    to: EULA.md
 
 win:
   icon: build/icon.ico
