@@ -19,6 +19,13 @@ const OPEN_SOURCE_NOTICES: { name: string; license: string; holder: string }[] =
   { name: 'Pretendard 글꼴', license: 'OFL-1.1', holder: 'Kil Hyung-jin' },
 ];
 
+// EduNote 자체 라이선스·이용약관. 같은 파일이 배포 패키지에도 함께 들어간다.
+const LEGAL_LINKS: { label: string; url: string }[] = [
+  { label: '라이선스', url: 'https://github.com/codersongpro/edunote/blob/main/LICENSE' },
+  { label: '이용약관', url: 'https://github.com/codersongpro/edunote/blob/main/EULA.md' },
+  { label: '오픈소스 고지', url: 'https://github.com/codersongpro/edunote/blob/main/THIRD-PARTY-NOTICES.md' },
+];
+
 interface UpdateInfo {
   currentVersion: string;
   latestVersion: string | null;
@@ -215,6 +222,20 @@ const AboutScreen: React.FC = () => {
         {/* License */}
         <div className="text-center text-xs text-[#A8A29E] dark:text-[#6B5E57] pb-4 space-y-1">
           <p>Copyright © {new Date().getFullYear()} Dustin. All rights reserved.</p>
+          <p>
+            EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다.
+          </p>
+          <p className="space-x-2">
+            {LEGAL_LINKS.map(({ label, url }) => (
+              <button
+                key={label}
+                onClick={() => window.electronAPI.openExternal(url)}
+                className="underline underline-offset-2 hover:text-[#78716C] dark:hover:text-[#9C8F87] transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+          </p>
         </div>
 
       </div>
