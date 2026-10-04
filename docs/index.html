@@ -162,6 +162,26 @@
     border: 1px solid var(--border); border-radius: 999px; padding: 8px 14px;
   }
 
+  /* App screenshots */
+  #screens { scroll-margin-top: 88px; }
+  .screens-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .screen-card { margin: 0; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--card); }
+  .screen-link { display: block; position: relative; text-decoration: none; background: #171210; }
+  .screen-link img { width: 100%; height: auto; }
+  .screen-link:focus-visible { outline: 3px solid #F59E0B; outline-offset: -3px; }
+  .screen-zoom {
+    position: absolute; right: 12px; bottom: 12px; padding: 5px 10px; border-radius: 7px;
+    background: rgba(23,18,16,0.92); color: #F0EBE6; font-size: 12px; font-weight: 600;
+  }
+  .screen-link:hover .screen-zoom { background: #171210; }
+  .screen-caption { padding: 20px 22px 22px; }
+  .screen-category { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
+  .screen-caption h3 { margin: 10px 0 7px; font-size: 19px; line-height: 1.4; }
+  .screen-caption p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.7; }
+  .screens-note { max-width: 640px; margin: 24px auto 0; text-align: center; font-size: 13px; color: var(--text-3); }
+  .screens-jump { text-align: center; margin: 24px 0 0; font-size: 14px; font-weight: 600; }
+  .screens-jump a { text-underline-offset: 4px; }
+
   /* Download */
   .download-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 24px;
@@ -214,6 +234,7 @@
   @media (max-width: 640px) {
     .nav-links { display: none; }
     .feature-grid { grid-template-columns: 1fr; }
+    .screens-grid { grid-template-columns: 1fr; gap: 20px; }
     section { padding: 52px 0; }
     .hero h1 { font-size: clamp(26px, 7vw, 32px); line-height: 1.3; text-wrap: balance; }
     /* 좁은 화면에서는 강제 줄바꿈을 없애 문장이 자연스럽게 이어지도록 한다. */
@@ -295,6 +316,85 @@
       <span class="chip">HWPX · PDF · Word 저장</span>
       <span class="chip">QR 채팅방</span>
     </div>
+    <p class="screens-jump"><a href="#screens">실제 화면 살펴보기 ↓</a></p>
+  </div>
+</section>
+
+<section id="screens" aria-labelledby="screens-title">
+  <div class="wrap">
+    <div class="section-head">
+      <h2 id="screens-title">화면으로 보는 EduNote</h2>
+      <p>공문과 계획서, 예산, 학생 기록, 수업 활동지와 스킬 공유까지. 실제로 쓰는 화면을 살펴보세요.</p>
+    </div>
+    <div class="screens-grid">
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/official-document.jpg" target="_blank" rel="noopener" aria-label="공문서 작성 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/official-document.jpg" alt="공문 제목과 본문 요청사항 입력란 옆에 공문 형식의 예시 문서가 표시된 EduNote 화면" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-teal">문서 작성</span>
+          <h3>공문서 작성</h3>
+          <p>제목과 핵심 내용, 일시·대상을 입력해 공문 초안을 작성합니다. 참고 자료와 기관별 서식도 함께 반영할 수 있습니다.</p>
+        </figcaption>
+      </figure>
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/project-plan.jpg" target="_blank" rel="noopener" aria-label="계획서 작성 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/project-plan.jpg" alt="사업명과 대상, 예산을 입력하고 추진배경과 운영방침이 담긴 예시 계획서를 확인하는 EduNote 화면" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-teal">문서 작성</span>
+          <h3>계획서 작성</h3>
+          <p>사업명, 대상, 예산과 일정을 정리하면 운영 계획의 초안을 만듭니다. 추진배경부터 세부 계획까지 문서 형식에 맞춰 준비합니다.</p>
+        </figcaption>
+      </figure>
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/budget-planning.jpg" target="_blank" rel="noopener" aria-label="예산 계획 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/budget-planning.jpg" alt="배정 예산 1천만 원의 과목별 비율과 품목별 단가·수량, 집행 예산과 남은 예산을 확인하는 EduNote 예산표" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-blue">예산 관리</span>
+          <h3>예산 계획 세우기</h3>
+          <p>총예산과 과목별 비율을 정하고 품목·단가·수량을 조정합니다. 남은 예산을 확인하면서 예산안을 맞추고 CSV로 저장할 수 있습니다.</p>
+        </figcaption>
+      </figure>
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/student-record.jpg" target="_blank" rel="noopener" aria-label="생기부 기록 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/student-record.jpg" alt="학생A·학생B·학생C라는 가명으로 책임감과 협동심 등 학생 특성을 선택하고 관찰 내용을 입력하는 EduNote 생기부 도우미" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-violet">학생 기록</span>
+          <h3>생기부 기록 준비</h3>
+          <p>학생의 특성과 구체적인 관찰 내용을 모아 행동특성·교과 세특 등의 초안을 작성합니다. 생성한 문구는 교사가 검토하고 수정합니다.</p>
+        </figcaption>
+      </figure>
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/lesson-worksheet.jpg" target="_blank" rel="noopener" aria-label="수업 활동지 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/lesson-worksheet.jpg" alt="초등학교 과학 수업의 학년·교과·주제 설정과 물의 순환을 다루는 예시 활동지의 미리보기·편집 화면" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-amber">수업 준비</span>
+          <h3>수업 활동지 제작</h3>
+          <p>학년, 교과, 성취기준과 주제에 맞는 활동지·평가지를 준비합니다. 내용을 직접 수정하고 PDF·HWPX 등으로 저장해 수업에 활용합니다.</p>
+        </figcaption>
+      </figure>
+      <figure class="screen-card">
+        <a class="screen-link" href="assets/screenshots/skill-sharing.jpg" target="_blank" rel="noopener" aria-label="AI 스킬 공유 화면 크게 보기 (새 탭)">
+          <img src="assets/screenshots/skill-sharing.jpg" alt="이수증 연수번호 수집기 스킬의 파일 저장과 공유 폼 등록 절차를 안내하는 EduNote 도구 공유하기 창" width="1440" height="1000" loading="lazy" decoding="async">
+          <span class="screen-zoom" aria-hidden="true">↗ 크게 보기</span>
+        </a>
+        <figcaption class="screen-caption">
+          <span class="screen-category badge-violet">AI 스킬</span>
+          <h3>스킬을 만들고 공유하기</h3>
+          <p>자주 쓰는 작업을 스킬로 저장하고 동료와 공유합니다. 받은 스킬은 파일이나 스킬마켓에서 가져와 내 업무에 맞게 확장할 수 있습니다.</p>
+        </figcaption>
+      </figure>
+    </div>
+    <p class="screens-note">예시 자료를 넣어 캡처한 실제 앱 화면입니다. 학생 정보는 가명이며, 활동지는 화면 소개용 예시 자료입니다. 이미지를 누르면 새 탭에서 크게 볼 수 있습니다.</p>
   </div>
 </section>
 
