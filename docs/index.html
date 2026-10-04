@@ -111,12 +111,13 @@
     font-size: clamp(30px, 5vw, 46px); font-weight: 900; letter-spacing: -0.02em;
     margin: 0 0 16px; line-height: 1.25;
   }
-  .hero p.sub { font-size: clamp(15px, 2vw, 18px); color: var(--text-3); margin: 0 0 32px; }
+  .hero p.sub { font-size: clamp(15px, 2vw, 18px); color: var(--text-3); max-width: 38rem; margin: 0 auto 32px; }
   .hero-icon { width: 96px; height: 96px; border-radius: 24px; margin: 0 auto 24px; box-shadow: var(--shadow); }
   .cta-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 14px; }
   .cta-note { font-size: 13px; color: var(--text-4); }
+  .ai-skill-note { font-size: 13px; color: var(--text-3); margin: 12px 0 0; }
   .trust-row {
-    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 40px;
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 24px;
   }
   .trust-chip {
     display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2);
@@ -214,6 +215,7 @@
     .nav-links { display: none; }
     .feature-grid { grid-template-columns: 1fr; }
     section { padding: 52px 0; }
+    .hero h1 { font-size: clamp(26px, 7vw, 32px); line-height: 1.3; text-wrap: balance; }
     /* 좁은 화면에서는 강제 줄바꿈을 없애 문장이 자연스럽게 이어지도록 한다. */
     .wide-br { display: none; }
   }
@@ -241,15 +243,16 @@
 <header class="hero">
   <div class="wrap hero-inner">
     <img class="hero-icon" src="assets/icon.png" alt="EduNote 아이콘">
-    <span class="eyebrow">교직원을 위한 Windows 업무 도우미</span>
-    <h1>생기부 · 공문 · 수업자료를 <br class="wide-br">한 프로그램에서</h1>
-    <p class="sub">관찰 메모를 넣으면 생기부 초안이, 공문을 넣으면 요약과 해야 할 일이 정리됩니다. <br class="wide-br">결과는 한글(HWPX) 파일로 저장할 수 있습니다.</p>
+    <span class="eyebrow">공무원·교직원을 위한 AI 업무 도구</span>
+    <h1>공무원과 교직원의 업무를, <br class="wide-br">EduNote 하나로</h1>
+    <p class="sub">공문을 정리하고, 문서를 작성하고, 수업자료와 학생 기록까지. <br class="wide-br">필요한 AI 스킬을 추가해 나에게 맞는 업무 환경을 만들어 보세요.</p>
     <div class="cta-row">
       <a class="btn btn-primary" id="heroDownloadBtn" href="https://github.com/codersongpro/edunote/releases/download/v1.28.5/edunote_1.28.5_portable.exe" target="_blank" rel="noopener">⬇ Windows용 다운로드</a>
     </div>
     <p class="cta-note" id="heroDownloadNote">최신 버전 v1.28.5 사용 가능</p>
+    <p class="ai-skill-note">필요한 기능은 AI 스킬로 계속 확장됩니다.</p>
     <div class="trust-row">
-      <span class="trust-chip">학생 자료는 내 컴퓨터에 저장</span>
+      <span class="trust-chip">업무 자료는 내 컴퓨터에 저장</span>
       <span class="trust-chip">무료 API 키로 시작 가능</span>
       <span class="trust-chip">Windows 10 / 11</span>
       <span class="trust-chip">설치 없는 포터블 실행</span>
@@ -362,9 +365,9 @@
     <div class="dev-card">
       <div class="dev-avatar">D</div>
       <div>
-        <h3>Dustin</h3>
-        <p class="dev-role">Teacher · Data Analytics · App Developer</p>
-        <p class="blurb">학교에서 매일 반복되는 업무를 줄이려고 EduNote를 직접 만들고 있습니다. 쓰다가 불편한 점이나 바라는 기능은 피드백으로 알려 주세요.</p>
+        <h3>송동석(Dustin)</h3>
+        <p class="dev-role">Teacher · Data Analyst · App Developer</p>
+        <p class="blurb">학교에서 매일 반복되는 업무를 줄이려고 EduNote를 직접 만들고 있습니다. 불편한 점이나 바라는 기능은 피드백으로 알려 주세요.</p>
         <div class="dev-links">
           <a class="btn btn-primary btn-sm" href="https://forms.gle/X7rRcFRnsGNSt1ZFA" target="_blank" rel="noopener">피드백 남기기</a>
         </div>
