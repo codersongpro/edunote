@@ -100,7 +100,7 @@
                 radial-gradient(50% 50% at 80% 10%, rgba(124,58,237,0.14), transparent 70%);
     pointer-events: none;
   }
-  .hero-inner { position: relative; text-align: center; max-width: 720px; margin: 0 auto; }
+  .hero-inner { position: relative; text-align: center; max-width: 960px; margin: 0 auto; }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
     color: var(--amber); background: var(--amber-bg); padding: 6px 14px; border-radius: 999px;
@@ -111,7 +111,7 @@
     font-size: clamp(30px, 5vw, 46px); font-weight: 900; letter-spacing: -0.02em;
     margin: 0 0 16px; line-height: 1.25;
   }
-  .hero p.sub { font-size: clamp(15px, 2vw, 18px); color: var(--text-3); max-width: 38rem; margin: 0 auto 32px; }
+  .hero p.sub { font-size: clamp(15px, 2vw, 18px); color: var(--text-3); margin: 0 auto 32px; }
   .hero-icon { width: 96px; height: 96px; border-radius: 24px; margin: 0 auto 24px; box-shadow: var(--shadow); }
   .cta-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 14px; }
   .cta-note { font-size: 13px; color: var(--text-4); }
@@ -123,9 +123,14 @@
     display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-2);
     background: var(--card); border: 1px solid var(--border); padding: 8px 14px; border-radius: 999px;
   }
+  .hero-video {
+    position: relative; max-width: 960px; margin: 40px auto 0; border-radius: 20px; overflow: hidden;
+    border: 1px solid var(--border); box-shadow: var(--shadow); background: #FAF9F7; aspect-ratio: 16 / 9;
+  }
+  .hero-video video { display: block; width: 100%; height: 100%; }
 
   /* Section heading */
-  .section-head { text-align: center; max-width: 560px; margin: 0 auto 44px; }
+  .section-head { text-align: center; max-width: 760px; margin: 0 auto 44px; }
   .section-head h2 { font-size: clamp(24px, 3vw, 30px); font-weight: 900; letter-spacing: -0.01em; margin: 0 0 10px; }
   .section-head p { color: var(--text-3); margin: 0; font-size: 15px; }
 
@@ -178,7 +183,7 @@
   .screen-category { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 6px; }
   .screen-caption h3 { margin: 10px 0 7px; font-size: 19px; line-height: 1.4; }
   .screen-caption p { margin: 0; color: var(--text-3); font-size: 14px; line-height: 1.7; }
-  .screens-note { max-width: 640px; margin: 24px auto 0; text-align: center; font-size: 13px; color: var(--text-3); }
+  .screens-note { max-width: 880px; margin: 24px auto 0; text-align: center; font-size: 13px; color: var(--text-3); }
   .screens-jump { text-align: center; margin: 24px 0 0; font-size: 14px; font-weight: 600; }
   .screens-jump a { text-underline-offset: 4px; }
 
@@ -216,7 +221,7 @@
   }
   .dev-card h3 { margin: 0 0 4px; font-size: 19px; font-weight: 800; }
   .dev-role { font-size: 13.5px; color: var(--violet); font-weight: 700; margin: 0 0 12px; }
-  .dev-card p.blurb { font-size: 14px; color: var(--text-3); margin: 0 0 18px; line-height: 1.7; max-width: 480px; }
+  .dev-card p.blurb { font-size: 14px; color: var(--text-3); margin: 0 0 18px; line-height: 1.7; }
   .dev-links { display: flex; gap: 10px; flex-wrap: wrap; }
 
   /* Footer */
@@ -228,7 +233,6 @@
     .feature-grid { grid-template-columns: repeat(2, 1fr); }
     .download-card { grid-template-columns: 1fr; }
     .dev-card { flex-direction: column; text-align: center; }
-    .dev-card p.blurb { max-width: none; }
     .dev-links { justify-content: center; }
   }
   @media (max-width: 640px) {
@@ -237,8 +241,7 @@
     .screens-grid { grid-template-columns: 1fr; gap: 20px; }
     section { padding: 52px 0; }
     .hero h1 { font-size: clamp(26px, 7vw, 32px); line-height: 1.3; text-wrap: balance; }
-    /* 좁은 화면에서는 강제 줄바꿈을 없애 문장이 자연스럽게 이어지도록 한다. */
-    .wide-br { display: none; }
+    .hero-video { margin-top: 32px; border-radius: 14px; }
   }
 </style>
 </head>
@@ -265,8 +268,8 @@
   <div class="wrap hero-inner">
     <img class="hero-icon" src="assets/icon.png" alt="EduNote 아이콘">
     <span class="eyebrow">공무원·교직원을 위한 AI 업무 도구</span>
-    <h1>공무원과 교직원의 업무를, <br class="wide-br">EduNote 하나로</h1>
-    <p class="sub">공문을 정리하고, 문서를 작성하고, 수업자료와 학생 기록까지. <br class="wide-br">필요한 AI 스킬을 추가해 나에게 맞는 업무 환경을 만들어 보세요.</p>
+    <h1>공무원과 교직원의 업무를, EduNote 하나로</h1>
+    <p class="sub">공문을 정리하고, 문서를 작성하고, 수업자료와 학생 기록까지. 필요한 AI 스킬을 추가해 나에게 맞는 업무 환경을 만들어 보세요.</p>
     <div class="cta-row">
       <a class="btn btn-primary" id="heroDownloadBtn" href="https://github.com/codersongpro/edunote/releases/download/v1.28.5/edunote_1.28.5_portable.exe" target="_blank" rel="noopener">⬇ Windows용 다운로드</a>
     </div>
@@ -277,6 +280,9 @@
       <span class="trust-chip">무료 API 키로 시작 가능</span>
       <span class="trust-chip">Windows 10 / 11</span>
       <span class="trust-chip">설치 없는 포터블 실행</span>
+    </div>
+    <div class="hero-video">
+      <video id="introVideo" src="assets/video/edunote-intro.mp4" poster="assets/video/edunote-intro-poster.jpg" width="1280" height="720" muted loop playsinline controls preload="metadata" aria-label="EduNote 소개와 사용 방법 영상"></video>
     </div>
   </div>
 </header>
@@ -484,6 +490,26 @@
 </footer>
 
 <script>
+(function () {
+  // 소개 영상: 화면에 보일 때만 소리 없이 자동 재생한다(동작 줄이기 설정 시 자동 재생하지 않음).
+  var video = document.getElementById('introVideo');
+  if (!video || !('IntersectionObserver' in window)) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var userPaused = false;
+  var autoPausing = false;
+  video.addEventListener('pause', function () { if (autoPausing) autoPausing = false; else userPaused = true; });
+  video.addEventListener('play', function () { userPaused = false; });
+  new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        if (!userPaused) { var p = video.play(); if (p && p.catch) p.catch(function () {}); }
+      } else if (!video.paused) {
+        autoPausing = true; video.pause();
+      }
+    });
+  }, { threshold: 0.4 }).observe(video);
+})();
+
 (function () {
   var root = document.documentElement;
   var toggle = document.getElementById('themeToggle');
