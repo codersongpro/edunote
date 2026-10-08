@@ -129,6 +129,15 @@
   .end-chips { display: flex; gap: 18px; margin-top: 60px; flex-wrap: wrap; justify-content: center; }
   .end-chips span { font-size: 28px; font-weight: 700; padding: 14px 28px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: #E7E5E4; background: rgba(255,255,255,.04); }
 
+  /* ---------- I. 만든 사람 ---------- */
+  .credit-eyebrow { font-size: 22px; color: var(--mute); margin-bottom: 44px; }
+  .credit-avatar { width: 150px; height: 150px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                   font-size: 64px; font-weight: 900; color: #fff; background: linear-gradient(135deg, #7C3AED, #A78BFA);
+                   box-shadow: 0 24px 70px rgba(139,92,246,.45); margin-bottom: 40px; }
+  .credit-name { font-size: 110px; font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; }
+  .credit-rule { width: 520px; height: 2px; margin: 38px 0 34px; background: var(--grad); transform-origin: center; }
+  .credit-role { font-size: 34px; font-weight: 600; color: #E7E5E4; letter-spacing: 0.01em; }
+
   /* ---------- 세로(모바일) 레이아웃 ---------- */
   @media (orientation: portrait) {
     :root { --big: 96px; --sub: 34px; --tag: 26px; }
@@ -147,6 +156,9 @@
     .end-l1 { font-size: 70px; padding: 0 130px; }
     .end-l2 { font-size: 132px; }
     .end-chips { flex-direction: column; align-items: center; }
+    .credit-name { font-size: 96px; }
+    .credit-rule { width: 440px; }
+    .credit-role { font-size: 32px; padding: 0 130px; line-height: 1.5; }
   }
 </style>
 </head>
@@ -317,7 +329,7 @@
   </section>
 
   <!-- H. 27.0~32.0s : 엔드 -->
-  <section class="scene center" data-start="27" data-dur="5" data-out="0.5">
+  <section class="scene center" data-start="27" data-dur="4.2">
     <div class="glow a" style="animation: drift 5s linear both"></div>
     <div class="glow b" style="animation: drift 5s linear reverse both"></div>
     <img class="end-icon" src="../../docs/assets/icon.png" alt="" style="animation: pop .6s .1s cubic-bezier(.2,.8,.2,1) both">
@@ -328,6 +340,17 @@
       <span style="animation: riseS .45s 1.35s ease-out both">무료 API 키로 시작 가능</span>
       <span style="animation: riseS .45s 1.5s ease-out both">설치 없는 포터블 실행</span>
     </div>
+  </section>
+
+  <!-- I. 31.2~35s : 만든 사람 -->
+  <section class="scene center" data-start="31" data-dur="4" data-out="0.6">
+    <div class="glow a" style="animation: drift 4s linear both"></div>
+    <div class="glow b" style="animation: drift 4s linear reverse both"></div>
+    <div class="credit-eyebrow mono" style="animation: fade .5s .15s both">Made by</div>
+    <div class="credit-avatar" style="animation: pop .6s .25s cubic-bezier(.2,.8,.2,1) both">D</div>
+    <div class="credit-name" style="animation: rise .55s .45s cubic-bezier(.2,.8,.2,1) both">송동석<span class="grad">(Dustin)</span></div>
+    <div class="credit-rule" style="animation: lineX .7s .8s cubic-bezier(.7,0,.2,1) both"></div>
+    <div class="credit-role" style="animation: riseS .5s 1.0s ease-out both">Teacher / App developer / Data analyst</div>
   </section>
 </div>
 
@@ -367,7 +390,7 @@
   document.getElementById('dyn').textContent = css.join('\n');
 
   // 타임라인 seek
-  var DURATION = window.DURATION = 32;
+  var DURATION = window.DURATION = 35;
   var scenes = Array.prototype.slice.call(document.querySelectorAll('.scene'));
   var flash = document.getElementById('flash');
   var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));

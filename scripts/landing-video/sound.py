@@ -1,7 +1,7 @@
 """랜딩페이지 첫 화면 모션그래픽(motion.html)용 사운드트랙 합성기.
 
 외부 음원 없이 numpy로 직접 합성합니다(저작권 걱정 없음).
-장면 타이밍은 motion.html의 data-start/애니메이션 지연값과 맞춰 두었습니다.
+장면 타이밍(35초)은 motion.html의 data-start/애니메이션 지연값과 맞춰 두었습니다.
 
 사용법: python3 scripts/landing-video/sound.py <출력.wav>
 """
@@ -11,7 +11,7 @@ import wave
 import numpy as np
 
 SR = 48000
-DUR = 32.0
+DUR = 35.0
 N = int(SR * DUR)
 rng = np.random.default_rng(7)
 
@@ -318,7 +318,13 @@ place(sfx, riser(1.0, 180, 3200), 26.0, 1.2)
 
 # H. 엔드: 임팩트 + 밝은 마무리 화음 + 종소리, 32초 전에 완전히 사라짐
 place(sfx, impact(1.3), 27.0, 1.0)
-place(music, pad_chord(['C3', 'G3', 'C4', 'E4', 'G4', 'D5'], 4.6, att=0.05, rel=3.2), 27.0, 1.6)
+place(music, pad_chord(['C3', 'G3', 'C4', 'E4', 'G4', 'D5'], 4.4, att=0.05, rel=1.4), 27.0, 1.6)
+# I. 만든 사람: 잔잔한 화음과 종소리로 마무리
+place(music, pad_chord(['F3', 'A3', 'C4', 'E4', 'G4'], 4.2, att=0.6, rel=2.6), 30.9, 1.4)
+place(music, bass_note('F1', 2.5) * np.exp(-t_arr(2.5) / 1.0), 31.0, 0.8)
+for i, nm in enumerate(['A5', 'C6', 'E6', 'G6']):
+    place(sfx, bell(note_hz(nm), 2.6), 31.3 + i * 0.16, 0.38 - i * 0.05)
+place(sfx, whoosh(0.5, 600, 7000), 30.8, 0.4)
 place(music, bass_note('C1', 3.0) * np.exp(-t_arr(3.0) / 1.2), 27.0, 1.2)
 for i, nm in enumerate(['C6', 'E6', 'G6', 'C7', 'D7']):
     place(sfx, bell(note_hz(nm), 2.4), 27.35 + i * 0.12, 0.55 - i * 0.06)
@@ -346,7 +352,7 @@ right = mono - 0.18 * side
 
 # 루프 경계 정리 + 마스터
 fade_out = np.ones(N)
-fo = int(0.25 * SR)
+fo = int(0.6 * SR)
 fade_out[N - fo :] = np.linspace(1, 0, fo)
 st = np.stack([left, right], axis=1) * fade_out[:, None]
 st = np.tanh(st / np.max(np.abs(st)) * 1.15)
