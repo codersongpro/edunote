@@ -87,6 +87,28 @@
     content: ''; position: absolute; left: 50%; top: 7px; width: 4px; height: 8px; margin-left: -2px;
     border-radius: 2px; background: currentColor; animation: cue 1.6s ease-in-out infinite;
   }
+  .intro-sound {
+    position: absolute; right: max(20px, env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom));
+    display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 12px; border-radius: 999px;
+    border: 1px solid rgba(250,247,242,0.28); background: rgba(11,9,8,0.55); color: #FAF7F2;
+    font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; backdrop-filter: blur(8px);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .intro-sound:hover { background: rgba(11,9,8,0.8); border-color: rgba(250,247,242,0.5); }
+  .intro-sound:focus-visible { outline: 2px solid #F59E0B; outline-offset: 2px; }
+  .intro-sound svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .intro-sound .on { display: none; }
+  .intro-sound[aria-pressed="true"] .on { display: block; }
+  .intro-sound[aria-pressed="true"] .off { display: none; }
+  .intro-sound .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+  .intro-sound .bars i { width: 3px; background: #F59E0B; border-radius: 1px; height: 4px; }
+  .intro-sound[aria-pressed="true"] .bars i { animation: eq 0.9s ease-in-out infinite; }
+  .intro-sound[aria-pressed="true"] .bars i:nth-child(2) { animation-delay: -0.3s; }
+  .intro-sound[aria-pressed="true"] .bars i:nth-child(3) { animation-delay: -0.6s; }
+  @keyframes eq { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+  @media (max-width: 640px) {
+    .intro-cue { left: 20px; transform: none; align-items: flex-start; }
+  }
   @keyframes cue { 0% { opacity: 0; transform: translateY(-3px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(12px); } }
   @media (prefers-reduced-motion: reduce) { .intro-cue .mouse::after { animation: none; } }
 
@@ -289,6 +311,12 @@
   </video>
   <div class="intro-dim" id="introDim"></div>
   <div class="intro-shade"></div>
+  <button class="intro-sound" id="introSound" type="button" aria-pressed="false">
+    <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m22 9-6 6M16 9l6 6"/></svg>
+    <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>
+    <span class="label">소리 켜기</span>
+    <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+  </button>
   <a class="intro-cue" id="introCue" href="#top"><span class="mouse" aria-hidden="true"></span>스크롤해서 EduNote 살펴보기</a>
 </section>
 
@@ -541,9 +569,22 @@
   var video = document.getElementById('motionVideo');
   var cue = document.getElementById('introCue');
   var dim = document.getElementById('introDim');
+  var soundBtn = document.getElementById('introSound');
+  // 브라우저 정책상 자동 재생은 무음으로 시작하고, 버튼을 눌러야 소리가 난다.
+  soundBtn.addEventListener('click', function () {
+    var on = video.muted;
+    video.muted = !on;
+    if (on) { video.volume = 0.8; var pr = video.play(); if (pr && pr.catch) pr.catch(function () {}); }
+    soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    soundBtn.querySelector('.label').textContent = on ? '소리 끄기' : '소리 켜기';
+  });
   if (!intro || !video) return;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce) { video.removeAttribute('autoplay'); video.pause(); return; }
+  if (reduce) {
+    video.removeAttribute('autoplay'); video.pause();
+    // 동작 줄이기 설정에서는 자동 재생하지 않고, 소리 버튼을 누르면 재생한다.
+    return;
+  }
   var ticking = false;
   function update() {
     ticking = false;

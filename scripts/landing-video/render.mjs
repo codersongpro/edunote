@@ -3,8 +3,9 @@
 //   node scripts/landing-video/render.mjs            # 전체(소개 영상 + 첫 화면 모션그래픽 가로/세로)
 //   node scripts/landing-video/render.mjs motion     # 모션그래픽만
 //   node scripts/landing-video/render.mjs intro      # 소개 영상만
-// 필요: playwright(Chromium), ffmpeg, 시스템에 설치된 Pretendard 폰트
-import { spawn } from 'node:child_process';
+// 필요: playwright(Chromium), ffmpeg, python3 + numpy(사운드 합성), 시스템에 설치된 Pretendard 폰트
+import { spawn, execFileSync } from 'node:child_process';
+import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -20,13 +21,20 @@ const JOBS = {
     { page: 'intro.html', vw: 1920, vh: 1080, out: 'edunote-intro', scale: '1280:720', crf: 24, poster: 7.5 },
   ],
   motion: [
-    { page: 'motion.html', vw: 1920, vh: 1080, out: 'edunote-motion', scale: '1600:900', crf: 27, poster: 29.5 },
-    { page: 'motion.html', vw: 1080, vh: 1920, out: 'edunote-motion-portrait', scale: '720:1280', crf: 27, poster: 29.5 },
+    { page: 'motion.html', vw: 1920, vh: 1080, out: 'edunote-motion', scale: '1600:900', crf: 27, poster: 29.5, sound: true },
+    { page: 'motion.html', vw: 1080, vh: 1920, out: 'edunote-motion-portrait', scale: '720:1280', crf: 27, poster: 29.5, sound: true },
   ],
 };
 const which = process.argv[2];
 const jobs = which ? JOBS[which] : [...JOBS.intro, ...JOBS.motion];
 if (!jobs) throw new Error('알 수 없는 대상: ' + which);
+
+// 모션그래픽 사운드트랙은 sound.py로 합성한다.
+let soundWav = null;
+if (jobs.some((j) => j.sound)) {
+  soundWav = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'edunote-sound-')), 'motion-sound.wav');
+  execFileSync('python3', [path.join(here, 'sound.py'), soundWav], { stdio: 'inherit' });
+}
 
 const browser = await chromium.launch();
 for (const job of jobs) {
@@ -36,10 +44,13 @@ for (const job of jobs) {
   await page.waitForTimeout(400);
   const duration = await page.evaluate(() => window.DURATION);
 
+  const audio = job.sound
+    ? ['-i', soundWav, '-map', '0:v', '-map', '1:a', '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-ar', '48000', '-c:a', 'aac', '-b:a', '128k', '-shortest']
+    : ['-an'];
   const ffmpeg = spawn('ffmpeg', [
-    '-y', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
+    '-y', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-', ...audio,
     '-vf', `scale=${job.scale}:flags=lanczos`, '-c:v', 'libx264', '-preset', 'slow', '-crf', String(job.crf),
-    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an',
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
     path.join(outDir, job.out + '.mp4'),
   ], { stdio: ['pipe', 'ignore', 'inherit'] });
 
