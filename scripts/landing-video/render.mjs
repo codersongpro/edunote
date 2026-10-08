@@ -21,8 +21,8 @@ const JOBS = {
     { page: 'intro.html', vw: 1920, vh: 1080, out: 'edunote-intro', scale: '1280:720', crf: 24, poster: 7.5 },
   ],
   motion: [
-    { page: 'motion.html', vw: 1920, vh: 1080, out: 'edunote-motion', scale: '1600:900', crf: 27, poster: 29.5, sound: true },
-    { page: 'motion.html', vw: 1080, vh: 1920, out: 'edunote-motion-portrait', scale: '720:1280', crf: 27, poster: 29.5, sound: true },
+    { page: 'motion.html', vw: 1920, vh: 1080, out: 'edunote-motion', scale: '1600:900', crf: 27, poster: 37.5, sound: true },
+    { page: 'motion.html', vw: 1080, vh: 1920, out: 'edunote-motion-portrait', scale: '720:1280', crf: 27, poster: 37.5, sound: true },
   ],
 };
 const which = process.argv[2];

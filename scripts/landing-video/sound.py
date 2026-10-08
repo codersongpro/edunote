@@ -1,7 +1,7 @@
 """랜딩페이지 첫 화면 모션그래픽(motion.html)용 사운드트랙 합성기.
 
 외부 음원 없이 numpy로 직접 합성합니다(저작권 걱정 없음).
-장면 타이밍(35초)은 motion.html의 data-start/애니메이션 지연값과 맞춰 두었습니다.
+장면 타이밍(43.6초)은 motion.html의 data-start/애니메이션 지연값과 맞춰 두었습니다.
 
 사용법: python3 scripts/landing-video/sound.py <출력.wav>
 """
@@ -11,7 +11,7 @@ import wave
 import numpy as np
 
 SR = 48000
-DUR = 35.0
+DUR = 43.6
 N = int(SR * DUR)
 rng = np.random.default_rng(7)
 
@@ -237,18 +237,18 @@ place(sfx, chime('A6'), 4.1, 0.35)
 # 음악: 3.4초부터 마디 단위
 bar = 0
 t = T0
-while t < 27.0 - 1e-6:
+while t < 35.6 - 1e-6:
     b, chord = PROG[bar % 4]
-    bar_len = min(4 * BEAT, 27.0 - t)
+    bar_len = min(4 * BEAT, 35.6 - t)
     place(music, pad_chord(chord, bar_len + 0.8, att=0.5 if bar else 1.2), t, 1.0)
     for k in range(4):
         bt = t + k * BEAT
-        if bt >= 27.0:
+        if bt >= 35.6:
             break
         place(music, bass_note(b, BEAT * 0.9), bt, 1.0)
         place(music, bass_note(b, BEAT * 0.4), bt + BEAT * 0.75, 0.55)
         groove_on = bt >= 6.6 - 1e-6
-        if groove_on and not (22.7 <= bt < 23.2):
+        if groove_on and not (31.3 <= bt < 31.8):
             place(drums, kick(), bt, 0.9)
             i = int(bt * SR)
             dd = np.ones(int(0.25 * SR))
@@ -299,35 +299,57 @@ place(sfx, ui_click(), 19.8 + 0.95, 1.0)
 place(sfx, scan_sweep(1.2), 19.8 + 1.2, 0.75)
 place(sfx, chime('E6'), 19.8 + 2.4, 0.8)
 
-# 화면 월로 넘어가기 전 스네어 롤 + 상승음
+# V. 바이브코딩 HTML 앱: 클릭 → 생성 스캔 → 완성
+V = 23.2
+place(sfx, whoosh(0.45), V - 0.2, 0.75)
+place(sfx, ui_click(), V + 1.75, 1.0)
+place(sfx, scan_sweep(1.3), V + 2.05, 0.8)
+place(sfx, chime('E6'), V + 3.4, 0.8)
+
+# K. 대화로 스킬 만들기: 말풍선 → 타이핑 → 전송 → 스킬 카드
+K = 27.4
+place(sfx, whoosh(0.45), K - 0.2, 0.75)
+for k, at in enumerate([0.8, 1.2, 1.65, 2.05]):
+    place(sfx, bell(note_hz('A5' if k % 2 else 'E6'), 0.5), K + at, 0.35)
 for k in range(16):
-    at = 22.2 + k * (1.0 / 16)
+    place(sfx, tick(3200 + rng.integers(0, 1400)), K + 2.4 + k * 0.034, 0.5)
+place(sfx, ui_click(), K + 3.15, 1.0)
+place(sfx, whoosh(0.4, 800, 7000), K + 3.3, 0.5)
+place(sfx, chime('E6'), K + 3.5, 0.8)
+
+# 화면 월로 넘어가기 전 스네어 롤 + 상승음
+G = 31.8
+for k in range(16):
+    at = G - 1.0 + k * (1.0 / 16)
     place(drums, clap(), at, 0.15 + 0.5 * k / 16)
-place(sfx, riser(1.0, 200, 3000), 22.2, 1.0)
+place(sfx, riser(1.0, 200, 3000), G - 1.0, 1.0)
 
 # G. 화면 월: 큰 임팩트, 단어마다 타격, 더블 타임 킥
-place(sfx, impact(1.0), 23.2, 0.9)
+place(sfx, impact(1.0), G, 0.9)
 for at in [0.2, 0.6, 1.0]:
-    place(sfx, slam(), 23.2 + at + 0.05, 0.7)
+    place(sfx, slam(), G + at + 0.05, 0.7)
 for k in range(int(3.8 / 0.25)):
-    at = 23.2 + 1.5 + k * 0.25
-    if at >= 26.0:
+    at = G + 1.5 + k * 0.25
+    if at >= G + 2.8:
         break
     place(drums, kick(0.3, 120, 50, 0.6), at, 0.5)
-place(sfx, riser(1.0, 180, 3200), 26.0, 1.2)
+place(sfx, riser(1.0, 180, 3200), G + 2.8, 1.2)
 
-# H. 엔드: 임팩트 + 밝은 마무리 화음 + 종소리, 32초 전에 완전히 사라짐
-place(sfx, impact(1.3), 27.0, 1.0)
-place(music, pad_chord(['C3', 'G3', 'C4', 'E4', 'G4', 'D5'], 4.4, att=0.05, rel=1.4), 27.0, 1.6)
-# I. 만든 사람: 잔잔한 화음과 종소리로 마무리
-place(music, pad_chord(['F3', 'A3', 'C4', 'E4', 'G4'], 4.2, att=0.6, rel=2.6), 30.9, 1.4)
-place(music, bass_note('F1', 2.5) * np.exp(-t_arr(2.5) / 1.0), 31.0, 0.8)
-for i, nm in enumerate(['A5', 'C6', 'E6', 'G6']):
-    place(sfx, bell(note_hz(nm), 2.6), 31.3 + i * 0.16, 0.38 - i * 0.05)
-place(sfx, whoosh(0.5, 600, 7000), 30.8, 0.4)
-place(music, bass_note('C1', 3.0) * np.exp(-t_arr(3.0) / 1.2), 27.0, 1.2)
+# H. 엔드: 임팩트 + 밝은 마무리 화음 + 종소리
+H = 35.6
+place(sfx, impact(1.3), H, 1.0)
+place(music, pad_chord(['C3', 'G3', 'C4', 'E4', 'G4', 'D5'], 4.4, att=0.05, rel=1.4), H, 1.6)
+place(music, bass_note('C1', 3.0) * np.exp(-t_arr(3.0) / 1.2), H, 1.2)
 for i, nm in enumerate(['C6', 'E6', 'G6', 'C7', 'D7']):
-    place(sfx, bell(note_hz(nm), 2.4), 27.35 + i * 0.12, 0.55 - i * 0.06)
+    place(sfx, bell(note_hz(nm), 2.4), H + 0.35 + i * 0.12, 0.55 - i * 0.06)
+
+# I. 만든 사람: 잔잔한 화음과 종소리로 마무리
+I = 39.6
+place(music, pad_chord(['F3', 'A3', 'C4', 'E4', 'G4'], 4.2, att=0.6, rel=2.6), I - 0.1, 1.4)
+place(music, bass_note('F1', 2.5) * np.exp(-t_arr(2.5) / 1.0), I, 0.8)
+for i, nm in enumerate(['A5', 'C6', 'E6', 'G6']):
+    place(sfx, bell(note_hz(nm), 2.6), I + 0.3 + i * 0.16, 0.38 - i * 0.05)
+place(sfx, whoosh(0.5, 600, 7000), I - 0.2, 0.4)
 
 
 # ---------- 믹스 ----------

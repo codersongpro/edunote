@@ -112,6 +112,19 @@
   .result p span { display: block; }
   .num { font-weight: 800; font-size: 1.6cqw; color: #1C1917; display: flex; align-items: center; letter-spacing: -0.01em; font-family: 'Pretendard', sans-serif; }
 
+  .gen { display: flex; align-items: center; justify-content: center; gap: .4em; border-radius: 0.83cqw; background: rgb(139,92,246);
+         color: #fff; font-weight: 800; font-size: 1.05cqw; }
+  .skillcard { position: absolute; z-index: 10; width: 500px; right: 60px; bottom: 40px; background: #fff; color: #1C1917; border-radius: 20px;
+               padding: 24px 26px; box-shadow: 0 40px 100px rgba(0,0,0,.5); border: 2px solid #F59E0B; }
+  .sc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .sc-top b { font-size: 24px; }
+  .sc-top em { font-style: normal; font-size: 14px; font-weight: 800; color: #D97706; border: 1px solid #FCD34D; border-radius: 6px; padding: 2px 8px; }
+  .skillcard p { margin: 0 0 18px; font-size: 17px; line-height: 1.6; color: #57534E; }
+  .sc-btns { display: flex; gap: 10px; }
+  .sc-btns span { flex: 1; text-align: center; font-size: 17px; font-weight: 800; padding: 12px 0; border-radius: 12px; }
+  .sc-btns .run { background: #F59E0B; color: #fff; }
+  .sc-btns .share { background: #EDE9FE; color: #6D28D9; }
+
   /* ---------- G. 월 ---------- */
   .wall { position: absolute; left: 50%; top: 50%; width: 2600px; height: 2600px; margin: -1300px 0 0 -1300px;
           transform: rotateX(28deg) rotateZ(-16deg); display: flex; gap: 40px; justify-content: center; }
@@ -151,6 +164,8 @@
     .persp { left: 40px; top: 720px; width: 1000px; height: 900px; perspective-origin: 50% 40%; }
     .app { width: 1000px; }
     .result { width: 620px; right: 110px; bottom: -150px; }
+    .skillcard { width: 600px; right: 120px; bottom: -190px; }
+    .skillcard p { font-size: 20px; } .sc-top b { font-size: 28px; } .sc-btns span { font-size: 20px; }
     .wtext .w { font-size: 140px; }
     .wtext .s { font-size: 38px; padding: 0 140px; }
     .end-l1 { font-size: 70px; padding: 0 130px; }
@@ -306,17 +321,73 @@
     </div></div>
   </section>
 
-  <!-- G. 23.2~27.0s : 화면 월 -->
-  <section class="scene" data-start="23.2" data-dur="3.8">
+
+  <!-- V. 23.2~27.4s : 바이브코딩 HTML 앱 -->
+  <section class="scene" data-start="23.2" data-dur="4.2">
+    <div class="glow a" style="animation: drift 4.2s linear both"></div>
+    <div class="glow b" style="animation: drift 4.2s linear reverse both"></div>
+    <div class="hud mono" style="animation: fade .4s .1s both"><span class="dot"></span>05 — AI 스킬즈</div>
+    <div class="label">
+      <span class="tag t-violet" style="animation: riseS .45s .2s ease-out both">바이브코딩</span>
+      <h2 style="animation: rise .55s .3s cubic-bezier(.2,.8,.2,1) both">HTML 앱 만들기</h2>
+      <p style="animation: riseS .5s .55s ease-out both">원하는 앱을 설명하면 AI가 수업용 앱을 바로 만들어 줍니다.</p>
+    </div>
+    <div class="persp"><div class="cam" style="animation: camV 4.2s linear both">
+      <div class="app" style="animation: appIn .8s 0s cubic-bezier(.2,.8,.2,1) both"><div class="bar"><i></i><i></i><i></i></div>
+        <div class="shot"><img src="../../docs/assets/screenshots/vibe-coding.jpg" alt="">
+          <div class="ov gen" data-r="315,404,439,446">✦ AI로 만들기</div>
+          <div class="ov" data-r="301,524,1408,897" style="background: linear-gradient(135deg,#FFF7ED,#F5F3FF); animation: uncover 1.3s 2.05s cubic-bezier(.5,0,.3,1) both"></div>
+          <div class="ov" data-r="301,524,1408,897"><div class="scanline" style="animation: scan 1.3s 2.05s cubic-bezier(.5,0,.3,1) both"></div></div>
+          <div class="rip" data-p="377,425" style="animation: ripple .5s 1.75s ease-out both"></div>
+          <div class="cursor" style="animation: curV .8s .9s cubic-bezier(.5,0,.2,1) both"><svg viewBox="0 0 24 24" style="animation: press .2s 1.7s both"><path d="M4 2l16 10-7 1.5L9.5 21z" fill="#1C1917" stroke="#fff" stroke-width="1.5"/></svg></div>
+          <div class="badge" data-p="860,680" style="animation: riseS .3s 1.9s both, out .2s 3.3s forwards"><span class="sp" style="animation: spin .7s linear infinite"></span>AI가 앱을 만드는 중…</div>
+          <div class="badge ok" data-p="1010,450" style="animation: pop .4s 3.4s both">✓ 팀별 점수판 완성</div>
+        </div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- K. 27.4~31.8s : 대화로 스킬 만들기 → 공유 -->
+  <section class="scene" data-start="27.4" data-dur="4.4">
+    <div class="glow a" style="animation: drift 4.4s linear both"></div>
+    <div class="glow b" style="animation: drift 4.4s linear reverse both"></div>
+    <div class="hud mono" style="animation: fade .4s .1s both"><span class="dot"></span>06 — AI 스킬즈</div>
+    <div class="label">
+      <span class="tag t-violet" style="animation: riseS .45s .2s ease-out both">AI 스킬</span>
+      <h2 style="animation: rise .55s .3s cubic-bezier(.2,.8,.2,1) both">대화로 스킬 만들기</h2>
+      <p style="animation: riseS .5s .55s ease-out both">자주 쓰는 AI 작업을 스킬로 저장하고, 스킬마켓에서 서로 공유합니다.</p>
+    </div>
+    <div class="persp"><div class="cam" style="animation: camK 4.4s linear both">
+      <div class="app" style="animation: appIn .8s 0s cubic-bezier(.2,.8,.2,1) both"><div class="bar"><i></i><i></i><i></i></div>
+        <div class="shot"><img src="../../docs/assets/screenshots/skill-chat.jpg" alt="">
+          <div class="ov cover" data-r="980,272,1422,326" style="animation: out .2s .8s forwards"></div>
+          <div class="ov cover" data-r="286,330,660,560" style="animation: out .2s 1.2s forwards"></div>
+          <div class="ov cover" data-r="1105,564,1422,616" style="animation: out .2s 1.65s forwards"></div>
+          <div class="ov cover" data-r="286,622,670,872" style="animation: out .2s 2.05s forwards"></div>
+          <div class="ov cover" data-r="300,924,700,956" style="animation: wipeR .55s 2.4s linear both"></div>
+          <div class="rip" data-p="1406,966" style="animation: ripple .5s 3.15s ease-out both"></div>
+          <div class="cursor" style="animation: curK .7s 2.4s cubic-bezier(.5,0,.2,1) both"><svg viewBox="0 0 24 24" style="animation: press .2s 3.1s both"><path d="M4 2l16 10-7 1.5L9.5 21z" fill="#1C1917" stroke="#fff" stroke-width="1.5"/></svg></div>
+        </div>
+      </div>
+      <div class="skillcard" style="animation: slideIn .6s 3.35s cubic-bezier(.2,.8,.2,1) both">
+        <div class="sc-top"><b>상담일지 정리 도우미</b><em>AI</em></div>
+        <p>학생 이름·상담 날짜·상담 메모를 입력하면 상담 요지, 학부모 요청 사항, 후속 조치로 정리합니다.</p>
+        <div class="sc-btns"><span class="run">▷ 실행</span><span class="share">⤴ 스킬마켓에 공유</span></div>
+      </div>
+    </div></div>
+  </section>
+
+  <!-- G. 31.8~35.6s : 화면 월 -->
+  <section class="scene" data-start="31.8" data-dur="3.8">
     <div class="wall">
       <div class="wcol" style="animation: colUp 3.8s linear both">
-        <img src="../../docs/assets/screenshots/official-document.jpg" alt=""><img src="../../docs/assets/screenshots/budget-planning.jpg" alt=""><img src="../../docs/assets/screenshots/skill-sharing.jpg" alt=""><img src="../../docs/assets/screenshots/lesson-worksheet.jpg" alt=""><img src="../../docs/assets/screenshots/student-record.jpg" alt="">
+        <img src="../../docs/assets/screenshots/official-document.jpg" alt=""><img src="../../docs/assets/screenshots/budget-planning.jpg" alt=""><img src="../../docs/assets/screenshots/vibe-coding.jpg" alt=""><img src="../../docs/assets/screenshots/lesson-worksheet.jpg" alt=""><img src="../../docs/assets/screenshots/student-record.jpg" alt="">
       </div>
       <div class="wcol" style="animation: colDown 3.8s linear both">
         <img src="../../docs/assets/screenshots/student-record.jpg" alt=""><img src="../../docs/assets/screenshots/project-plan.jpg" alt=""><img src="../../docs/assets/screenshots/official-document.jpg" alt=""><img src="../../docs/assets/screenshots/budget-planning.jpg" alt=""><img src="../../docs/assets/screenshots/skill-sharing.jpg" alt="">
       </div>
       <div class="wcol" style="animation: colUp 3.8s linear both">
-        <img src="../../docs/assets/screenshots/lesson-worksheet.jpg" alt=""><img src="../../docs/assets/screenshots/skill-sharing.jpg" alt=""><img src="../../docs/assets/screenshots/project-plan.jpg" alt=""><img src="../../docs/assets/screenshots/student-record.jpg" alt=""><img src="../../docs/assets/screenshots/official-document.jpg" alt="">
+        <img src="../../docs/assets/screenshots/lesson-worksheet.jpg" alt=""><img src="../../docs/assets/screenshots/skill-chat.jpg" alt=""><img src="../../docs/assets/screenshots/project-plan.jpg" alt=""><img src="../../docs/assets/screenshots/student-record.jpg" alt=""><img src="../../docs/assets/screenshots/official-document.jpg" alt="">
       </div>
     </div>
     <div class="wall-shade"></div>
@@ -328,8 +399,8 @@
     </div>
   </section>
 
-  <!-- H. 27.0~32.0s : 엔드 -->
-  <section class="scene center" data-start="27" data-dur="4.2">
+  <!-- H. 35.6~39.8s : 엔드 -->
+  <section class="scene center" data-start="35.6" data-dur="4.2">
     <div class="glow a" style="animation: drift 5s linear both"></div>
     <div class="glow b" style="animation: drift 5s linear reverse both"></div>
     <img class="end-icon" src="../../docs/assets/icon.png" alt="" style="animation: pop .6s .1s cubic-bezier(.2,.8,.2,1) both">
@@ -342,8 +413,8 @@
     </div>
   </section>
 
-  <!-- I. 31.2~35s : 만든 사람 -->
-  <section class="scene center" data-start="31" data-dur="4" data-out="0.6">
+  <!-- I. 39.6~43.6s : 만든 사람 -->
+  <section class="scene center" data-start="39.6" data-dur="4" data-out="0.6">
     <div class="glow a" style="animation: drift 4s linear both"></div>
     <div class="glow b" style="animation: drift 4s linear reverse both"></div>
     <div class="credit-eyebrow mono" style="animation: fade .5s .15s both">Made by</div>
@@ -380,17 +451,21 @@
     curKF('curD', [[0, 700, 700], [36, 1095, 298], [55, 1095, 298], [68, 898, 342], [82, 898, 342], [100, 1095, 342]]),
     curKF('curE', [[0, 1200, 600], [100, 986, 86]]),
     curKF('curF', [[0, 900, 800], [100, 470, 950]]),
+    curKF('curV', [[0, 900, 760], [100, 377, 425]]),
+    curKF('curK', [[0, 900, 760], [100, 1406, 966]]),
     '@keyframes wipeR { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }',
     // 장면별 카메라 이동
     '@keyframes camC { 0% { transform: scale(1); transform-origin: 40% 60%; } 40% { transform: scale(1); transform-origin: 40% 70%; } 100% { transform: scale(' + (portrait ? 1.5 : 1.28) + ') translate(' + (portrait ? '-14%, -6%' : '2%, -2%') + '); transform-origin: 70% 40%; } }',
     '@keyframes camD { 0% { transform: scale(1); } 100% { transform: scale(' + (portrait ? 1.15 : 1.14) + ') translate(' + (portrait ? '0%, -4%' : '1%, -3%') + '); } }',
     '@keyframes camE { 0% { transform: scale(1); } 100% { transform: scale(' + (portrait ? 1.3 : 1.22) + ') translate(' + (portrait ? '-8%, 0%' : '0%, 2%') + '); } }',
+    '@keyframes camV { 0% { transform: scale(1); } 100% { transform: scale(' + (portrait ? 1.25 : 1.16) + ') translate(' + (portrait ? '-4%, -10%' : '0%, -8%') + '); } }',
+    '@keyframes camK { 0% { transform: scale(1); } 100% { transform: scale(' + (portrait ? 1.2 : 1.12) + ') translate(' + (portrait ? '-6%, -8%' : '0%, -6%') + '); } }',
     '@keyframes camF { 0% { transform: scale(1); } 100% { transform: scale(' + (portrait ? 1.25 : 1.2) + ') translate(' + (portrait ? '-8%, -6%' : '0%, -6%') + '); } }'
   ];
   document.getElementById('dyn').textContent = css.join('\n');
 
   // 타임라인 seek
-  var DURATION = window.DURATION = 35;
+  var DURATION = window.DURATION = 43.6;
   var scenes = Array.prototype.slice.call(document.querySelectorAll('.scene'));
   var flash = document.getElementById('flash');
   var counters = Array.prototype.slice.call(document.querySelectorAll('[data-count]'));
