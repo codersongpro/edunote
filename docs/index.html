@@ -592,21 +592,51 @@
   var cue = document.getElementById('introCue');
   var dim = document.getElementById('introDim');
   var soundBtn = document.getElementById('introSound');
-  // 브라우저 정책상 자동 재생은 무음으로 시작하고, 버튼을 눌러야 소리가 난다.
-  soundBtn.addEventListener('click', function () {
-    var on = video.muted;
-    video.muted = !on;
-    if (on) { video.volume = 0.8; var pr = video.play(); if (pr && pr.catch) pr.catch(function () {}); }
-    soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    soundBtn.querySelector('.label').textContent = on ? '소리 끄기' : '소리 켜기';
-  });
   if (!intro || !video) return;
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var userMuted = false;
+  var armed = false;
+  var GESTURES = ['pointerdown', 'pointerup', 'keydown', 'touchend'];
+  function setSoundUI(on) {
+    soundBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    soundBtn.querySelector('.label').textContent = on ? '소리 끄기' : '소리 켜기';
+  }
+  // 소리를 켠 채 재생을 시도하고, 브라우저가 막으면 무음으로 계속 재생한 뒤 첫 클릭·탭·키 입력 때 소리를 켠다.
+  function safePlay() {
+    var pr = video.play();
+    if (pr && pr.catch) pr.catch(function () {
+      if (video.muted) return;
+      video.muted = true; setSoundUI(false); armGesture();
+      var p2 = video.play(); if (p2 && p2.catch) p2.catch(function () {});
+    });
+  }
+  function onGesture(e) {
+    if (soundBtn.contains(e.target)) return; // 버튼은 자체 동작으로 처리
+    GESTURES.forEach(function (t) { document.removeEventListener(t, onGesture, true); });
+    armed = false;
+    if (userMuted) return;
+    video.muted = false; setSoundUI(true);
+    if (!video.paused) safePlay();
+  }
+  function armGesture() {
+    if (armed) return; armed = true;
+    GESTURES.forEach(function (t) { document.addEventListener(t, onGesture, true); });
+  }
+  soundBtn.addEventListener('click', function () {
+    var turnOn = video.muted;
+    userMuted = !turnOn;
+    video.muted = !turnOn;
+    setSoundUI(turnOn);
+    if (turnOn) safePlay();
+  });
+  video.volume = 0.8;
   if (reduce) {
     video.removeAttribute('autoplay'); video.pause();
-    // 동작 줄이기 설정에서는 자동 재생하지 않고, 소리 버튼을 누르면 재생한다.
+    // 동작 줄이기 설정에서는 자동 재생하지 않고, 소리 버튼을 누르면 소리와 함께 재생한다.
     return;
   }
+  video.muted = false; setSoundUI(true);
+  safePlay();
   var ticking = false;
   function update() {
     ticking = false;
@@ -623,7 +653,7 @@
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
-        if (e.isIntersecting) { var pr = video.play(); if (pr && pr.catch) pr.catch(function () {}); }
+        if (e.isIntersecting) safePlay();
         else video.pause();
       });
     }).observe(intro);
