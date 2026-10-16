@@ -263,6 +263,9 @@
     background: var(--emerald-bg); padding: 5px 12px; border-radius: 999px; margin-bottom: 16px;
   }
   html.dark .version-pill { background: var(--emerald-bg-dark); }
+  /* 누적 다운로드 수: 집계가 끝나야 보이며, 실패하면 계속 숨겨 둔다 */
+  .download-count { margin: 0 0 4px; font-size: 13.5px; color: var(--text-3); }
+  .download-count strong { display: block; font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.2; font-variant-numeric: tabular-nums; }
   .download-meta { font-size: 12.5px; color: var(--text-4); margin-top: 10px; }
   .download-links { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 16px; }
 
@@ -522,6 +525,7 @@
       </ul>
       <div class="download-right">
         <span class="version-pill" id="versionPill">v1.28.5 최신 버전</span>
+        <p class="download-count" id="downloadCount" hidden><strong id="downloadCountNum"></strong>누적 다운로드</p>
         <div class="download-links">
           <a class="btn btn-primary" id="downloadBtn" href="https://github.com/codersongpro/edunote/releases/download/v1.28.5/edunote_1.28.5_portable.exe" target="_blank" rel="noopener">⬇ EduNote 다운로드</a>
         </div>
@@ -708,14 +712,57 @@
     return mb.toFixed(1) + 'MB';
   }
 
-  fetch('https://api.github.com/repos/codersongpro/edunote/releases/latest')
-    .then(function (r) { if (!r.ok) throw new Error('release fetch failed'); return r.json(); })
-    .then(function (data) {
+  // 릴리즈 목록 전체(100개씩 여러 쪽)를 받아 최신 릴리즈와 누적 다운로드 수를 함께 구한다.
+  var RELEASES_URL = 'https://api.github.com/repos/codersongpro/edunote/releases?per_page=100&page=';
+  var CACHE_KEY = 'edunote-landing-releases';
+  var CACHE_MS = 30 * 60 * 1000; // 학교처럼 같은 IP를 여럿이 쓰는 곳에서 GitHub API 한도(시간당 60회)를 아끼려고 30분간 재사용
+
+  function fetchAllReleases(page, acc) {
+    return fetch(RELEASES_URL + page)
+      .then(function (r) { if (!r.ok) throw new Error('release fetch failed'); return r.json(); })
+      .then(function (list) {
+        acc = acc.concat(list);
+        return (list.length === 100 && page < 10) ? fetchAllReleases(page + 1, acc) : acc;
+      });
+  }
+
+  function summarize(releases) {
+    var latest = releases.find(function (r) { return !r.draft && !r.prerelease; }) || null;
+    var total = 0;
+    releases.forEach(function (r) {
+      (r.assets || []).forEach(function (a) {
+        if (/\.exe$/i.test(a.name)) total += a.download_count || 0; // 실행 파일만 센다
+      });
+    });
+    return { latest: latest && { tag_name: latest.tag_name, assets: latest.assets }, total: total };
+  }
+
+  function loadSummary() {
+    try {
+      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.savedAt < CACHE_MS) return Promise.resolve(cached.data);
+    } catch (e) {}
+    return fetchAllReleases(1, []).then(function (releases) {
+      var data = summarize(releases);
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data: data })); } catch (e) {}
+      return data;
+    });
+  }
+
+  loadSummary()
+    .then(function (summary) {
+      var data = summary.latest || {};
       var version = data.tag_name || '';
       var asset = (data.assets || []).find(function (a) { return /portable.*\.exe$/i.test(a.name); }) || (data.assets || [])[0];
 
       document.getElementById('versionPill').textContent = version ? (version + ' 최신 버전') : '최신 버전';
       var noteText = version ? ('최신 버전 ' + version + ' 사용 가능') : '';
+      if (summary.total > 0) {
+        var totalText = summary.total.toLocaleString('ko-KR') + '회';
+        noteText += (noteText ? ' · ' : '') + '누적 다운로드 ' + totalText;
+        document.getElementById('downloadCountNum').textContent = totalText;
+        document.getElementById('downloadCount').hidden = false;
+      }
       document.getElementById('heroDownloadNote').textContent = noteText;
 
       if (asset) {

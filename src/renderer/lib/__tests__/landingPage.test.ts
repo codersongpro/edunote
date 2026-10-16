@@ -18,6 +18,12 @@ describe('랜딩페이지 외부 링크', () => {
       .toContain('/releases/download/');
   });
 
+  it('누적 다운로드 수는 집계 전까지 숨기고 릴리즈 전체 목록에서 계산한다', () => {
+    expect(landingPage.querySelector<HTMLElement>('#downloadCount')?.hidden).toBe(true);
+    expect(html).toContain('/releases?per_page=100&page=');
+    expect(html).toContain('download_count');
+  });
+
   it('바닥글의 릴리즈 노트 전체와 오픈소스 라이선스 링크는 표시하지 않는다', () => {
     const footerLinks = Array.from(landingPage.querySelectorAll('footer a'))
       .map(link => link.textContent?.trim());
