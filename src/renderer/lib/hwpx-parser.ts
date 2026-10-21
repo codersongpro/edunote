@@ -76,6 +76,37 @@ AI는 문서의 파일명(${file.name})은 인지하지만, 내용은 정확히 
   }
 }
 
+// 텍스트 노드(<hp:t>)를 배열로 돌려준다. 번호는 fillHwpxTemplate의 globalIdx와 같아서
+// 바꾼 노드만 골라 원본 서식을 유지한 채 다시 채울 수 있다.
+// HWPX가 아니거나 손상된 파일이면 예외를 던진다.
+export async function extractHwpxTextNodes(file: File): Promise<string[]> {
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const sectionFiles = Object.keys(zip.files)
+    .filter((name) => /^Contents\/section\d+\.xml$/i.test(name))
+    .sort((a, b) => {
+      const numA = parseInt(a.match(/section(\d+)/i)?.[1] || "0");
+      const numB = parseInt(b.match(/section(\d+)/i)?.[1] || "0");
+      return numA - numB;
+    });
+  if (sectionFiles.length === 0) throw new Error("HWPX 본문(Contents/section.xml)을 찾을 수 없습니다.");
+
+  const nodes: string[] = [];
+  for (const sectionPath of sectionFiles) {
+    const xml = await zip.file(sectionPath)!.async("string");
+    for (const match of xml.matchAll(/<hp:t[^>]*>([\s\S]*?)<\/hp:t>/g)) {
+      nodes.push(match[1]
+        .replace(/<[^>]*>?/gm, "")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/&#10;/g, '\n')
+        .replace(/&amp;/g, '&'));
+    }
+  }
+  return nodes;
+}
+
 export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(arrayBuffer);

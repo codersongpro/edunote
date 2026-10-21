@@ -17,6 +17,9 @@ import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLeng
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { ReviewChecklist } from './ReviewChecklist';
+import { AiReviewButton } from './AiReviewButton';
+import { describeRecordSource } from '../lib/recordRules';
+import { nodesToText, textToNodes } from '../lib/aiReview';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
@@ -1023,6 +1026,20 @@ const OpinionGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.opinion} />
                              </div>
                              <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${student.id}:${student.generatedContent || ''}:${generatingIds.has(student.id) || isGlobalGenerating}`} />
+                             <div className="mt-2 flex justify-end">
+                               <AiReviewButton
+                                 target="record"
+                                 recordKind="opinion"
+                                 studentName={student.name}
+                                 sourceNotes={describeRecordSource(student)}
+                                 byteLimit={byteLimits.opinion}
+                                 disabled={!student.generatedContent || generatingIds.has(student.id) || isGlobalGenerating}
+                                 getSnapshot={() => ({
+                                   nodes: textToNodes(student.generatedContent || ''),
+                                   commit: updated => { handleResultChange(idx, nodesToText(updated)); return undefined; },
+                                 })}
+                               />
+                             </div>
                              {expandedHistory.has(student.id) && (() => {
                                const hist: HistoryEntry[] = getHistory('opinion', student.name);
                                return hist.length > 0 ? (

@@ -37,6 +37,8 @@ describe('getNavigationSection', () => {
   it.each([
     [AppMode.EDUCATION_QA, 'admin'],
     [AppMode.OFFICIAL_DOC_ANALYZER, 'admin'],
+    [AppMode.DOC_REFRESH, 'admin'],
+    [AppMode.DOC_REVIEW, 'admin'],
     [AppMode.DOC_TODO, 'admin'],
     [AppMode.SCHOOL_DOC, 'admin'],
     [AppMode.BUDGET_PLANNER, 'admin'],
