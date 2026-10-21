@@ -34,3 +34,21 @@ describe('랜딩페이지 외부 링크', () => {
       .toContain('Copyright');
   });
 });
+
+describe('랜딩페이지 버전·새 기능 알림', () => {
+  const version = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')).version as string;
+
+  it('다운로드 기본 링크와 버전 표시가 package.json 버전과 같다', () => {
+    const file = `/releases/download/v${version}/edunote_${version}_portable.exe`;
+    expect(landingPage.querySelector<HTMLAnchorElement>('#heroDownloadBtn')?.href).toContain(file);
+    expect(landingPage.querySelector<HTMLAnchorElement>('#downloadBtn')?.href).toContain(file);
+    expect(landingPage.querySelector('#versionPill')?.textContent).toContain(`v${version}`);
+    expect(landingPage.querySelector('#downloadMeta')?.textContent).toContain(`edunote_${version}_portable.exe`);
+  });
+
+  it('히어로 배지와 새 기능 섹션으로 v1.29.0 기능을 알린다', () => {
+    expect(landingPage.querySelector<HTMLAnchorElement>('#whatsNewBadge')?.getAttribute('href')).toBe('#whats-new');
+    const titles = Array.from(landingPage.querySelectorAll('#whats-new .feature-card h3')).map(h => h.textContent?.trim());
+    expect(titles).toEqual(['전년도 공문 현행화', '공문·계획서 오류 검토', '결과 화면 AI 오류 검토']);
+  });
+});
