@@ -20,6 +20,8 @@ import StudentMemoBoard from './components/StudentMemoBoard';
 import StudentCardScreen from './components/StudentCardScreen';
 import EducationAssistantQA from './components/EducationAssistantQA';
 import OfficialDocAnalyzer from './components/OfficialDocAnalyzer';
+import DocCheckScreen from './components/DocCheckScreen';
+import { DOC_REVIEW_HANDOFF_EVENT } from './lib/docSource';
 import LessonMaterialGenerator from './components/LessonMaterialGenerator';
 import MyResourceLibrary from './components/MyResourceLibrary';
 import SettingsScreen from './components/SettingsScreen';
@@ -36,7 +38,7 @@ import {
   FileText, Eye, StickyNote, GraduationCap, MessageCircle, CalendarDays,
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
-  GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer,
+  GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer, CalendarSync, ScanSearch,
   PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
@@ -431,6 +433,17 @@ const App: React.FC = () => {
     return () => window.removeEventListener('edunote-goto-settings', handler);
   }, []);
 
+  // 현행화 화면의 「오류 검토로 보내기」 — 문서는 lib/docSource가 들고 있고 여기서는 화면만 옮긴다.
+  useEffect(() => {
+    const handler = () => {
+      setAdminSectionOpen(true);
+      setMode(AppMode.DOC_REVIEW);
+      setMountedModes(prev => new Set([...prev, AppMode.DOC_REVIEW]));
+    };
+    window.addEventListener(DOC_REVIEW_HANDOFF_EVENT, handler);
+    return () => window.removeEventListener(DOC_REVIEW_HANDOFF_EVENT, handler);
+  }, []);
+
   // 전역 토스트 이벤트(lib/toast.ts) 수신 — 컴포넌트에서 context 없이도 토스트를 띄울 수 있게 한다.
   useEffect(() => {
     const handler = (e: Event) => {
@@ -630,11 +643,13 @@ const App: React.FC = () => {
   };
 
   // 홈 화면의 "빠른 시작" 타일에서 자주 쓰는 기능으로 바로 이동한다(학년 선택이 필요한 기능은 handleModeChange가 처리).
-  const handleHomeQuickStart = (key: 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'schoolDoc') => {
+  const handleHomeQuickStart = (key: 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'docRefresh' | 'docReview' | 'schoolDoc') => {
     if (key === 'chat') { setClassToolsInitialTab('chat'); setLessonSectionOpen(true); handleModeChange(AppMode.CLASS_TOOLS); }
     else if (key === 'record') handleModeChange(AppMode.GENERATOR);
     else if (key === 'lesson') { setLessonSectionOpen(true); handleModeChange(AppMode.LESSON_MATERIAL); }
     else if (key === 'docAnalyze') { setAdminSectionOpen(true); handleModeChange(AppMode.OFFICIAL_DOC_ANALYZER); }
+    else if (key === 'docRefresh') { setAdminSectionOpen(true); handleModeChange(AppMode.DOC_REFRESH); }
+    else if (key === 'docReview') { setAdminSectionOpen(true); handleModeChange(AppMode.DOC_REVIEW); }
     else if (key === 'schoolDoc') { setAdminSectionOpen(true); handleModeChange(AppMode.SCHOOL_DOC); }
   };
 
@@ -690,6 +705,8 @@ const App: React.FC = () => {
   const defaultAdminMenuItems: SidebarMenuItem[] = [
     { mode: AppMode.EDUCATION_QA, icon: GraduationCap, label: '교무행정AI 챗봇' },
     { mode: AppMode.OFFICIAL_DOC_ANALYZER, icon: ClipboardList, label: '공문요약·업무추출' },
+    { mode: AppMode.DOC_REFRESH, icon: CalendarSync, label: '전년도 공문 현행화' },
+    { mode: AppMode.DOC_REVIEW, icon: ScanSearch, label: '공문·계획서 오류 검토' },
     { mode: AppMode.DOC_TODO, icon: ListTodo, label: '공문 할일' },
     { mode: AppMode.SCHOOL_DOC, icon: FileText, label: '문서작성기' },
     { mode: AppMode.DOC_ARCHIVE, icon: Archive, label: '공문 보관함' },
@@ -769,7 +786,7 @@ const App: React.FC = () => {
     else handleModeChange(m);
   };
 
-  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR];
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_REFRESH, AppMode.DOC_REVIEW, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR];
 
   const topNavItems = (() => {
     if (mode === AppMode.SCHOOL_DOC) {
@@ -825,6 +842,8 @@ const App: React.FC = () => {
     { key: 'settings', label: '설정', icon: Settings, active: mode === AppMode.SETTINGS, onClick: () => goTo(AppMode.SETTINGS) },
     { key: 'admin', label: '교무행정AI', icon: FileText, active: ADMIN_MODES.includes(mode), onClick: () => { setAdminSectionOpen(true); goTo(AppMode.EDUCATION_QA); } },
     { key: 'doc-analyzer', label: '공문요약·업무추출', icon: ClipboardList, active: mode === AppMode.OFFICIAL_DOC_ANALYZER, progress: getProgressFor(AppMode.OFFICIAL_DOC_ANALYZER), onClick: () => goTo(AppMode.OFFICIAL_DOC_ANALYZER) },
+    { key: 'doc-refresh', label: '전년도 공문 현행화', icon: CalendarSync, active: mode === AppMode.DOC_REFRESH, progress: getProgressFor(AppMode.DOC_REFRESH), onClick: () => goTo(AppMode.DOC_REFRESH) },
+    { key: 'doc-review', label: '공문·계획서 오류 검토', icon: ScanSearch, active: mode === AppMode.DOC_REVIEW, progress: getProgressFor(AppMode.DOC_REVIEW), onClick: () => goTo(AppMode.DOC_REVIEW) },
     { key: 'school-doc', label: '문서작성기', icon: FileText, active: mode === AppMode.SCHOOL_DOC, progress: getProgressFor(AppMode.SCHOOL_DOC), onClick: handleSchoolDocParent },
     { key: 'lesson', label: '수업자료AI', icon: Presentation, active: LESSON_AI_MODES.includes(mode), onClick: () => { setLessonSectionOpen(true); goTo(AppMode.LESSON_MATERIAL); } },
     { key: 'student', label: '학생기록AI', icon: Bot, active: STUDENT_RECORD_MODES.includes(mode), onClick: () => handleModeChange(AppMode.RECORD_CHATBOT) },
@@ -844,6 +863,8 @@ const App: React.FC = () => {
       case AppMode.CREATIVE_ACTIVITY_GENERATOR: return <CreativeActivityGenerator schoolLevel={schoolLevel} />;
       case AppMode.EDUCATION_QA: return <EducationAssistantQA />;
       case AppMode.OFFICIAL_DOC_ANALYZER: return <OfficialDocAnalyzer />;
+      case AppMode.DOC_REFRESH: return <DocCheckScreen mode="refresh" />;
+      case AppMode.DOC_REVIEW: return <DocCheckScreen mode="review" />;
       case AppMode.SCHOOL_DOC: return <SchoolDocPanel initialTab={activeDocType} />;
       case AppMode.BUDGET_PLANNER: return <BudgetPlannerScreen />;
       case AppMode.DOC_ARCHIVE: return <DocArchivePanel />;

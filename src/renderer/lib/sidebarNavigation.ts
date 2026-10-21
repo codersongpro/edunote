@@ -19,6 +19,8 @@ const NAVIGATION_SECTION_MODES: Readonly<Record<NavigationSection, readonly AppM
   admin: [
     AppMode.EDUCATION_QA,
     AppMode.OFFICIAL_DOC_ANALYZER,
+    AppMode.DOC_REFRESH,
+    AppMode.DOC_REVIEW,
     AppMode.DOC_TODO,
     AppMode.SCHOOL_DOC,
     AppMode.BUDGET_PLANNER,

@@ -18,6 +18,9 @@ import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLeng
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { ReviewChecklist } from './ReviewChecklist';
+import { AiReviewButton } from './AiReviewButton';
+import { describeRecordSource } from '../lib/recordRules';
+import { nodesToText, textToNodes } from '../lib/aiReview';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
@@ -1541,6 +1544,20 @@ const CreativeActivityGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.creative} />
                              </div>
                              <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${creativeState.currentActivityName}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGlobalGenerating}`} />
+                             <div className="mt-2 flex justify-end">
+                               <AiReviewButton
+                                 target="record"
+                                 recordKind="creative"
+                                 studentName={student.name}
+                                 sourceNotes={describeRecordSource(student)}
+                                 byteLimit={byteLimits.creative}
+                                 disabled={!student.generatedContent || generatingIds.has(regenerationKey(creativeState.currentActivityName, student.id)) || isGlobalGenerating}
+                                 getSnapshot={() => ({
+                                   nodes: textToNodes(student.generatedContent || ''),
+                                   commit: updated => { handleResultChange(idx, nodesToText(updated)); return undefined; },
+                                 })}
+                               />
+                             </div>
                              {expandedHistory.has(student.id) && (() => {
                                const groups = getHistoryGroupsForContext('creative', student.name, creativeState.currentActivityName);
                                return groups.length > 0 ? (

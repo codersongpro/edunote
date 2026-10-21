@@ -26,3 +26,13 @@ describe('parseJsonArrayFromAiText', () => {
     expect(() => parseJsonArrayFromAiText('```json\n{"a":1}\n```')).toThrow('AI 응답 형식이 올바르지 않습니다');
   });
 });
+
+describe('parseJsonObjectFromAiText', () => {
+  it('코드펜스·산문에 섞인 JSON 객체를 꺼내고 배열·깨진 응답은 거부한다', async () => {
+    const { parseJsonObjectFromAiText } = await import('../aiJson');
+    expect(parseJsonObjectFromAiText('```json\n{"a":1}\n```')).toEqual({ a: 1 });
+    expect(parseJsonObjectFromAiText('검토 결과입니다. {"suggestions":[]} 이상입니다.')).toEqual({ suggestions: [] });
+    expect(() => parseJsonObjectFromAiText('[1,2]')).toThrow('AI 응답 형식이 올바르지 않습니다.');
+    expect(() => parseJsonObjectFromAiText('없음')).toThrow('AI 응답을 해석하지 못했습니다.');
+  });
+});

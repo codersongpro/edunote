@@ -52,6 +52,10 @@ export enum AppMode {
   DOC_ARCHIVE = 'DOC_ARCHIVE',
   // 공문 할일
   DOC_TODO = 'DOC_TODO',
+  // 전년도 공문 현행화
+  DOC_REFRESH = 'DOC_REFRESH',
+  // 공문·계획서 오류 검토
+  DOC_REVIEW = 'DOC_REVIEW',
   // 양식 인쇄
   PRINT_FORM = 'PRINT_FORM',
   // 간단 번역

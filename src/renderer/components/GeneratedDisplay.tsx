@@ -10,6 +10,9 @@ import { copyPlainTextToClipboard } from '../lib/clipboard';
 import { convertHtmlToMarkdown } from '../lib/htmlToMarkdown';
 import type { GroundingInfo } from '../../preload/types';
 import { ReviewChecklist, type ReviewChecklistKind } from './ReviewChecklist';
+import { AiReviewButton, type ReviewSnapshot } from './AiReviewButton';
+import { collectHtmlTextNodes, writeHtmlTextNodes } from '../lib/htmlTextNodes';
+import type { DocKind } from '../lib/docRules';
 
 export interface HwpxTemplateData {
   [key: string]: string;
@@ -29,7 +32,23 @@ interface GeneratedDisplayProps {
   grounding?: GroundingInfo;
   // 사용 전 체크리스트에 어느 영역의 확인 항목을 보여줄지 — 생략하면 교무행정 문서 기준.
   reviewKind?: ReviewChecklistKind;
+  // AI 오류 검토에서 공문·계획서 규칙(끝 표시, 필수 항목 등)을 적용할 문서 종류 — 생략하면 일반 문서.
+  reviewDocKind?: DocKind;
   onContentChange?: (content: string) => void;
+}
+
+// 검토로 바뀐 줄을 업로드한 HWPX 양식의 채움 데이터에도 반영한다.
+// 양식 칸과 화면의 줄이 1:1로 맞지 않을 수 있어, 바뀌기 전 줄 전체가 그대로 들어 있는 칸만 고친다.
+function syncFillData(fillData: any[], before: string[], after: string[]): { data: any[]; missed: number } {
+  const data = fillData.map(item => ({ ...item }));
+  let missed = 0;
+  before.forEach((old, i) => {
+    if (after[i] === old) return;
+    const target = old.trim().length >= 4 ? data.find(item => typeof item?.value === 'string' && item.value.includes(old)) : undefined;
+    if (target) target.value = target.value.replace(old, after[i]);
+    else missed += 1;
+  });
+  return { data, missed };
 }
 
 interface SavedGeneratedVersion {
@@ -83,7 +102,7 @@ function applyDocumentStyles(el: HTMLElement): void {
   });
 }
 
-export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData, hwpxTemplate, title, enableTranslation, model, grounding, reviewKind, onContentChange }) => {
+export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwpxData, hwpxFillData: hwpxFillDataProp, hwpxTemplate, title, enableTranslation, model, grounding, reviewKind, reviewDocKind, onContentChange }) => {
   const [copied, setCopied] = React.useState(false);
   const [hwpxDownloading, setHwpxDownloading] = React.useState(false);
   const [cautionTerms, setCautionTerms] = React.useState<string[]>([]);
@@ -96,6 +115,10 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
   const [translating, setTranslating] = React.useState(false);
   const [hasTranslation, setHasTranslation] = React.useState(false);
   const [editorRevision, setEditorRevision] = React.useState(0);
+  // AI 오류 검토로 고친 HWPX 양식 채움 데이터. 새 결과가 오면 원래 데이터로 돌아간다.
+  const [fillDataOverride, setFillDataOverride] = React.useState<any[] | null>(null);
+  useEffect(() => setFillDataOverride(null), [hwpxFillDataProp]);
+  const hwpxFillData = fillDataOverride ?? hwpxFillDataProp;
   // 번역 전 원문 — 다른 언어로 다시 번역하거나 원문으로 되돌릴 때 쓴다.
   const originalHtmlRef = useRef<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -142,6 +165,29 @@ export const GeneratedDisplay: React.FC<GeneratedDisplayProps> = ({ content, hwp
       originalHtmlRef.current = null;
       setHasTranslation(false);
     }
+  };
+
+  // AI 오류 검토용 스냅샷: 편집기의 텍스트 노드만 고쳐 표·서식은 그대로 둔다.
+  const getReviewSnapshot = (): ReviewSnapshot | null => {
+    const el = contentRef.current;
+    if (!el || selectedVersion) return null;
+    const snapshot = collectHtmlTextNodes(el);
+    return {
+      nodes: snapshot.nodes,
+      commit: updated => {
+        const { skipped } = writeHtmlTextNodes(snapshot, updated);
+        onContentChange?.(el.innerHTML);
+        setEditorRevision(revision => revision + 1);
+        if (hwpxTemplate && hwpxFillData) {
+          const synced = syncFillData(hwpxFillData, snapshot.nodes, updated);
+          setFillDataOverride(synced.data);
+          if (synced.missed > 0) {
+            notifyToast({ type: 'warning', title: 'HWPX 양식 칸에는 일부만 반영했습니다.', description: '「HWPX 양식 저장」 파일은 저장 후 한글에서 한 번 더 확인해 주세요.' });
+          }
+        }
+        return { skipped };
+      },
+    };
   };
 
   const getPlainText = (): string => {
@@ -576,6 +622,9 @@ h2,h3{page-break-after:avoid;}
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {(reviewKind ?? 'document') === 'document' && (
+            <AiReviewButton target="document" docKind={reviewDocKind} getSnapshot={getReviewSnapshot} disabled={!content || !!selectedVersion} />
+          )}
           <button
             onClick={handlePrint}
             className="p-1.5 text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#F0EBE6] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] rounded transition-colors"

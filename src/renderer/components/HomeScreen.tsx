@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
 
@@ -10,7 +10,7 @@ interface UpdateInfo {
   releaseUrl: string;
 }
 
-type QuickStartKey = 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'schoolDoc';
+type QuickStartKey = 'chat' | 'record' | 'lesson' | 'docAnalyze' | 'docRefresh' | 'docReview' | 'schoolDoc';
 
 interface Props {
   onNavigate: (target: 'settings' | 'student' | 'admin' | 'guide') => void;
@@ -23,6 +23,8 @@ const QUICK_TILES: { key: QuickStartKey; label: string; icon: React.ComponentTyp
   { key: 'record', label: '생기부', icon: GraduationCap },
   { key: 'lesson', label: '수업자료', icon: Presentation },
   { key: 'docAnalyze', label: '공문요약', icon: ClipboardList },
+  { key: 'docRefresh', label: '공문현행화', icon: CalendarSync },
+  { key: 'docReview', label: '오류검토', icon: ScanSearch },
   { key: 'schoolDoc', label: '문서작성', icon: FileText },
 ];
 
@@ -291,7 +293,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
           {/* 빠른 시작 */}
           <div>
             <p className="text-xs font-bold text-[#A8A29E] dark:text-[#6B5E57] mb-1.5 px-0.5">빠른 시작</p>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
               {QUICK_TILES.map(t => (
                 <button
                   key={t.key}

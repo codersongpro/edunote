@@ -17,6 +17,9 @@ import { loadByteLimits, DEFAULT_BYTE_LIMITS, RecordKind } from '../lib/textLeng
 import { toCsv } from '../lib/csv';
 import { ByteCountBadge } from './ByteCountBadge';
 import { ReviewChecklist } from './ReviewChecklist';
+import { AiReviewButton } from './AiReviewButton';
+import { describeRecordSource } from '../lib/recordRules';
+import { nodesToText, textToNodes } from '../lib/aiReview';
 import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
@@ -2228,6 +2231,20 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                  <ByteCountBadge text={student.generatedContent || ''} limit={byteLimits.subject} />
                              </div>
                              <ReviewChecklist kind="student" content={student.generatedContent || ''} resetKey={`${subjectState.currentSubject}:${student.id}:${student.generatedContent || ''}:${generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating}`} />
+                             <div className="mt-2 flex justify-end">
+                               <AiReviewButton
+                                 target="record"
+                                 recordKind="subject"
+                                 studentName={student.name}
+                                 sourceNotes={describeRecordSource(student)}
+                                 byteLimit={byteLimits.subject}
+                                 disabled={!student.generatedContent || generatingIds.has(regenerationKey(subjectState.currentSubject, student.id)) || isGlobalGenerating || student.reviewStatus === 'final'}
+                                 getSnapshot={() => ({
+                                   nodes: textToNodes(student.generatedContent || ''),
+                                   commit: updated => { handleResultChange(idx, nodesToText(updated)); return undefined; },
+                                 })}
+                               />
+                             </div>
                              {expandedEvidence.has(student.id) && (
                                <div className="mt-3 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-950/20 p-3 space-y-3">
                                  <div className="grid grid-cols-2 gap-3 text-xs font-bold text-purple-800 dark:text-purple-200">
