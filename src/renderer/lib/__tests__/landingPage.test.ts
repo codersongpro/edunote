@@ -52,3 +52,12 @@ describe('랜딩페이지 버전·새 기능 알림', () => {
     expect(titles).toEqual(['전년도 공문 현행화', '공문·계획서 오류 검토', '결과 화면 AI 오류 검토']);
   });
 });
+
+describe('만든 사람 카드', () => {
+  it('개발자 홈페이지(songpro.app)를 새 창으로 연결한다', () => {
+    const link = landingPage.querySelector<HTMLAnchorElement>('#developer #devHomeLink');
+    expect(link?.getAttribute('href')).toBe('https://songpro.app');
+    expect(link?.target).toBe('_blank');
+    expect(link?.rel).toContain('noopener');
+  });
+});
