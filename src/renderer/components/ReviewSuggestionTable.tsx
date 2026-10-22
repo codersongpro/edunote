@@ -158,6 +158,14 @@ export const ReviewSuggestionTable: React.FC<Props> = ({
         </ul>
       )}
 
+      <ReviewExtras checkItems={checkItems} grounding={grounding} />
+    </div>
+  );
+};
+
+// 검토 결과 아래에 붙는 「직접 확인할 사항」과 웹 검색 출처. 비교표와 본문 하이라이트 보기가 함께 쓴다.
+export const ReviewExtras: React.FC<{ checkItems?: string[]; grounding?: GroundingInfo }> = ({ checkItems = [], grounding }) => (
+  <>
       {checkItems.length > 0 && (
         <div className="rounded-xl border border-purple-200 dark:border-purple-900 bg-purple-50/60 dark:bg-purple-950/20 p-3">
           <p className="text-sm font-bold text-purple-800 dark:text-purple-200 mb-1.5">직접 확인할 사항</p>
@@ -192,8 +200,7 @@ export const ReviewSuggestionTable: React.FC<Props> = ({
           </ol>
         </div>
       )}
-    </div>
-  );
-};
+  </>
+);
 
 export default ReviewSuggestionTable;

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { DOMParser } from '@xmldom/xmldom';
 import { buildHwpxZip } from '../HwpxGenerator';
+import { applyOutlineStyles } from '../../renderer/lib/outlineFormat';
 import { BLANK_HWPX_BASE64 } from '../hwpxSkeleton';
 
 const SKELETON_ENTRIES = [
@@ -119,6 +120,25 @@ describe('buildHwpxZip', () => {
     expect(header).toMatch(/<hh:paraPr id="19"[\s\S]*?<hc:intent value="-2800"[\s\S]*?<hc:left value="3800"/);
     expect(header).toMatch(/<hh:paraPr id="20"[\s\S]*?<hc:intent value="-2100"[\s\S]*?<hc:left value="4100"/);
     expect(header).toMatch(/<hh:paraPr id="21"[\s\S]*?<hc:intent value="-2800"[\s\S]*?<hc:left value="5800"/);
+  });
+
+  it('한 문단 안에 이어진 말머리 줄(display:block span)은 항목마다 새 문단과 내어쓰기로 나눈다', async () => {
+    // 미리보기 서식(applyOutlineStyles)은 <br>을 지우고 줄마다 display:block span으로 감싼다.
+    // 이를 인라인으로 이어 붙이면 "…증대나. 디지털…"처럼 한 문단에 붙어 버렸다.
+    const html = applyOutlineStyles('<p>1. 추진배경</p><p>가. 첫째 내용<br>나. 둘째 내용<br>다. 셋째 내용</p><p>1) 세부 <b>굵은</b> 안내<br>가) 깊은 단계</p>');
+    const section = await readEntry(await buildHwpxZip('제목', html, {}), 'Contents/section0.xml');
+    const paras = [...section.matchAll(/<hp:p [^>]*paraPrIDRef="(\d+)"[^>]*>([\s\S]*?)<\/hp:p>/g)]
+      .map(m => [m[1], [...m[2].matchAll(/<hp:t>([^<]*)<\/hp:t>/g)].map(t => t[1]).join('')])
+      .filter(([, text]) => text);
+
+    expect(paras).toEqual(expect.arrayContaining([
+      ['19', '가. 첫째 내용'],
+      ['19', '나. 둘째 내용'],
+      ['19', '다. 셋째 내용'],
+      ['20', '1) 세부 굵은 안내'],
+      ['21', '가) 깊은 단계'],
+    ]));
+    expect(section).not.toContain('첫째 내용나.');
   });
 
   it('겉공문처럼 &nbsp;로 들여쓴 말머리 줄은 앞 공백을 지우고 문단 들여쓰기만 남긴다', async () => {

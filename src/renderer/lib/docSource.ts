@@ -2,7 +2,7 @@
 // 우선순위: HWPX 파일(서식 유지 저장 가능) → 붙여넣은 글 → 이미지·PDF 등(AI가 글자를 읽음)
 
 import type { FileData } from '../types';
-import { extractHwpxTextNodes } from './hwpx-parser';
+import { extractHwpxTextDocument } from './hwpx-parser';
 import { textToNodes } from './aiReview';
 
 export type DocSourceKind = 'hwpx' | 'text' | 'files';
@@ -11,6 +11,8 @@ export interface ResolvedDocSource {
   kind: DocSourceKind;
   /** 'files'일 때는 비어 있고, AI가 글자를 옮겨 적은 줄로 채워진다 */
   nodes: string[];
+  /** 각 노드가 속한 문단 번호. HWPX는 한 문단이 여러 글자 노드로 나뉘어 있어 본문을 보여 줄 때 묶는다 */
+  paragraphOf?: number[];
   /** 'files'일 때 AI에 보낼 첨부 */
   files: FileData[];
   hwpxFile?: File;
@@ -31,13 +33,14 @@ export function describeDocSource(files: FileData[], pastedText: string): string
 export async function resolveDocSource(files: FileData[], pastedText: string): Promise<ResolvedDocSource> {
   const hwpx = files.find(isHwpx);
   if (hwpx) {
-    const nodes = await extractHwpxTextNodes(hwpx.file).catch(() => {
+    const { nodes, paragraphOf } = await extractHwpxTextDocument(hwpx.file).catch(() => {
       throw new Error('HWPX 파일을 읽지 못했습니다. 한글에서 다시 저장한 뒤 올려 주세요.');
     });
     if (!nodes.some(node => node.trim())) throw new Error('HWPX 파일에서 글자를 찾지 못했습니다. 본문이 그림으로만 되어 있을 수 있습니다.');
     return {
       kind: 'hwpx',
       nodes,
+      paragraphOf,
       files: [],
       hwpxFile: hwpx.file,
       fileName: hwpx.file.name.replace(/\.hwpx$/i, ''),

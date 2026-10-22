@@ -261,6 +261,12 @@ export function runDocRules(nodes: string[], options: { docKind: DocKind; school
 // 관련 근거(공문 번호·법령 시행일)는 과거 날짜 그대로여야 하므로 옮기지 않는다.
 const REFERENCE_LINE = /관련|근거|시행|개정|제정|공포|고시|훈령|-\d+\s*\(|호\s*\(|호,/;
 
+// 해를 옮기면 같은 날짜가 주말이 될 수 있다. 행사·마감일이 토·일요일이면 날짜를 직접 정하도록 남긴다.
+function weekendNotice(weekday: string, reason: string): { severity: 'info' | 'warning'; reason: string; needsCheck: boolean } {
+  if (weekday !== '토' && weekday !== '일') return { severity: 'info', reason, needsCheck: false };
+  return { severity: 'warning', reason: `${reason} — 옮긴 날짜가 ${weekday}요일입니다. 실제 날짜를 정해 고쳐 주세요.`, needsCheck: true };
+}
+
 // 기준 학년도의 날짜·학년도 표기를 목표 학년도로 옮기고 요일을 다시 계산한다.
 // 학년도는 3월~다음 해 2월이므로 기준 학년도와 그다음 해 날짜만 옮긴다.
 export function shiftDatesForSchoolYear(nodes: string[], baseYear: number, targetYear: number): DocSuggestion[] {
@@ -287,8 +293,11 @@ export function shiftDatesForSchoolYear(nodes: string[], baseYear: number, targe
         continue;
       }
       const wdSuffix = whole.match(/\(([일월화수목금토])(요일)?\)$/);
-      const after = `${newYear}${sep1}${mo}${sep2}${d}${sep3}(${weekdayOf(newYear, month, day)}${wdSuffix?.[2] ?? ''})`;
-      result.push(ruleSuggestion({ idx, start: m.index, before: whole, after, category: '날짜', severity: 'info', reason: `${diff > 0 ? '+' : ''}${diff}년 이동, 요일 다시 계산` }));
+      const newWeekday = weekdayOf(newYear, month, day);
+      const after = `${newYear}${sep1}${mo}${sep2}${d}${sep3}(${newWeekday}${wdSuffix?.[2] ?? ''})`;
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: whole, after, category: '날짜', ...weekendNotice(newWeekday, `${diff > 0 ? '+' : ''}${diff}년 이동, 요일 다시 계산`),
+      }));
     }
     // 2) 요일 없는 날짜·연도 표기 (요일이 붙은 날짜는 위에서 처리했으므로 제외)
     for (const m of blankFullDates(node).matchAll(/(20\d{2})(?=\s*(?:학년도|년|\.\s*\d|-\d))/g)) {
@@ -302,9 +311,11 @@ export function shiftDatesForSchoolYear(nodes: string[], baseYear: number, targe
       const month = Number(mo); const day = Number(d);
       const year = calendarYearForSchoolYear(targetYear, month);
       if (!isValidDate(year, month, day)) continue;
-      const after = whole.replace(/\(([일월화수목금토])(요일)?\)$/, `(${weekdayOf(year, month, day)}$2)`);
+      const newWeekday = weekdayOf(year, month, day);
+      const after = whole.replace(/\(([일월화수목금토])(요일)?\)$/, `(${newWeekday}$2)`);
       if (after === whole) continue;
-      result.push(ruleSuggestion({ idx, start: m.index, before: whole, after, category: '요일', severity: 'info', reason: `${year}년 기준 요일로 다시 계산`, needsCheck: month <= 2 }));
+      const notice = weekendNotice(newWeekday, `${year}년 기준 요일로 다시 계산`);
+      result.push(ruleSuggestion({ idx, start: m.index, before: whole, after, category: '요일', ...notice, needsCheck: notice.needsCheck || month <= 2 }));
     }
   });
 
