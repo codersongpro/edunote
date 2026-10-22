@@ -41,3 +41,12 @@ describe('layoutInlineChanges', () => {
     expect(paragraphs.map(p => p.pieces.map(x => x.text).join(''))).toEqual(['가', '', '나']);
   });
 });
+
+describe('nodesToParagraphHtml', () => {
+  it('글자 노드를 문단별 <p>로 묶고 HTML을 이스케이프한다', async () => {
+    const { nodesToParagraphHtml } = await import('../inlineChanges');
+    expect(nodesToParagraphHtml(['2026', '학년도 계획', '', '가. A & B <안내>'], [0, 0, 1, 2]))
+      .toBe('<p>2026학년도 계획</p><p>가. A &amp; B &lt;안내&gt;</p>');
+    expect(nodesToParagraphHtml(['1. 목적', '가. 내용'])).toBe('<p>1. 목적</p><p>가. 내용</p>');
+  });
+});

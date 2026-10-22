@@ -84,3 +84,27 @@ export function layoutInlineChanges(nodes: string[], paragraphOf: number[] | und
 
   return { paragraphs: compact, unplaced };
 }
+
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// 고친 노드를 문단 HTML로 만든다. 문서작성기와 같은 HWPX 생성기(saveHwpx)로 저장할 때 쓰며,
+// 생성기가 "1." "가." "1)" 말머리를 보고 단계별 들여쓰기를 다시 매긴다.
+export function nodesToParagraphHtml(nodes: string[], paragraphOf?: number[]): string {
+  const paragraphs: string[] = [];
+  let currentPara: number | null = null;
+  nodes.forEach((text, idx) => {
+    const para = paragraphOf ? paragraphOf[idx] : idx;
+    if (paragraphs.length === 0 || para !== currentPara) {
+      currentPara = para;
+      paragraphs.push('');
+    }
+    paragraphs[paragraphs.length - 1] += text;
+  });
+  return paragraphs
+    .map(text => text.trim())
+    .filter(Boolean)
+    .map(text => `<p>${escapeHtml(text)}</p>`)
+    .join('');
+}

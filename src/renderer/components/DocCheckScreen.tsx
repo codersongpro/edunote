@@ -5,8 +5,9 @@ import {
 import type { GroundingInfo } from '../../preload/types';
 import { AppMode, FileData } from '../types';
 import { FileUpload } from './FileUpload';
-import { ReviewSuggestionTable, useSuggestionSelection } from './ReviewSuggestionTable';
+import { useSuggestionSelection } from './ReviewSuggestionTable';
 import { InlineChangeView } from './InlineChangeView';
+import { nodesToParagraphHtml } from '../lib/inlineChanges';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { notifyToast } from '../lib/toast';
@@ -203,6 +204,18 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
     }
   };
 
+  // 문서작성기와 같은 HWPX 생성기로 새로 만든다. 원본 서식은 따르지 않지만 말머리 단계별
+  // 들여쓰기를 다시 매기며, 붙여넣은 글·이미지·PDF로 현행화·검토한 문서도 HWPX로 저장할 수 있다.
+  const handleSaveGeneratedHwpx = async () => {
+    try {
+      const html = nodesToParagraphHtml(buildUpdated(), source?.kind === 'hwpx' ? source.paragraphOf : undefined);
+      await window.electronAPI.saveHwpx(outputName(), html, { title: outputName() });
+    } catch (err) {
+      console.error('Failed to save generated HWPX', err);
+      notifyToast({ type: 'error', title: 'HWPX 저장 중 오류가 발생했습니다.' });
+    }
+  };
+
   const handleCopyUpdated = async () => {
     const copied = await copyPlainTextToClipboard(nodesToText(buildUpdated()));
     notifyToast(copied ? { type: 'success', title: '고친 문서를 복사했습니다.' } : { type: 'error', title: '클립보드 복사에 실패했습니다.' });
@@ -371,11 +384,20 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
             <span className="text-[10px] text-[#A8A29E] bg-[#EDE8E1] dark:bg-[#2E2822] px-2 py-0.5 rounded-full font-medium" title="이 결과를 만든 AI 모델">{aiResult.model}</span>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            {source?.kind === 'hwpx' ? (
-              <button onClick={handleSaveHwpx} disabled={!hasResult} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-xs font-bold text-white whitespace-nowrap" title="원본 HWPX의 표·서식은 그대로 두고, 체크한 글자만 바꿔 저장합니다">
+            {source?.kind === 'hwpx' && (
+              <button onClick={handleSaveHwpx} disabled={!hasResult} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-xs font-bold text-white whitespace-nowrap" title="원본 HWPX의 표·서식은 그대로 두고, 반영한 글자만 바꿔 저장합니다">
                 <Download className="w-3.5 h-3.5" /> HWPX 저장 (서식 유지)
               </button>
-            ) : (
+            )}
+            <button
+              onClick={handleSaveGeneratedHwpx}
+              disabled={!hasResult}
+              className={source?.kind === 'hwpx' ? toolButtonClass : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 text-xs font-bold text-white whitespace-nowrap'}
+              title="문서작성기와 같은 방식으로 HWPX를 새로 만듭니다. 원본 서식 대신 기본 공문서 서식과 말머리 단계별 들여쓰기를 씁니다"
+            >
+              <Download className="w-3.5 h-3.5" /> HWPX 저장 (문서작성기 방식)
+            </button>
+            {source?.kind !== 'hwpx' && (
               <>
                 <button onClick={handleCopyUpdated} disabled={!hasResult} className={toolButtonClass}><Copy className="w-3.5 h-3.5" /> 고친 문서 복사</button>
                 <button onClick={handleSaveTxt} disabled={!hasResult} className={toolButtonClass}><Save className="w-3.5 h-3.5" /> TXT 저장</button>
@@ -412,39 +434,29 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
                   AI 검토를 마치지 못해 자동 계산 결과만 보여 드립니다. ({aiError})
                 </div>
               )}
-              {mode === 'refresh' ? (
-                // 현행화는 비교표 대신 본문 그대로 보여 주고 바뀌는 곳을 하이라이트한다
-                <InlineChangeView
-                  nodes={nodes}
-                  paragraphOf={source.kind === 'hwpx' ? source.paragraphOf : undefined}
-                  items={selection.items}
-                  selected={selection.selected}
-                  onToggle={selection.toggle}
-                  onToggleAll={selection.setAll}
-                  onEditAfter={selection.setAfter}
-                  checkItems={aiResult?.checkItems}
-                  grounding={aiResult?.grounding}
-                  emptyMessage={isLoading ? '처리 중입니다...' : '문서 내용을 읽지 못했습니다.'}
-                />
-              ) : (
-                <ReviewSuggestionTable
-                  items={selection.items}
-                  selected={selection.selected}
-                  onToggle={selection.toggle}
-                  onToggleAll={selection.setAll}
-                  onEditAfter={selection.setAfter}
-                  checkItems={aiResult?.checkItems}
-                  grounding={aiResult?.grounding}
-                  emptyMessage={isLoading ? '처리 중입니다...' : '고칠 곳을 찾지 못했습니다.'}
-                />
-              )}
-              {mode === 'refresh' && !isLoading && selection.items.length === 0 && (
-                <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 break-keep">바꿀 곳을 찾지 못했습니다. 기준 학년도가 맞는지 확인해 주세요.</p>
+              {/* 현행화·오류 검토 모두 원문을 그대로 보여 주고 고칠 곳을 하이라이트한다 */}
+              <InlineChangeView
+                nodes={nodes}
+                paragraphOf={source.kind === 'hwpx' ? source.paragraphOf : undefined}
+                items={selection.items}
+                selected={selection.selected}
+                onToggle={selection.toggle}
+                onToggleAll={selection.setAll}
+                onEditAfter={selection.setAfter}
+                checkItems={aiResult?.checkItems}
+                grounding={aiResult?.grounding}
+                emptyMessage={isLoading ? '처리 중입니다...' : '문서 내용을 읽지 못했습니다.'}
+                countLabel={mode === 'refresh' ? '바뀌는 곳' : '고칠 곳'}
+              />
+              {!isLoading && selection.items.length === 0 && (
+                <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 break-keep">
+                  {mode === 'refresh' ? '바꿀 곳을 찾지 못했습니다. 기준 학년도가 맞는지 확인해 주세요.' : '고칠 곳을 찾지 못했습니다.'}
+                </p>
               )}
               <p className="text-xs text-[#A8A29E] break-keep">
                 {mode === 'refresh'
                   ? 'AI 제안은 틀릴 수 있습니다. 초록색으로 바뀐 곳만 저장·복사하는 문서에 반영됩니다. 하이라이트를 누르면 이유를 보고 반영 여부를 바꿀 수 있습니다.'
-                  : 'AI 제안은 틀릴 수 있습니다. 체크한 항목만 저장·복사하는 문서에 반영됩니다.'}
+                  : '하이라이트한 곳이 고칠 부분입니다. 누르면 이유와 고칠 글자가 나오고, 「이대로 바꾸기」를 누른 곳만 저장·복사하는 문서에 반영됩니다. 계산으로 확인한 오류는 미리 반영해 두었습니다.'}
               </p>
             </div>
           ) : (

@@ -200,16 +200,20 @@ export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Pr
     replaced.set(sectionPath, xml);
   }
 
-  // 원본 zip을 직접 수정하지 않고 항목을 순서 그대로 새 zip에 복사한다.
-  // 기존 방식(zip.file 후 generateAsync)은 원본에 없던 폴더 항목('Contents/')을
-  // 추가해 한글이 파일을 열지 못하는 원인이 됐다. 압축 방식도 한글이 만드는
-  // 파일과 동일하게 모든 항목 DEFLATE로 맞춘다.
+  // 원본 zip을 직접 수정하지 않고 항목을 새 zip에 복사한다.
+  // - 원본에 없던 폴더 항목('Contents/')을 만들지 않는다(한글이 열지 못하는 원인).
+  // - mimetype을 첫 항목에 무압축(STORE)으로 둔다. 한글은 파일 맨 앞의 평문
+  //   "application/hwp+zip"으로 HWPX를 알아보므로, 압축하면 "손상된 파일"로 연다.
+  //   version.xml도 앱의 HWPX 생성기(main/HwpxGenerator repackZip)와 같게 무압축으로 둔다.
+  const names = Object.keys(zip.files).filter(name => !zip.files[name].dir);
+  names.sort((a, b) => Number(b === "mimetype") - Number(a === "mimetype"));
   const out = new JSZip();
-  for (const name of Object.keys(zip.files)) {
-    const entry = zip.files[name];
-    if (entry.dir) continue;
-    const content = replaced.has(name) ? replaced.get(name)! : await entry.async("uint8array");
-    out.file(name, content, { createFolders: false, compression: "DEFLATE" });
+  for (const name of names) {
+    const content = replaced.has(name) ? replaced.get(name)! : await zip.files[name].async("uint8array");
+    out.file(name, content, {
+      createFolders: false,
+      compression: name === "mimetype" || name === "version.xml" ? "STORE" : "DEFLATE",
+    });
   }
   return await out.generateAsync({ type: "blob", compression: "DEFLATE" });
 }

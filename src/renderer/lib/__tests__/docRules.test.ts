@@ -10,6 +10,7 @@ import {
   maskPersonalInfo,
   shiftDatesForSchoolYear,
   weekdayOf,
+  shiftDate,
 } from '../docRules';
 import { applySuggestions } from '../aiReview';
 
@@ -107,7 +108,8 @@ describe('shiftDatesForSchoolYear', () => {
     const { nodes: updated } = applySuggestions(nodes, suggestions);
     expect(updated).toEqual([
       '2026학년도 독서교육 운영 계획',
-      `기간: 2026. 3. 4.(${weekdayOf(2026, 3, 4)}) ~ 2027. 2. 27.(${weekdayOf(2027, 2, 27)})`,
+      // 2027. 2. 27.은 토요일이라 작년(2026. 2. 27. 금)과 같은 금요일 2. 26.로 옮긴다
+      `기간: 2026. 3. 4.(${weekdayOf(2026, 3, 4)}) ~ 2027. 2. 26.(금)`,
       `매주 3. 11.(${weekdayOf(2026, 3, 11)}) 운영`,
     ]);
   });
@@ -126,11 +128,33 @@ describe('shiftDatesForSchoolYear', () => {
     expect(suggestions[0].needsCheck).toBe(true);
   });
 
-  it('옮긴 날짜가 주말이면 확인 필요로 표시한다', () => {
-    const [weekday, weekend] = shiftDatesForSchoolYear(['2025년 4월 2일(수) ~ 2025년 4월 4일(금)'], 2025, 2026);
-    expect([weekday.after, weekday.needsCheck]).toEqual(['2026년 4월 2일(목)', false]);
-    expect([weekend.after, weekend.needsCheck, weekend.severity]).toEqual(['2026년 4월 4일(토)', true, 'warning']);
-    expect(weekend.reason).toContain('토요일');
+  it('평일 행사가 주말로 옮겨지면 작년과 같은 요일의 가장 가까운 날로 바꾼다', () => {
+    const nodes = ['2025년 4월 2일(수) ~ 2025년 4월 4일(금)', '마감 2025. 4. 4.', '협의 4. 4.(금)'];
+    const suggestions = shiftDatesForSchoolYear(nodes, 2025, 2026);
+    const { nodes: updated } = applySuggestions(nodes, suggestions);
+    // 4. 2.는 목요일(평일)이라 그대로, 4. 4.는 토요일이라 금요일 4. 3.으로
+    expect(updated).toEqual(['2026년 4월 2일(목) ~ 2026년 4월 3일(금)', '마감 2026. 4. 3.', '협의 4. 3.(금)']);
+    const adjusted = suggestions.filter(x => x.category === '주말 조정');
+    expect(adjusted).toHaveLength(3);
+    expect(adjusted.every(x => !x.needsCheck)).toBe(true);
+    expect(adjusted[0].reason).toContain('토요일이라 작년과 같은 금요일');
+  });
+
+  it('작년에도 주말에 열린 행사는 주말이어도 그대로 옮긴다', () => {
+    // 2025. 5. 10.은 토요일, 2026. 5. 10.은 일요일
+    expect(shiftDate(2025, 5, 10, 2026)).toMatchObject({ year: 2026, month: 5, day: 10, weekday: '일' });
+    const [s1] = shiftDatesForSchoolYear(['독서 캠프 2025. 5. 10.(토)'], 2025, 2026);
+    expect([s1.after, s1.category]).toEqual(['2026. 5. 10.(일)', '날짜']);
+    expect(s1.reason).toContain('주말 그대로');
+  });
+
+  it('달이 바뀌는 조정과 두 자리 표기를 지킨다', () => {
+    // 2026-02-01은 일요일, 작년 2025-02-01은 토요일 → 주말 행사라 그대로
+    expect(shiftDate(2025, 2, 1, 2026)).toMatchObject({ month: 2, day: 1 });
+    // 평일 예: 2025-08-01(금) → 2026-08-01(토) → 달을 넘겨 7. 31.(금)
+    expect(shiftDate(2025, 8, 1, 2026)).toMatchObject({ year: 2026, month: 7, day: 31, weekday: '금' });
+    const [s2] = shiftDatesForSchoolYear(['2025-08-01'], 2025, 2026);
+    expect(s2.after).toBe('2026-07-31');
   });
 
   it('다음 해에 없는 날짜(2월 29일)는 확인 필요로 남긴다', () => {
