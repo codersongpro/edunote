@@ -644,6 +644,56 @@ function convertTable(tableEl: any, style: SectionStyle, ids: { tbl: number }): 
   return paraXml(runXml(CHAR_BODY, tbl), style.paraPrIDRef, style);
 }
 
+// 미리보기 서식(applyOutlineStyles)은 한 문단의 말머리 줄마다 display:block span을 씌우고
+// 줄 사이 <br>을 지운다. 인라인으로 이어 붙이면 "가. …나. …"가 한 문단에 붙으므로,
+// 이런 줄 요소는 각각 한 문단으로 다룬다.
+function isLineBlock(node: any): boolean {
+  if (!node || node.nodeType !== 1 || BLOCK_TAGS.has(tagOf(node))) return false;
+  if (node.getAttribute?.('data-outline-level')) return true;
+  return /(?:^|;)\s*display\s*:\s*block\b/i.test(String(node.getAttribute?.('style') || ''));
+}
+
+function hasLineBlockChild(node: any): boolean {
+  for (let i = 0; i < (node.childNodes?.length || 0); i += 1) {
+    if (isLineBlock(node.childNodes.item(i))) return true;
+  }
+  return false;
+}
+
+// 줄 요소 사이의 인라인 조각(굵은 글씨 등)을 한 문단으로 묶기 위한 가짜 컨테이너
+function inlineGroup(nodes: any[]): any {
+  return {
+    nodeType: 1,
+    tagName: 'span',
+    childNodes: { length: nodes.length, item: (i: number) => nodes[i] },
+    getAttribute: () => null,
+  };
+}
+
+function convertLineBlocks(el: any, paraPr: string, style: SectionStyle, out: string[]): void {
+  let pending: any[] = [];
+  const flush = () => {
+    // 줄 요소 앞뒤에 남은 <br>은 이미 문단이 나뉘므로 빈 줄을 만들지 않게 버린다
+    while (pending.length && tagOf(pending[0]) === 'br') pending.shift();
+    while (pending.length && tagOf(pending[pending.length - 1]) === 'br') pending.pop();
+    const hasText = pending.some(n => String(n.textContent ?? n.nodeValue ?? '').trim());
+    if (hasText) out.push(...inlineParas(inlineGroup(pending), CHAR_BODY, paraPr, style));
+    pending = [];
+  };
+  for (let i = 0; i < (el.childNodes?.length || 0); i += 1) {
+    const child = el.childNodes.item(i);
+    if (!child) continue;
+    if (isLineBlock(child)) {
+      flush();
+      if (hasLineBlockChild(child)) convertLineBlocks(child, paraPr, style, out);
+      else out.push(...inlineParas(child, CHAR_BODY, paraPr, style));
+    } else {
+      pending.push(child);
+    }
+  }
+  flush();
+}
+
 // 블록 요소들을 순회하며 OWPML 문단/표 XML을 만든다.
 function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl: number }): void {
   for (let i = 0; i < (node.childNodes?.length || 0); i += 1) {
@@ -697,6 +747,10 @@ function convertBlocks(node: any, style: SectionStyle, out: string[], ids: { tbl
     }
     const align = alignOf(child);
     const paraPr = align === 'center' ? PARA_CENTER : align === 'right' ? PARA_RIGHT : style.paraPrIDRef;
+    if (hasLineBlockChild(child)) {
+      convertLineBlocks(child, paraPr, style, out);
+      continue;
+    }
     out.push(...inlineParas(child, CHAR_BODY, paraPr, style));
   }
 }

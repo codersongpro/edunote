@@ -126,6 +126,13 @@ describe('shiftDatesForSchoolYear', () => {
     expect(suggestions[0].needsCheck).toBe(true);
   });
 
+  it('옮긴 날짜가 주말이면 확인 필요로 표시한다', () => {
+    const [weekday, weekend] = shiftDatesForSchoolYear(['2025년 4월 2일(수) ~ 2025년 4월 4일(금)'], 2025, 2026);
+    expect([weekday.after, weekday.needsCheck]).toEqual(['2026년 4월 2일(목)', false]);
+    expect([weekend.after, weekend.needsCheck, weekend.severity]).toEqual(['2026년 4월 4일(토)', true, 'warning']);
+    expect(weekend.reason).toContain('토요일');
+  });
+
   it('다음 해에 없는 날짜(2월 29일)는 확인 필요로 남긴다', () => {
     const [s] = shiftDatesForSchoolYear(['2028. 2. 29.(화)'], 2027, 2028 + 1);
     expect(s.needsCheck).toBe(true);

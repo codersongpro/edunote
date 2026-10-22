@@ -6,6 +6,7 @@ import type { GroundingInfo } from '../../preload/types';
 import { AppMode, FileData } from '../types';
 import { FileUpload } from './FileUpload';
 import { ReviewSuggestionTable, useSuggestionSelection } from './ReviewSuggestionTable';
+import { InlineChangeView } from './InlineChangeView';
 import { useGenerationTracker } from '../hooks/useGenerationTracker';
 import { playSuccessSound } from '../lib/soundEffect';
 import { notifyToast } from '../lib/toast';
@@ -217,7 +218,7 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
       ...(aiResult?.checkItems.length ? ['', '[직접 확인할 사항]', ...aiResult.checkItems.map(item => `- ${item}`)] : []),
     ].join('\n');
     const copied = await copyPlainTextToClipboard(report);
-    notifyToast(copied ? { type: 'success', title: '비교표를 복사했습니다.' } : { type: 'error', title: '클립보드 복사에 실패했습니다.' });
+    notifyToast(copied ? { type: 'success', title: mode === 'refresh' ? '변경 목록을 복사했습니다.' : '비교표를 복사했습니다.' } : { type: 'error', title: '클립보드 복사에 실패했습니다.' });
   };
 
   const handleSendToReview = async () => {
@@ -380,7 +381,7 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
                 <button onClick={handleSaveTxt} disabled={!hasResult} className={toolButtonClass}><Save className="w-3.5 h-3.5" /> TXT 저장</button>
               </>
             )}
-            <button onClick={handleCopyReport} disabled={!hasResult} className={toolButtonClass}><ClipboardCopy className="w-3.5 h-3.5" /> 비교표 복사</button>
+            <button onClick={handleCopyReport} disabled={!hasResult} className={toolButtonClass}><ClipboardCopy className="w-3.5 h-3.5" /> {mode === 'refresh' ? '변경 목록 복사' : '비교표 복사'}</button>
             {mode === 'refresh' && (
               <button onClick={handleSendToReview} disabled={!hasResult} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-800 text-xs font-bold text-violet-700 dark:text-violet-300 disabled:opacity-40 hover:bg-violet-50 dark:hover:bg-violet-950/30 whitespace-nowrap" title="체크한 내용을 반영한 문서를 오류 검토 화면으로 보냅니다">
                 <ScanSearch className="w-3.5 h-3.5" /> 오류 검토로 보내기
@@ -411,17 +412,40 @@ const DocCheckScreen: React.FC<{ mode: Mode }> = ({ mode }) => {
                   AI 검토를 마치지 못해 자동 계산 결과만 보여 드립니다. ({aiError})
                 </div>
               )}
-              <ReviewSuggestionTable
-                items={selection.items}
-                selected={selection.selected}
-                onToggle={selection.toggle}
-                onToggleAll={selection.setAll}
-                onEditAfter={selection.setAfter}
-                checkItems={aiResult?.checkItems}
-                grounding={aiResult?.grounding}
-                emptyMessage={isLoading ? '처리 중입니다...' : mode === 'refresh' ? '바꿀 곳을 찾지 못했습니다. 기준 학년도가 맞는지 확인해 주세요.' : '고칠 곳을 찾지 못했습니다.'}
-              />
-              <p className="text-xs text-[#A8A29E] break-keep">AI 제안은 틀릴 수 있습니다. 체크한 항목만 저장·복사하는 문서에 반영됩니다.</p>
+              {mode === 'refresh' ? (
+                // 현행화는 비교표 대신 본문 그대로 보여 주고 바뀌는 곳을 하이라이트한다
+                <InlineChangeView
+                  nodes={nodes}
+                  paragraphOf={source.kind === 'hwpx' ? source.paragraphOf : undefined}
+                  items={selection.items}
+                  selected={selection.selected}
+                  onToggle={selection.toggle}
+                  onToggleAll={selection.setAll}
+                  onEditAfter={selection.setAfter}
+                  checkItems={aiResult?.checkItems}
+                  grounding={aiResult?.grounding}
+                  emptyMessage={isLoading ? '처리 중입니다...' : '문서 내용을 읽지 못했습니다.'}
+                />
+              ) : (
+                <ReviewSuggestionTable
+                  items={selection.items}
+                  selected={selection.selected}
+                  onToggle={selection.toggle}
+                  onToggleAll={selection.setAll}
+                  onEditAfter={selection.setAfter}
+                  checkItems={aiResult?.checkItems}
+                  grounding={aiResult?.grounding}
+                  emptyMessage={isLoading ? '처리 중입니다...' : '고칠 곳을 찾지 못했습니다.'}
+                />
+              )}
+              {mode === 'refresh' && !isLoading && selection.items.length === 0 && (
+                <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2 break-keep">바꿀 곳을 찾지 못했습니다. 기준 학년도가 맞는지 확인해 주세요.</p>
+              )}
+              <p className="text-xs text-[#A8A29E] break-keep">
+                {mode === 'refresh'
+                  ? 'AI 제안은 틀릴 수 있습니다. 초록색으로 바뀐 곳만 저장·복사하는 문서에 반영됩니다. 하이라이트를 누르면 이유를 보고 반영 여부를 바꿀 수 있습니다.'
+                  : 'AI 제안은 틀릴 수 있습니다. 체크한 항목만 저장·복사하는 문서에 반영됩니다.'}
+              </p>
             </div>
           ) : (
             <div className="h-full min-h-[240px] flex items-center justify-center text-center text-[#A8A29E] dark:text-[#6B5E57]">
