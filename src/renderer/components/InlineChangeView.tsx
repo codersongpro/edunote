@@ -16,6 +16,8 @@ interface Props {
   checkItems?: string[];
   grounding?: GroundingInfo;
   emptyMessage?: string;
+  /** 머리글의 「○○ n곳」 이름 — 현행화는 바뀌는 곳, 오류 검토는 고칠 곳 */
+  countLabel?: string;
 }
 
 // 하이라이트 색: 반영(초록 새 글자 + 빨간 취소선), 제안(노랑), 확인 필요(보라), 안내만(하늘)
@@ -75,7 +77,7 @@ const SuggestionCard: React.FC<{
 // 현행화 결과를 본문 그대로 보여 주고, 바뀌는 곳을 하이라이트한다.
 // 하이라이트를 누르면 바로 아래에 이유와 바꿀 글자가 펼쳐지고, 반영 여부를 고를 수 있다.
 export const InlineChangeView: React.FC<Props> = ({
-  nodes, paragraphOf, items, selected, onToggle, onToggleAll, onEditAfter, checkItems, grounding, emptyMessage = '바꿀 곳을 찾지 못했습니다.',
+  nodes, paragraphOf, items, selected, onToggle, onToggleAll, onEditAfter, checkItems, grounding, emptyMessage = '바꿀 곳을 찾지 못했습니다.', countLabel = '바뀌는 곳',
 }) => {
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const layout = React.useMemo(() => layoutInlineChanges(nodes, paragraphOf, items), [nodes, paragraphOf, items]);
@@ -88,7 +90,7 @@ export const InlineChangeView: React.FC<Props> = ({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[#57534E] dark:text-[#C4B8B0]">
-        <span className="font-bold text-sm text-[#1C1917] dark:text-[#F0EBE6]">바뀌는 곳 {items.length}곳 · 반영 {selectedCount}곳</span>
+        <span className="font-bold text-sm text-[#1C1917] dark:text-[#F0EBE6]">{countLabel} {items.length}곳 · 반영 {selectedCount}곳</span>
         <span className="inline-flex items-center gap-1"><span className="px-1 rounded bg-emerald-50 dark:bg-emerald-950/40"><del className="text-red-500">전</del> <ins className="no-underline font-bold text-emerald-700 dark:text-emerald-300">후</ins></span> 반영</span>
         <span className="inline-flex items-center gap-1"><span className="px-1.5 rounded bg-amber-100 dark:bg-amber-900/40 underline decoration-dotted">제안</span> 누르면 반영</span>
         <span className="inline-flex items-center gap-1"><span className="px-1.5 rounded bg-purple-100 dark:bg-purple-900/40 underline decoration-dotted">확인 필요</span></span>

@@ -84,3 +84,26 @@ describe('replaceTextKeepingTags', () => {
     expect(replaceTextKeepingTags('<hp:tab/>', '새 글')).toBe('<hp:tab/>새 글');
   });
 });
+
+describe('서식 유지 HWPX 저장 파일 형식', () => {
+  it('mimetype을 첫 항목·무압축으로 둬 한글이 HWPX로 알아본다', async () => {
+    // 원본에서 mimetype이 첫 항목이 아니고 압축되어 있어도 바로잡는다
+    const zip = new JSZip();
+    zip.file('Contents/section0.xml', '<hs:sec xmlns:hs="s" xmlns:hp="p"><hp:p><hp:run><hp:t>2025</hp:t></hp:run></hp:p></hs:sec>');
+    zip.file('version.xml', '<?xml version="1.0"?><hv:HCFVersion xmlns:hv="v"/>');
+    zip.file('mimetype', 'application/hwp+zip');
+    const file = new File([await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' })], 'a.hwpx');
+
+    const bytes = Buffer.from(await (await fillHwpxTemplate(file, [{ idx: 0, value: '2026' }])).arrayBuffer());
+    expect(bytes.readUInt32LE(0)).toBe(0x04034b50);
+    expect(bytes.readUInt16LE(8)).toBe(0); // 0 = STORE
+    expect(bytes.subarray(30, 38).toString('ascii')).toBe('mimetype');
+    expect(bytes.subarray(38, 38 + 19).toString('ascii')).toBe('application/hwp+zip');
+
+    const outZip = await JSZip.loadAsync(bytes);
+    expect(Object.keys(outZip.files)[0]).toBe('mimetype');
+    // version.xml도 무압축이라 원문이 그대로 들어 있다
+    expect(bytes.includes(Buffer.from('<hv:HCFVersion'))).toBe(true);
+    expect(await outZip.file('Contents/section0.xml')!.async('string')).toContain('<hp:t>2026</hp:t>');
+  });
+});
