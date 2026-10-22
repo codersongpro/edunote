@@ -155,30 +155,44 @@ AI는 문서의 파일명(${file.name})은 인지하지만, 내용은 정확히 
   }
 }
 
-// 글자 노드와 문단 구성을 함께 돌려준다. HWPX가 아니거나 손상된 파일이면 예외를 던진다.
+function isWellFormed(xml: string): boolean {
+  if (typeof DOMParser === 'undefined') return true;
+  return new DOMParser().parseFromString(xml, 'application/xml').getElementsByTagName('parsererror').length === 0;
+}
+
+// 본문 XML이 이미 깨진 HWPX. 이전 버전 EduNote의 현행화가 태그를 지운 파일이 대표적이며,
+// 지워진 그림·표 정보는 파일에 남아 있지 않아 고칠 수 없다. 한글에서도 손상된 파일로 열린다.
+export class HwpxDamagedError extends Error {
+  constructor(public readonly sections: string[]) {
+    super('이 HWPX는 이미 손상된 파일입니다(이전 버전 EduNote의 현행화로 저장된 파일일 수 있습니다). 한글에서도 열리지 않으며 고칠 수 없습니다. 원본(작년) 파일을 올려 주세요.');
+    this.name = 'HwpxDamagedError';
+  }
+}
+
+async function assertSectionsIntact(zip: JSZip): Promise<void> {
+  const damaged: string[] = [];
+  for (const sectionPath of sortedSectionFiles(zip)) {
+    if (!isWellFormed(await zip.file(sectionPath)!.async("string"))) damaged.push(sectionPath);
+  }
+  if (damaged.length > 0) throw new HwpxDamagedError(damaged);
+}
+
+// 글자 노드와 문단 구성을 함께 돌려준다.
+// HWPX가 아니면 예외를, 본문 XML이 이미 깨졌으면 HwpxDamagedError를 던진다.
 export async function extractHwpxTextDocument(file: File): Promise<HwpxTextDocument> {
-  return readTextDocument(await JSZip.loadAsync(await file.arrayBuffer()));
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  await assertSectionsIntact(zip);
+  return readTextDocument(zip);
 }
 
 export async function extractHwpxTextNodes(file: File): Promise<string[]> {
   return (await extractHwpxTextDocument(file)).nodes;
 }
 
-function isWellFormed(xml: string): boolean {
-  if (typeof DOMParser === 'undefined') return true;
-  return new DOMParser().parseFromString(xml, 'application/xml').getElementsByTagName('parsererror').length === 0;
-}
-
-// 고친 섹션 XML이 원본처럼 올바른지 확인한다. 깨진 XML로 저장하면 한글이 파일을 열지 못하므로
-// 저장 전에 막는다. (DOMParser가 없는 환경에서는 검사를 건너뛴다)
-function assertStillWellFormed(original: string, xml: string, name: string): void {
-  if (isWellFormed(original) && !isWellFormed(xml)) {
-    throw new Error(`HWPX 문서 구조(${name})를 지키지 못해 저장을 멈췄습니다. 원본 파일은 바뀌지 않았습니다.`);
-  }
-}
-
 export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Promise<Blob> {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  // 이미 깨진 원본을 채워 저장하면 손상된 파일이 또 만들어진다(고치지 않은 섹션도 그대로 복사되므로)
+  await assertSectionsIntact(zip);
   const fillMap = new Map<number, string>();
   fillData.forEach(item => fillMap.set(Number(item.idx), String(item.value)));
 
@@ -196,7 +210,10 @@ export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Pr
       return `${openTag}${replaceTextKeepingTags(content, fillMap.get(currentIdx)!)}${closeTag}`;
     });
     if (!changed) continue;
-    assertStillWellFormed(original, xml, sectionPath);
+    // 글자만 바꿨으므로 정상 원본은 결과도 정상이어야 한다. 깨지면 한글이 열지 못하므로 저장하지 않는다.
+    if (!isWellFormed(xml)) {
+      throw new Error(`HWPX 문서 구조(${sectionPath})를 지키지 못해 저장을 멈췄습니다. 원본 파일은 바뀌지 않았습니다.`);
+    }
     replaced.set(sectionPath, xml);
   }
 

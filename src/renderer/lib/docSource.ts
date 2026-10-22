@@ -2,7 +2,7 @@
 // 우선순위: HWPX 파일(서식 유지 저장 가능) → 붙여넣은 글 → 이미지·PDF 등(AI가 글자를 읽음)
 
 import type { FileData } from '../types';
-import { extractHwpxTextDocument } from './hwpx-parser';
+import { extractHwpxTextDocument, HwpxDamagedError } from './hwpx-parser';
 import { textToNodes } from './aiReview';
 
 export type DocSourceKind = 'hwpx' | 'text' | 'files';
@@ -33,7 +33,8 @@ export function describeDocSource(files: FileData[], pastedText: string): string
 export async function resolveDocSource(files: FileData[], pastedText: string): Promise<ResolvedDocSource> {
   const hwpx = files.find(isHwpx);
   if (hwpx) {
-    const { nodes, paragraphOf } = await extractHwpxTextDocument(hwpx.file).catch(() => {
+    const { nodes, paragraphOf } = await extractHwpxTextDocument(hwpx.file).catch((err) => {
+      if (err instanceof HwpxDamagedError) throw err;
       throw new Error('HWPX 파일을 읽지 못했습니다. 한글에서 다시 저장한 뒤 올려 주세요.');
     });
     if (!nodes.some(node => node.trim())) throw new Error('HWPX 파일에서 글자를 찾지 못했습니다. 본문이 그림으로만 되어 있을 수 있습니다.');

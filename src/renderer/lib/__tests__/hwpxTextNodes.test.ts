@@ -14,9 +14,10 @@ async function makeHwpx(section0: string, section1: string): Promise<File> {
 
 describe('HWPX 텍스트 노드 왕복', () => {
   it('섹션 순서대로 노드를 읽고, 바꾼 노드만 서식을 유지한 채 다시 채운다', async () => {
+    const sec = (body: string) => `<hs:sec xmlns:hs="s" xmlns:hp="p">${body}</hs:sec>`;
     const file = await makeHwpx(
-      '<hp:p><hp:run charPrIDRef="7"><hp:t>2025학년도 계획</hp:t></hp:run><hp:t>A &amp; B</hp:t></hp:p>',
-      '<hp:p><hp:run charPrIDRef="9"><hp:t>담당: 교무부</hp:t></hp:run></hp:p>',
+      sec('<hp:p><hp:run charPrIDRef="7"><hp:t>2025학년도 계획</hp:t></hp:run><hp:t>A &amp; B</hp:t></hp:p>'),
+      sec('<hp:p><hp:run charPrIDRef="9"><hp:t>담당: 교무부</hp:t></hp:run></hp:p>'),
     );
     const nodes = await extractHwpxTextNodes(file);
     expect(nodes).toEqual(['2025학년도 계획', 'A & B', '담당: 교무부']);
@@ -105,5 +106,34 @@ describe('서식 유지 HWPX 저장 파일 형식', () => {
     // version.xml도 무압축이라 원문이 그대로 들어 있다
     expect(bytes.includes(Buffer.from('<hv:HCFVersion'))).toBe(true);
     expect(await outZip.file('Contents/section0.xml')!.async('string')).toContain('<hp:t>2026</hp:t>');
+  });
+});
+
+describe('이미 손상된 HWPX', () => {
+  // 사용자가 올린 실제 손상 파일의 두 패턴: 그림 옆 run 태그가 지워진 제목, 내용이 글자로 바뀐 표 칸
+  const damagedTitle = '<hs:sec xmlns:hs="s" xmlns:hp="p"><hp:p><hp:run><hp:pic/><hp:t/>2026학년도 상담 주간 운영 계획</hp:t></hp:run></hp:p></hs:sec>';
+  const damagedCell = '<hs:sec xmlns:hs="s" xmlns:hp="p"><hp:p><hp:run><hp:tbl><hp:tr><hp:tc borderFillIDRef="18">그림입니다.2026학년도 학부모 상담주간 안내</hp:t></hp:run></hp:p></hp:subList></hp:tc></hp:tr></hp:tbl></hp:run></hp:p></hs:sec>';
+  const okSection = '<hs:sec xmlns:hs="s" xmlns:hp="p"><hp:p><hp:run><hp:t>2025학년도</hp:t></hp:run></hp:p></hs:sec>';
+
+  it('읽을 때 손상된 섹션을 알려 주고 현행화를 시작하지 않는다', async () => {
+    const { extractHwpxTextDocument, HwpxDamagedError } = await import('../hwpx-parser');
+    const file = await makeHwpx(damagedTitle, damagedCell);
+    const error = await extractHwpxTextDocument(file).catch(e => e);
+    expect(error).toBeInstanceOf(HwpxDamagedError);
+    expect(error.sections).toEqual(['Contents/section0.xml', 'Contents/section1.xml']);
+    expect(error.message).toContain('이미 손상된 파일');
+  });
+
+  it('고치지 않는 섹션이 깨져 있어도 손상된 파일을 다시 저장하지 않는다', async () => {
+    const { HwpxDamagedError } = await import('../hwpx-parser');
+    const file = await makeHwpx(okSection, damagedCell);
+    await expect(fillHwpxTemplate(file, [{ idx: 0, value: '2026학년도' }])).rejects.toBeInstanceOf(HwpxDamagedError);
+  });
+
+  it('현행화 입력 단계에서 같은 안내를 그대로 보여 준다', async () => {
+    const { resolveDocSource } = await import('../docSource');
+    const file = await makeHwpx(damagedTitle, okSection);
+    await expect(resolveDocSource([{ file: new File([await file.arrayBuffer()], 'old_2026학년도.hwpx'), base64: '', mimeType: '' }], ''))
+      .rejects.toThrow('이미 손상된 파일');
   });
 });
