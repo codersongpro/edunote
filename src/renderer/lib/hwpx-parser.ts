@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { relayoutChangedParagraphs } from "./hwpxLineseg";
 
 export interface HwpxFillNode {
   idx: number;
@@ -203,13 +204,15 @@ export async function fillHwpxTemplate(file: File, fillData: HwpxFillNode[]): Pr
     if (!sectionFile) continue;
     const original = await sectionFile.async("string");
     let changed = false;
-    const xml = original.replace(TEXT_NODE(), (match, openTag, content, closeTag) => {
+    const filled = original.replace(TEXT_NODE(), (match, openTag, content, closeTag) => {
       const currentIdx = globalIdx++;
       if (!fillMap.has(currentIdx)) return match;
       changed = true;
       return `${openTag}${replaceTextKeepingTags(content, fillMap.get(currentIdx)!)}${closeTag}`;
     });
     if (!changed) continue;
+    // 글자 수가 달라진 문단은 줄 배치 정보도 맞춰야 한글이 줄을 겹쳐 그리지 않는다
+    const xml = relayoutChangedParagraphs(original, filled);
     // 글자만 바꿨으므로 정상 원본은 결과도 정상이어야 한다. 깨지면 한글이 열지 못하므로 저장하지 않는다.
     if (!isWellFormed(xml)) {
       throw new Error(`HWPX 문서 구조(${sectionPath})를 지키지 못해 저장을 멈췄습니다. 원본 파일은 바뀌지 않았습니다.`);
