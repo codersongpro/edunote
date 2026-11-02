@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench, Scale, ChevronDown } from 'lucide-react';
+import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench, Scale, ChevronDown, Globe } from 'lucide-react';
 import iconPng from '../assets/icon.png';
+import { DEVELOPER_HOMEPAGE_URL } from '../lib/developerInfo';
 
 // 배포물에 포함되는 주요 오픈소스 구성요소 고지. 전체 목록·라이선스 전문은
 // 앱과 함께 배포되는 THIRD-PARTY-NOTICES.md 파일에 담겨 있다.
@@ -155,6 +156,14 @@ const AboutScreen: React.FC = () => {
             </div>
           </div>
           <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
+          <button
+            onClick={() => openLink(DEVELOPER_HOMEPAGE_URL)}
+            className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-700 rounded-xl text-sm font-semibold text-emerald-700 dark:text-emerald-300 transition-colors"
+          >
+            <Globe className="w-4 h-4" />
+            개발자 소개 페이지 (songpro.app)
+            <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+          </button>
           <button
             onClick={() => openLink('https://forms.gle/X7rRcFRnsGNSt1ZFA')}
             className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/30 dark:hover:bg-violet-900/50 border border-violet-200 dark:border-violet-700 rounded-xl text-sm font-semibold text-violet-700 dark:text-violet-300 transition-colors"
