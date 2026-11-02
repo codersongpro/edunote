@@ -45,6 +45,7 @@ describe('getNavigationSection', () => {
     [AppMode.DOC_ARCHIVE, 'admin'],
     [AppMode.PRINT_FORM, 'admin'],
     [AppMode.TRANSLATOR, 'admin'],
+    [AppMode.CLASS_ASSIGNMENT, 'admin'],
     [AppMode.LESSON_MATERIAL, 'lesson'],
     [AppMode.CLASS_TOOLS, 'lesson'],
     [AppMode.MY_RESOURCES, 'lesson'],

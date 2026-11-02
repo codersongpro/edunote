@@ -27,6 +27,7 @@ const NAVIGATION_SECTION_MODES: Readonly<Record<NavigationSection, readonly AppM
     AppMode.DOC_ARCHIVE,
     AppMode.PRINT_FORM,
     AppMode.TRANSLATOR,
+    AppMode.CLASS_ASSIGNMENT,
   ],
   lesson: [
     AppMode.LESSON_MATERIAL,

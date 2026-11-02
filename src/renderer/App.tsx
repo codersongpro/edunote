@@ -39,7 +39,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer, CalendarSync, ScanSearch,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard,
+  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard, UsersRound,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -47,6 +47,7 @@ import DocArchivePanel from './components/DocArchivePanel';
 import PrintFormScreen from './components/PrintFormScreen';
 import DocTodoPanel, { loadDocTodos, daysUntil } from './components/DocTodoPanel';
 import TranslatorScreen from './components/TranslatorScreen';
+import ClassAssignmentScreen from './components/ClassAssignment/ClassAssignmentScreen';
 import { loadWorkDraft, saveWorkDraft, WorkDraft, WorkDraftSaveQueue } from './lib/workDraft';
 import { clearAllStudentData, runStudentDataClear } from './lib/studentDataCleanup';
 import RestoreDraftModal from './components/RestoreDraftModal';
@@ -118,6 +119,7 @@ const isChatWindow = window.location.hash === '#chat';
 
 const STUDENT_DATA_MODES = new Set<AppMode>([
   AppMode.SETTINGS,
+  AppMode.CLASS_ASSIGNMENT,
   AppMode.RECORD_CHATBOT,
   AppMode.GENERATOR,
   AppMode.SUBJECT_GENERATOR,
@@ -713,6 +715,7 @@ const App: React.FC = () => {
     { mode: AppMode.PRINT_FORM, icon: Printer, label: '양식 인쇄' },
     { mode: AppMode.BUDGET_PLANNER, icon: Wallet, label: '예산안작성' },
     { mode: AppMode.TRANSLATOR, icon: Languages, label: '간단 번역' },
+    { mode: AppMode.CLASS_ASSIGNMENT, icon: UsersRound, label: '반편성' },
   ];
 
   const defaultMyToolsMenuItems: SidebarMenuItem[] = [
@@ -786,7 +789,7 @@ const App: React.FC = () => {
     else handleModeChange(m);
   };
 
-  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_REFRESH, AppMode.DOC_REVIEW, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR];
+  const ADMIN_MODES: AppMode[] = [AppMode.EDUCATION_QA, AppMode.OFFICIAL_DOC_ANALYZER, AppMode.DOC_REFRESH, AppMode.DOC_REVIEW, AppMode.DOC_TODO, AppMode.SCHOOL_DOC, AppMode.BUDGET_PLANNER, AppMode.DOC_ARCHIVE, AppMode.PRINT_FORM, AppMode.TRANSLATOR, AppMode.CLASS_ASSIGNMENT];
 
   const topNavItems = (() => {
     if (mode === AppMode.SCHOOL_DOC) {
@@ -871,6 +874,7 @@ const App: React.FC = () => {
       case AppMode.DOC_TODO: return <DocTodoPanel />;
       case AppMode.PRINT_FORM: return <PrintFormScreen />;
       case AppMode.TRANSLATOR: return <TranslatorScreen />;
+      case AppMode.CLASS_ASSIGNMENT: return <ClassAssignmentScreen />;
       case AppMode.TEACHER_RECORD: return <TeacherRecordPanel initialTab={teacherRecordInitialTab} />;
       case AppMode.STUDENT_MEMO: return <StudentMemoBoard />;
       case AppMode.STUDENT_CARD: return <StudentCardScreen />;

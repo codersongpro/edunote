@@ -1,11 +1,12 @@
 // "학생 데이터 전체 삭제"가 지워야 할 저장소를 한곳에 모은다.
 //
-// 학생 개인정보가 여러 저장소(localStorage 접두사 2종, 단일 키 1개, JSON 파일 2개,
+// 학생 개인정보가 여러 저장소(localStorage 접두사 2종, 단일 키 1개, JSON 파일 3개,
 // 설정값 3개)에 흩어져 있어, 새 저장소를 추가할 때 한 곳을 빠뜨리면 삭제에 구멍이 생긴다.
 // 그래서 삭제 대상을 이 모듈에 모으고 테스트로 고정한다.
 import { clearAllHistory, clearDocumentHistory } from './generationHistory';
 import { clearWorkDraft } from './workDraft';
 import { clearStudentRoster } from './studentRoster';
+import { clearWork as clearClassAssignmentWork } from './classAssignment/storage';
 
 const STUDENT_MEMO_STORAGE_KEY = 'eduNote_studentMemos_v1';
 
@@ -17,6 +18,7 @@ export const STUDENT_DATA_TARGET_LABELS = [
   '자동 저장된 작업 내용(이어서 하기)',
   '설정에 저장된 학생 명단',
   '설정에 등록한 학생 번호-이름 명렬표',
+  '반편성 명단·편성안',
 ] as const;
 
 export async function clearAllStudentData(): Promise<void> {
@@ -27,6 +29,7 @@ export async function clearAllStudentData(): Promise<void> {
   await window.electronAPI.writeJsonData('student-memos', []);
   await clearWorkDraft();
   await clearStudentRoster();
+  await clearClassAssignmentWork();
   await window.electronAPI.setConfig({
     studentNames: '',
     studentMaleNames: '',
