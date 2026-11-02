@@ -60,6 +60,8 @@ export enum AppMode {
   PRINT_FORM = 'PRINT_FORM',
   // 간단 번역
   TRANSLATOR = 'TRANSLATOR',
+  // 반편성 (교무행정)
+  CLASS_ASSIGNMENT = 'CLASS_ASSIGNMENT',
 }
 
 // ─── Custom Tool ───────────────────────────────────────────────────

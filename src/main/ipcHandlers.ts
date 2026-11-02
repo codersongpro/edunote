@@ -88,6 +88,18 @@ function sendModelFallbackNotice(
   }
 }
 
+// 바이너리 저장 대화상자의 파일 형식 필터 — 제안 파일명의 확장자를 따른다(기본 HWPX).
+const BUFFER_SAVE_FILTERS: Record<string, { name: string; extensions: string[] }> = {
+  hwpx: { name: 'HWPX', extensions: ['hwpx'] },
+  xlsx: { name: 'Excel 통합 문서', extensions: ['xlsx'] },
+  png: { name: 'PNG 이미지', extensions: ['png'] },
+};
+
+function bufferSaveFilter(suggestedName: string): { name: string; extensions: string[] } {
+  const ext = String(suggestedName || '').split('.').pop()?.toLowerCase() ?? '';
+  return BUFFER_SAVE_FILTERS[ext] ?? BUFFER_SAVE_FILTERS.hwpx;
+}
+
 function safeDataFile(name: string): string {
   const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
   const dir = store.get('appDataDir') || path.join(app.getPath('userData'), 'data');
@@ -347,7 +359,7 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
     const saveDir = store.get('saveDir');
     const result = await dialog.showSaveDialog({
       defaultPath: path.join(saveDir || app.getPath('documents'), suggestedName),
-      filters: [{ name: 'HWPX', extensions: ['hwpx'] }],
+      filters: [bufferSaveFilter(suggestedName)],
     });
     if (result.canceled || !result.filePath) return null;
 

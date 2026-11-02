@@ -34,7 +34,8 @@ EduNote
 │  ├─ 공문 보관함               ← 공문 캡처·첨부 저장·검색
 │  ├─ 양식 인쇄                 ← 학교 양식 10종 직접 편집·PDF/HWPX 저장
 │  ├─ 예산안작성                ← 제목 주제 분석 기반 예산안 생성·0원 맞추기
-│  └─ 간단 번역                 ← 안내문·문자·알림장 문구 다국어 번역
+│  ├─ 간단 번역                 ← 안내문·문자·알림장 문구 다국어 번역
+│  └─ 반편성                   ← 명단 xlsx/csv → 편성안 3개·수동 조정·엑셀 저장 (AI 호출 없음, 로컬 최적화)
 │
 ├─ [수업자료AI]
 │  ├─ 수업자료 생성             ← 슬라이드·워크시트·퀴즈·수업계획서
@@ -164,6 +165,7 @@ edunote
 │     │  ├─ PrintFormScreen.tsx
 │     │  ├─ BudgetPlannerScreen.tsx
 │     │  ├─ TranslatorScreen.tsx
+│     │  ├─ ClassAssignment/ (ClassAssignmentScreen·ClassCard·TransitionMatrix)
 │     │  ├─ LessonMaterialGenerator.tsx
 │     │  ├─ ClassToolsPanel.tsx
 │     │  ├─ TeacherRecordPanel.tsx
@@ -271,6 +273,8 @@ edunote
 | `src/renderer/components/DocArchivePanel.tsx` | 공문 캡처 이미지·첨부 파일 저장 및 검색 |
 | `src/renderer/components/DocTodoPanel.tsx` | 공문요약·업무추출에서 저장한 할일의 마감일·완료 상태 관리, D-day 배지 |
 | `src/renderer/components/TranslatorScreen.tsx` | 한국어↔외국어 양방향 간단 번역 화면 |
+| `src/renderer/components/ClassAssignment/ClassAssignmentScreen.tsx` | 반편성 화면 — 명단 업로드·점검, 기준 우선순위, 편성안 3개 비교, 드래그/이동·고정, 다시 다듬기, 개선 제안, 엑셀 저장, 로컬 자동 저장 |
+| `src/renderer/lib/classAssignment/` | 반편성 로직 — `parse`(CSV·XLSX 명단, 진단), `relations`(분리·같은반·쌍생아 ID 해석), `metrics`(반별 통계·충족도), `engine`(벌점 함수 + 시드 고정 시뮬레이티드 어닐링, 개선 제안), `engine.worker`/`runner`(Web Worker 실행, 실패 시 같은 스레드), `xlsx`(jszip 기반 최소 읽기·쓰기), `export`, `storage` |
 | `src/renderer/components/DemoSamplesScreen.tsx` | Demo 별도 창(`#demo`)에서 보여주는 기능별 샘플 입력값 모음 |
 | `src/renderer/components/TourOverlay.tsx` | 화면 요소를 단계별로 하이라이트하는 인터랙티브 튜토리얼 오버레이 |
 | `src/renderer/components/FileUpload.tsx` | 공통 파일 업로드 컴포넌트, 이미지·PDF·HWPX 등 처리 |

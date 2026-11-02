@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { clearAllStudentData, runStudentDataClear, STUDENT_DATA_TARGET_LABELS } from '../studentDataCleanup';
 import { WORK_DRAFT_NAME } from '../workDraft';
 import { STUDENT_ROSTER_DATA_KEY } from '../studentRoster';
+import { CLASS_ASSIGNMENT_DATA_KEY } from '../classAssignment/storage';
 import { DOCUMENT_HISTORY_KEY_PREFIX } from '../generationHistory';
 
 const writeJsonData = vi.fn();
@@ -51,6 +52,8 @@ describe('clearAllStudentData', () => {
     expect(cleared).toContain(WORK_DRAFT_NAME);
     // 학생 번호-이름 명렬표도 실명이 담긴 학생 개인정보이므로 반드시 포함되어야 한다.
     expect(cleared).toContain(STUDENT_ROSTER_DATA_KEY);
+    // 반편성 명단에는 성적·생활지도 등 민감정보가 들어 있다.
+    expect(cleared).toContain(CLASS_ASSIGNMENT_DATA_KEY);
   });
 
   it('설정에 저장된 학생 명단 3종을 비운다', async () => {
