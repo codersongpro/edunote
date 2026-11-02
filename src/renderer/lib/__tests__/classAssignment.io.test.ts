@@ -116,9 +116,33 @@ describe('XLSX 읽기·쓰기', () => {
     expect(sheets[0].rows).toEqual([['이름', null, 3], [], [null, '홍길동']]);
   });
 
-  it('양식 파일에 모든 열이 있다', async () => {
+  it('양식 파일에 모든 열과 예시 3명이 있다', async () => {
     const sheets = await readXlsx(await buildTemplateWorkbook());
     expect(sheets[0].rows[0]).toEqual(TEMPLATE_COLUMNS.map(c => c.header));
+    expect(sheets[0].rows.slice(1)).toHaveLength(3);
+    expect(sheets[0].rows.slice(1).every(r => r.length <= TEMPLATE_COLUMNS.length)).toBe(true);
+  });
+
+  it('예시 행은 지우지 않고 올려도 편성에서 빠지고, 안내가 나온다', async () => {
+    const template = await readXlsx(await buildTemplateWorkbook());
+    template[0].rows.push([3, 1, '홍길동', '남', 1, 90]);
+    const r = rowsToStudents(template);
+    expect(r.students.map(s => s.name)).toEqual(['홍길동']);
+    expect(r.diagnostics.some(d => d.level === 'info' && d.message.includes('예시 행 3개'))).toBe(true);
+    expect(r.diagnostics.some(d => d.level === 'error')).toBe(false);
+  });
+
+  it('예시 행 값은 실제 행으로 읽어도 형식이 올바르다(열 순서 확인)', async () => {
+    const template = await readXlsx(await buildTemplateWorkbook());
+    const rows = template[0].rows.map((row, i) => (i === 0 ? row : row.map((c, k) => (k === 2 ? String(c).replace('(예시)', '') : typeof c === 'string' ? c.replace(/\(예시\)/g, '') : c))));
+    const r = rowsToStudents([{ name: '명단', rows }]);
+    expect(r.students).toHaveLength(3);
+    const [a, b, c] = r.students;
+    expect(a).toMatchObject({ name: '김하늘', gender: '여', rank: 3, behavior: 0, separationRaw: '박바다' });
+    expect(b).toMatchObject({ name: '박바다', basicAcademic: true, behavior: 2, togetherRaw: '이솔(2-5)' });
+    expect(c).toMatchObject({ name: '이솔', specialNeeds: true, fixedClass: 2, excludedClasses: [1] });
+    const rel = resolveRelations(r.students, 'together');
+    expect(rel.diagnostics).toHaveLength(0);
   });
 
   it('결과 파일을 다시 읽으면 같은 배정이 복원된다', async () => {

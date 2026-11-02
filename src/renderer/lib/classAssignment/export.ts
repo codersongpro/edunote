@@ -1,10 +1,22 @@
 import { classLabel } from './criteria';
 import { computeClassStats } from './metrics';
-import { TEMPLATE_COLUMNS } from './parse';
+import { EXAMPLE_NAME_PREFIX, TEMPLATE_COLUMNS } from './parse';
 import { writeXlsx, type Cell, type SheetSpec } from './xlsx';
 import type { Assignment, AssignmentConfig, ClassStudent, ComplianceItem, Scenario } from './types';
 
-// 엑셀 내보내기 — 빈 양식 / 편성 결과
+// 엑셀 내보내기 — 양식(예시 3명 포함) / 편성 결과
+
+const ex = (name: string) => `${EXAMPLE_NAME_PREFIX}${name}`;
+
+/**
+ * 양식의 예시 3명 — 열마다 어떤 값을 쓰는지 보여 준다(TEMPLATE_COLUMNS 순서).
+ * 이름이 '(예시)'로 시작하므로 지우지 않고 올려도 편성에서 자동으로 빠진다.
+ */
+export const TEMPLATE_EXAMPLE_ROWS: Cell[][] = [
+  [1, 1, ex('김하늘'), '여', 3, 92, 94, 90, 0, '', '', ex('박바다'), '', '', '', '', '학급 회장, 박바다와 분리 요청'],
+  [1, 2, ex('박바다'), '남', 18, 61, 58, 64, 2, 'O', '', '', `${ex('이솔')}(2-5)`, '', '', '', '기초학력 지원, 이솔과 같은 반 희망'],
+  [2, 5, ex('이솔'), '남', 7, 85, 82, 88, 1, '', 'O', '', '', '', '나', '가', '특수교육대상, 나반 고정·가반 제외'],
+];
 
 export async function buildTemplateWorkbook(): Promise<ArrayBuffer> {
   const header = TEMPLATE_COLUMNS.map(c => c.header);
@@ -16,10 +28,11 @@ export async function buildTemplateWorkbook(): Promise<ArrayBuffer> {
     [],
     ['· 한 학년 전체를 한 시트에 적거나, 전학년 반별로 시트를 나눠도 됩니다(머리글은 각 시트 첫 줄).'],
     ['· 분리요청·같은반희망·쌍생아는 상대 학생 이름을 적습니다. 동명이인이 있으면 홍길동(3-12)처럼 전학년반-번호를 함께 적으세요.'],
+    [`· 명단 시트의 예시 3명(이름이 '${EXAMPLE_NAME_PREFIX}'로 시작)은 지워도 되고, 그대로 두어도 편성에서 자동으로 빠집니다.`],
     ['· 이 파일에는 학생 개인정보가 들어갑니다. 작업이 끝나면 안전하게 보관하거나 삭제하세요.'],
   ];
   return writeXlsx([
-    { name: '명단', rows: [header], headerRows: [0], freezeHeader: true, colWidths: header.map(h => Math.max(10, h.length * 2 + 2)) },
+    { name: '명단', rows: [header, ...TEMPLATE_EXAMPLE_ROWS], headerRows: [0], freezeHeader: true, colWidths: header.map((h, i) => (i === 2 ? 14 : i === header.length - 1 ? 34 : Math.max(10, h.length * 2 + 2))) },
     { name: '작성방법', rows: guide, titleRows: [0], headerRows: [2], colWidths: [18, 70] },
   ]);
 }

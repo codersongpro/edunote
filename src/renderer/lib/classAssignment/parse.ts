@@ -7,6 +7,10 @@ import type { ClassStudent, Diagnostic, Gender } from './types';
 
 export const MAX_STUDENTS = 2000;
 
+/** 양식에 넣은 예시 행 표시 — 이름이 이 문구로 시작하면 편성에서 자동으로 뺀다(지우지 않고 올려도 안전) */
+export const EXAMPLE_NAME_PREFIX = '(예시)';
+const isExampleName = (name: string) => name.replace(/\s/g, '').startsWith(EXAMPLE_NAME_PREFIX);
+
 /** 양식 열 — 순서가 곧 양식 파일의 열 순서 */
 export const TEMPLATE_COLUMNS: Array<{ header: string; note: string; example: Cell }> = [
   { header: '전학년반', note: '필수 · 숫자', example: 1 },
@@ -114,9 +118,15 @@ export function rowsToStudents(sheets: SheetData[]): ParseResult {
   const students: ClassStudent[] = [];
   const extraNumeric = new Set<string>();
   const seen = new Map<string, ClassStudent>();
+  let exampleRows = 0;
 
   for (const sheet of sources) {
-    const headerIdx = sheet.rows.findIndex(r => r.some(c => ALIASES[normalizeHeader(c)] === 'name'));
+    // 머리글 행 = '이름'과 함께 '전학년반' 또는 '성별'이 있는 행.
+    // (양식의 「작성방법」 시트처럼 '이름'이라는 글자만 있는 안내 시트는 명단으로 보지 않는다)
+    const headerIdx = sheet.rows.findIndex(r => {
+      const fields = new Set(r.map(c => ALIASES[normalizeHeader(c)]));
+      return fields.has('name') && (fields.has('prevClass') || fields.has('gender'));
+    });
     if (headerIdx < 0) continue;
     const header = sheet.rows[headerIdx].map(normalizeHeader);
     const raw = sheet.rows[headerIdx].map(c => str(c));
@@ -137,6 +147,7 @@ export function rowsToStudents(sheets: SheetData[]): ParseResult {
       const row = sheet.rows[r] ?? [];
       const name = str(get(row, 'name'));
       if (!name) continue;
+      if (isExampleName(name)) { exampleRows++; continue; }
       const where = `${sheet.name} ${r + 1}행`;
       const prevClass = num(get(row, 'prevClass'));
       const prevNumber = num(get(row, 'prevNumber'));
@@ -189,6 +200,10 @@ export function rowsToStudents(sheets: SheetData[]): ParseResult {
   }
   if (students.length === 0 && !diagnostics.some(d => d.level === 'error')) {
     diagnostics.push({ level: 'error', message: "학생을 찾지 못했습니다. 첫 줄에 '이름'·'전학년반'·'성별' 머리글이 있는지 확인해 주세요." });
+  }
+
+  if (exampleRows > 0) {
+    diagnostics.push({ level: 'info', message: `양식의 예시 행 ${exampleRows}개('${EXAMPLE_NAME_PREFIX}'로 시작하는 이름)는 편성에서 제외했습니다.` });
   }
 
   // 동명이인 안내
