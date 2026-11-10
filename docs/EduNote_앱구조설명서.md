@@ -662,14 +662,17 @@ PR → main 병합
 - 중간 단계가 하나라도 실패하면 웹 운영 사이트도 이전 버전 그대로 남는다(두 버전이 어긋나지 않음).
 - 웹만 다시 배포해야 할 때(예: Vercel 일시 장애): 같은 워크플로를 **이미 출시된 버전**과 `web_only` 체크로 실행한다. EXE는 만들지 않고 `web-production`만 그 릴리즈 태그로 다시 맞춘다.
 - `web-production`은 배포 전용 브랜치다. 직접 커밋하거나 PR을 보내지 않는다.
-- 최초 1회 설정: Vercel에서 저장소를 가져온 뒤 Settings → Git → Production Branch를 `web-production`으로 지정, 저장소 변수 `WEB_APP_URL`(선택) 등록, 랜딩페이지(`docs/index.html`)의 `WEB_APP_URL` 상수에 웹 주소 입력(입력 전에는 「웹에서 바로 쓰기」 버튼이 숨겨짐).
+- Vercel 프로젝트는 두 개다(같은 저장소를 각각 연결).
+  - `ednote` — **랜딩페이지**. Root Directory `docs`, 운영 브랜치 `main`, 도메인 `edunote.songpro.app`. 설정은 `docs/vercel.json`(빌드 없이 docs 폴더 그대로 배포)이 우선 적용된다.
+  - `edunote-app` — **웹 앱**. Root Directory 저장소 최상위, 운영 브랜치 `web-production`(Settings → Environments → Production → Branch Tracking). 설정은 최상위 `vercel.json`.
+- 최초 1회 설정: 위 웹 앱 프로젝트 생성, 저장소 변수 `WEB_APP_URL`(선택) 등록, 랜딩페이지(`docs/index.html`)의 `WEB_APP_URL` 상수에 웹 주소 입력(입력 전에는 「웹에서 바로 쓰기」 버튼이 숨겨짐).
 - 판 구분: 버전 번호는 같고, 화면의 `PC`/`웹` 표시(`platform.ts`의 `EDITION_LABEL`)와 백업 파일의 `edition` 필드로 구분한다.
 
 | 구분 | 주소 | 갱신 시점 |
 | --- | --- | --- |
-| 랜딩페이지 | GitHub Pages (`docs/index.html`, `codersongpro.github.io/edunote/`) | main 병합 시 |
+| 랜딩페이지 | Vercel `ednote` 프로젝트 (`edunote.songpro.app`, `docs/` 폴더). GitHub Pages(`codersongpro.github.io/edunote/`)에도 같은 파일 | main 병합 시 |
 | PC 버전(EXE) | GitHub Releases | 릴리즈 실행 시 |
-| 웹 버전 | Vercel 운영 주소 | 릴리즈 성공 시 함께 |
+| 웹 버전 | Vercel `edunote-app` 프로젝트 운영 주소 | 릴리즈 성공 시 함께 |
 
 ### 13.1 웹 버전 (Vercel)
 
