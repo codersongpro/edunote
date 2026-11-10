@@ -10,6 +10,9 @@
 import { createHash } from 'node:crypto';
 
 const COUNT_KEY = 'landing:visits';
+// 집계를 시작하기 전까지의 방문 수. 저장소에는 집계 시작 이후 방문만 쌓고, 보여줄 때 이 값을 더한다.
+// (첫 방문이 5,321회로 표시됨)
+const BASE_COUNT = 5320;
 const RATE_LIMIT_PER_MINUTE = 20; // 같은 IP에서 1분에 20번을 넘으면 더 세지 않는다(새로고침 연타·스크립트 부풀리기 방지)
 
 // 방문을 셀 수 있는 사이트. GitHub Pages 사본(codersongpro.github.io)에서도 같은 숫자를 쓴다.
@@ -69,7 +72,7 @@ function toCount(value) {
 
 async function readCount() {
   const [value] = await redis([['GET', COUNT_KEY]]);
-  return toCount(value);
+  return BASE_COUNT + toCount(value);
 }
 
 export async function GET(request) {
@@ -98,7 +101,7 @@ export async function POST(request) {
       return reply(request, { count: await readCount() });
     }
     const [count] = await redis([['INCR', COUNT_KEY]]);
-    return reply(request, { count: toCount(count) });
+    return reply(request, { count: BASE_COUNT + toCount(count) });
   } catch (e) {
     return reply(request, { error: 'unavailable' }, 503);
   }

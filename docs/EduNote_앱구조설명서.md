@@ -664,7 +664,7 @@ PR → main 병합
 - `web-production`은 배포 전용 브랜치다. 직접 커밋하거나 PR을 보내지 않는다.
 - Vercel 프로젝트는 두 개다(같은 저장소를 각각 연결).
   - `ednote` — **랜딩페이지**. Root Directory `docs`, 운영 브랜치 `main`, 도메인 `edunote.songpro.app`. 설정은 `docs/vercel.json`(빌드 없이 docs 폴더 그대로 배포)이 우선 적용된다.
-    - 누적 방문 횟수: `docs/api/visits.mjs`(Vercel 함수). 페이지를 열 때마다 `POST /api/visits`로 1회 더한다. 저장소는 Upstash Redis(이 프로젝트의 Storage 탭에서 연결 → `KV_REST_API_URL`·`KV_REST_API_TOKEN` 자동 등록). 허용한 사이트(랜딩·GitHub Pages 사본)의 브라우저 요청만 세고, 봇과 같은 IP의 분당 20회 초과분은 세지 않는다. 원본 IP는 저장하지 않는다(해시로 2분 보관). 연결 전이거나 실패하면 화면에 숫자를 숨긴다.
+    - 누적 방문 횟수: `docs/api/visits.mjs`(Vercel 함수). 페이지를 열 때마다 `POST /api/visits`로 1회 더한다. 저장소는 Upstash Redis(이 프로젝트의 Storage 탭에서 연결 → `KV_REST_API_URL`·`KV_REST_API_TOKEN` 자동 등록). 허용한 사이트(랜딩·GitHub Pages 사본)의 브라우저 요청만 세고, 봇과 같은 IP의 분당 20회 초과분은 세지 않는다. 원본 IP는 저장하지 않는다(해시로 2분 보관). 연결 전이거나 실패하면 화면에 숫자를 숨긴다. 표시값은 집계 시작 전 방문 수 `BASE_COUNT`(5,320)에 저장값을 더한 것이다(첫 방문이 5,321회).
   - `edunoteweb` — **웹 앱**. Root Directory 저장소 최상위, 운영 브랜치 `web-production`(Settings → Environments → Production → Branch Tracking). 설정은 최상위 `vercel.json`.
 - 최초 1회 설정: 위 웹 앱 프로젝트 생성, 저장소 변수 `WEB_APP_URL`(선택) 등록, 랜딩페이지(`docs/index.html`)의 `WEB_APP_URL` 상수에 웹 주소 입력(입력 전에는 「웹에서 바로 쓰기」 버튼이 숨겨짐).
 - 판 구분: 버전 번호는 같고, 화면의 `PC`/`웹` 표시(`platform.ts`의 `EDITION_LABEL`)와 백업 파일의 `edition` 필드로 구분한다.
