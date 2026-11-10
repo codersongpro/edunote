@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StickyNote, Plus, Trash2, Download, Search, HelpCircle } from 'lucide-react';
 import { useTour } from '../TourContext';
 import { safeSetItem } from '../lib/safeStorage';
+import { isWeb } from '../lib/platform';
 import { toCsv } from '../lib/csv';
 
 interface Memo {
@@ -174,20 +175,20 @@ const StudentMemoBoard: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7]">
       {/* Header */}
-      <div data-tour="student-memo-header" className="h-14 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 flex items-center justify-between shrink-0">
+      <div data-tour="student-memo-header" className="h-14 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 flex items-center justify-between shrink-0 compact:h-auto compact:py-2 compact:flex-wrap compact:gap-2">
         <div className="flex items-center gap-2">
           <div className="bg-yellow-100 p-1.5 rounded-lg">
             <StickyNote className="w-4 h-4 text-yellow-600" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">학생 메모 보드</h2>
-            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">메모 {memos.length}개 · {dataPath ? '지정 폴더에 자동 저장됨' : '앱 재시작 후에도 유지됩니다'}</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">메모 {memos.length}개 · {isWeb ? '이 브라우저에 자동 저장됨' : dataPath ? '지정 폴더에 자동 저장됨' : '앱 재시작 후에도 유지됩니다'}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 compact:flex-wrap">
           <button
             onClick={() => startTour('student-memo')}
-            className="flex items-center gap-1 text-xs text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 px-2 py-1 rounded hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
+            className="flex items-center gap-1 text-xs text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 px-2 py-1 rounded hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼
@@ -202,7 +203,7 @@ const StudentMemoBoard: React.FC = () => {
           </button>
           <button
             onClick={handleAdd}
-            className="flex items-center gap-1 text-xs text-white bg-[#1E88E5] hover:bg-[#1565C0] rounded-md px-3 py-1.5"
+            className="compact:whitespace-nowrap flex items-center gap-1 text-xs text-white bg-[#1E88E5] hover:bg-[#1565C0] rounded-md px-3 py-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             메모 추가

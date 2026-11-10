@@ -127,7 +127,7 @@ export const TourOverlay: React.FC<TourOverlayProps> = ({ tour, stepIndex, onNex
           <span className="text-xs font-bold text-blue-600 dark:text-blue-300">{tour.title}</span>
           <button
             onClick={onClose}
-            className="rounded p-0.5 text-[#78716C] hover:bg-[#FAF9F7] dark:text-[#9C8F87] dark:hover:bg-[#2E2822]"
+            className="rounded p-0.5 text-[#78716C] hover:bg-[#FAF9F7] dark:text-[#9C8F87] dark:hover:bg-[#2E2822] compact:whitespace-nowrap compact:shrink-0"
             title="튜토리얼 닫기"
           >
             <X className="h-4 w-4" />

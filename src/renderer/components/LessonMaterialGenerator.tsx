@@ -20,6 +20,7 @@ import {
 import { LESSON_LOADING_MESSAGES } from '../constants';
 import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
+import { useIsMobile } from '../lib/useIsMobile';
 import { contentFingerprint, ensureWorksheetQuestionIds, validateWorksheetVariantLinkage } from '../lib/workflowFeatures';
 
 type LessonContentType = 'SLIDE' | 'WORKSHEET' | 'QUIZ' | 'PLAN';
@@ -96,6 +97,8 @@ const extractHtml = (raw: string): string => {
 };
 
 const LessonMaterialGenerator: React.FC = () => {
+  // 휴대폰에서는 입력 패널 접기를 쓰지 않는다(입력과 결과가 위아래로 쌓인다).
+  const isMobile = useIsMobile();
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.LESSON_MATERIAL);
   const { startTour } = useTour();
 
@@ -625,11 +628,11 @@ li{margin-bottom:5pt;line-height:1.6;}
 
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7]">
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
+      <div className="flex-1 flex overflow-hidden p-4 gap-4 m-stack compact:p-3 compact:gap-3">
 
         {/* Left: input panel */}
         {inputPanelCollapsed && (
-          <div className="w-11 shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
+          <div className="w-11 shrink-0 compact:hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
             <button
               onClick={() => setInputPanelCollapsed(false)}
               className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
@@ -639,7 +642,7 @@ li{margin-bottom:5pt;line-height:1.6;}
             </button>
           </div>
         )}
-        {!inputPanelCollapsed && (
+        {(!inputPanelCollapsed || isMobile) && (
         <div data-tour="lesson-input" className="w-[360px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
           <div className="h-14 bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 shrink-0 flex items-center">
             <div className="flex items-center justify-between gap-2 w-full">
@@ -650,7 +653,7 @@ li{margin-bottom:5pt;line-height:1.6;}
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => startTour('lesson-material')}
-                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-amber-600 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-amber-600 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors compact:whitespace-nowrap compact:shrink-0"
                   title="이 화면 사용법을 단계별로 안내합니다"
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
@@ -658,7 +661,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                 </button>
                 <button
                   onClick={() => setInputPanelCollapsed(true)}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
+                  className="compact:hidden h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2E2822] transition-colors"
                   title="입력 패널 접기"
                 >
                   <PanelLeftClose className="w-4 h-4" />
@@ -934,11 +937,11 @@ li{margin-bottom:5pt;line-height:1.6;}
         )}
 
         {/* Right: output panel */}
-        <div data-tour="lesson-output" className="flex-1 flex flex-col overflow-hidden">
+        <div data-tour="lesson-output" data-mobile-result className="compact:min-h-[75vh] flex-1 flex flex-col overflow-hidden">
           {/* Slide result */}
           {contentType === 'SLIDE' && slides && (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
-              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0">
+              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0 compact:flex-wrap compact:gap-2">
                 <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-500" />
                   수업 슬라이드 ({slides.length}장)
@@ -957,7 +960,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     </span>
                   )}
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 compact:flex-wrap">
                   <button
                     onClick={() => { setPresentIndex(0); setIsPresentMode(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded transition-colors"
@@ -1164,7 +1167,7 @@ li{margin-bottom:5pt;line-height:1.6;}
           {/* Quiz result — iframe preview + HTML source editor */}
           {contentType === 'QUIZ' && quizHtml && (
             <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
-              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0">
+              <div className="bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 py-2.5 flex items-center justify-between shrink-0 compact:flex-wrap compact:gap-2">
                 <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0] flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-amber-500" />
                   퀴즈 앱 미리보기
@@ -1174,7 +1177,7 @@ li{margin-bottom:5pt;line-height:1.6;}
                     </span>
                   )}
                 </span>
-                <div className="flex gap-2">
+                <div className="flex gap-2 compact:flex-wrap">
                   <button
                     onClick={() => {
                       if (!quizEditMode) setQuizEditSource(quizHtml);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookMarked, Plus, Trash2, ExternalLink, Search, X, Loader2, Youtube, Globe, Tag, Edit2, Check, FolderPlus, Camera, SearchIcon, ArrowLeft, ArrowRight, RefreshCw, PlusCircle } from 'lucide-react';
 import { safeSetItem } from '../lib/safeStorage';
+import { isWeb } from '../lib/platform';
 import { filterResourceUsage, type ResourceUsageRecord } from '../lib/workflowFeatures';
 
 declare global {
@@ -420,7 +421,7 @@ const MyResourceLibrary: React.FC = () => {
               <div>
                 <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6]">나만의 자료실</h2>
                 <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
-                  유용한 웹사이트·영상을 주제별로 모아두세요. {dataPath && '지정 폴더에 자동 저장됩니다.'}
+                  유용한 웹사이트·영상을 주제별로 모아두세요. {isWeb ? '이 브라우저에 자동 저장됩니다.' : dataPath && '지정 폴더에 자동 저장됩니다.'}
                 </p>
               </div>
             </div>

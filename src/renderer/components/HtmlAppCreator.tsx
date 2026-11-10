@@ -207,7 +207,7 @@ const HtmlAppCreator: React.FC<HtmlAppCreatorProps> = ({ initial, onSave, onCanc
           </div>
           <button
             onClick={() => startTour('html-app')}
-            className="ml-auto flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 dark:text-violet-400 px-2 py-1 rounded hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+            className="ml-auto flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 dark:text-violet-400 px-2 py-1 rounded hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼

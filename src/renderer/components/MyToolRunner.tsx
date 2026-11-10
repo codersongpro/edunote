@@ -5,6 +5,7 @@ import { GeneratedDisplay } from './GeneratedDisplay';
 import type { ReviewChecklistKind } from './ReviewChecklist';
 import { runCustomTool } from '../services/geminiService';
 import { ChevronLeft, Zap, AlertTriangle, Pencil, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useIsMobile } from '../lib/useIsMobile';
 import { useGlobalState } from '../GlobalStateContext';
 
 interface MyToolRunnerProps {
@@ -15,6 +16,8 @@ interface MyToolRunnerProps {
 }
 
 const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoolLevel }) => {
+  // 휴대폰에서는 입력 패널 접기를 쓰지 않는다(입력과 결과가 위아래로 쌓인다).
+  const isMobile = useIsMobile();
   const { apiKeyAvailability, hasApiKey } = useGlobalState();
   // 키가 저장되어 있는데 아직 한 번도 생성해 보지 않은 상태('unknown')는 오류가 아니므로
   // 경고를 띄우지 않는다. 키가 아예 없거나 일시 제한일 때만 안내한다.
@@ -107,10 +110,10 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
   };
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden m-stack compact:p-3 compact:gap-3">
       {/* 좌측 폼 패널 */}
       {inputPanelCollapsed && (
-        <div className="w-11 shrink-0 border-r border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] flex justify-center py-3">
+        <div className="w-11 shrink-0 compact:hidden border-r border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] flex justify-center py-3">
           <button
             onClick={() => setInputPanelCollapsed(false)}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
@@ -120,7 +123,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
           </button>
         </div>
       )}
-      {!inputPanelCollapsed && (
+      {(!inputPanelCollapsed || isMobile) && (
       <div className="w-[360px] shrink-0 flex flex-col border-r border-[#E7E5E4] dark:border-[#2E2822] bg-white dark:bg-[#171210] overflow-y-auto">
         <div className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
           <div className="flex items-center justify-between mb-3">
@@ -142,7 +145,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
             )}
             <button
               onClick={() => setInputPanelCollapsed(true)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
+              className="compact:hidden h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
               title="입력 패널 접기"
             >
               <PanelLeftClose className="w-4 h-4" />
@@ -261,7 +264,7 @@ const MyToolRunner: React.FC<MyToolRunnerProps> = ({ tool, onBack, onEdit, schoo
       )}
 
       {/* 우측 결과 패널 */}
-      <div className="flex-1 overflow-hidden flex flex-col bg-[#FAF9F7] dark:bg-[#171210]">
+      <div data-mobile-result className="compact:min-h-[75vh] flex-1 overflow-hidden flex flex-col bg-[#FAF9F7] dark:bg-[#171210]">
         {result ? (
           <div className="flex-1 overflow-hidden p-4">
             <GeneratedDisplay content={result} title={tool.name} model={resultModel} reviewKind={reviewKindByCategory[tool.category] ?? 'document'} />

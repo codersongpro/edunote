@@ -17,6 +17,7 @@ import type {
 } from '../../lib/classAssignment/types';
 import ClassCard from './ClassCard';
 import TransitionMatrix from './TransitionMatrix';
+import { isWeb } from '../../lib/platform';
 import { btnDanger, btnPrimary, btnSecondary, card, input, muted, statusStyle, strong } from './ui';
 
 // 반편성 — 학년말 다음 학년도 반 배정
@@ -323,7 +324,11 @@ const ClassAssignmentScreen: React.FC = () => {
 
         <p className="flex gap-2 text-xs text-emerald-800 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2 leading-relaxed">
           <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>이 기능은 AI를 사용하지 않으며 학생 정보는 이 PC 밖으로 전송되지 않습니다. 작업 내용은 이 PC의 앱 데이터 폴더에 자동 저장되고 앱 백업 파일에도 포함되니, 반편성이 끝나면 「모두 지우기」로 삭제해 주세요.</span>
+          <span>
+            {isWeb
+              ? '이 기능은 AI를 사용하지 않으며 학생 정보는 이 브라우저 밖으로 전송되지 않습니다. 작업 내용은 이 브라우저에 자동 저장되고 백업 파일에도 포함되니, 반편성이 끝나면 「모두 지우기」로 삭제해 주세요.'
+              : '이 기능은 AI를 사용하지 않으며 학생 정보는 이 PC 밖으로 전송되지 않습니다. 작업 내용은 이 PC의 앱 데이터 폴더에 자동 저장되고 앱 백업 파일에도 포함되니, 반편성이 끝나면 「모두 지우기」로 삭제해 주세요.'}
+          </span>
         </p>
 
         <nav className="flex flex-wrap gap-2" aria-label="반편성 단계">

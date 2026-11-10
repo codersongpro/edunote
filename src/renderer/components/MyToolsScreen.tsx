@@ -489,22 +489,22 @@ const MyToolsScreen: React.FC<{ activeTab?: Tab; onTabChange?: (t: Tab) => void;
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
-      <div data-tour="my-tools-header" className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
+      <div data-tour="my-tools-header" className="bg-white dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-6 py-4 compact:px-4">
+        <div className="flex items-center justify-between mb-4 compact:flex-col compact:items-stretch compact:gap-3">
           <div>
             <h1 className="text-lg font-extrabold text-[#1C1917] dark:text-[#F0EBE6]">AI스킬즈</h1>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">자주 쓰는 AI 패턴을 코드 없이 만들고 동료와 공유하세요</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 compact:flex-wrap">
             <button
               onClick={() => startTour('my-tools')}
-              className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              className="flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
             >
               <HelpCircle className="w-3 h-3" />
               튜토리얼
             </button>
           {tab === 'my' && (
-            <div data-tour="my-tools-create" className="flex gap-2">
+            <div data-tour="my-tools-create" className="flex gap-2 compact:flex-wrap">
               <button
                 onClick={handleImport}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#78716C] dark:text-[#C4B8B0] border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg hover:bg-[#FAF9F7] dark:hover:bg-[#221E1B] transition-colors"

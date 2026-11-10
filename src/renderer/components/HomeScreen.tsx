@@ -115,8 +115,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden">
 
       {/* 상단: 앱 상태 1행 4열 */}
-      <div className="shrink-0 h-14 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 flex items-center">
-        <div className="grid grid-cols-4 gap-3 text-xs w-full">
+      <div className="shrink-0 h-14 compact:h-auto compact:py-2 compact:flex-col compact:items-stretch border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 flex items-center">
+        <div className="grid grid-cols-4 compact:grid-cols-2 gap-3 compact:gap-x-3 compact:gap-y-1 text-xs w-full">
           {[
             {
               label: 'API 키',
@@ -146,7 +146,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
               action: handleExportBackup,
             },
           ].map(item => (
-            <div key={item.label} className="flex min-w-0 items-center gap-2 py-1">
+            <div key={item.label} className={`flex min-w-0 items-center gap-2 py-1 ${'action' in item ? 'compact:col-span-2' : ''}`}>
               <span className="text-[#A8A29E] dark:text-[#6B5E57] shrink-0">{item.label}</span>
               <span className={`min-w-0 flex-1 truncate font-bold flex items-center gap-0.5 ${item.color}`}>
                 {item.icon}
@@ -169,7 +169,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
       </div>
 
       {/* 메인 콘텐츠 */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 overflow-hidden compact:justify-start compact:px-4 compact:py-4 compact:overflow-y-auto">
         <div className="w-full max-w-lg flex flex-col gap-4">
 
           {/* 업데이트 알림 */}
