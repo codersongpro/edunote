@@ -698,6 +698,10 @@ src/main/*         ← 순수 로직은 두 판이 공유: GeminiService, hwpxDo
 - 명령: `npm run dev:web`(개발), `npm run build:web`(빌드 → `dist-web`), `npm run preview:web`(빌드 결과 확인)
 - 배포: Vercel 운영 브랜치는 `web-production`이며 릴리즈 워크플로만 이 브랜치를 옮긴다(13절). `main`·PR은 미리보기 URL만 생성 (`vercel.json`)
 - 품질 게이트: CI(`build-win.yml`)가 `npm run typecheck`(웹 구현 누락 검사 포함)와 `npm run build:web`을 함께 실행한다.
+- **휴대폰·태블릿 세로(폭 1000px 미만) 화면**: Tailwind `compact:` 변형(tailwind.config.js)과 `src/renderer/index.css`의 `@media (max-width: 999px)` 공통 클래스, `src/renderer/lib/useIsMobile.ts`의 `useIsMobile()`로 처리한다. 세 값은 같아야 한다. PC 앱(exe)은 창 최소 폭이 1000px이라 이 규칙들이 적용되지 않으므로, 휴대폰 대응은 반드시 `compact:` 또는 아래 공통 클래스로만 넣어 PC 화면을 바꾸지 않는다.
+  - `m-stack`: 나란히 놓인 패널(입력|결과)을 위아래로 쌓고 화면 전체를 세로 스크롤 / `m-tabs`: 탭 줄 가로 스크롤 / `m-scroll-x`: 넓은 표 좌우 스크롤 / `m-paper`: A4 미리보기 여백 축소 / `m-wrap`, `m-hide`
+  - 결과 패널에 `data-mobile-result`를 달면 생성 시작 시 휴대폰에서 그 위치로 자동 스크롤한다(App.tsx).
+  - 앱 뼈대: 휴대폰에서는 상단 바(☰·앱 이름·다크 모드) + 서랍 메뉴(기존 사이드바 재사용). 메뉴 이동(`goTo`)이나 학교급 변경을 누르면 서랍이 닫힌다.
 - 웹에서 지원하지 않는 기능(폴더 선택·자동 백업·업데이트 확인·웹페이지 스크린샷)은 `src/renderer/lib/platform.ts`의 `platformSupports`로 분기하고, 메뉴·화면 구조는 그대로 둔 채 같은 자리에 안내 문구를 보여준다.
 
 ---
