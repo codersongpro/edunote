@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { pathToFileURL } from 'url';
 import { store } from './store';
 import { sanitizeConfigEntry, MAX_STRING_VALUE_CHARS } from './configValidation';
+import { ALLOWED_CONFIG_KEYS } from './configRules';
 import { assertSafeUrl } from './netGuard';
 import { ApiTier, generateContent, generateContentMultipart, generateContentMultipartStream, testApiKey, generateSlideImage, resetModelCache, getModelDiagnostics, type ModelFallbackInfo } from './GeminiService';
 import { selectActiveApiKey } from './apiKeySelection';
@@ -45,10 +46,8 @@ const MAX_YOUTUBE_METADATA_BYTES = 2 * 1024 * 1024;
 const MAX_RESOURCE_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_SHARED_JSON_BYTES = 5 * 1024 * 1024;
 
-// 시크릿(나라장터 인증키·네이버 Secret 등)은 이 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
-// config:get·config:set이 함께 쓰는 허용 목록. 새 설정값을 추가할 때는 여기와
-// configValidation.ts의 sanitizeConfigEntry(값 검증 규칙)를 함께 갱신해야 한다.
-const ALLOWED_CONFIG_KEYS = ['saveDir', 'appDataDir', 'alwaysAskPath', 'teacherName', 'schoolName', 'institution', 'schoolLevel', 'gradeClass', 'studentNames', 'studentMaleNames', 'studentFemaleNames', 'darkMode', 'apiTier', 'apiKeyLastUsable', 'onboardingDismissed', 'privacyModeEnabled', 'reviewChecklistEnabled', 'cautionTerms', 'lastBackupAt', 'autoBackupInterval', 'fontSize', 'chatFirebaseConfig', 'chatActiveRoomId', 'chatRoomHistory', 'neisByteLimits', 'eduMaterialWebSearch'];
+// config:get·config:set이 함께 쓰는 허용 목록(ALLOWED_CONFIG_KEYS)은 웹판과 공유하도록 configRules.ts에 있다.
+// 시크릿(나라장터 인증키 등)은 그 목록에 넣지 않는다 — isSecretKey 인터셉트가 암호화 저장으로 처리한다.
 
 // API 키는 가능하면 OS 안전 저장소(safeStorage) 암호화로 보관한다.
 const secretCrypto: SecretCrypto = {

@@ -1,5 +1,4 @@
 import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
-import { createHash } from 'node:crypto';
 import { extractGroundingInfo, mergeGroundingInfo, type GroundingInfo } from './groundingSources';
 import {
   MODEL_POLICY_SOURCE,
@@ -84,8 +83,17 @@ const availableModelsCache = new Map<string, AvailableModelsEntry>();
 const lastVerifiedModels = new LastVerifiedModelCache(LAST_VERIFIED_MODEL_TTL_MS);
 const lastUsedModels = new Map<string, string>();
 
+// 모델 캐시를 키별로 나누기 위한 식별자. 메모리 안 캐시 키로만 쓰므로 암호학적 해시가 필요 없고,
+// 데스크톱(Node)과 웹(브라우저) 양쪽에서 동기로 돌아가도록 순수 JS FNV-1a(두 갈래 32비트)로 만든다.
 function modelKeyId(apiKey: string): string {
-  return createHash('sha256').update(apiKey).digest('hex');
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193 ^ apiKey.length;
+  for (let i = 0; i < apiKey.length; i++) {
+    const c = apiKey.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 ^ c, 0x5bd1e995) >>> 0;
+  }
+  return `${h1.toString(16).padStart(8, '0')}${h2.toString(16).padStart(8, '0')}:${apiKey.length}`;
 }
 
 function tierKey(keyId: string, apiTier: ApiTier): string {
