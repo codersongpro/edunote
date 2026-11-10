@@ -667,6 +667,32 @@ main 브랜치 push (Pull Request 병합 포함)
 
 Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로, 별도로 `git tag`를 만들어 push할 필요가 없다.
 
+### 13.1 웹 버전 (Vercel)
+
+데스크톱판과 **같은 화면 코드(`src/renderer`)**를 브라우저용으로도 빌드해 Vercel에 배포한다. 화면을 고치거나 기능을 추가하면 웹판에도 자동으로 반영된다.
+
+```text
+src/renderer   ← 공통 화면 (데스크톱·웹 공유)
+src/preload    ← 데스크톱: window.electronAPI를 IPC로 제공
+src/web        ← 웹: window.electronAPI를 브라우저 기능으로 제공 (webApi.ts)
+  ├─ storage.ts   IndexedDB 저장소 (설정·데이터·API 키 — 서버 전송 없음)
+  ├─ files.ts     다운로드 / 다른 이름으로 저장 창 / 파일 열기
+  ├─ windows.ts   데모·채팅 팝업, HTML 앱 격리 실행(sandbox.html), 인쇄(PDF)
+  └─ public/sandbox.html  AI가 만든 HTML 앱을 고유 출처 없이(CSP sandbox) 실행
+api/           ← Vercel 서버 함수 (CORS 때문에 브라우저가 직접 못 하는 외부 조회만 중계)
+  ├─ url-meta.ts     링크·유튜브 미리보기
+  ├─ fetch-proxy.ts  이미지 썸네일·공유 마켓(구글 시트·드라이브 JSON, 허용 호스트만)
+  ├─ naramarket.ts   나라장터 검색 (교사 본인 키를 요청마다 전달, 저장 안 함)
+  └─ _guard.ts       공개 서버용 SSRF 차단·같은 사이트 요청 확인·속도 제한
+src/main/*         ← 순수 로직은 두 판이 공유: GeminiService, hwpxDocument, backupFormat,
+                     configRules, configDefaults, naramarketClient 등
+```
+
+- 명령: `npm run dev:web`(개발), `npm run build:web`(빌드 → `dist-web`), `npm run preview:web`(빌드 결과 확인)
+- 배포: Vercel이 이 저장소와 Git 연동되어 `main` 병합 시 운영 사이트에 자동 배포, PR마다 미리보기 URL 생성 (`vercel.json`)
+- 품질 게이트: CI(`build-win.yml`)가 `npm run typecheck`(웹 구현 누락 검사 포함)와 `npm run build:web`을 함께 실행한다.
+- 웹에서 지원하지 않는 기능(폴더 선택·자동 백업·업데이트 확인·웹페이지 스크린샷)은 `src/renderer/lib/platform.ts`의 `platformSupports`로 분기하고, 메뉴·화면 구조는 그대로 둔 채 같은 자리에 안내 문구를 보여준다.
+
 ---
 
 ## 14. 다른 AI가 작업할 때의 주의사항
@@ -675,6 +701,8 @@ Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로
 - 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체라는 분리가 중요하다.
 - 학생 명단은 자동 삽입하지 말고, 사용자가 명시적으로 불러온 경우에만 사용해야 한다.
 - `preload/index.ts`에 새 API를 추가하면 반드시 `preload/types.d.ts`도 함께 수정해야 한다.
+- **웹판 동기화 규칙**: `window.electronAPI`에 새 API를 추가하면 `src/web/webApi.ts`에도 같은 이름으로 구현해야 한다. `webApi`는 `ElectronAPI` 타입으로 고정되어 있어 빠뜨리면 `npm run typecheck`가 실패한다. 웹에서 불가능한 기능이면 비활성 값(null·false)을 돌려주고 `platform.ts`에 지원 여부를 추가한다(13.1절).
+- 메인 프로세스 로직을 웹판과 공유하려면 `fs`·`path`·`electron`·`Buffer` 없이 순수 함수로 분리한다(예: `hwpxDocument.ts`·`backupFormat.ts`). 저장·네트워크처럼 환경마다 다른 부분은 함수 인자로 주입받는다(예: `naramarketClient.ts`).
 - main process 기능을 추가할 때는 `ipcHandlers.ts`에 IPC를 등록하고 renderer에서는 `window.electronAPI`만 사용한다.
 - 파일 저장, 외부 브라우저 열기, PDF 저장은 Electron main process에서 처리한다.
 - 퀴즈 앱은 외부 CDN 없이 단일 HTML로 동작해야 하며, AI는 JSON 데이터만 생성하고 HTML 구조는 고정 템플릿을 사용해야 한다.

@@ -8,10 +8,13 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
+    "dev:web": "vite --config vite.web.config.ts",
+    "build:web": "vite build --config vite.web.config.ts",
+    "preview:web": "vite preview --config vite.web.config.ts",
     "dist": "npm run build && electron-builder",
     "build:win": "npm run build && electron-builder --win",
     "test": "vitest run",
-    "typecheck": "tsc -b tsconfig.web.json tsconfig.node.json --force",
+    "typecheck": "tsc -b tsconfig.web.json tsconfig.node.json tsconfig.webapp.json tsconfig.api.json --force",
     "build:legal": "node scripts/legal-page.mjs"
   },
   "dependencies": {

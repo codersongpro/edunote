@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { isWeb, platformSupports, WEB_API_KEY_NOTICE } from './lib/platform';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { createInitialGlobalState, GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { TourProvider } from './TourContext';
@@ -377,7 +378,7 @@ const App: React.FC = () => {
         const key = localStorage.key(i);
         if (key) dump[key] = localStorage.getItem(key) ?? '';
       }
-      void window.electronAPI.autoBackup(dump).catch(() => {});
+      if (platformSupports.autoBackup) void window.electronAPI.autoBackup(dump).catch(() => {});
     } catch {
       // 자동 백업 실패가 앱 시작을 막지 않도록 한다.
     }
@@ -528,7 +529,9 @@ const App: React.FC = () => {
       window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT));
       showToast({ type: 'success', title: 'API 키 저장 완료', description: 'EduNote에서 AI 기능을 사용할 수 있습니다.' });
       if (usedPlaintext) {
-        showToast({ type: 'warning', title: '암호화 저장소를 사용할 수 없음', description: '이 컴퓨터에서는 API 키가 암호화 없이 저장됩니다.' });
+        showToast(isWeb
+          ? { type: 'info', ...WEB_API_KEY_NOTICE }
+          : { type: 'warning', title: '암호화 저장소를 사용할 수 없음', description: '이 컴퓨터에서는 API 키가 암호화 없이 저장됩니다.' });
       }
     } catch {
       setOnboardingApiStatus('error');
@@ -728,7 +731,8 @@ const App: React.FC = () => {
   const [adminMenuItems, setAdminMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('admin', defaultAdminMenuItems));
   const [myToolsMenuItems, setMyToolsMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('myTools', defaultMyToolsMenuItems));
   const [draggedMenu, setDraggedMenu] = useState<{ section: MenuSection; mode: AppMode } | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // 휴대폰처럼 좁은 화면에서는 기존 "사이드바 접기" 상태로 시작한다(본문이 찌그러지지 않도록). 데스크톱 창 크기에서는 변화 없음.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
 
   const reorderMenuItem = (
     section: MenuSection,

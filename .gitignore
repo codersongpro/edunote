@@ -6,3 +6,5 @@ dist-electron/
 *.local
 electron.vite.config.*.mjs
 *.tsbuildinfo
+dist-web/
+.vercel

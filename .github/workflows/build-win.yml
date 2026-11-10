@@ -44,6 +44,11 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # 웹판(Vercel 배포본)도 같은 코드에서 빌드되는지 PR마다 확인한다.
+      # 화면·기능을 고치면 웹판이 함께 깨지지 않았는지 여기서 바로 드러난다.
+      - name: Build web version
+        run: npm run build:web
+
       - name: Build Windows EXE
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
