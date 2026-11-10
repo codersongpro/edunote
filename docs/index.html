@@ -283,6 +283,7 @@
   }
   html.dark .version-pill { background: var(--emerald-bg-dark); }
   /* 누적 다운로드 수: 집계가 끝나야 보이며, 실패하면 계속 숨겨 둔다 */
+  .download-counts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 28px; }
   .download-count { margin: 0 0 4px; font-size: 15.5px; color: var(--text-3); }
   .download-count strong { display: block; font-size: 30px; font-weight: 800; color: var(--text); line-height: 1.2; font-variant-numeric: tabular-nums; }
   .download-meta { font-size: 14.5px; color: var(--text-4); margin-top: 10px; }
@@ -380,7 +381,7 @@
       <a class="btn btn-primary" id="heroDownloadBtn" href="https://github.com/codersongpro/edunote/releases/download/v1.31.0/edunote_1.31.0_portable.exe" target="_blank" rel="noopener">⬇ Windows용 다운로드</a>
       <a class="btn btn-outline web-app-only" id="heroWebBtn" href="#" target="_blank" rel="noopener">🌐 웹에서 바로 쓰기</a>
     </div>
-    <p class="cta-note" id="heroDownloadNote">최신 버전 v1.31.0 사용 가능</p>
+    <p class="cta-note"><span id="heroDownloadNote">최신 버전 v1.31.0 사용 가능</span><span id="heroVisitNote" hidden></span></p>
     <a class="new-badge" id="whatsNewBadge" href="#whats-new"><span class="new-tag">NEW</span><span>v1.31.0 · 웹 버전 · 설치 없이 브라우저에서 바로 →</span></a>
     <p class="ai-skill-note">필요한 기능은 AI 스킬로 계속 확장됩니다.</p>
     <div class="trust-row">
@@ -609,7 +610,10 @@
       </ul>
       <div class="download-right">
         <span class="version-pill" id="versionPill">v1.31.0 최신 버전</span>
-        <p class="download-count" id="downloadCount" hidden><strong id="downloadCountNum"></strong>누적 다운로드</p>
+        <div class="download-counts">
+          <p class="download-count" id="downloadCount" hidden><strong id="downloadCountNum"></strong>누적 다운로드</p>
+          <p class="download-count" id="visitCount" hidden><strong id="visitCountNum"></strong>누적 방문</p>
+        </div>
         <div class="download-links">
           <a class="btn btn-primary" id="downloadBtn" href="https://github.com/codersongpro/edunote/releases/download/v1.31.0/edunote_1.31.0_portable.exe" target="_blank" rel="noopener">⬇ EduNote 다운로드</a>
           <a class="btn btn-outline web-app-only" id="webAppBtn" href="#" target="_blank" rel="noopener">🌐 웹에서 바로 쓰기</a>
@@ -881,6 +885,28 @@
 </script>
 
 <script>
+// 누적 방문 횟수 — 페이지를 열 때마다 1회 더한다(docs/api/visits.mjs).
+// 서버가 아직 준비되지 않았거나 실패하면 숫자를 숨긴 채 그대로 둔다.
+(function () {
+  var host = location.hostname;
+  // GitHub Pages 사본은 함수가 없으므로 운영 랜딩 주소의 API를 쓴다.
+  var VISITS_API = /\.github\.io$/.test(host) ? 'https://edunote.songpro.app/api/visits' : '/api/visits';
+  if (location.protocol === 'file:') return;
+  fetch(VISITS_API, { method: 'POST', cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('visits'); return r.json(); })
+    .then(function (data) {
+      var n = Number(data && data.count);
+      if (!(n > 0)) return;
+      var text = n.toLocaleString('ko-KR') + '회';
+      var hero = document.getElementById('heroVisitNote');
+      hero.textContent = ' · 누적 방문 ' + text;
+      hero.hidden = false;
+      document.getElementById('visitCountNum').textContent = text;
+      document.getElementById('visitCount').hidden = false;
+    })
+    .catch(function () {});
+})();
+
 // 웹 버전(Vercel) 바로가기. Vercel 연결 후 아래 주소를 채우면 「웹에서 바로 쓰기」 버튼이 나타난다.
 // 비워 두면 버튼을 숨기고 기존처럼 다운로드 버튼만 보인다.
 (function () {
