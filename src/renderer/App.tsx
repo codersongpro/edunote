@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { isWeb, platformSupports, WEB_API_KEY_NOTICE, EDITION_LABEL } from './lib/platform';
+import { useIsMobile } from './lib/useIsMobile';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { createInitialGlobalState, GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { TourProvider } from './TourContext';
@@ -40,7 +41,7 @@ import {
   Settings, ChevronDown, ChevronRight, School, Sun, Moon, File,
   Home, AlertTriangle, BookMarked, Presentation, Info, X, HelpCircle, QrCode, CheckCircle,
   GripVertical, ClipboardList, Wrench, Wallet, Archive, Printer, CalendarSync, ScanSearch,
-  PanelLeftClose, PanelLeftOpen, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard, UsersRound,
+  PanelLeftClose, PanelLeftOpen, Menu, ListTodo, Languages, ZoomIn, ZoomOut, Video, Star, IdCard, UsersRound,
 } from 'lucide-react';
 import MyToolsScreen from './components/MyToolsScreen';
 import BudgetPlannerScreen from './components/BudgetPlannerScreen';
@@ -307,8 +308,36 @@ const App: React.FC = () => {
     showActivationModal, showToast, resetGenerationState, clearStudentData,
   ]);
 
+  // 휴대폰·태블릿 세로(1000px 미만): 사이드바를 화면 위로 미끄러져 나오는 서랍 메뉴로 쓴다. PC 폭에서는 기존 그대로.
+  const isMobile = useIsMobile();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => {
+    if (!isMobile) setMobileNavOpen(false);
+  }, [isMobile]);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileNavOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileNavOpen]);
+
+  // 휴대폰에서는 입력 칸 아래에 결과가 이어지므로, 지금 화면에서 생성을 시작하면 결과 영역(data-mobile-result)으로
+  // 자동 스크롤해 진행 상황을 바로 보여준다. PC 폭에서는 결과가 옆에 보이므로 아무것도 하지 않는다.
+  const isGeneratingHere = generatingModes.has(mode);
+  useEffect(() => {
+    if (!isMobile || !isGeneratingHere) return;
+    const timer = window.setTimeout(() => {
+      const panel = document.querySelector(`[data-mode-panel="${mode}"]`);
+      const target = panel?.querySelector<HTMLElement>('[data-mobile-result]');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [isMobile, isGeneratingHere, mode]);
+
   const goTo = (newMode: AppMode) => {
     setMode(newMode);
+    // 휴대폰에서 메뉴를 고르면 서랍 메뉴를 닫고 화면을 보여준다.
+    setMobileNavOpen(false);
     // 내 스킬·스킬마켓은 같은 MyToolsScreen 인스턴스를 공유해야 하므로 마운트 키를 하나로 합친다
     // (분리하면 인스턴스가 두 개 생겨 한쪽에서 가져오기/삭제해도 다른 쪽 상태가 갱신되지 않는 버그가 생김)
     const mountMode = newMode === AppMode.MY_AI_TOOLS_SHARED ? AppMode.MY_AI_TOOLS : newMode;
@@ -731,8 +760,7 @@ const App: React.FC = () => {
   const [adminMenuItems, setAdminMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('admin', defaultAdminMenuItems));
   const [myToolsMenuItems, setMyToolsMenuItems] = useState<SidebarMenuItem[]>(() => restoreMenuOrder('myTools', defaultMyToolsMenuItems));
   const [draggedMenu, setDraggedMenu] = useState<{ section: MenuSection; mode: AppMode } | null>(null);
-  // 휴대폰처럼 좁은 화면에서는 기존 "사이드바 접기" 상태로 시작한다(본문이 찌그러지지 않도록). 데스크톱 창 크기에서는 변화 없음.
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const reorderMenuItem = (
     section: MenuSection,
@@ -930,8 +958,8 @@ const App: React.FC = () => {
   return (
     <TourProvider>
     <GlobalStateContext.Provider value={globalStateValue}>
-      <div className={darkMode ? 'dark' : ''} style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div className="flex h-screen bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
+      <div className={`app-viewport ${darkMode ? 'dark' : ''}`} style={{ display: 'flex', flexDirection: 'column' }}>
+      <div className="flex h-full bg-[#FAF9F7] dark:bg-[#171210] overflow-hidden font-sans">
 
         {/* 이전 작업 복원 안내 — 온보딩이 떠 있는 동안에는 겹치지 않게 뒤로 미룬다 */}
         {pendingDraft && !showDisclaimerModal && (
@@ -1192,15 +1220,15 @@ const App: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="px-8 py-5 border-t border-[#EDE8E1] dark:border-[#2E2822] flex items-center justify-between">
+              <div className="px-8 py-5 border-t border-[#EDE8E1] dark:border-[#2E2822] flex items-center justify-between compact:px-4 compact:py-3 compact:gap-2">
                 <button
                   onClick={() => setOnboardingStep(step => Math.max(1, step - 1))}
                   disabled={onboardingStep === 1}
-                  className="px-5 py-2.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] text-sm font-bold text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
+                  className="compact:whitespace-nowrap compact:px-3 px-5 py-2.5 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] text-sm font-bold text-[#78716C] dark:text-[#9C8F87] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
                 >
                   ← 이전 단계
                 </button>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 compact:hidden">
                   {[1, 2, 3].map(step => (
                     <span key={step} className={`w-2 h-2 rounded-full ${onboardingStep === step ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-[#2E2822]'}`} />
                   ))}
@@ -1211,7 +1239,7 @@ const App: React.FC = () => {
                       <button
                         onClick={handleStartAfterDisclaimer}
                         disabled={!disclaimerChecked}
-                        className="px-4 py-2.5 rounded-lg border border-indigo-200 bg-white text-indigo-700 text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-50 dark:bg-[#171210] dark:border-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-950/30"
+                        className="compact:whitespace-nowrap compact:px-3 px-4 py-2.5 rounded-lg border border-indigo-200 bg-white text-indigo-700 text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-50 dark:bg-[#171210] dark:border-indigo-900/60 dark:text-indigo-200 dark:hover:bg-indigo-950/30"
                       >
                         동의하고 창 닫기
                       </button>
@@ -1219,7 +1247,7 @@ const App: React.FC = () => {
                     <button
                       onClick={() => setOnboardingStep(step => Math.min(3, step + 1))}
                       disabled={onboardingStep === 1 && !disclaimerChecked}
-                      className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:bg-indigo-200 disabled:cursor-not-allowed hover:bg-indigo-700"
+                      className="compact:whitespace-nowrap compact:px-3 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:bg-indigo-200 disabled:cursor-not-allowed hover:bg-indigo-700"
                     >
                       다음 단계 →
                     </button>
@@ -1227,7 +1255,7 @@ const App: React.FC = () => {
                 ) : (
                   <button
                     onClick={handleFinishOnboarding}
-                    className="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
+                    className="compact:whitespace-nowrap compact:px-3 px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700"
                   >
                     EduNote 시작하기 →
                   </button>
@@ -1339,7 +1367,7 @@ const App: React.FC = () => {
         )}
 
         {/* 사이드바가 접혀 있을 때: 주요 메뉴 아이콘을 남기는 얇은 바 */}
-        {sidebarCollapsed && (
+        {sidebarCollapsed && !isMobile && (
           <div className="w-12 shrink-0 bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex flex-col items-center py-3 gap-2">
             <button
               onClick={() => setSidebarCollapsed(false)}
@@ -1379,7 +1407,22 @@ const App: React.FC = () => {
         )}
 
         {/* Sidebar */}
-        <aside className={`${sidebarCollapsed ? 'hidden' : 'flex'} min-w-[240px] w-[19%] max-w-[280px] bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex-col shrink-0 overflow-hidden`}>
+        {/* 휴대폰 서랍 메뉴 뒤 어두운 배경 — 누르면 닫힌다 */}
+        {isMobile && mobileNavOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setMobileNavOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        <aside
+          className={isMobile
+            ? `fixed inset-y-0 left-0 z-50 flex w-[84vw] max-w-[320px] bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex-col overflow-hidden shadow-2xl transition-transform duration-200 ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : `${sidebarCollapsed ? 'hidden' : 'flex'} min-w-[240px] w-[19%] max-w-[280px] bg-[#FFFDF9] dark:bg-[#1D1916] border-r border-[#EDE8E1] dark:border-[#2E2822] flex-col shrink-0 overflow-hidden`}
+          aria-hidden={isMobile && !mobileNavOpen ? true : undefined}
+          inert={isMobile && !mobileNavOpen ? true : undefined}
+        >
 
           <div className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] shrink-0">
             <button
@@ -1404,12 +1447,12 @@ const App: React.FC = () => {
                 {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4 text-[#78716C]" />}
               </button>
               <button
-                onClick={() => setSidebarCollapsed(true)}
-                className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
-                title="메뉴 접기"
-                aria-label="메뉴 접기"
+                onClick={() => (isMobile ? setMobileNavOpen(false) : setSidebarCollapsed(true))}
+                className="p-1.5 compact:p-2 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
+                title={isMobile ? '메뉴 닫기' : '메뉴 접기'}
+                aria-label={isMobile ? '메뉴 닫기' : '메뉴 접기'}
               >
-                <PanelLeftClose className="w-4 h-4" />
+                {isMobile ? <X className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -1474,7 +1517,7 @@ const App: React.FC = () => {
             )}
 
             <button
-              onClick={() => setShowSchoolLevelModal(true)}
+              onClick={() => { setMobileNavOpen(false); setShowSchoolLevelModal(true); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] bg-[#EDE8E1] dark:bg-[#2E2822]/40 text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#E7E5E4] dark:hover:bg-[#2E2822]/70 transition-all shadow-sm"
             >
               <School className="w-4 h-4 shrink-0" />
@@ -1805,7 +1848,40 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <main className="relative flex-1 overflow-hidden flex flex-col">
+        <main className="relative flex-1 min-w-0 overflow-hidden flex flex-col">
+          {/* 휴대폰 상단 바: ☰ 메뉴 · 앱 이름 · 다크 모드 */}
+          {isMobile && (
+            <div className="h-12 shrink-0 flex items-center gap-2 px-2 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-[#FFFDF9] dark:bg-[#1D1916]">
+              <button
+                onClick={() => setMobileNavOpen(true)}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
+                aria-label="메뉴 열기"
+                title="메뉴 열기"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => goTo(AppMode.HOME)}
+                className="flex-1 min-w-0 flex items-baseline gap-1.5 text-base font-extrabold text-[#1C1917] dark:text-[#F0EBE6] tracking-tight"
+              >
+                <span>EduNote</span>
+                {appVersion && <span className="text-[10px] font-bold text-[#A8A29E] dark:text-[#6B5E57]">v{appVersion}</span>}
+                {appVersion && (
+                  <span className="self-center text-[9px] font-bold leading-none px-1.5 py-0.5 rounded-full border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87]">
+                    {EDITION_LABEL}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={toggleDarkMode}
+                className="h-10 w-10 inline-flex items-center justify-center rounded-md text-amber-500 dark:text-amber-400 hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420]"
+                title={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+                aria-label={darkMode ? '라이트 모드로 전환' : '다크 모드로 전환'}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5 text-[#78716C]" />}
+              </button>
+            </div>
+          )}
           <div className={`pointer-events-none absolute inset-x-0 top-0 z-20 h-[3px] bg-gradient-to-r transition-all duration-500 ${contentAccent}`} />
           {topNavItems.length > 0 && (
             <div className="h-14 shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#1D1916] pr-5 overflow-x-auto">
@@ -1885,7 +1961,7 @@ const App: React.FC = () => {
           {(Array.from(mountedModes) as AppMode[]).map(m => {
             const isVisible = m === mode || (m === AppMode.MY_AI_TOOLS && mode === AppMode.MY_AI_TOOLS_SHARED);
             return (
-              <div key={`${m}-${STUDENT_DATA_MODES.has(m) ? studentDataRevision : 0}`} className={isVisible ? 'flex-1 overflow-hidden flex flex-col' : 'hidden'}>
+              <div key={`${m}-${STUDENT_DATA_MODES.has(m) ? studentDataRevision : 0}`} data-mode-panel={m} className={isVisible ? 'flex-1 min-h-0 overflow-hidden flex flex-col' : 'hidden'}>
                 {renderMode(m)}
               </div>
             );

@@ -205,8 +205,8 @@ export default function DocArchivePanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
       {/* 헤더 */}
-      <div className="shrink-0 px-5 pt-5 pb-3 flex items-center gap-3">
-        <div>
+      <div className="shrink-0 px-5 pt-5 pb-3 flex items-center gap-3 compact:px-4 compact:pt-4 compact:flex-wrap">
+        <div className="min-w-0 flex-1">
           <h1 className="text-lg font-bold text-[#1C1917] dark:text-[#F0EBE6] flex items-center gap-2">
             <Archive className="w-5 h-5 text-emerald-500" />
             공문 보관함
@@ -216,7 +216,7 @@ export default function DocArchivePanel() {
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => startTour('doc-archive')}
-            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼
@@ -233,7 +233,7 @@ export default function DocArchivePanel() {
       </div>
 
       {/* 검색/필터 */}
-      <div data-tour="doc-archive-list" className="shrink-0 px-5 pb-3 flex gap-2 flex-wrap">
+      <div data-tour="doc-archive-list" className="shrink-0 px-5 pb-3 flex gap-2 flex-wrap compact:px-4">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A8A29E]" />
           <input

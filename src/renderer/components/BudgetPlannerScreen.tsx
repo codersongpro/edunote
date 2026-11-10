@@ -1734,16 +1734,16 @@ export default function BudgetPlannerScreen() {
       <div className="h-14 shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-4 flex items-center gap-3">
         <button
           onClick={() => setInputSidebarCollapsed(v => !v)}
-          className="p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors shrink-0"
+          className="compact:hidden p-1.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors shrink-0"
           title={inputSidebarCollapsed ? '입력 패널 펼치기' : '입력 패널 접기'}
         >
           {inputSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
         </button>
-        <h1 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안작성</h1>
-        <span className="text-xs text-[#A8A29E]">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
+        <h1 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6] compact:whitespace-nowrap">예산안작성</h1>
+        <span className="text-xs text-[#A8A29E] compact:hidden">나라장터 품목으로 예산을 0원에 가깝게 맞추기</span>
         <button
           onClick={() => startTour('budget-planner')}
-          className="ml-auto inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors shrink-0"
+          className="ml-auto inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors shrink-0 compact:whitespace-nowrap compact:shrink-0"
           title="이 화면 사용법을 단계별로 안내합니다"
         >
           <HelpCircle className="w-3.5 h-3.5" />
@@ -1751,8 +1751,8 @@ export default function BudgetPlannerScreen() {
         </button>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <aside data-tour="budget-input" className={`${inputSidebarCollapsed ? 'hidden' : 'block'} w-80 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] overflow-y-auto`}>
+      <div className="flex-1 flex overflow-hidden m-stack">
+        <aside data-tour="budget-input" className={`${inputSidebarCollapsed ? 'hidden' : 'block'} compact:block compact:border-r-0 compact:border-b w-80 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] overflow-y-auto`}>
           <section className="p-4 border-b border-[#EDE8E1] dark:border-[#2E2822]">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-[#44403C] dark:text-[#C4B8B0] uppercase tracking-wide">가격 조회 정보 선택 입력</span>
@@ -1895,11 +1895,11 @@ export default function BudgetPlannerScreen() {
 
         </aside>
 
-        <main data-tour="budget-output" className="flex-1 flex flex-col overflow-hidden">
+        <main data-tour="budget-output" data-mobile-result className="flex-1 flex flex-col overflow-hidden compact:min-h-[75vh]">
           {!activePlan ? (
             <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
               <section className="rounded-xl border border-blue-100 dark:border-blue-800 bg-white dark:bg-[#221E1B] p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-3 compact:flex-wrap compact:gap-2">
                   <div>
                     <p className="text-xs font-bold text-blue-600 dark:text-blue-300 mb-1">예시 예산 미리보기</p>
                     <h2 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">{DEFAULT_BUDGET_TITLE}</h2>
@@ -1919,8 +1919,8 @@ export default function BudgetPlannerScreen() {
             </div>
           ) : (
             <>
-              <header className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-3 space-y-3">
-                <div className="flex items-center justify-between gap-3">
+              <header className="shrink-0 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] px-6 py-3 space-y-3 compact:px-3">
+                <div className="flex items-center justify-between gap-3 compact:flex-wrap compact:gap-2">
                   <div>
                     <h2 className="text-base font-black text-[#1C1917] dark:text-[#F0EBE6]">{activePlan.title}</h2>
                     <p className="text-xs text-[#78716C]">배정 예산: {fmt(activePlan.totalBudget)}원</p>
@@ -1944,10 +1944,10 @@ export default function BudgetPlannerScreen() {
                           </button>
                           <p className="font-bold text-emerald-700 dark:text-emerald-400 text-sm">0원 맞추기 사용법</p>
                           <ol className="space-y-1.5 ml-1">
-                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">1</span><span>예산안을 AI로 생성한 뒤 남은예산이 0이 아닐 때 사용합니다.</span></li>
-                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">2</span><span>버튼을 누르면 품목 수량을 자동 조절해 남은예산을 최대한 0원에 맞춥니다.</span></li>
-                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">3</span><span><strong>수량 조절 범위 지정:</strong> 각 품목 행의 <strong>최소수량</strong>·<strong>최대수량</strong> 칸을 채우면 그 범위 안에서만 수량을 조절합니다. 특정 품목의 수량을 고정하려면 수량을 직접 수정하면 잠금(고정) 상태가 됩니다.</span></li>
-                            <li className="flex gap-2"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">4</span><span>결과가 만족스럽지 않으면 수량을 직접 조정한 뒤 다시 눌러보세요.</span></li>
+                            <li className="flex gap-2 compact:flex-wrap"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">1</span><span>예산안을 AI로 생성한 뒤 남은예산이 0이 아닐 때 사용합니다.</span></li>
+                            <li className="flex gap-2 compact:flex-wrap"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">2</span><span>버튼을 누르면 품목 수량을 자동 조절해 남은예산을 최대한 0원에 맞춥니다.</span></li>
+                            <li className="flex gap-2 compact:flex-wrap"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">3</span><span><strong>수량 조절 범위 지정:</strong> 각 품목 행의 <strong>최소수량</strong>·<strong>최대수량</strong> 칸을 채우면 그 범위 안에서만 수량을 조절합니다. 특정 품목의 수량을 고정하려면 수량을 직접 수정하면 잠금(고정) 상태가 됩니다.</span></li>
+                            <li className="flex gap-2 compact:flex-wrap"><span className="flex-shrink-0 w-4 h-4 bg-emerald-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">4</span><span>결과가 만족스럽지 않으면 수량을 직접 조정한 뒤 다시 눌러보세요.</span></li>
                           </ol>
                           <p className="text-[10px] text-[#A8A29E] mt-1">💡 최소·최대 수량을 설정하지 않으면 최소 1 ~ 최대 제한 없음으로 처리됩니다.</p>
                         </div>
@@ -1978,8 +1978,8 @@ export default function BudgetPlannerScreen() {
 
               <div className="flex-1 overflow-auto px-4 py-3 space-y-4">
                 <section className="rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] p-3">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2 mb-2 compact:flex-wrap compact:gap-2">
+                    <div className="flex items-center gap-2 compact:flex-wrap">
                       <Search className="w-4 h-4 text-blue-500" />
                       <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">품목 검색으로 추가</h3>
                     </div>
@@ -2111,14 +2111,14 @@ export default function BudgetPlannerScreen() {
                   )}
                 </section>
                 <section>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 compact:flex-wrap compact:gap-2">
                     <div>
                       <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안</h3>
                       <p className="mt-0.5 text-[11px] text-[#78716C] dark:text-[#9C8F87]">
                         최소·최대 수량은 필요한 경우에만 입력하세요.
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 compact:flex-wrap">
                       <button onClick={toggleCollapseAll} className={`${btnCls} bg-white dark:bg-[#221E1B] border border-[#E7E5E4] dark:border-[#2E2822] text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] flex items-center gap-1`}>
                         {collapsedBudgetIds.size > 0 ? <><ChevronDown className="w-3.5 h-3.5" />모두 펼치기</> : <><ChevronRight className="w-3.5 h-3.5" />모두 접기</>}
                       </button>
@@ -2159,7 +2159,7 @@ export default function BudgetPlannerScreen() {
                   />
                 </section>
                 <section className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-white dark:bg-[#221E1B] p-3">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3 compact:flex-wrap compact:gap-2">
                     <div>
                       <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">실제 지출 기록</h3>
                       <p className="text-[11px] text-[#78716C]">계획액 {fmt(planTotalUsed)}원 · 실제 지출 {fmt(actualSpent)}원 · 배정 예산 기준 잔액 {fmt(actualBalance)}원</p>
@@ -2174,7 +2174,7 @@ export default function BudgetPlannerScreen() {
                         const totals = calculateBudgetActuals(item.subtotal, item.actualExpenses ?? []);
                         return (
                           <div key={item.id} className="rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 p-2.5 space-y-2">
-                            <div className="flex justify-between text-xs"><strong>{item.thngNm}</strong><span>계획 {fmt(totals.planned)}원 · 지출 {fmt(totals.spent)}원 · 잔액 {fmt(totals.balance)}원</span></div>
+                            <div className="flex justify-between text-xs compact:flex-wrap compact:gap-2"><strong>{item.thngNm}</strong><span>계획 {fmt(totals.planned)}원 · 지출 {fmt(totals.spent)}원 · 잔액 {fmt(totals.balance)}원</span></div>
                             {(item.actualExpenses ?? []).map(expense => (
                               <div key={expense.id} className="flex items-center gap-2 text-xs text-[#78716C]">
                                 <span>{expense.paidAt}</span><span>{fmt(expense.amount)}원</span><span className="flex-1">{expense.memo}</span>
@@ -2250,7 +2250,7 @@ function BudgetSummary({ total, used, remaining }: { total: number; used: number
         <p className="text-xl font-black text-[#1C1917] dark:text-[#F0EBE6]">{fmt(used)}원</p>
       </div>
       <div className={`rounded-xl border px-4 py-3 ${remainingTone}`}>
-        <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center justify-between gap-2 mb-1 compact:flex-wrap compact:gap-2">
           <p className="text-[11px] font-bold">남은예산</p>
           <span className="text-[10px] font-black rounded-full bg-white/70 dark:bg-black/20 px-2 py-0.5">{remainingLabel}</span>
         </div>
@@ -2276,11 +2276,11 @@ function ExampleBudgetPreview({ items }: { items: BudgetItem[] }) {
   }, { 교육운영비: 0, 일반운영비: 0, 업무추진비: 0 } as Record<BudgetCategory, number>);
   return (
     <section>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 compact:flex-wrap compact:gap-2">
         <h3 className="text-sm font-black text-[#1C1917] dark:text-[#F0EBE6]">예산안 예시</h3>
       </div>
       <div className="overflow-auto rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]">
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full text-sm border-collapse compact:min-w-[760px]">
         <thead>
           <tr className="bg-[#EDE8E1] dark:bg-[#2E2822] text-xs text-[#44403C] dark:text-[#C4B8B0]">
               <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-center w-8">순</th>
@@ -2422,7 +2422,7 @@ function EditableBudgetTable({
 
   return (
     <div className="overflow-auto rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B]">
-      <table className="w-full text-sm border-collapse">
+      <table className="w-full text-sm border-collapse compact:min-w-[760px]">
         <thead>
           <tr className="bg-[#EDE8E1] dark:bg-[#2E2822] text-xs text-[#44403C] dark:text-[#C4B8B0]">
             <th className="border border-[#E7E5E4] dark:border-[#2E2822] px-2 py-2 text-center w-8">순</th>
@@ -2466,7 +2466,7 @@ function EditableBudgetTable({
               </td>
               <td className="border border-[#EDE8E1] dark:border-[#2E2822] px-2 py-1.5">
                 <div className={indentClass}>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 compact:flex-wrap">
                   {(isCategory || isParent) ? (
                     <button
                       onClick={() => onToggleCollapse(item.id)}

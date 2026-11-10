@@ -22,7 +22,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div data-tour="class-tools-tabs" className="h-14 flex items-center border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
+      <div data-tour="class-tools-tabs" className="m-tabs h-14 flex items-center border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
         <button
           data-tour="class-tools-qr"
           onClick={() => setActiveTab('qr')}
@@ -61,7 +61,7 @@ const ClassToolsPanel: React.FC<Props> = ({ initialTab }) => {
         </button>
         <button
           onClick={() => startTour('class-tools')}
-          className="ml-auto mr-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+          className="ml-auto mr-3 flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 px-2 py-1 rounded hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
         >
           <HelpCircle className="w-3 h-3" />
           튜토리얼

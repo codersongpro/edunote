@@ -3,6 +3,7 @@ import { FileText, PenTool, ClipboardList, Wand2, AlertCircle, Layers, FileOutpu
 import type { GroundingInfo } from '../../preload/types';
 import { DocType, GongmunInputs, PlanInputs, TrainingMaterialInputs, ReportInputs, MessageInputs, NewsletterInputs, PumuiInputs, MeetingMinutesInputs, PromotionInputs, GonggoInputs, FileData, GongmunType, MessageTarget, MessageType, MessageRelationship, GongmunComplexity, PumuiType, AppMode } from '../types';
 import { generateDocument } from '../services/geminiService';
+import { useIsMobile } from '../lib/useIsMobile';
 import { safeSetItem } from '../lib/safeStorage';
 import { FileUpload } from './FileUpload';
 import { GeneratedDisplay } from './GeneratedDisplay';
@@ -59,6 +60,8 @@ const FORMAT_CHOICE_CUSTOM = 'custom';
 const FORMAT_CHOICE_PRESET_PREFIX = 'preset:';
 
 export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) => {
+  // 휴대폰에서는 입력 패널 접기를 쓰지 않는다(입력과 결과가 위아래로 쌓인다).
+  const isMobile = useIsMobile();
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.SCHOOL_DOC);
   const { startTour } = useTour();
   const [activeTab, setActiveTab] = useState<DocType>(initialTab ?? DocType.GONGMUN);
@@ -598,10 +601,10 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
   return (
     <div className="flex flex-col h-full bg-[#FAF9F7] dark:bg-[#171210]">
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
+      <div className="flex-1 flex overflow-hidden p-4 gap-4 m-stack compact:p-3 compact:gap-3">
         {/* Left: input panel */}
         {inputPanelCollapsed && (
-          <div className="w-11 shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
+          <div className="w-11 shrink-0 compact:hidden bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex justify-center py-3">
             <button
               onClick={() => setInputPanelCollapsed(false)}
               className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
@@ -611,7 +614,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
             </button>
           </div>
         )}
-        {!inputPanelCollapsed && (
+        {(!inputPanelCollapsed || isMobile) && (
         <div data-tour="school-doc-input" className="w-[420px] shrink-0 bg-white dark:bg-[#221E1B] rounded-lg border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm flex flex-col overflow-hidden">
           {/* Panel header */}
           <div className="h-14 bg-[#FAF9F7] dark:bg-[#171210] border-b border-[#EDE8E1] dark:border-[#2E2822] px-4 shrink-0 flex items-center">
@@ -623,7 +626,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
               <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => startTour('school-doc')}
-                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-xs font-semibold text-blue-600 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors compact:whitespace-nowrap compact:shrink-0"
                   title="이 화면 사용법을 단계별로 안내합니다"
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
@@ -631,7 +634,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 </button>
                 <button
                   onClick={() => setInputPanelCollapsed(true)}
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
+                  className="compact:hidden h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#EDE8E1] dark:hover:bg-[#2A2420] transition-colors"
                   title="입력 패널 접기"
                 >
                   <PanelLeftClose className="w-4 h-4" />
@@ -1463,7 +1466,7 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
         )}
 
         {/* Right: output panel */}
-        <div data-tour="school-doc-output" className="flex-1 flex flex-col overflow-hidden">
+        <div data-tour="school-doc-output" data-mobile-result className="flex-1 flex flex-col overflow-hidden compact:min-h-[75vh]">
           {generatedContent ? (
             <GeneratedDisplay
               content={generatedContent}

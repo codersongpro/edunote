@@ -24,6 +24,7 @@ import { loadStudentRoster, RosterEntry } from '../lib/studentRoster';
 import { RosterNameHint } from './RosterNameHint';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 import { buildStudentAssessmentTasks } from '../lib/neisGradeValidation';
+import { useIsMobile } from '../lib/useIsMobile';
 import {
   contentFingerprint,
   generationStatusForError,
@@ -56,6 +57,8 @@ const buildContextFromDetails = (details: ObservationDetails): string => {
 };
 
 const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
+  // 휴대폰에서는 학생 목록 접기를 쓰지 않는다(목록이 위, 입력이 아래로 쌓인다).
+  const isMobile = useIsMobile();
   const { startTour } = useTour();
   const { state, setState, isGlobalGenerating, setIsGlobalGenerating, globalProgress, setGlobalProgress, showToast } = useGlobalState();
   const { startGeneration, updateProgress, endGeneration, isCancelRequested, callWithAbort } = useGenerationTracker(AppMode.SUBJECT_GENERATOR);
@@ -1374,7 +1377,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => startTour('subject-gen')}
-                className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 dark:text-purple-400 px-2 py-1 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 dark:text-purple-400 px-2 py-1 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
               >
                 <HelpCircle className="w-3 h-3" />튜토리얼
               </button>
@@ -1382,7 +1385,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 <button
                   onClick={() => updateSubjectState({ step: 'INDIVIDUAL_CONTEXT' })}
                   disabled={isGlobalGenerating}
-                  className={`text-sm text-[#78716C] underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`compact:whitespace-nowrap text-sm text-[#78716C] underline hover:text-purple-600 ${isGlobalGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                     수정하기
                 </button>
@@ -1735,10 +1738,10 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                     {renderSubjectTabs()}
                 </div>
 
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden m-stack">
                     {/* Sidebar List */}
                     {studentPanelCollapsed && (
-                        <div className="w-11 shrink-0 bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
+                        <div className="w-11 shrink-0 compact:hidden bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] flex justify-center py-3">
                             <button
                                 onClick={() => setStudentPanelCollapsed(false)}
                                 className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
@@ -1748,8 +1751,8 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                             </button>
                         </div>
                     )}
-                    {!studentPanelCollapsed && (
-                    <div className={`w-1/4 min-w-[150px] bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {(!studentPanelCollapsed || isMobile) && (
+                    <div className={`w-1/4 min-w-[150px] compact:max-h-56 compact:border-r-0 compact:border-b bg-[#FAF9F7] dark:bg-[#171210] border-r border-[#E7E5E4] dark:border-[#2E2822] overflow-y-auto ${isGenerating ? 'opacity-50 pointer-events-none' : ''}`}>
                         <div className="p-4 border-b border-[#EDE8E1] dark:border-[#221E1B]">
                             <button
                                 onClick={syncStudentsWithCommon}
@@ -1779,7 +1782,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                     </label>
                                     <button
                                         onClick={() => setStudentPanelCollapsed(true)}
-                                        className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
+                                        className="compact:hidden h-7 w-7 inline-flex items-center justify-center rounded-md border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#EDE8E1] dark:hover:bg-[#221E1B] transition-colors"
                                         title="학생 목록 접기"
                                     >
                                         <PanelLeftClose className="w-3.5 h-3.5" />
@@ -2095,9 +2098,9 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {subjectState.activeStudents.map((student, idx) => (
-                        <div key={student.id} className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-6 rounded-2xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
-                             <div className="flex justify-between mb-4">
-                                <h4 className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6] flex items-center">
+                        <div key={student.id} className="bg-[#FAF9F7] dark:bg-[#221E1B]/50 p-6 compact:p-4 rounded-2xl border border-[#E7E5E4] dark:border-[#2E2822] shadow-sm">
+                             <div className="flex justify-between mb-4 compact:flex-col compact:gap-3">
+                                <h4 className="font-bold text-lg text-[#1C1917] dark:text-[#F0EBE6] flex items-center compact:flex-wrap compact:gap-y-1">
                                     <span className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center mr-3 text-sm">
                                         {idx + 1}
                                     </span>
@@ -2131,7 +2134,7 @@ const SubjectGenerator: React.FC<Props> = ({ schoolLevel }) => {
                                         </span>
                                     )}
                                 </h4>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 compact:flex-wrap">
                                     {student.reviewStatus !== 'final' ? (
                                       <>
                                         <button

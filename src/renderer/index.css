@@ -75,3 +75,80 @@ html, body, #root {
 .dark .dark-prose-area .prose p, .dark .dark-prose-area .prose li { color: #cbd5e1; }
 .dark .dark-prose-area .prose strong { color: #e2e8f0; }
 .prose strong { font-weight: 700; }
+
+/* ── 화면 높이: 휴대폰 주소창이 나타나고 사라져도 앱 높이가 맞도록 dvh를 우선 쓴다(PC는 100vh와 같음) ── */
+.app-viewport {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ── 휴대폰·태블릿 세로(1000px 미만) 전용 공통 규칙 ─────────────────────────────
+   PC 앱(exe)은 창 최소 폭이 1000px이라 아래 규칙이 적용되지 않는다.
+   화면 코드에서는 클래스 이름으로 의도를 표시한다:
+   - m-stack   : 나란히 놓인 패널(입력 | 결과)을 위아래로 쌓고, 화면 전체를 세로로 스크롤
+   - m-scroll-x: 넓은 표·A4 미리보기 등은 그 영역 안에서만 좌우로 밀어 보기
+   - m-wrap    : 버튼·칩 줄이 넘치면 다음 줄로
+   - m-hide    : 휴대폰에서 필요 없는 보조 요소 숨김 */
+@media (max-width: 999px) {
+  /* iOS 사파리는 16px보다 작은 입력 칸을 누르면 화면을 확대한다 → 입력 칸만 16px */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .m-stack {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .m-stack > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 0 0 auto !important;
+  }
+
+  .m-scroll-x {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .m-wrap {
+    flex-wrap: wrap !important;
+  }
+
+  .m-hide {
+    display: none !important;
+  }
+
+  /* A4 미리보기 종이: 휴대폰에서는 여백을 줄이고 빈 종이 높이를 없앤다(저장·인쇄 파일은 그대로 A4) */
+  .m-paper {
+    padding: 18px 16px !important;
+    min-height: 0 !important;
+  }
+
+  /* 화면 안 탭 줄: 줄바꿈 없이 좌우로 밀어 보기(스크롤 막대는 숨김) */
+  .m-tabs {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+  .m-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .m-tabs > * {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 버튼 안 한글이 "튜토리/얼"처럼 글자 단위로 쪼개지지 않게 단어 단위로만 줄바꿈 */
+  button,
+  a,
+  label,
+  h1,
+  h2,
+  h3 {
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+}

@@ -84,26 +84,26 @@ const EducationAssistantQA: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-[#221E1B] transition-colors">
       <div data-tour="education-qa-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="bg-green-100 p-1.5 rounded-lg">
             <GraduationCap className="w-4 h-4 text-green-600" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">교무행정AI 챗봇</h2>
-            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] compact:hidden">교육 관련 궁금한 점을 자유롭게 질문하세요</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => startTour('education-qa')}
-            className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800 dark:hover:text-green-400 px-2 py-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+            className="flex items-center gap-1 text-xs compact:whitespace-nowrap text-green-600 hover:text-green-800 dark:hover:text-green-400 px-2 py-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼
           </button>
           <button
             onClick={handleClear}
-            className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
+            className="flex items-center gap-1 text-xs compact:whitespace-nowrap text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
           >
             <Trash2 className="w-3 h-3" />
             초기화
@@ -166,7 +166,7 @@ const EducationAssistantQA: React.FC = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="교육 관련 질문을 자유롭게 입력하세요..."
-            className="flex-1 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
+            className="flex-1 min-w-0 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
             disabled={isLoading}
           />
           <button
