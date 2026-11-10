@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EduNote 실행 창</title>
+<!--
+  AI가 만든 HTML 앱을 실행하는 격리 창.
+  서버가 'Content-Security-Policy: sandbox ...' 헤더를 붙여(vercel.json) 이 문서는 고유 출처가 없다.
+  그래서 실행되는 HTML은 EduNote의 저장소(API 키·학생 데이터)에 접근할 수 없다.
+-->
+<style>body{font-family:Pretendard,-apple-system,"Apple SD Gothic Neo",sans-serif;color:#78716C;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}</style>
+</head>
+<body>
+<p>앱을 불러오는 중입니다…</p>
+<script>
+  (function () {
+    var opener = window.opener;
+    if (!opener) { document.body.textContent = 'EduNote에서 다시 실행해 주세요.'; return; }
+    window.addEventListener('message', function (event) {
+      if (event.source !== opener || !event.data || event.data.type !== 'edunote-sandbox-html') return;
+      if (typeof event.data.html !== 'string') return;
+      // 실행할 HTML이 본 창을 조작하지 못하도록 연결을 끊은 뒤 문서를 바꾼다.
+      try { window.opener = null; } catch (e) {}
+      document.open();
+      document.write(event.data.html);
+      document.close();
+    });
+    opener.postMessage({ type: 'edunote-sandbox-ready' }, '*');
+  })();
+</script>
+</body>
+</html>

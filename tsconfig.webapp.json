@@ -1,0 +1,32 @@
+{
+  "include": [
+    "src/web/**/*",
+    "src/preload/types.d.ts",
+    "src/renderer/**/*"
+  ],
+  "exclude": [
+    "src/renderer/lib/__tests__",
+    "src/renderer/**/__tests__"
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": [
+        "src/renderer/*"
+      ]
+    },
+    "types": [],
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}

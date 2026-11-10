@@ -14,6 +14,7 @@ import { collectStorage, replaceStorageTransactionally } from '../lib/backupStor
 import { REVIEW_CHECKLIST_UPDATED_EVENT } from './ReviewChecklist';
 import { ApiKeyScopeNotice } from './ApiKeyScopeNotice';
 import { ModelDiagnosticsPanel } from './ModelDiagnosticsPanel';
+import { isWeb, platformSupports, WEB_API_KEY_NOTICE } from '../lib/platform';
 
 const BYTE_LIMIT_LABELS: Record<RecordKind, string> = {
   opinion: '행동특성',
@@ -188,7 +189,9 @@ const SettingsScreen: React.FC = () => {
 
     const { usedPlaintext } = await window.electronAPI.setApiKey(key.trim(), apiTier);
     if (usedPlaintext) {
-      notifyToast({ type: 'warning', title: '이 컴퓨터의 암호화 저장소를 사용할 수 없어 API 키가 암호화 없이 저장되었습니다.' });
+      notifyToast(isWeb
+        ? { type: 'info', ...WEB_API_KEY_NOTICE }
+        : { type: 'warning', title: '이 컴퓨터의 암호화 저장소를 사용할 수 없어 API 키가 암호화 없이 저장되었습니다.' });
     }
     await window.electronAPI.setConfig({ apiKeyLastUsable: true });
     setHasKey(true);
@@ -780,18 +783,22 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">앱 데이터 저장 폴더</h3>
           </div>
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
-            나만의 자료실, 학생 메모처럼 앱 안에서 계속 불러올 데이터가 이 폴더의 JSON 파일로 저장됩니다.
+            {platformSupports.folderSelection
+              ? '나만의 자료실, 학생 메모처럼 앱 안에서 계속 불러올 데이터가 이 폴더의 JSON 파일로 저장됩니다.'
+              : '웹 버전에서는 나만의 자료실, 학생 메모 등 앱 데이터가 이 브라우저 안에만 저장되고 서버로 전송되지 않습니다. 다른 기기로 옮길 때는 아래 「전체 자료 백업」을 이용하세요.'}
           </p>
           <div className="flex gap-2 items-center">
             <input
               type="text"
               readOnly
-              value={appDataDir || '기본 앱 데이터 폴더'}
+              value={platformSupports.folderSelection ? (appDataDir || '기본 앱 데이터 폴더') : '이 브라우저 (서버로 전송하지 않음)'}
               className="flex-1 bg-[#FAF9F7] dark:bg-[#2E2822] rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#C4B8B0] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectAppDataFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] whitespace-nowrap"
+              disabled={!platformSupports.folderSelection}
+              title={platformSupports.folderSelection ? undefined : '웹 버전에서는 폴더를 선택할 수 없습니다.'}
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               폴더 선택
             </button>
@@ -915,17 +922,20 @@ const SettingsScreen: React.FC = () => {
             <div className="min-w-0">
               <p className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">자동 정기 백업</p>
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관). 학생 정보가 암호화 없이 저장되니, 필요하지 않다면 "사용 안 함"으로 두세요.
+                {platformSupports.autoBackup
+                  ? '앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관). 학생 정보가 암호화 없이 저장되니, 필요하지 않다면 "사용 안 함"으로 두세요.'
+                  : '웹 버전은 브라우저가 파일을 자동으로 만들 수 없어 자동 백업을 지원하지 않습니다. 브라우저 기록을 지우면 자료도 함께 지워질 수 있으니 「전체 자료 백업」으로 파일을 내려받아 보관해 주세요.'}
               </p>
             </div>
             <select
-              value={autoBackupInterval}
+              disabled={!platformSupports.autoBackup}
+              value={platformSupports.autoBackup ? autoBackupInterval : 'off'}
               onChange={async e => {
                 const next = e.target.value as 'off' | 'daily' | 'weekly';
                 setAutoBackupInterval(next);
                 await window.electronAPI.setConfig({ autoBackupInterval: next });
               }}
-              className="shrink-0 bg-white dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-sm text-[#1C1917] dark:text-[#F0EBE6] p-2 outline-none"
+              className="shrink-0 bg-white dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-sm text-[#1C1917] dark:text-[#F0EBE6] p-2 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="weekly">매주</option>
               <option value="daily">매일</option>
@@ -945,18 +955,27 @@ const SettingsScreen: React.FC = () => {
             <input
               type="text"
               readOnly
-              value={saveDir || '기본 다운로드 폴더'}
+              value={platformSupports.folderSelection ? (saveDir || '기본 다운로드 폴더') : '브라우저 다운로드 폴더'}
               className="flex-1 bg-[#FAF9F7] dark:bg-[#1C1917] rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] text-sm p-2.5 cursor-not-allowed"
             />
             <button
               onClick={handleSelectFolder}
-              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2521] whitespace-nowrap"
+              disabled={!platformSupports.folderSelection}
+              title={platformSupports.folderSelection ? undefined : '웹 버전에서는 폴더를 선택할 수 없습니다.'}
+              className="px-4 py-2.5 text-sm font-bold border border-[#E7E5E4] dark:border-[#2E2822] rounded-md text-[#44403C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2521] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               폴더 선택
             </button>
           </div>
-          <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">파일 저장 시 기본으로 사용될 폴더입니다.</p>
+          <p className="text-xs text-[#A8A29E] dark:text-[#7C7268]">
+            {platformSupports.folderSelection
+              ? '파일 저장 시 기본으로 사용될 폴더입니다.'
+              : '웹 버전에서는 브라우저 다운로드 폴더에 저장됩니다. 크롬·엣지에서는 저장할 때마다 위치를 고를 수 있습니다.'}
+          </p>
         </div>
+
+        {/* 웹 버전 전용: 이 브라우저의 데이터 관리(공용 PC 대비) */}
+        {isWeb && <WebBrowserDataCard />}
 
         {/* Danger Zone: Clear Student Data */}
         <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-red-200 dark:border-red-900/60 shadow-sm p-4 space-y-3">
@@ -996,3 +1015,73 @@ const SettingsScreen: React.FC = () => {
 };
 
 export default SettingsScreen;
+
+// 웹 버전 전용 카드 — 기존 설정 카드와 같은 스타일을 쓴다.
+// API 키를 이 브라우저에 기억할지 고르고, 공용 PC에서 쓴 뒤 데이터를 한 번에 지울 수 있게 한다.
+function WebBrowserDataCard() {
+  const [remember, setRemember] = useState(true);
+  const [clearing, setClearing] = useState(false);
+
+  useEffect(() => {
+    void window.edunoteWeb?.isRememberSecrets().then(setRemember);
+  }, []);
+
+  const handleRememberChange = async (next: boolean) => {
+    setRemember(next);
+    await window.edunoteWeb?.setRememberSecrets(next);
+    notifyToast({
+      type: 'success',
+      title: next ? 'API 키를 이 브라우저에 기억합니다.' : '이 탭을 닫으면 API 키가 지워집니다.',
+    });
+  };
+
+  const handleClearAll = async () => {
+    const ok = window.confirm(
+      '이 브라우저에 저장된 EduNote 데이터를 모두 지웁니다.\n\n' +
+      '- API 키·나라장터 인증키\n- 기본 정보·학생 명단·설정\n- 자료실·학생 메모·생성 이력 등 모든 자료\n\n' +
+      '되돌릴 수 없으니 필요하면 먼저 「전체 자료 백업」을 해 주세요. 계속할까요?'
+    );
+    if (!ok) return;
+    setClearing(true);
+    try {
+      await window.edunoteWeb?.clearAllData();
+      window.location.reload();
+    } catch {
+      setClearing(false);
+      notifyToast({ type: 'error', title: '데이터를 지우지 못했습니다.' });
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#221E1B] rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] shadow-sm p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Lock className="w-4 h-4 text-[#78716C] dark:text-[#9C8F87]" />
+        <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">이 브라우저의 데이터</h3>
+      </div>
+      <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
+        웹 버전의 모든 자료와 API 키는 이 브라우저 안에만 저장되며 EduNote 서버로 전송되지 않습니다.
+        AI 요청은 이 브라우저에서 Google Gemini로 바로 보내집니다.
+      </p>
+      <label className="flex items-start gap-3 p-3 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] cursor-pointer">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={e => void handleRememberChange(e.target.checked)}
+          className="mt-1"
+        />
+        <span>
+          <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">API 키를 이 브라우저에 기억하기</span>
+          <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">끄면 탭을 닫을 때 API 키가 지워집니다. 여러 사람이 쓰는 학교 공용 PC라면 꺼 두세요.</span>
+        </span>
+      </label>
+      <button
+        onClick={handleClearAll}
+        disabled={clearing}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <Trash2 className="w-4 h-4" />
+        {clearing ? '지우는 중...' : '이 브라우저의 데이터 지우기'}
+      </button>
+    </div>
+  );
+}

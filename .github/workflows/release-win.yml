@@ -15,12 +15,25 @@ on:
         description: '릴리즈할 버전 (예: 1.27.1). package.json 버전과 다르면 중단합니다.'
         required: true
         type: string
+      web_only:
+        description: '웹판만 다시 배포 (exe는 만들지 않음). 이미 릴리즈된 버전만 지정할 수 있습니다.'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
 
+# PC판(exe)과 웹판은 같은 버전으로 함께 출시한다.
+# 1) release: exe를 빌드해 GitHub Release를 만든다(기존과 동일).
+# 2) publish-web: 릴리즈가 성공하면 web-production 브랜치를 같은 커밋으로 옮긴다.
+#    Vercel은 web-production을 운영 브랜치로 쓰므로, 이때만 웹 운영 사이트가 바뀐다.
+#    (main·PR 푸시는 Vercel 미리보기 배포만 만든다.)
 jobs:
   release:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.web_only) }}
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     runs-on: windows-latest
     environment: release
     permissions:
@@ -124,10 +137,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
+          WEB_APP_URL: ${{ vars.WEB_APP_URL }}
         run: |
           $exe = Get-ChildItem dist/*.exe | Select-Object -First 1
           $fullNotes = Get-Content RELEASE_NOTES.md -Raw
           $currentNotes = ($fullNotes -split '\r?\n---')[0].Trim()
+          # 저장소 변수 WEB_APP_URL이 있으면 웹판 주소를 릴리즈 노트 끝에 붙인다.
+          if ($env:WEB_APP_URL) {
+            $currentNotes += "`n`n---`n`n🌐 **웹 버전**: $env:WEB_APP_URL (이 릴리즈와 같은 버전으로 자동 갱신됩니다)"
+          }
           $currentNotes | Out-File current_release.md -Encoding utf8NoBOM
           gh release create $env:TAG `
             $exe.FullName `
@@ -137,3 +155,43 @@ jobs:
             --title "EduNote $env:TAG" `
             --notes-file current_release.md `
             --latest
+
+  publish-web:
+    needs: release
+    # 정상 릴리즈가 성공했거나, "웹판만 다시 배포"로 실행해 release 작업을 건너뛴 경우에만 진행한다.
+    if: >-
+      ${{ always() && (
+        needs.release.result == 'success' ||
+        (github.event_name == 'workflow_dispatch' && inputs.web_only && needs.release.result == 'skipped')
+      ) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Point web-production at the released commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RELEASED_TAG: ${{ needs.release.outputs.tag }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="${RELEASED_TAG:-v${INPUT_VERSION}}"
+          # 웹판은 반드시 이미 출시된 exe와 같은 버전이어야 한다.
+          gh release view "$TAG" --repo "$REPO" > /dev/null || {
+            echo "::error::$TAG 릴리즈가 없습니다. 웹판은 출시된 버전으로만 배포할 수 있습니다."; exit 1; }
+
+          # 태그가 가리키는 커밋(주석 태그면 한 번 더 따라간다)
+          read -r TYPE SHA < <(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.type + " " + .object.sha')
+          if [ "$TYPE" = "tag" ]; then
+            SHA=$(gh api "repos/$REPO/git/tags/$SHA" --jq '.object.sha')
+          fi
+
+          # web-production은 배포 전용 브랜치다(사람이 직접 커밋하지 않음). 없으면 만들고, 있으면 강제로 옮긴다.
+          if gh api "repos/$REPO/git/ref/heads/web-production" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/$REPO/git/refs/heads/web-production" -f sha="$SHA" -F force=true > /dev/null
+          else
+            gh api -X POST "repos/$REPO/git/refs" -f ref="refs/heads/web-production" -f sha="$SHA" > /dev/null
+          fi
+          echo "웹 운영 브랜치(web-production) → $TAG ($SHA)" >> "$GITHUB_STEP_SUMMARY"
+

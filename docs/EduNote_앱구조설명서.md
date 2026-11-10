@@ -643,29 +643,62 @@ AI에게 보내는 지침(프롬프트)을 작성할 때 지키는 규칙이다.
 
 ## 13. 빌드와 릴리즈 흐름
 
-소스 코드를 수정한 뒤 사용자가 내려받을 수 있는 EXE 파일로 만들어지는 과정이다. 로컬에서 직접 빌드하지 않고 `main` 브랜치에 push하면 GitHub Actions (코드 저장소가 자동으로 빌드·배포 작업을 실행하는 기능)가 자동으로 처리한다.
+PC 버전(EXE)과 웹 버전은 **같은 버전 번호로 함께 출시**한다. `main`에 병합하는 것만으로는 출시되지 않고, 릴리즈 워크플로를 실행해야 두 버전이 동시에 바뀐다.
 
 ```text
-소스 수정
+소스 수정 → package.json 버전 갱신 → RELEASE_NOTES.md 최신 섹션 작성 (--- 구분선으로 분리)
   ↓
-package.json 버전(version 필드) 갱신
+PR → main 병합
+  ├─ build-win.yml (CI): 타입체크 → 테스트 → EXE 빌드 → 웹 빌드 (검증만, 출시 안 함)
+  └─ Vercel: main·PR은 "미리보기" 배포만 생성 (운영 웹사이트는 그대로)
   ↓
-RELEASE_NOTES.md 최신 버전 섹션 작성 (--- 구분선으로 분리)
-  ↓
-Git commit
-  ↓
-main 브랜치 push (Pull Request 병합 포함)
-  ↓
-.github/workflows/build-win.yml 자동 실행
-  ↓
-  ├─ npm ci → 타입체크 → 테스트 (품질 게이트 — 실패 시 릴리즈되지 않음)
-  ├─ npm run build:win (electron-builder로 Windows portable EXE 빌드)
-  └─ package.json 버전을 읽어 태그 v${version}으로 GitHub Release 생성/갱신
-     (RELEASE_NOTES.md 최상단 섹션을 릴리즈 노트 본문으로 사용, EXE 업로드)
-     (https://github.com/codersongpro/edunote/releases)
+출시: Actions → "Release Windows EXE" → 버전 입력해 수동 실행 (또는 v* 태그 푸시)
+  ├─ release 작업: 버전 검증 → 타입체크·테스트 → EXE 빌드 → 태그 v${version} → GitHub Release 생성
+  │    (RELEASE_NOTES.md 최상단 섹션이 릴리즈 노트, 저장소 변수 WEB_APP_URL이 있으면 웹 주소 한 줄 추가)
+  └─ publish-web 작업 (release 성공 시에만): web-production 브랜치를 같은 커밋으로 이동
+       → Vercel이 web-production(운영 브랜치)을 감지해 웹 운영 사이트를 같은 버전으로 배포
 ```
 
-Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로, 별도로 `git tag`를 만들어 push할 필요가 없다.
+- 중간 단계가 하나라도 실패하면 웹 운영 사이트도 이전 버전 그대로 남는다(두 버전이 어긋나지 않음).
+- 웹만 다시 배포해야 할 때(예: Vercel 일시 장애): 같은 워크플로를 **이미 출시된 버전**과 `web_only` 체크로 실행한다. EXE는 만들지 않고 `web-production`만 그 릴리즈 태그로 다시 맞춘다.
+- `web-production`은 배포 전용 브랜치다. 직접 커밋하거나 PR을 보내지 않는다.
+- Vercel 프로젝트는 두 개다(같은 저장소를 각각 연결).
+  - `ednote` — **랜딩페이지**. Root Directory `docs`, 운영 브랜치 `main`, 도메인 `edunote.songpro.app`. 설정은 `docs/vercel.json`(빌드 없이 docs 폴더 그대로 배포)이 우선 적용된다.
+  - `edunoteweb` — **웹 앱**. Root Directory 저장소 최상위, 운영 브랜치 `web-production`(Settings → Environments → Production → Branch Tracking). 설정은 최상위 `vercel.json`.
+- 최초 1회 설정: 위 웹 앱 프로젝트 생성, 저장소 변수 `WEB_APP_URL`(선택) 등록, 랜딩페이지(`docs/index.html`)의 `WEB_APP_URL` 상수에 웹 주소 입력(입력 전에는 「웹에서 바로 쓰기」 버튼이 숨겨짐).
+- 판 구분: 버전 번호는 같고, 화면의 `PC`/`웹` 표시(`platform.ts`의 `EDITION_LABEL`)와 백업 파일의 `edition` 필드로 구분한다.
+
+| 구분 | 주소 | 갱신 시점 |
+| --- | --- | --- |
+| 랜딩페이지 | Vercel `ednote` 프로젝트 (`edunote.songpro.app`, `docs/` 폴더). GitHub Pages(`codersongpro.github.io/edunote/`)에도 같은 파일 | main 병합 시 |
+| PC 버전(EXE) | GitHub Releases | 릴리즈 실행 시 |
+| 웹 버전 | Vercel `edunoteweb` 프로젝트 운영 주소 | 릴리즈 성공 시 함께 |
+
+### 13.1 웹 버전 (Vercel)
+
+데스크톱판과 **같은 화면 코드(`src/renderer`)**를 브라우저용으로도 빌드해 Vercel에 배포한다. 화면을 고치거나 기능을 추가하면 웹판에도 자동으로 반영된다.
+
+```text
+src/renderer   ← 공통 화면 (데스크톱·웹 공유)
+src/preload    ← 데스크톱: window.electronAPI를 IPC로 제공
+src/web        ← 웹: window.electronAPI를 브라우저 기능으로 제공 (webApi.ts)
+  ├─ storage.ts   IndexedDB 저장소 (설정·데이터·API 키 — 서버 전송 없음)
+  ├─ files.ts     다운로드 / 다른 이름으로 저장 창 / 파일 열기
+  ├─ windows.ts   데모·채팅 팝업, HTML 앱 격리 실행(sandbox.html), 인쇄(PDF)
+  └─ public/sandbox.html  AI가 만든 HTML 앱을 고유 출처 없이(CSP sandbox) 실행
+api/           ← Vercel 서버 함수 (CORS 때문에 브라우저가 직접 못 하는 외부 조회만 중계)
+  ├─ url-meta.ts     링크·유튜브 미리보기
+  ├─ fetch-proxy.ts  이미지 썸네일·공유 마켓(구글 시트·드라이브 JSON, 허용 호스트만)
+  ├─ naramarket.ts   나라장터 검색 (교사 본인 키를 요청마다 전달, 저장 안 함)
+  └─ _guard.ts       공개 서버용 SSRF 차단·같은 사이트 요청 확인·속도 제한
+src/main/*         ← 순수 로직은 두 판이 공유: GeminiService, hwpxDocument, backupFormat,
+                     configRules, configDefaults, naramarketClient 등
+```
+
+- 명령: `npm run dev:web`(개발), `npm run build:web`(빌드 → `dist-web`), `npm run preview:web`(빌드 결과 확인)
+- 배포: Vercel 운영 브랜치는 `web-production`이며 릴리즈 워크플로만 이 브랜치를 옮긴다(13절). `main`·PR은 미리보기 URL만 생성 (`vercel.json`)
+- 품질 게이트: CI(`build-win.yml`)가 `npm run typecheck`(웹 구현 누락 검사 포함)와 `npm run build:web`을 함께 실행한다.
+- 웹에서 지원하지 않는 기능(폴더 선택·자동 백업·업데이트 확인·웹페이지 스크린샷)은 `src/renderer/lib/platform.ts`의 `platformSupports`로 분기하고, 메뉴·화면 구조는 그대로 둔 채 같은 자리에 안내 문구를 보여준다.
 
 ---
 
@@ -675,12 +708,14 @@ Git 태그는 이 워크플로가 릴리즈 생성 시 자동으로 붙이므로
 - 공문서·품의서는 합쇼체, 계획서·보고서는 보고서체라는 분리가 중요하다.
 - 학생 명단은 자동 삽입하지 말고, 사용자가 명시적으로 불러온 경우에만 사용해야 한다.
 - `preload/index.ts`에 새 API를 추가하면 반드시 `preload/types.d.ts`도 함께 수정해야 한다.
+- **웹판 동기화 규칙**: `window.electronAPI`에 새 API를 추가하면 `src/web/webApi.ts`에도 같은 이름으로 구현해야 한다. `webApi`는 `ElectronAPI` 타입으로 고정되어 있어 빠뜨리면 `npm run typecheck`가 실패한다. 웹에서 불가능한 기능이면 비활성 값(null·false)을 돌려주고 `platform.ts`에 지원 여부를 추가한다(13.1절).
+- 메인 프로세스 로직을 웹판과 공유하려면 `fs`·`path`·`electron`·`Buffer` 없이 순수 함수로 분리한다(예: `hwpxDocument.ts`·`backupFormat.ts`). 저장·네트워크처럼 환경마다 다른 부분은 함수 인자로 주입받는다(예: `naramarketClient.ts`).
 - main process 기능을 추가할 때는 `ipcHandlers.ts`에 IPC를 등록하고 renderer에서는 `window.electronAPI`만 사용한다.
 - 파일 저장, 외부 브라우저 열기, PDF 저장은 Electron main process에서 처리한다.
 - 퀴즈 앱은 외부 CDN 없이 단일 HTML로 동작해야 하며, AI는 JSON 데이터만 생성하고 HTML 구조는 고정 템플릿을 사용해야 한다.
 - 인터넷 데이터를 가져올 때는 Node.js `https` 모듈이 아닌 `electron.net.fetch`를 사용해야 한다.
 - `index.css`의 prose 스타일(마크다운 렌더링용)은 `dark-prose-area` 클래스로 범위가 한정되어 있다. 문서 미리보기나 챗봇 응답 영역에 prose를 적용할 때 다크모드에서 배경색과 텍스트 색상이 충돌하지 않도록 적용 범위를 확인해야 한다.
-- 릴리즈는 `main` 브랜치 push 시 GitHub Actions가 자동으로 처리하므로, 로컬에서 EXE를 직접 빌드해 업로드하거나 Git 태그를 직접 만들 필요가 없다(13절 참고).
+- 릴리즈는 GitHub Actions의 "Release Windows EXE" 워크플로(수동 실행 또는 `v*` 태그)가 처리하며, 성공하면 웹 운영 사이트도 같은 버전으로 자동 배포된다. 로컬에서 EXE를 직접 빌드해 올리거나 Vercel에서 운영 배포를 직접 실행하지 않는다 — 두 버전이 어긋난다(13절 참고).
 - 메뉴 항목을 추가할 때는 `AppMode` 열거형, `App.tsx`의 메뉴 배열, `renderMode` switch 세 곳을 모두 수정해야 한다. `AppMode`에는 실제로 어디에서도 참조되지 않는 값(`GUIDELINE_QA`, `QR_MAKER`, `LUCKY_DRAW`)이 남아 있으니 6절을 참고해 혼동하지 않는다.
 - Demo 버튼은 `window:open-demo` IPC로 별도 `BrowserWindow`를 열며, 렌더러는 `window.location.hash === '#demo'` 여부로 Demo 전용 창인지 판단해 사이드바 없이 `DemoSamplesScreen`만 렌더링한다. 공문요약·업무추출 샘플에는 일정, 마감일, 참고 웹사이트 주소가 포함된다. 채팅방(`#chat`)도 같은 방식으로 별도 창을 판별한다.
 - API 키·시크릿(Gemini·나라장터)을 다루는 코드를 추가할 때는 `secretStore.ts`의 `SECRET_KEYS`에서 파생되는 헬퍼(`SECRET_STORE_KEYS`·`isSecretKey`·`stripSecrets`)를 사용해야 한다. 렌더러 조회 차단·설정 파일 동기화·백업 제외 대상 목록을 각 위치에 따로 나열하면, 새 시크릿을 추가할 때 어느 한 곳이라도 빠뜨려 평문이 유출될 수 있다.
