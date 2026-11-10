@@ -150,6 +150,7 @@
   .btn-sm { padding: 8px 14px; font-size: 15px; border-radius: 9px; }
   .btn-outline { background: var(--card); color: var(--text-2); border: 1px solid var(--border); }
   .btn-outline:hover { border-color: #F59E0B; color: #D97706; }
+  .nav-web-short { display: none; }
   .web-app-only { display: none !important; } /* 웹판 주소가 설정되면 스크립트가 보이게 한다 */
 
   /* Hero */
@@ -316,11 +317,19 @@
   }
   @media (max-width: 640px) {
     .nav-links { display: none; }
+    .nav-web-long { display: none; } /* 좁은 화면에서는 상단 버튼을 「🌐 웹」으로 줄인다 */
+    .nav-web-short { display: inline; }
+    .nav-right { gap: 6px; }
+    .brand { flex-shrink: 0; gap: 8px; font-size: 17px; }
+    .nav-right .btn-sm { padding: 8px 11px; }
     .feature-grid, .whats-new-grid { grid-template-columns: 1fr; }
     .screens-grid { grid-template-columns: 1fr; gap: 20px; }
     section { padding: 52px 0; }
     .hero h1 { font-size: clamp(26px, 7vw, 32px); line-height: 1.3; text-wrap: balance; }
     .hero-video { margin-top: 32px; border-radius: 14px; }
+  }
+  @media (max-width: 350px) {
+    .brand-name { display: none; } /* 아주 좁은 화면에서는 로고 아이콘만 남겨 상단 버튼 공간 확보 */
   }
 </style>
 </head>
@@ -344,7 +353,7 @@
 
 <nav class="nav">
   <div class="wrap">
-    <a class="brand" href="#top"><img src="assets/icon.png" alt="EduNote"> EduNote</a>
+    <a class="brand" href="#top"><img src="assets/icon.png" alt="EduNote"> <span class="brand-name">EduNote</span></a>
     <div class="nav-links">
       <a href="#whats-new">새 기능</a>
       <a href="#features">기능</a>
@@ -355,6 +364,7 @@
     <div class="nav-right">
       <button class="icon-btn" id="themeToggle" type="button" aria-label="테마 전환">🌙</button>
       <a class="btn btn-primary btn-sm" href="#download">다운로드</a>
+      <a class="btn btn-outline btn-sm web-app-only" id="navWebBtn" href="#" target="_blank" rel="noopener" aria-label="웹에서 바로 쓰기"><span class="nav-web-long">🌐 웹에서 바로 쓰기</span><span class="nav-web-short">🌐 웹</span></a>
     </div>
   </div>
 </nav>
@@ -862,7 +872,7 @@
 (function () {
   var WEB_APP_URL = 'https://edunoteweb.vercel.app';
   if (!/^https:\/\/[^\s"'<>]+$/.test(WEB_APP_URL)) return;
-  ['heroWebBtn', 'webAppBtn'].forEach(function (id) {
+  ['navWebBtn', 'heroWebBtn', 'webAppBtn'].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) el.href = WEB_APP_URL;
   });
