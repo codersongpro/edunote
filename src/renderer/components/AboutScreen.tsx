@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench, Scale, ChevronDown, Globe } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { DEVELOPER_HOMEPAGE_URL } from '../lib/developerInfo';
+import { EDITION_LABEL } from '../lib/platform';
 
 // 배포물에 포함되는 주요 오픈소스 구성요소 고지. 전체 목록·라이선스 전문은
 // 앱과 함께 배포되는 THIRD-PARTY-NOTICES.md 파일에 담겨 있다.
@@ -60,7 +61,7 @@ const AboutScreen: React.FC = () => {
           <h1 className="text-3xl font-black text-[#1C1917] dark:text-[#F0EBE6] mb-1">EduNote</h1>
           <p className="text-sm text-[#78716C] dark:text-[#9C8F87] mb-3">EduNote — 교직원을 위한 AI 도우미</p>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-sm font-semibold text-[#44403C] dark:text-[#9C8F87]">v{version}</span>
+            <span className="text-sm font-semibold text-[#44403C] dark:text-[#9C8F87]">v{version} · {EDITION_LABEL} 버전</span>
             {updateInfo && !updateInfo.hasUpdate && (
               <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
                 최신 버전 ✓

@@ -201,3 +201,12 @@ describe('applyBackupTransaction', () => {
     expect(fs.existsSync(path.join(dataDir, 'memo.json'))).toBe(false);
   });
 });
+
+describe('판(edition) 표시가 있는 백업 호환', () => {
+  it('웹판·PC판에서 만든 백업과 edition이 없는 예전 백업을 모두 읽는다', () => {
+    for (const edition of ['web', 'pc', undefined]) {
+      const raw = JSON.stringify({ app: 'EduNote', schemaVersion: 2, edition, settings: { teacherName: '교사' }, dataFiles: {}, localStorage: {} });
+      expect(parseBackup(raw).settings).toEqual({ teacherName: '교사' });
+    }
+  });
+});

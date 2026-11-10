@@ -90,7 +90,7 @@ describe('웹판 데이터·백업', () => {
     await webApi.writeJsonData('resource-library', ['원본']);
     await webApi.exportBackup({ menuOrder: '[1,2]' });
     const backupText = await savedBlobs[0].blob.text();
-    expect(JSON.parse(backupText).app).toBe('EduNote');
+    expect(JSON.parse(backupText)).toMatchObject({ app: 'EduNote', edition: 'web' });
 
     await webApi.setConfig({ teacherName: '바뀐 이름' });
     await webApi.writeJsonData('resource-library', ['바뀐 자료']);

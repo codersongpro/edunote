@@ -574,6 +574,8 @@ export function registerIpcHandlers(trustedRendererUrl: string): void {
       app: 'EduNote',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
+      // 어느 판에서 만든 백업인지 기록(복원에는 영향 없음 — 웹판과 서로 불러올 수 있다).
+      edition: 'pc',
       settings: safeSettings,
       dataFiles,
       localStorage: localStorageData,

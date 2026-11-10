@@ -62,3 +62,15 @@ describe('만든 사람 카드', () => {
     expect(link?.rel).toContain('noopener');
   });
 });
+
+describe('웹 버전 바로가기', () => {
+  it('「웹에서 바로 쓰기」 버튼은 웹 주소를 넣기 전까지 숨겨 둔다', () => {
+    for (const id of ['heroWebBtn', 'webAppBtn']) {
+      const btn = landingPage.querySelector<HTMLAnchorElement>(`#${id}`);
+      expect(btn?.textContent).toContain('웹에서 바로 쓰기');
+      expect(btn?.classList.contains('web-app-only')).toBe(true);
+    }
+    expect(html).toContain('.web-app-only { display: none !important; }');
+    expect(html).toMatch(/var WEB_APP_URL = '[^']*';/);
+  });
+});

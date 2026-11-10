@@ -30,3 +30,7 @@ export const WEB_API_KEY_NOTICE = {
   title: 'API 키는 이 브라우저에만 저장됩니다',
   description: '서버로 전송되지 않습니다. 학교 공용 PC라면 사용 후 설정의 「이 브라우저의 데이터 지우기」를 눌러 주세요.',
 };
+
+// 판 구분 표시 — 버전 번호는 PC판(exe)과 웹판이 같고, 이 라벨로만 구분한다.
+export const EDITION = isWeb ? 'web' : 'pc';
+export const EDITION_LABEL = isWeb ? '웹' : 'PC';

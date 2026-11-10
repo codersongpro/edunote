@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { isWeb, platformSupports, WEB_API_KEY_NOTICE } from './lib/platform';
+import { isWeb, platformSupports, WEB_API_KEY_NOTICE, EDITION_LABEL } from './lib/platform';
 import { AppMode, SchoolLevel, DocType, ToastMessage } from './types';
 import { createInitialGlobalState, GlobalStateContext, initialGlobalState } from './GlobalStateContext';
 import { TourProvider } from './TourContext';
@@ -1388,6 +1388,11 @@ const App: React.FC = () => {
             >
               <span>EduNote</span>
               {appVersion && <span className="text-[10px] font-bold text-[#A8A29E] dark:text-[#6B5E57]">v{appVersion}</span>}
+              {appVersion && (
+                <span className="self-center text-[9px] font-bold leading-none px-1.5 py-0.5 rounded-full border border-[#E7E5E4] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87]">
+                  {EDITION_LABEL}
+                </span>
+              )}
             </button>
             <div className="flex items-center gap-1">
               <button

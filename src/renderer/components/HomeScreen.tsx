@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
+import { EDITION_LABEL } from '../lib/platform';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -197,7 +198,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-black text-[#1C1917] dark:text-[#F0EBE6] tracking-tight">EduNote</h1>
-                <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">v{version}</span>
+                <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">v{version} · {EDITION_LABEL} 버전</span>
                 {updateInfo && !updateInfo.hasUpdate && (
                   <span className="text-[11px] px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-700 rounded-full font-semibold">
                     최신 버전
