@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build:web && echo \"VERCEL_CWD=$(pwd)\" && ls -la dist-web && ls -la",
+  "buildCommand": "npm run build:web",
   "outputDirectory": "dist-web",
   "installCommand": "ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci",
   "framework": null,

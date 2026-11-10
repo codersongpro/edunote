@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo \"랜딩페이지: 설치할 패키지 없음\"",
+  "buildCommand": "echo \"랜딩페이지: 빌드 없이 docs 폴더를 그대로 배포\"",
+  "outputDirectory": "."
+}
