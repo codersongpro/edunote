@@ -94,7 +94,7 @@ function buildAppMenu() {
       submenu: [
         { label: `EduNote v${app.getVersion()}`, enabled: false },
         { type: 'separator' },
-        { label: '개발자: Dustin', enabled: false },
+        { label: '개발자: 송동석 (Songpro / Dustin)', enabled: false },
         { type: 'separator' },
         {
           label: '사용 주의사항',
