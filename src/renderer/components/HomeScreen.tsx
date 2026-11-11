@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch, Heart, ExternalLink, Scale } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch, Heart, ExternalLink, Scale, ChevronDown } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
 import { EDITION_LABEL } from '../lib/platform';
@@ -40,6 +40,8 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [backupStatus, setBackupStatus] = useState('');
   const [infoLoaded, setInfoLoaded] = useState(false);
+  // 제작자 카드의 저작권·이용 약관 영역 — 홈 화면이 길어지지 않도록 기본은 접어 둔다.
+  const [legalOpen, setLegalOpen] = useState(false);
 
   useEffect(() => {
     const refreshApiKeyState = () => {
@@ -348,25 +350,39 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
                 <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">{CREATOR.slogan}</p>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
-              <p className="text-[11px] font-bold text-[#A8A29E] dark:text-[#6B5E57] mb-1.5">저작권 및 이용 약관</p>
-              <div className="flex flex-wrap gap-1.5">
-                {LEGAL_LINKS.map(({ label, url }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => window.electronAPI.openExternal(url)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] hover:border-emerald-400 hover:text-emerald-700 dark:hover:border-emerald-500 dark:hover:text-emerald-300 transition-colors"
-                  >
-                    <Scale className="w-3.5 h-3.5" />
-                    {label}
-                    <ExternalLink className="w-3 h-3 opacity-50" />
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#6B5E57] break-keep">
-                {copyrightText()} EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다. 무단 복제·재배포·상업적 이용은 라이선스와 이용약관에 따라 제한됩니다.
-              </p>
+            <div className="mt-3 pt-2 border-t border-[#EDE8E1] dark:border-[#2E2822]">
+              <button
+                type="button"
+                onClick={() => setLegalOpen(v => !v)}
+                aria-expanded={legalOpen}
+                aria-controls="home-legal-panel"
+                className="w-full flex items-center gap-1.5 py-1 text-[11px] font-bold text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#9C8F87] transition-colors"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                저작권 및 이용 약관
+                <ChevronDown className={`w-3.5 h-3.5 ml-auto transition-transform ${legalOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {legalOpen && (
+                <div id="home-legal-panel" className="mt-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {LEGAL_LINKS.map(({ label, url }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => window.electronAPI.openExternal(url)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] hover:border-emerald-400 hover:text-emerald-700 dark:hover:border-emerald-500 dark:hover:text-emerald-300 transition-colors"
+                      >
+                        <Scale className="w-3.5 h-3.5" />
+                        {label}
+                        <ExternalLink className="w-3 h-3 opacity-50" />
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#6B5E57] break-keep">
+                    {copyrightText()} EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다. 무단 복제·재배포·상업적 이용은 라이선스와 이용약관에 따라 제한됩니다.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
