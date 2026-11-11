@@ -46,11 +46,11 @@ describe('랜딩페이지 버전·새 기능 알림', () => {
     expect(landingPage.querySelector('#downloadMeta')?.textContent).toContain(`edunote_${version}_portable.exe`);
   });
 
-  it('히어로 배지와 새 기능 섹션으로 v1.30.0 반편성을 알린다', () => {
+  it('히어로 배지와 새 기능 섹션으로 v1.31.0 웹 버전을 알린다', () => {
     expect(landingPage.querySelector<HTMLAnchorElement>('#whatsNewBadge')?.getAttribute('href')).toBe('#whats-new');
     const titles = Array.from(landingPage.querySelectorAll('#whats-new .feature-card h3')).map(h => h.textContent?.trim());
-    expect(titles).toEqual(['반편성 편성안 3개', '지켜야 할 조건은 반드시', '직접 조정과 엑셀 저장', '전년도 공문 현행화']);
-    expect(landingPage.querySelector('#whatsNewBadge')?.textContent).toContain('v1.30.0');
+    expect(titles).toEqual(['웹에서 바로 쓰기', '자료는 내 브라우저 안에만', 'PC ↔ 웹 백업 호환', '반편성 편성안 3개']);
+    expect(landingPage.querySelector('#whatsNewBadge')?.textContent).toContain('v1.31.0');
   });
 });
 
