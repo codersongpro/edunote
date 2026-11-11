@@ -45,10 +45,16 @@ describe('랜딩페이지와 앱의 법적 고지 링크', () => {
   });
 
   it('앱 화면도 같은 페이지를 연다', () => {
-    for (const file of ['src/renderer/components/AboutScreen.tsx', 'src/renderer/components/MyToolsScreen.tsx']) {
+    // 법적 고지 주소는 developerInfo.ts(LEGAL_LINKS)에 모여 있고, 정보·홈 화면은 이를 가져다 쓴다.
+    for (const file of ['src/renderer/lib/developerInfo.ts', 'src/renderer/components/MyToolsScreen.tsx']) {
       const source = readFileSync(resolve(rootDir, file), 'utf8');
       expect(source, file).not.toContain('github.com/codersongpro/edunote/blob');
       expect(source, file).toContain('https://ednote.vercel.app/legal/');
+    }
+    for (const file of ['src/renderer/components/AboutScreen.tsx', 'src/renderer/components/HomeScreen.tsx']) {
+      const source = readFileSync(resolve(rootDir, file), 'utf8');
+      expect(source, file).not.toContain('github.com/codersongpro/edunote/blob');
+      expect(source, file).toMatch(/import \{[^}]*LEGAL_LINKS[^}]*\} from '\.\.\/lib\/developerInfo'/);
     }
   });
 });

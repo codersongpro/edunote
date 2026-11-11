@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch } from 'lucide-react';
+import { Settings, BookOpen, Download, ChevronRight, ClipboardList, AlertTriangle, Info, CheckCircle, MessageCircle, GraduationCap, Presentation, FileText, CalendarSync, ScanSearch, Heart, ExternalLink, Scale } from 'lucide-react';
 import iconPng from '../assets/icon.png';
 import { API_KEY_UPDATED_EVENT } from '../lib/apiKeyGuide';
 import { EDITION_LABEL } from '../lib/platform';
+import { CREATOR, DEVELOPER_HOMEPAGE_URL, LEGAL_LINKS, copyrightText } from '../lib/developerInfo';
 
 interface UpdateInfo {
   currentVersion: string;
@@ -324,6 +325,50 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
             </div>
             <ChevronRight className="w-4 h-4 text-white/70 shrink-0" />
           </button>
+
+          {/* 제작자 정보 · 저작권 · 이용약관 고지 */}
+          <div className="bg-white dark:bg-[#221E1B] rounded-xl border border-[#EDE8E1] dark:border-[#2E2822] p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
+                <Heart className="w-4 h-4 text-rose-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <button
+                    type="button"
+                    onClick={() => window.electronAPI.openExternal(DEVELOPER_HOMEPAGE_URL)}
+                    className="inline-flex items-center gap-1 text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6] hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
+                    title="개발자 소개 페이지 (songpro.app)"
+                  >
+                    {CREATOR.name}
+                    <ExternalLink className="w-3 h-3 opacity-50" />
+                  </button>
+                  <span className="text-xs text-[#78716C] dark:text-[#9C8F87] break-keep">{CREATOR.role}</span>
+                </div>
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 mt-1">{CREATOR.slogan}</p>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
+              <p className="text-[11px] font-bold text-[#A8A29E] dark:text-[#6B5E57] mb-1.5">저작권 및 이용 약관</p>
+              <div className="flex flex-wrap gap-1.5">
+                {LEGAL_LINKS.map(({ label, url }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => window.electronAPI.openExternal(url)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] text-xs font-semibold text-[#44403C] dark:text-[#C4B8B0] hover:border-emerald-400 hover:text-emerald-700 dark:hover:border-emerald-500 dark:hover:text-emerald-300 transition-colors"
+                  >
+                    <Scale className="w-3.5 h-3.5" />
+                    {label}
+                    <ExternalLink className="w-3 h-3 opacity-50" />
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#6B5E57] break-keep">
+                {copyrightText()} EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다. 무단 복제·재배포·상업적 이용은 라이선스와 이용약관에 따라 제한됩니다.
+              </p>
+            </div>
+          </div>
 
         </div>
       </div>

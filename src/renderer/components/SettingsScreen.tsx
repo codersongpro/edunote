@@ -8,7 +8,7 @@ import { API_KEY_UPDATED_EVENT, GEMINI_API_CLOUD_FALLBACK_STEPS, GEMINI_API_GUID
 import { notifyToast } from '../lib/toast';
 import { DEFAULT_BYTE_LIMITS, RECORD_KINDS, RecordKind, parseByteLimits, isValidByteLimit } from '../lib/textLength';
 import { STUDENT_DATA_TARGET_LABELS } from '../lib/studentDataCleanup';
-import { DEVELOPER_HOMEPAGE_URL } from '../lib/developerInfo';
+import { DEVELOPER_HOMEPAGE_URL, CREATOR } from '../lib/developerInfo';
 import { parseRosterInput, formatRosterForEdit, loadStudentRoster, saveStudentRoster } from '../lib/studentRoster';
 import { collectStorage, replaceStorageTransactionally } from '../lib/backupStorage';
 import { REVIEW_CHECKLIST_UPDATED_EVENT } from './ReviewChecklist';
@@ -1006,7 +1006,7 @@ const SettingsScreen: React.FC = () => {
             className="underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-300"
             title="개발자 소개 페이지 (songpro.app)"
           >
-            Dustin
+            {CREATOR.name}
           </button>
         </div>
       </div>

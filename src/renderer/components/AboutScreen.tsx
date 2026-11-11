@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { BookOpen, ExternalLink, Info, Bot, FileText, Presentation, Heart, AlertTriangle, ClipboardList, Wrench, Scale, ChevronDown, Globe } from 'lucide-react';
 import iconPng from '../assets/icon.png';
-import { DEVELOPER_HOMEPAGE_URL } from '../lib/developerInfo';
+import { DEVELOPER_HOMEPAGE_URL, CREATOR, LEGAL_LINKS, copyrightText } from '../lib/developerInfo';
 import { EDITION_LABEL } from '../lib/platform';
 
 // 배포물에 포함되는 주요 오픈소스 구성요소 고지. 전체 목록·라이선스 전문은
@@ -22,12 +22,6 @@ const OPEN_SOURCE_NOTICES: { name: string; license: string; holder: string }[] =
 ];
 
 // EduNote 자체 라이선스·이용약관 웹페이지(docs/legal). 같은 원문 파일이 배포 패키지에도 함께 들어간다.
-const LEGAL_LINKS: { label: string; url: string }[] = [
-  { label: '라이선스', url: 'https://ednote.vercel.app/legal/#license' },
-  { label: '이용약관', url: 'https://ednote.vercel.app/legal/#eula' },
-  { label: '오픈소스 고지', url: 'https://ednote.vercel.app/legal/#notices' },
-];
-
 interface UpdateInfo {
   currentVersion: string;
   latestVersion: string | null;
@@ -150,10 +144,13 @@ const AboutScreen: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">개발자</span>
-              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">Dustin</span>
+              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">{CREATOR.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">Teacher · Data Analytics · App Developer</span>
+              <span className="text-sm text-[#78716C] dark:text-[#9C8F87]">{CREATOR.role}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">{CREATOR.slogan}</span>
             </div>
           </div>
           <p className="text-xs text-[#A8A29E] dark:text-[#6B5E57] mt-4 leading-relaxed">협업 및 피드백을 환영합니다. 교육 현장에서의 AI 활용을 더욱 넓혀가겠습니다.</p>
@@ -231,7 +228,7 @@ const AboutScreen: React.FC = () => {
 
         {/* License */}
         <div className="text-center text-xs text-[#A8A29E] dark:text-[#6B5E57] pb-4 space-y-1">
-          <p>Copyright © {new Date().getFullYear()} Dustin. All rights reserved.</p>
+          <p>{copyrightText()}</p>
           <p>
             EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다.
           </p>
