@@ -209,7 +209,7 @@ const AboutScreen: React.FC = () => {
           {showOpenSource && (
             <div className="px-6 pb-6 space-y-3">
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                EduNote는 아래 오픈소스 소프트웨어를 사용합니다. 각 구성요소는 해당 라이선스 조건에 따라 배포되며, 전체 목록과 라이선스 전문은 앱과 함께 배포되는 <span className="font-semibold">THIRD-PARTY-NOTICES.md</span> 파일에서 확인할 수 있습니다.
+                EduNote는 아래 오픈소스 소프트웨어를 사용합니다. 각 구성요소는 해당 라이선스 조건에 따라 배포됩니다. 전체 목록과 라이선스 전문은 앱에 함께 들어 있는 <span className="font-semibold">THIRD-PARTY-NOTICES.md</span> 파일에서 확인할 수 있습니다.
               </p>
               <div className="border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl divide-y divide-[#EDE8E1] dark:divide-[#2E2822] max-h-64 overflow-y-auto">
                 {OPEN_SOURCE_NOTICES.map(({ name, license, holder }) => (
@@ -230,7 +230,7 @@ const AboutScreen: React.FC = () => {
         <div className="text-center text-xs text-[#A8A29E] dark:text-[#6B5E57] pb-4 space-y-1">
           <p>{copyrightText()}</p>
           <p>
-            EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다.
+            EduNote는 소스 공개 라이선스로 배포됩니다. 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다.
           </p>
           <p className="space-x-2">
             {LEGAL_LINKS.map(({ label, url }) => (
