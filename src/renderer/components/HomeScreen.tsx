@@ -379,7 +379,7 @@ const HomeScreen: React.FC<Props> = ({ onNavigate, onQuickStart }) => {
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-[#A8A29E] dark:text-[#6B5E57] break-keep">
-                    {copyrightText()} EduNote는 소스 공개 라이선스로 배포되며, 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다. 무단 복제·재배포·상업적 이용은 라이선스와 이용약관에 따라 제한됩니다.
+                    {copyrightText()} EduNote는 소스 공개 라이선스로 배포됩니다. 공식 배포본은 학교 업무에 무료로 사용할 수 있습니다. 무단 복제·재배포·상업적 이용은 라이선스와 이용약관에 따라 제한됩니다.
                   </p>
                 </div>
               )}
