@@ -101,26 +101,26 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
     <div className="flex flex-col h-full bg-white dark:bg-[#221E1B]">
       {/* Header */}
       <div data-tour="record-chatbot-header" className="h-14 flex items-center justify-between px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] shrink-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="bg-indigo-100 p-1.5 rounded-lg">
             <Bot className="w-4 h-4 text-indigo-600" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">AI 챗봇 도우미</h2>
-            <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">2026 기재요령 기반 · {schoolLevel}</p>
+            <p className="text-xs text-[#78716C] dark:text-[#9C8F87] compact:hidden">2026 기재요령 기반 · {schoolLevel}</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => startTour('record-chatbot')}
-            className="flex items-center gap-1 text-xs text-indigo-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+            className="flex items-center gap-1 text-xs compact:whitespace-nowrap text-indigo-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
           >
             <HelpCircle className="w-3 h-3" />
             튜토리얼
           </button>
           <button
             onClick={handleClear}
-            className="flex items-center gap-1 text-xs text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
+            className="flex items-center gap-1 text-xs compact:whitespace-nowrap text-[#A8A29E] dark:text-[#6B5E57] hover:text-[#78716C] dark:hover:text-[#C4B8B0] px-2 py-1 rounded hover:bg-[#FAF9F7] dark:hover:bg-[#2E2822] transition-colors"
           >
             <Trash2 className="w-3 h-3" />
             초기화
@@ -187,7 +187,7 @@ const RecordChatbot: React.FC<Props> = ({ schoolLevel }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="기재요령 관련 질문을 자유롭게 입력하세요..."
-            className="flex-1 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
+            className="flex-1 min-w-0 px-4 py-3 bg-[#FAF9F7] dark:bg-[#2E2822] border border-[#EDE8E1] dark:border-[#2E2822] rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-[#1C1917] dark:text-[#F0EBE6] text-sm dark:placeholder-[#6B5E57]"
             disabled={isLoading}
           />
           <button

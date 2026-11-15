@@ -9,9 +9,11 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { notifyToast } from '../lib/toast';
 import { loadDocTodos, saveDocTodos, DocTodo } from './DocTodoPanel';
 import { useTour } from '../TourContext';
+import { useIsMobile } from '../lib/useIsMobile';
 import { copyPlainTextToClipboard } from '../lib/clipboard';
 
 const OfficialDocAnalyzer: React.FC = () => {
+  const isMobile = useIsMobile();
   const { startGeneration, endGeneration } = useGenerationTracker(AppMode.OFFICIAL_DOC_ANALYZER);
   const { startTour } = useTour();
   const [title, setTitle] = useState('');
@@ -194,9 +196,9 @@ const OfficialDocAnalyzer: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#FAF9F7] dark:bg-[#171210]">
+    <div className="flex h-full bg-[#FAF9F7] dark:bg-[#171210] m-stack">
       {inputPanelCollapsed && (
-        <div className="w-11 shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex justify-center py-3">
+        <div className="w-11 shrink-0 compact:hidden border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex justify-center py-3">
           <button
             onClick={() => setInputPanelCollapsed(false)}
             className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
@@ -206,8 +208,8 @@ const OfficialDocAnalyzer: React.FC = () => {
           </button>
         </div>
       )}
-      {!inputPanelCollapsed && (
-      <div data-tour="official-doc-input" className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col">
+      {(!inputPanelCollapsed || isMobile) && (
+      <div data-tour="official-doc-input" className="w-[390px] shrink-0 border-r border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex flex-col compact:border-r-0 compact:border-b">
         <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
@@ -219,14 +221,14 @@ const OfficialDocAnalyzer: React.FC = () => {
             </div>
             <button
               onClick={() => startTour('official-doc')}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-emerald-200 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-emerald-200 dark:border-emerald-700 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
               title="튜토리얼"
             >
               <HelpCircle className="w-4 h-4" />
             </button>
             <button
               onClick={() => setInputPanelCollapsed(true)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
+              className="compact:hidden h-8 w-8 inline-flex items-center justify-center rounded-md border border-[#EDE8E1] dark:border-[#2E2822] text-[#78716C] dark:text-[#9C8F87] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
               title="입력 패널 접기"
             >
               <PanelLeftClose className="w-4 h-4" />
@@ -283,8 +285,8 @@ const OfficialDocAnalyzer: React.FC = () => {
       </div>
       )}
 
-      <div data-tour="official-doc-output" className="flex-1 flex flex-col min-w-0">
-        <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between">
+      <div data-tour="official-doc-output" data-mobile-result className="flex-1 flex flex-col min-w-0 compact:min-h-[70vh]">
+        <div className="h-14 px-4 border-b border-[#EDE8E1] dark:border-[#2E2822] bg-white dark:bg-[#221E1B] flex items-center justify-between compact:h-auto compact:py-2 compact:flex-wrap compact:gap-2">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-emerald-500" />
             <span className="text-sm font-bold text-[#1C1917] dark:text-[#F0EBE6]">분석 결과</span>
@@ -294,7 +296,7 @@ const OfficialDocAnalyzer: React.FC = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 compact:flex-wrap">
             <button
               onClick={handleCopy}
               disabled={!result}
@@ -340,7 +342,7 @@ const OfficialDocAnalyzer: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 compact:p-3">
           {result ? (
             <div className="dark-prose-area prose prose-sm max-w-none bg-white dark:bg-[#221E1B] border border-[#EDE8E1] dark:border-[#2E2822] rounded-2xl p-6 shadow-sm text-[#1C1917] dark:text-[#F0EBE6]">
               <ReactMarkdown>{result}</ReactMarkdown>

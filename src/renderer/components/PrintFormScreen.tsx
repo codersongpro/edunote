@@ -166,19 +166,19 @@ export default function PrintFormScreen() {
     return (
       <div className="flex flex-col h-full overflow-hidden bg-[#FAF9F7] dark:bg-[#171210]">
         {/* 헤더 */}
-        <div className="h-14 shrink-0 px-4 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3">
+        <div className="h-14 shrink-0 px-4 bg-white dark:bg-[#221E1B] border-b border-[#EDE8E1] dark:border-[#2E2822] flex items-center gap-3 compact:h-auto compact:py-2 compact:flex-wrap compact:gap-2">
           <button
             onClick={() => setSelectedForm(null)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] transition-colors"
+            className="compact:whitespace-nowrap flex items-center gap-1.5 text-xs font-semibold text-[#78716C] dark:text-[#9C8F87] hover:text-[#1C1917] dark:hover:text-[#C4B8B0] transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
             목록으로
           </button>
-          <span className="text-[#E7E5E4] dark:text-[#2E2822]">|</span>
+          <span className="text-[#E7E5E4] dark:text-[#2E2822] compact:hidden">|</span>
           <h2 className="text-base font-bold text-[#1C1917] dark:text-[#F0EBE6]">{selectedForm.title}</h2>
           <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">{selectedForm.category}</span>
-          <span className="text-xs text-[#78716C] dark:text-[#9C8F87]">양식 화면을 직접 클릭해서 수정하세요.</span>
-          <div data-tour="print-form-save" className="ml-auto flex gap-2">
+          <span className="text-xs text-[#78716C] dark:text-[#9C8F87] compact:hidden">양식 화면을 직접 클릭해서 수정하세요.</span>
+          <div data-tour="print-form-save" className="ml-auto flex gap-2 compact:ml-0 compact:w-full compact:flex-wrap">
             <button
               onClick={handleReset}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-[#E7E5E4] dark:border-[#2E2822] rounded-lg text-[#78716C] dark:text-[#C4B8B0] hover:bg-[#FAF9F7] dark:hover:bg-[#2A2420] transition-colors"
@@ -205,7 +205,7 @@ export default function PrintFormScreen() {
 
         {/* 본문 */}
         <div className="flex flex-1 overflow-hidden">
-          <div data-tour="print-form-editor" className="flex-1 overflow-auto bg-[#EDE8E1] dark:bg-[#171210] flex items-start justify-center p-6">
+          <div data-tour="print-form-editor" className="flex-1 overflow-auto bg-[#EDE8E1] dark:bg-[#171210] flex items-start justify-center p-6 compact:justify-start compact:p-3">
             <div className="bg-white shadow-xl shrink-0" style={{ width: '210mm', height: '297mm', padding: '0' }}>
               <iframe
                 ref={iframeRef}
@@ -235,7 +235,7 @@ export default function PrintFormScreen() {
         </div>
         <button
           onClick={() => startTour('print-form')}
-          className="ml-auto flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+          className="ml-auto flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 px-2 py-1 rounded hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
         >
           <HelpCircle className="w-3 h-3" />
           튜토리얼

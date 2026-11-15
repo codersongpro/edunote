@@ -134,7 +134,7 @@ const LessonObservationGenerator: React.FC = () => {
             </div>
             <button
               onClick={() => startTour('teacher-record')}
-              className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700 dark:hover:text-blue-300 px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors compact:whitespace-nowrap compact:shrink-0"
             >
               <HelpCircle className="w-3 h-3" />
               튜토리얼

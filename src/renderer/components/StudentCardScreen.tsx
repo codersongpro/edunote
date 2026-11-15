@@ -53,7 +53,7 @@ const StudentCardScreen: React.FC = () => {
             onChange={e => setIdentifier(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
             placeholder="생기부 화면에 입력했던 학생 이름/번호/별명을 그대로 입력하세요"
-            className="flex-1 px-4 py-2.5 bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+            className="flex-1 min-w-0 px-4 py-2.5 bg-white dark:bg-[#2E2822] border border-[#E7E5E4] dark:border-[#2E2822] rounded-xl text-[#1C1917] dark:text-[#F0EBE6] focus:ring-2 focus:ring-indigo-500 focus:outline-none"
           />
           <button
             onClick={handleSearch}

@@ -606,9 +606,9 @@ h2,h3{page-break-after:avoid;}
   };
 
   return (
-    <div className="bg-white dark:bg-[#221E1B] rounded-lg shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] flex flex-col h-full overflow-hidden">
-      <div className="bg-[#FAF9F7] dark:bg-[#171210] px-4 py-3 border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide">
-        <div className="flex items-center gap-2 mr-4">
+    <div className="bg-white dark:bg-[#221E1B] rounded-lg shadow-sm border border-[#E7E5E4] dark:border-[#2E2822] flex flex-col h-full overflow-hidden compact:h-auto compact:overflow-visible">
+      <div className="bg-[#FAF9F7] dark:bg-[#171210] px-4 py-3 border-b border-[#E7E5E4] dark:border-[#2E2822] flex justify-between items-center overflow-x-auto whitespace-nowrap scrollbar-hide compact:whitespace-normal compact:flex-wrap compact:gap-2 compact:px-3 compact:overflow-visible">
+        <div className="flex items-center gap-2 mr-4 compact:mr-0 compact:w-full compact:flex-wrap">
           <FileText className="w-5 h-5 text-blue-600 shrink-0" />
           <h2 className="font-bold text-[#1C1917] dark:text-[#F0EBE6] text-base">미리보기 및 편집</h2>
           <span className="text-xs bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
@@ -621,7 +621,7 @@ h2,h3{page-break-after:avoid;}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 compact:flex-wrap compact:shrink">
           {(reviewKind ?? 'document') === 'document' && (
             <AiReviewButton target="document" docKind={reviewDocKind} getSnapshot={getReviewSnapshot} disabled={!content || !!selectedVersion} />
           )}
@@ -719,7 +719,7 @@ h2,h3{page-break-after:avoid;}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 sm:p-8 bg-[#EAECEF] dark:bg-[#13100E] scrollbar-thin scrollbar-thumb-[#D6CFC7] dark:scrollbar-thumb-[#3A332D] scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto compact:overflow-visible p-2 sm:p-8 bg-[#EAECEF] dark:bg-[#13100E] scrollbar-thin scrollbar-thumb-[#D6CFC7] dark:scrollbar-thumb-[#3A332D] scrollbar-track-transparent">
         {content && (
           <div className="mx-auto w-full max-w-[100%] sm:max-w-[210mm] mb-3 space-y-3">
             <div className="bg-white dark:bg-[#171210] border border-[#EDE8E1] dark:border-[#2E2822] rounded-lg p-3">
@@ -849,7 +849,7 @@ h2,h3{page-break-after:avoid;}
           </div>
         )}
         <div
-          className={`mx-auto w-full max-w-[100%] sm:max-w-[210mm] print-section ${selectedVersion ? 'cursor-default' : 'cursor-text'}`}
+          className={`m-paper mx-auto w-full max-w-[100%] sm:max-w-[210mm] print-section ${selectedVersion ? 'cursor-default' : 'cursor-text'}`}
           style={{
             minHeight: '297mm',
             backgroundColor: 'white',
