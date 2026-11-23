@@ -23,6 +23,7 @@ import { GUIDELINE_CONTEXT, GENERATION_EXAMPLES, SYSTEM_INSTRUCTION, SUBJECT_LIS
 import { stripGeneratedCodeFences } from '../lib/generatedContent';
 import { buildExampleFormatInstruction } from '../lib/documentExamples';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
+import { normalizeAnswer, type QuizItem, type WorksheetItem } from '../lib/itemQuality';
 import { parseJsonObjectFromAiText } from '../lib/aiJson';
 import { DocSuggestion, formatNodesForPrompt, parseSuggestions, textToNodes } from '../lib/aiReview';
 import { DocKind, maskPersonalInfo, createPersonalInfoGuard } from '../lib/docRules';
@@ -1756,6 +1757,40 @@ const LESSON_SYSTEM_PROMPT = `당신은 대한민국 교육과정 전문가로�
 학습자 수준에 적합한 어휘와 내용을 사용하고, 실제 수업 현장에서 바로 활용 가능하도록 구체적으로 작성하세요.
 ${NATURAL_WRITING_INSTRUCTION}`;
 
+// 학생용 문항·활동 작성 원칙. 워크시트·평가지·퀴즈 프롬프트에 함께 넣는다.
+// 형식으로 판단할 수 있는 부분은 lib/itemQuality.ts가 생성 뒤 다시 확인한다.
+const buildItemWritingRules = (grade: string, kind: 'activity' | 'assessment' | 'quiz'): string => {
+  const isLowerElementary = grade.includes('초등') && Number(grade.match(/(\d+)\s*학년/)?.[1] ?? 0) <= 2;
+  const lines = [
+    '[문항 작성 원칙 — 반드시 준수]',
+    '- 문항마다 평가하려는 개념이나 기능을 하나로 정하고, 같은 개념을 두 번 묻지 마세요. 한 문항의 내용이 다른 문항의 답이 되지 않게 하세요.',
+    '- 기억·이해만 묻지 말고, 문항 수가 3개 이상이면 적용(새 상황에 써 보기)이나 분석(자료·까닭 비교) 문항을 하나 이상 넣으세요.',
+    '- 질문만 읽고 답할 수 있도록 필요한 조건·자료·단위를 문항 안에 모두 제시하세요.',
+  ];
+  if (kind !== 'activity') {
+    lines.push(
+      '- 객관식은 정답이 정확히 하나만 성립해야 합니다. 오답 보기는 학생이 자주 하는 오개념이나 실수에서 만들고, 교사가 왜 틀렸는지 설명할 수 있어야 합니다.',
+      '- 보기의 길이와 문장 형태를 비슷하게 맞추세요. 정답 보기만 길거나 자세하면 안 됩니다.',
+      '- 정답 위치(보기 번호)를 문항마다 고르게 섞으세요. 같은 번호가 세 문항 이상 연속되지 않게 하세요.',
+      '- "모두 옳다", "정답 없음", "알 수 없다" 같은 보기를 쓰지 마세요.',
+    );
+  }
+  if (kind === 'assessment') {
+    lines.push('- 부정 질문("옳지 않은 것")은 꼭 필요할 때만 쓰고, 쓸 때는 부정어를 <strong>으로 강조하세요.');
+    lines.push('- 서술형은 "두 가지 이상", "까닭을 포함하여", "세 문장 이내"처럼 답할 범위와 조건을 질문에 밝히세요.');
+  }
+  if (kind === 'activity') {
+    lines.push(
+      '- 활동은 관찰 → 기록 → 설명 → 적용 흐름으로 짜고, 한 활동에는 한 가지 과제만 주세요.',
+      '- 지시문은 학생이 할 행동이 드러나게 쓰세요. 예: "표에 쓰세요", "선으로 이으세요", "까닭을 한 문장으로 쓰세요".',
+    );
+  }
+  if (isLowerElementary) {
+    lines.push('- 초등 저학년은 지시문을 한 문장으로 짧게 쓰고, 그림 대신 표·빈칸 채우기·선 잇기·○ 표시처럼 직접 해 보는 과제를 쓰세요.');
+  }
+  return lines.join('\n');
+};
+
 const getLessonGradeGuidance = (grade: string): string => {
   if (grade.includes('초등')) {
     const gradeNumber = Number(grade.match(/(\d+)\s*학년/)?.[1] ?? 0);
@@ -1921,6 +1956,8 @@ ${buildLessonInputBlock(params)}
 ${gradeGuidance ? `\n${gradeGuidance}\n` : ''}
 [자료 목적]
 ${purposeGuidance}
+
+${buildItemWritingRules(params.grade, worksheetType)}
 
 [요구사항]
 - ${countLabel}: ${questionCount}개
@@ -2316,6 +2353,9 @@ ${typeLines}
 - 문항은 수업에서 실제로 다룬 개념과 활동을 확인하고 학년 수준에 맞게 출제하세요.
 - 객관식 정답은 정확히 하나만 성립하도록 만들고 answer에는 그 보기의 문구를 정확히 넣으세요.
 - 객관식 오답은 그럴듯하되, 각 오답이 왜 틀렸는지 교사가 설명할 수 있도록 개념상 분명한 오류가 있어야 합니다.
+- 퀴즈 화면은 글자 강조를 표시하지 못하므로 부정 질문 대신 긍정 질문으로 쓰세요.
+
+${buildItemWritingRules(params.grade, 'quiz')}
 
 반드시 아래 JSON 형식으로만 응답하세요. 설명이나 마크다운 없이 JSON만:
 {
@@ -2331,6 +2371,121 @@ ${typeLines}
   const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.5, responseJson: true }, (model) => { usedModel = model; });
   const data = parseQuizJson(raw, questionCount, types);
   return { text: buildQuizHtml(data), model: usedModel };
+}
+
+// ─── 문항 독립 풀이 검증 ─────────────────────────────────────────────
+// 만든 문항을 정답 없이 다시 보내 AI가 학생처럼 직접 풀게 한다. 출제 정답과 다르거나, 답이 둘 이상
+// 성립하거나, 조건이 빠져 풀 수 없는 문항을 찾는 것이 목적이다. 생성과 별도 요청이라 출제 때의
+// 의도에 끌려가지 않는다. 전체 문항을 한 번에 보내 요청은 한 번만 더 쓴다.
+
+export type ItemVerificationStatus = 'ok' | 'check' | 'mismatch' | 'unsolvable';
+
+export interface ItemVerification {
+  item: string;
+  status: ItemVerificationStatus;
+  aiAnswer: string;
+  expected?: string;
+  issues: string[];
+}
+
+type VerifyInput =
+  | { kind: 'quiz'; items: QuizItem[] }
+  | { kind: 'worksheet'; items: WorksheetItem[] };
+
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥'];
+
+function describeItemsForSolving(input: VerifyInput): string {
+  if (input.kind === 'quiz') {
+    return input.items.map((item, index) => {
+      const head = `${index + 1}. [${item.type === 'multiple-choice' ? '객관식' : item.type === 'ox' ? 'OX' : '단답형'}] ${item.question}`;
+      const options = item.type === 'multiple-choice' && item.options
+        ? '\n' + item.options.map((option, i) => `   ${CIRCLED[i]} ${option}`).join('\n')
+        : '';
+      return head + options;
+    }).join('\n\n');
+  }
+  return input.items.map((item, index) => `${index + 1}. (${item.id})\n${item.text}`).join('\n\n');
+}
+
+// AI가 "②", "2", "2번", 보기 문구 중 무엇으로 답해도 보기 문구로 맞춘다.
+function resolveChoice(answer: string, options: string[]): string {
+  const trimmed = answer.trim();
+  const circled = CIRCLED.findIndex(mark => trimmed.startsWith(mark));
+  if (circled >= 0 && options[circled]) return options[circled];
+  const numbered = trimmed.match(/^(\d)\s*(?:번|[.)])?(?:\s|$)/);
+  if (numbered && options[Number(numbered[1]) - 1]) return options[Number(numbered[1]) - 1];
+  return options.find(option => normalizeAnswer(option) === normalizeAnswer(trimmed)) ?? trimmed;
+}
+
+export async function verifyLessonItems(input: VerifyInput, params: LessonParams): Promise<{ results: ItemVerification[]; model: string }> {
+  if (input.items.length === 0) throw new Error('검증할 문항이 없습니다.');
+  const prompt = `당신은 ${params.grade} ${params.subject} 문항을 검토하는 교사입니다. 아래 문항을 정답을 모르는 상태에서 직접 풀어 보고, 문항에 문제가 있는지 판단하세요.
+
+[수업 정보]
+${buildLessonInputBlock(params)}
+
+[검토 방법]
+1. 각 문항을 ${params.grade} 학생 입장에서 문항에 적힌 정보만으로 푸세요. 자료나 그림이 필요한데 문항에 없으면 풀 수 없다고 판단하세요.
+2. answer에는 당신이 고른 답을 쓰세요. 객관식은 보기 문구를 그대로, OX는 "O" 또는 "X", 서술형·활동은 예시 답을 한두 문장으로 쓰세요.
+3. defensibleAnswers에는 학생이 근거를 들어 정답이라고 주장할 수 있는 답의 개수를 쓰세요. 객관식·OX·단답형에서 2 이상이면 정답이 둘 이상인 문항입니다.
+4. solvable에는 문항 정보만으로 풀 수 있으면 true, 조건·자료가 빠져 풀 수 없으면 false를 쓰세요.
+5. issues에는 실제로 있는 문제만 짧게 쓰세요. 예: "정답이 둘 이상 성립", "조건 부족", "사실 오류 의심", "학년 수준보다 어려움", "지시가 모호함", "보기 길이로 정답 추측 가능". 문제가 없으면 빈 배열로 두세요.
+
+[문항]
+${describeItemsForSolving(input)}
+
+반드시 문항 수(${input.items.length}개)와 같은 길이의 JSON 배열로만 응답하세요:
+[{"no":1,"answer":"답","defensibleAnswers":1,"solvable":true,"issues":[]}]`;
+
+  let usedModel = '';
+  const raw = await aiGenerate(prompt, LESSON_SYSTEM_PROMPT, { temperature: 0.1, responseJson: true }, model => { usedModel = model; });
+  const match = raw.replace(/```json\s*/gi, '').replace(/```/g, '').match(/\[[\s\S]*\]/);
+  let parsed: unknown;
+  try {
+    parsed = match ? JSON.parse(match[0]) : null;
+  } catch {
+    parsed = null;
+  }
+  if (!Array.isArray(parsed) || parsed.length !== input.items.length) {
+    throw new Error('검증 결과를 읽지 못했습니다. 다시 시도해주세요.');
+  }
+
+  const results = parsed.map((entry, index): ItemVerification => {
+    const record = isObjectRecord(entry) ? entry : {};
+    const issues = Array.isArray(record.issues) ? record.issues.filter((issue): issue is string => typeof issue === 'string' && issue.trim() !== '').map(issue => issue.trim()) : [];
+    const solvable = record.solvable !== false;
+    const multiple = Number(record.defensibleAnswers ?? 1) > 1;
+    let aiAnswer = typeof record.answer === 'string' ? record.answer.trim() : '';
+    const item = `${index + 1}번`;
+
+    if (input.kind === 'worksheet') {
+      const status: ItemVerificationStatus = !solvable ? 'unsolvable' : issues.length || multiple ? 'check' : 'ok';
+      return { item, status, aiAnswer, issues: multiple && !issues.some(i => i.includes('둘 이상')) ? ['정답이 둘 이상 성립할 수 있음', ...issues] : issues };
+    }
+
+    const quizItem = input.items[index];
+    let expected = quizItem.answer;
+    let same: boolean;
+    if (quizItem.type === 'multiple-choice' && quizItem.options) {
+      aiAnswer = resolveChoice(aiAnswer, quizItem.options);
+      same = normalizeAnswer(aiAnswer) === normalizeAnswer(expected);
+    } else if (quizItem.type === 'ox') {
+      aiAnswer = aiAnswer.toUpperCase().startsWith('O') ? 'O' : aiAnswer.toUpperCase().startsWith('X') ? 'X' : aiAnswer;
+      same = aiAnswer === expected;
+    } else if (!expected.trim()) {
+      // 자유 응답 단답형은 정답 비교 없이 문항 상태만 본다.
+      expected = '(자유 응답)';
+      same = true;
+    } else {
+      const a = normalizeAnswer(aiAnswer);
+      const e = normalizeAnswer(expected);
+      same = a === e || (e.length >= 2 && a.includes(e));
+    }
+    const allIssues = multiple && !issues.some(i => i.includes('둘 이상')) ? ['정답이 둘 이상 성립할 수 있음', ...issues] : issues;
+    const status: ItemVerificationStatus = !solvable ? 'unsolvable' : !same ? 'mismatch' : allIssues.length ? 'check' : 'ok';
+    return { item, status, aiAnswer, expected, issues: allIssues };
+  });
+  return { results, model: usedModel };
 }
 
 export async function generateLessonPlan(params: LessonParams): Promise<{ text: string; model: string }> {
