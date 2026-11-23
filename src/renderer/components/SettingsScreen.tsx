@@ -414,30 +414,21 @@ const SettingsScreen: React.FC = () => {
                   <ol className="text-xs text-amber-700 dark:text-amber-400 space-y-1 leading-relaxed pl-4 list-decimal">
                     <li>aistudio.google.com → 좌측 메뉴 <strong>"API 키"</strong> 목록 화면 열기</li>
                     <li>방금 만든 키의 <strong>"결제 설정"</strong> 컬럼 확인</li>
-                    <li><span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded font-bold">무료 등급</span>이면 OK — 분당 15회 / 일 1500회까지 무료</li>
-                    <li><span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-1.5 py-0.5 rounded font-bold">유료 등급</span>이면 사용량 따라 과금 → 결제 계정 미연결된 새 프로젝트에서 키를 다시 발급</li>
+                    <li><span className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-1.5 py-0.5 rounded font-bold">무료 등급</span>이면 OK. 정해진 한도 안에서 무료입니다</li>
+                    <li><span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 px-1.5 py-0.5 rounded font-bold">유료 등급</span>이면 쓴 만큼 과금됩니다. 결제를 연결하지 않은 새 프로젝트에서 키를 다시 만드세요</li>
                   </ol>
                   <p className="text-[11px] text-amber-600 dark:text-amber-500 mt-2">
-                    팁: 신규 Gmail 계정으로 처음 발급하면 자동으로 무료 등급이 됩니다.
+                    팁: 새 Gmail 계정으로 처음 만든 키는 무료 등급입니다.
                   </p>
                 </div>
 
                 {/* 무료/유료 등급의 데이터 취급 방침 차이 안내 — 학생 개인정보를 다루는 앱이라 등급 선택에 영향을 줄 수 있음 */}
                 <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-[#E7E5E4] dark:border-[#2E2822] rounded-md p-3">
                   <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-                    무료 등급은 과금이 없지만, 구글이 입력 내용을 서비스 개선(모델 학습·검토)에 활용할 수 있습니다. 유료 등급은 그렇지 않습니다. 학생 개인정보를 다루신다면 유료 등급 키 사용을 검토해 주세요.
+                    무료 등급은 Google이 입력 내용을 모델 학습·검토에 쓸 수 있고 유료 등급은 쓰지 않습니다. 학생 개인정보를 다룬다면 유료 키를 검토해 주세요.
                   </p>
                 </div>
 
-                <div className="mt-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-md p-3">
-                  <p className="text-xs font-bold text-indigo-800 dark:text-indigo-300 mb-1.5">
-                    프로젝트가 하나도 없을 때
-                  </p>
-                  <p className="text-xs text-indigo-700 dark:text-indigo-300 leading-relaxed">
-                    왼쪽 <strong>프로젝트</strong> 메뉴에서 <strong>프로젝트 만들기</strong>를 누르고 이름을 <strong>edunote</strong>로 입력하세요.
-                    만든 뒤에는 <strong>프로젝트 가져오기(Select a Cloud Project)</strong>에서 방금 만든 <strong>edunote</strong> 프로젝트를 선택하고, <strong>키 만들기</strong>로 API 키를 생성하면 됩니다.
-                  </p>
-                </div>
 
                 <div className="mt-3 bg-slate-50 dark:bg-[#171210] border border-slate-200 dark:border-[#2E2822] rounded-md p-3">
                   <p className="text-xs font-bold text-[#44403C] dark:text-[#F0EBE6] mb-1.5">
@@ -452,7 +443,7 @@ const SettingsScreen: React.FC = () => {
 
                 <div className="mt-3 pt-3 border-t border-[#EDE8E1] dark:border-[#2E2822]">
                   <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
-                    참고: 무료 계정 기준 분당 15회 요청 제한 — 일반 사용에 충분합니다.
+                    참고: 무료 키로도 일상 업무에는 충분합니다. 한도는 모델마다 다르며 AI Studio에서 확인할 수 있습니다.
                   </p>
                 </div>
 
@@ -488,7 +479,7 @@ const SettingsScreen: React.FC = () => {
           {hasKey && (
             <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 p-2.5 rounded-md border border-green-100 dark:border-green-800">
               <CheckCircle className="w-4 h-4 shrink-0" />
-              <span>API 키가 안전하게 저장되어 있습니다. 변경하려면 새 키를 입력하세요.</span>
+              <span>API 키가 저장되어 있습니다. 바꾸려면 새 키를 입력하세요.</span>
             </div>
           )}
 
@@ -510,7 +501,7 @@ const SettingsScreen: React.FC = () => {
             </div>
             {apiTier === 'paid' && (
               <div className="mt-2 rounded-md border border-purple-200 bg-purple-50 p-2.5 text-xs text-purple-700 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
-                유료 API 키는 Google Cloud/AI Studio 결제 프로젝트에서 과금될 수 있습니다. 비용과 한도는 Google 계정 설정을 확인한 뒤 사용하세요.
+                유료 키는 결제 프로젝트에 과금될 수 있습니다. 비용과 한도를 Google 계정에서 먼저 확인하세요.
               </div>
             )}
           </div>
@@ -530,8 +521,9 @@ const SettingsScreen: React.FC = () => {
               </button>
             </label>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-              {apiTier === 'free' ? '이 키에서 쓸 수 있는 최신 무료 모델을 먼저 쓰고, 한도를 넘으면 검증된 Lite로 자동 전환' : '확인된 유료 정식 모델 중 자동 선택'}합니다.
-              새 모델은 공식 모델·가격·지원 상태를 확인한 앱 업데이트 이후 후보에 반영됩니다.
+              {apiTier === 'free'
+                ? '가장 새 무료 모델을 먼저 쓰고, 한도를 넘으면 Lite 모델로 바꿉니다. Google이 새 모델을 내면 업데이트 없이 먼저 시도합니다.'
+                : '앱이 확인한 유료 모델 중에서 자동으로 고릅니다. 과금을 막기 위해 확인되지 않은 새 모델은 쓰지 않습니다.'}
             </p>
             {modelInfoError && (
               <p className="mt-2 rounded-md border border-red-200 bg-red-50 p-2.5 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">{modelInfoError}</p>
@@ -623,7 +615,7 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">기본 정보</h3>
           </div>
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md px-3 py-2 text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
-            💡 소속기관은 필요한 공문서 맥락에만 참고되고, 이름·담당 학년/반·학생 명단은 수업자료와 학생기록에서 활용됩니다.
+            💡 소속기관은 공문서에, 이름·학년/반·학생 명단은 수업자료와 학생기록에 쓰입니다.
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -682,7 +674,7 @@ const SettingsScreen: React.FC = () => {
           <div>
             <label className={labelClass}>번호 + 이름 통합 명단</label>
             <p className="text-xs text-[#A8A29E] mb-1.5">
-              한 줄에 한 명씩 입력. 앞에 번호를 붙이면 수업자료에 번호가 반영됩니다.
+              한 줄에 한 명씩 입력. 앞에 번호를 붙이면 수업자료에도 번호가 들어갑니다.
             </p>
             <textarea
               className={`${inputClass} min-h-[100px] resize-y font-mono text-xs`}
@@ -751,7 +743,7 @@ const SettingsScreen: React.FC = () => {
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-md px-3 py-2 text-xs text-amber-800 dark:text-amber-200 leading-relaxed space-y-1">
             <p>💡 생기부 도우미에서는 실명 대신 <strong>학생 번호나 별명</strong> 입력을 권장합니다.</p>
-            <p>여기에 번호-이름을 등록해두면, 생기부 화면에 번호를 입력했을 때 그 번호가 누구인지 화면에서만(로컬) 확인할 수 있습니다.</p>
+            <p>번호-이름을 등록하면 생기부 화면에서 번호만 넣어도 누구인지 화면에 보여 줍니다.</p>
             <p><strong>이 정보는 이 기기에만 저장되며 AI로 전송되지 않습니다.</strong> 등록하지 않아도 앱은 그대로 정상 동작합니다.</p>
           </div>
           <div>
@@ -784,8 +776,8 @@ const SettingsScreen: React.FC = () => {
           </div>
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87]">
             {platformSupports.folderSelection
-              ? '나만의 자료실, 학생 메모처럼 앱 안에서 계속 불러올 데이터가 이 폴더의 JSON 파일로 저장됩니다.'
-              : '웹 버전에서는 나만의 자료실, 학생 메모 등 앱 데이터가 이 브라우저 안에만 저장되고 서버로 전송되지 않습니다. 다른 기기로 옮길 때는 아래 「전체 자료 백업」을 이용하세요.'}
+              ? '자료실·학생 메모처럼 앱이 계속 쓰는 자료를 이 폴더에 JSON 파일로 저장합니다.'
+              : '웹 버전의 자료실·학생 메모 등은 이 브라우저에만 저장되고 서버로 보내지 않습니다. 다른 기기로 옮길 때는 아래 「전체 자료 백업」을 쓰세요.'}
           </p>
           <div className="flex gap-2 items-center">
             <input
@@ -820,7 +812,7 @@ const SettingsScreen: React.FC = () => {
             />
             <span>
               <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">개인정보 보호 모드</span>
-              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">학생 이름을 임시 토큰으로 바꿔 AI 요청을 보낸 뒤 결과에서 원래 이름으로 복원합니다.</span>
+              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">학생 이름을 대체어로 바꿔 AI에 보내고 결과에서 원래 이름으로 되돌립니다.</span>
             </span>
           </label>
           <label className="flex items-start gap-3 p-3 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] cursor-pointer">
@@ -832,7 +824,7 @@ const SettingsScreen: React.FC = () => {
             />
             <span>
               <span className="block text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">생성 결과 검토 체크리스트</span>
-              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">생성 결과 화면에 `사용 전 체크리스트`를 표시합니다. 개인정보·보안 확인은 공통이고, 학생기록·교무행정·수업자료는 영역에 맞는 확인 항목이 따로 나옵니다.</span>
+              <span className="block text-xs text-[#78716C] dark:text-[#9C8F87] mt-0.5">생성 결과에 `사용 전 체크리스트`를 보여 줍니다. 개인정보 확인은 공통이고 학생기록·교무행정·수업자료별 항목이 더해집니다.</span>
             </span>
           </label>
           <div>
@@ -868,7 +860,7 @@ const SettingsScreen: React.FC = () => {
               ))}
             </div>
             <p className="text-xs text-[#78716C] dark:text-[#9C8F87] mt-1">
-              생성 결과의 바이트 수가 이 값을 넘으면 결과 화면에 붉게 표시합니다. 기재요령은 학년도·학교급에 따라 다르니 우리 학교 기준으로 맞춰 주세요.
+              결과가 이 바이트 수를 넘으면 붉게 표시합니다. 기재요령은 학년도·학교급마다 다르니 학교 기준에 맞춰 주세요.
             </p>
           </div>
           <button
@@ -897,10 +889,10 @@ const SettingsScreen: React.FC = () => {
             <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">전체 자료 백업</h3>
           </div>
           <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-            기본 정보, 학생 명단, 나만의 자료실, 학생 메모 등 앱 자료를 하나의 JSON 파일로 저장하고 다른 컴퓨터에서 불러올 수 있습니다. API 키는 보안상 포함하지 않습니다.
+            기본 정보·학생 명단·자료실·학생 메모를 JSON 파일 하나로 저장해 다른 컴퓨터에서 불러올 수 있습니다. API 키는 넣지 않습니다.
           </p>
           <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-md p-2.5">
-            ⚠️ 백업 파일에는 학생 실명·상담 기록·생성 이력이 암호화 없이 그대로 들어갑니다. USB나 클라우드에 보관할 때는 유출되지 않도록 주의해 주세요.
+            ⚠️ 백업 파일에는 학생 실명·상담 기록·생성 이력이 암호화 없이 들어갑니다. USB나 클라우드에 둘 때 주의해 주세요.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -923,7 +915,7 @@ const SettingsScreen: React.FC = () => {
               <p className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">자동 정기 백업</p>
               <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
                 {platformSupports.autoBackup
-                  ? '앱을 시작할 때 설정한 주기가 지났으면 앱 데이터 폴더의 backups에 자동으로 저장합니다 (최근 10개 보관). 학생 정보가 암호화 없이 저장되니, 필요하지 않다면 "사용 안 함"으로 두세요.'
+                  ? '주기가 지나면 앱을 켤 때 backups 폴더에 자동 저장합니다(최근 10개 보관). 학생 정보가 암호화 없이 저장되니 필요 없으면 "사용 안 함"으로 두세요.'
                   : '웹 버전은 브라우저가 파일을 자동으로 만들 수 없어 자동 백업을 지원하지 않습니다. 브라우저 기록을 지우면 자료도 함께 지워질 수 있으니 「전체 자료 백업」으로 파일을 내려받아 보관해 주세요.'}
               </p>
             </div>
@@ -1059,7 +1051,7 @@ function WebBrowserDataCard() {
         <h3 className="text-sm font-bold text-[#44403C] dark:text-[#C4B8B0]">이 브라우저의 데이터</h3>
       </div>
       <p className="text-xs text-[#78716C] dark:text-[#9C8F87] leading-relaxed">
-        웹 버전의 모든 자료와 API 키는 이 브라우저 안에만 저장되며 EduNote 서버로 전송되지 않습니다.
+        웹 버전의 자료와 API 키는 이 브라우저에만 저장되고 EduNote 서버로 보내지 않습니다.
         AI 요청은 이 브라우저에서 Google Gemini로 바로 보내집니다.
       </p>
       <label className="flex items-start gap-3 p-3 rounded-md border border-[#EDE8E1] dark:border-[#2E2822] bg-[#FAF9F7] dark:bg-[#171210] cursor-pointer">
