@@ -6,6 +6,15 @@ import {
   checkEndMark,
   checkOutlineNumbering,
   checkPersonalInfo,
+  checkTimeNotation,
+  checkRangeNotation,
+  checkAttachmentNotation,
+  checkAmountNotation,
+  checkPlainWords,
+  checkPlaceholders,
+  toKoreanAmount,
+  parseKoreanAmount,
+  runDocRules,
   detectDocumentYear,
   maskPersonalInfo,
   shiftDatesForSchoolYear,
@@ -161,5 +170,88 @@ describe('shiftDatesForSchoolYear', () => {
     const [s] = shiftDatesForSchoolYear(['2028. 2. 29.(화)'], 2027, 2028 + 1);
     expect(s.needsCheck).toBe(true);
     expect(s.after).toBeUndefined();
+  });
+});
+
+describe('공문서 표기 규칙 검사', () => {
+  it('오전·오후 시각을 24시각제로 고친다', () => {
+    const result = checkTimeNotation(['일시: 2026. 3. 4.(수) 오후 3시 30분부터', '오전 9시 집합']);
+    expect(result.map(s => [s.before, s.after])).toEqual([['오후 3시 30분', '15:30'], ['오전 9시', '09:00']]);
+  });
+
+  it('쌍점을 띄운 시각과 한 자리 시각을 바로잡고, 24시 마감은 확인을 권한다', () => {
+    expect(checkTimeNotation(['13 : 20'])[0].after).toBe('13:20');
+    expect(checkTimeNotation(['9:00 시작'])[0].after).toBe('09:00');
+    const [late] = checkTimeNotation(['제출 마감: 2026. 2. 21. 24시까지']);
+    expect(late.needsCheck).toBe(true);
+    expect(checkTimeNotation(['09:00∼12:00'])).toEqual([]);
+  });
+
+  it('물결표 앞뒤 띄어쓰기와 "∼…까지" 겹침을 찾는다', () => {
+    const [spaced] = checkRangeNotation(['2026. 3. 4.(수) ~ 3. 6.(금)']);
+    expect(spaced.before).toBe(') ~ ');
+    expect(spaced.after).toBe(')∼');
+    const [kkaji] = checkRangeNotation(['2026. 2. 20.∼2. 24.까지']);
+    expect(kkaji.after).toBe('∼2. 24.');
+    expect(checkRangeNotation(['15:30∼16:30', 'p.1 ~ p.50'])).toEqual([]);
+  });
+
+  it('"붙임:"의 쌍점을 두 칸 띄우기로 고친다', () => {
+    const [s] = checkAttachmentNotation(['붙임: 운영 계획 1부.  끝.']);
+    expect(s.before).toBe('붙임: ');
+    expect(s.after).toBe('붙임  ');
+    expect(checkAttachmentNotation(['붙임  운영 계획 1부.  끝.'])).toEqual([]);
+  });
+});
+
+describe('금액 한글 병기', () => {
+  it('숫자를 공문서 관례의 한글 금액으로 바꾸고 다시 읽는다', () => {
+    expect(toKoreanAmount(113560)).toBe('일십일만삼천오백육십');
+    expect(toKoreanAmount(500000)).toBe('오십만');
+    expect(toKoreanAmount(1200000000)).toBe('일십이억');
+    expect(parseKoreanAmount('일십일만삼천오백육십')).toBe(113560);
+    expect(parseKoreanAmount('십일만삼천오백육십')).toBe(113560);
+    expect(parseKoreanAmount('오십만')).toBe(500000);
+    expect(parseKoreanAmount('만오천')).toBe(15000);
+    expect(parseKoreanAmount('오십만 원 이상')).toBeNull();
+  });
+
+  it('한글 병기가 없으면 덧붙이고, 띄어 쓴 표기는 붙인다', () => {
+    expect(checkAmountNotation(['다. 소요예산: 금500,000원'])[0].after).toBe('금500,000원(금오십만원)');
+    expect(checkAmountNotation(['금500,000원 (금오십만원)'])[0].after).toBe('금500,000원(금오십만원)');
+    expect(checkAmountNotation(['금113,560원(금일십일만삼천오백육십원)'])).toEqual([]);
+  });
+
+  it('한글 금액이 숫자와 다르면 자동 반영하지 않고 확인을 권한다', () => {
+    const [s] = checkAmountNotation(['금500,000원(금오십오만원)']);
+    expect(s.severity).toBe('warning');
+    expect(s.needsCheck).toBe(true);
+  });
+
+  it('"천 원" 단위 표기를 원 단위로 고친다', () => {
+    expect(checkAmountNotation(['예산 345천원'])[0].after).toBe('345,000원');
+  });
+});
+
+describe('쉬운 표현과 남은 자리표시', () => {
+  it('순화어와 중복 표현을 찾되 금액의 "금일십"은 건드리지 않는다', () => {
+    const result = checkPlainWords(['금일 협의회는 향후 계획을 하기와 같이 정하고 만전을 기해 반드시 필요한 3월달 일정을 정함', '금113,560원(금일십일만삼천오백육십원)']);
+    expect(result.map(s => s.after)).toEqual(expect.arrayContaining(['오늘', '앞으로', '아래와 같이', '최선을 다해', '필요', '3월']));
+    expect(result.every(s => s.idx === 0)).toBe(true);
+  });
+
+  it('[담당자]·[제출 마감 일시]와 ○○ 자리를 찾고, 제목 말머리는 건드리지 않는다', () => {
+    const result = checkPlaceholders([
+      '제목  [안내] 독서교실 운영',
+      '1. 관련: ○○과-○○○(○○○○. ○. ○.)「○○○」',
+      '- 제출: [제출 마감 일시]까지 [담당자]에게',
+    ]);
+    expect(result.map(s => s.before)).toEqual(['○○과-○○○(○○○○. ○. ○.)', '○○○', '[제출 마감 일시]', '[담당자]']);
+    expect(result.every(s => s.severity === 'warning')).toBe(true);
+  });
+
+  it('전체 검사에 새 규칙이 함께 돈다', () => {
+    const categories = runDocRules(['붙임: 계획 1부.  끝.', '오후 2시 금일 시작'], { docKind: '공문' }).map(s => s.category);
+    expect(categories).toEqual(expect.arrayContaining(['붙임 표시', '시간 표기', '쉬운 표현']));
   });
 });

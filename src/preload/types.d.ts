@@ -19,6 +19,8 @@ export interface ModelDiagnostics {
   policyUpdatedAt: string;
   policySource: string;
   selectionReason: string;
+  // 앱 검증 목록에는 없지만 무료 키에서 새로 찾아 후보에 넣은 모델
+  autoDiscovered?: string[];
 }
 
 export interface ModelFallbackInfo {

@@ -210,6 +210,217 @@ export function checkEndMark(nodes: string[], docKind: DocKind): DocSuggestion[]
   return result;
 }
 
+// ─── 공문서 표기 규칙(행정업무규정·공문서 작성 편람) ─────────────────────────
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// 시간은 24시각제로 쓰고 쌍점 양쪽을 붙인다: "오후 3시" → "15:00", "13 : 20" → "13:20", "9:00" → "09:00"
+const AMPM_TIME = /(오전|오후)\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?(?:\s*(?:부터|에))?/g;
+const SPACED_COLON_TIME = /(?<![\d.])(\d{1,2})\s+:\s*(\d{2})(?!\d)|(?<![\d.])(\d{1,2}):\s+(\d{2})(?!\d)/g;
+const SINGLE_DIGIT_HOUR = /(?<![\d.:])(\d):(\d{2})(?![\d:])/g;
+export function checkTimeNotation(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    for (const m of node.matchAll(AMPM_TIME)) {
+      const [, half, h, min] = m;
+      let hour = Number(h);
+      if (hour > 12) continue;
+      if (half === '오후' && hour < 12) hour += 12;
+      if (half === '오전' && hour === 12) hour = 0;
+      const time = `${pad2(hour)}:${pad2(Number(min ?? 0))}`;
+      const whole = m[0].replace(/\s*(?:부터|에)$/, '');
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: whole, after: time, category: '시간 표기', severity: 'info',
+        reason: '공문서는 오전·오후 대신 24시각제로 "15:00"처럼 씁니다.',
+      }));
+    }
+    for (const m of node.matchAll(SPACED_COLON_TIME)) {
+      const h = m[1] ?? m[3]; const min = m[2] ?? m[4];
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], after: `${pad2(Number(h))}:${min}`, category: '시간 표기', severity: 'info',
+        reason: '시각의 쌍점은 앞뒤를 붙여 "13:20"처럼 씁니다.',
+      }));
+    }
+    for (const m of node.matchAll(SINGLE_DIGIT_HOUR)) {
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], after: `0${m[1]}:${m[2]}`, category: '시간 표기', severity: 'info',
+        reason: '10시 전은 "09:00"처럼 앞에 0을 넣습니다.',
+      }));
+    }
+    for (const m of node.matchAll(/(?<!\d)24\s*시\s*까지/g)) {
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], category: '시간 표기', severity: 'info', needsCheck: true,
+        reason: '"24시까지"는 다음 날 00:00과 헷갈립니다. "18:00까지"처럼 실제 마감 시각으로 써 주세요.',
+      }));
+    }
+  });
+  return result;
+}
+
+// 기간의 물결표는 앞말과 뒷말에 붙이고, '까지'와 겹쳐 쓰지 않는다.
+const SPACED_RANGE = /([\d.)])[ \t]+([~∼])[ \t]*(?=\d)|([\d.)])([~∼])[ \t]+(?=\d)/g;
+const RANGE_WITH_KKAJI = /[~∼]\s*[\d.\s:()월화수목금토일]*\d[.)]?\s*까지/g;
+export function checkRangeNotation(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    for (const m of node.matchAll(SPACED_RANGE)) {
+      const left = m[1] ?? m[3];
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], after: `${left}∼`, category: '기간 표기', severity: 'info',
+        reason: '기간을 나타내는 물결표는 "3. 4.(수)∼3. 6.(금)"처럼 앞뒤를 붙여 씁니다.',
+      }));
+    }
+    for (const m of node.matchAll(RANGE_WITH_KKAJI)) {
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], after: m[0].replace(/\s*까지$/, ''), category: '기간 표기', severity: 'info',
+        reason: '물결표에 이미 "까지"의 뜻이 있어 겹쳐 쓰지 않습니다.',
+      }));
+    }
+  });
+  return result;
+}
+
+// '붙임' 다음에는 쌍점을 쓰지 않고 두 칸 띄운다.
+export function checkAttachmentNotation(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    const m = node.match(/^(\s*)붙임\s*:\s*/);
+    if (!m) return;
+    result.push(ruleSuggestion({
+      idx, start: m[1].length, before: m[0].slice(m[1].length), after: '붙임  ', category: '붙임 표시', severity: 'info',
+      reason: '"붙임" 뒤에는 쌍점 없이 두 칸 띄웁니다.',
+    }));
+  });
+  return result;
+}
+
+// 공문서 작성 편람의 순화어·중복 표현. 뜻이 하나로 정해지는 표현만 넣어 오검출을 줄인다.
+const PLAIN_WORDS: Array<[RegExp, string, string]> = [
+  [/(?<![가-힣])금일(?=[\s,은는이까부에]|$)/g, '오늘', '"금일"은 "오늘"로 씁니다.'],
+  [/(?<![가-힣])익일(?=[\s은는이까부에]|$)/g, '다음 날', '"익일"은 "다음 날"로 씁니다.'],
+  [/(?<![가-힣])향후(?=[\s,]|$)/g, '앞으로', '"향후"는 "앞으로"로 쓰면 더 쉽습니다.'],
+  [/에\s?의거하여|에\s?의거해|에\s?의거,?/g, '에 따라', '"의거하여"는 "따라"로 씁니다.'],
+  [/만전을\s?기하여|만전을\s?기해/g, '최선을 다해', '"만전을 기해"는 "최선을 다해"로 씁니다.'],
+  [/(?<![가-힣])하기와\s?같이/g, '아래와 같이', '"하기"는 "아래"로 씁니다.'],
+  [/(?<![가-힣])상기와\s?같이/g, '위와 같이', '"상기"는 "위"로 씁니다.'],
+  [/미리\s?예측/g, '예측', '"미리 예측"은 뜻이 겹칩니다.'],
+  [/반드시\s?필요/g, '필요', '"반드시 필요"는 뜻이 겹칩니다.'],
+  [/새로\s?신설/g, '신설', '"새로 신설"은 뜻이 겹칩니다.'],
+  [/과반수\s?이상/g, '과반수', '"과반수"에 이미 "넘는다"는 뜻이 있습니다.'],
+  [/(\d{1,2})월달/g, '$1월', '"월달"은 뜻이 겹칩니다.'],
+  [/향상시키/g, '향상하', '"향상시키다"는 "향상하다"로 씁니다.'],
+  [/발송시키/g, '보내', '"발송시키다"는 "보내다"로 씁니다.'],
+];
+export function checkPlainWords(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    for (const [pattern, replacement, reason] of PLAIN_WORDS) {
+      for (const m of node.matchAll(pattern)) {
+        result.push(ruleSuggestion({
+          idx, start: m.index, before: m[0], after: m[0].replace(new RegExp(pattern.source), replacement),
+          category: '쉬운 표현', severity: 'info', reason,
+        }));
+      }
+    }
+  });
+  return result;
+}
+
+// ─── 금액 한글 병기 ─────────────────────────────────────────────────────────
+const KO_DIGITS = '영일이삼사오육칠팔구';
+const KO_SMALL = ['', '십', '백', '천'];
+const KO_BIG = ['', '만', '억', '조'];
+
+// 113560 → "일십일만삼천오백육십" (공문서 관례대로 십·백·천 앞의 '일'도 쓴다)
+export function toKoreanAmount(value: number): string {
+  if (!Number.isSafeInteger(value) || value <= 0) return value === 0 ? '영' : '';
+  let out = '';
+  let rest = value;
+  for (let g = 0; rest > 0; g++) {
+    const group = rest % 10000;
+    rest = Math.floor(rest / 10000);
+    if (!group) continue;
+    let text = '';
+    String(group).padStart(4, '0').split('').forEach((d, i) => {
+      if (d !== '0') text += KO_DIGITS[Number(d)] + KO_SMALL[3 - i];
+    });
+    out = text + KO_BIG[g] + out;
+  }
+  return out;
+}
+
+// "일십일만삼천오백육십", "십일만삼천오백육십", "오십만" → 숫자. 읽을 수 없으면 null.
+export function parseKoreanAmount(text: string): number | null {
+  const clean = text.replace(/[\s,]/g, '');
+  if (!clean || /[^영일이삼사오육칠팔구십백천만억조]/.test(clean)) return null;
+  let total = 0; let section = 0; let digit = 0;
+  for (const ch of clean) {
+    const d = KO_DIGITS.indexOf(ch);
+    const small = KO_SMALL.indexOf(ch);
+    const big = KO_BIG.indexOf(ch);
+    if (d >= 0) digit = d;
+    else if (small > 0) { section += (digit || 1) * 10 ** small; digit = 0; }
+    else if (big > 0) { total += (section + digit || 1) * 10000 ** big; section = 0; digit = 0; }
+  }
+  return total + section + digit;
+}
+
+// 금액은 "금113,560원(금일십일만삼천오백육십원)"으로 쓴다. 한글 병기가 숫자와 다르면 오류로 알린다.
+const WON_AMOUNT = /금\s?([\d,]{4,})\s?원(?:\s?\(\s?(?:일?금)?\s?([가-힣\s]+?)\s?원?정?\s?\))?/g;
+export function checkAmountNotation(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    for (const m of node.matchAll(WON_AMOUNT)) {
+      const [whole, digits, korean] = m;
+      const value = toNumber(digits);
+      const canonical = `금${formatWon(value)}원(금${toKoreanAmount(value)}원)`;
+      if (korean === undefined) {
+        result.push(ruleSuggestion({
+          idx, start: m.index, before: whole, after: canonical, category: '금액 표기', severity: 'info',
+          reason: '공문서 금액은 숫자 뒤 괄호 안에 한글 금액을 함께 씁니다.',
+        }));
+        continue;
+      }
+      const parsed = parseKoreanAmount(korean);
+      if (parsed !== null && parsed !== value) {
+        result.push(ruleSuggestion({
+          // 글자 금액이 맞고 숫자가 틀렸을 수도 있으므로 자동 반영하지 않는다(규칙 오류만 미리 반영됨).
+          idx, start: m.index, before: whole, after: canonical, category: '금액 표기', severity: 'warning', needsCheck: true,
+          reason: `한글 금액(${korean.trim()})이 숫자 ${formatWon(value)}원과 다릅니다. 글자와 숫자가 다르면 글자 금액이 우선하므로 꼭 맞춰 주세요.`,
+        }));
+      } else if (parsed !== null && whole !== canonical && /\s/.test(whole)) {
+        result.push(ruleSuggestion({
+          idx, start: m.index, before: whole, after: canonical, category: '금액 표기', severity: 'info',
+          reason: '"금113,560원(금일십일만삼천오백육십원)"처럼 띄우지 않고 씁니다.',
+        }));
+      }
+    }
+    for (const m of node.matchAll(/(?<![\d,])(\d{1,3}(?:,\d{3})*)\s?천\s?원/g)) {
+      const value = toNumber(m[1]) * 1000;
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0], after: `${formatWon(value)}원`, category: '금액 표기', severity: 'info',
+        reason: '"천 원" 단위 표기는 읽는 사람이 다시 계산해야 하므로 원 단위로 씁니다.',
+      }));
+    }
+  });
+  return result;
+}
+
+// 문서작성기가 남긴 자리표시([담당자] 등)와 ○○ 표시가 그대로 남아 있으면 알린다.
+const PLACEHOLDER = /\[(?:담당자|연락처|수신\s?기관명|[^\]\n]{0,10}(?:마감|기한)[^\]\n]{0,6}|[^\]\n]{0,10}일시)\]|○{2,}(?:[가-힣]{0,3}[-.\s()]*○+)*\.?\)?/g;
+export function checkPlaceholders(nodes: string[]): DocSuggestion[] {
+  const result: DocSuggestion[] = [];
+  nodes.forEach((node, idx) => {
+    for (const m of node.matchAll(PLACEHOLDER)) {
+      result.push(ruleSuggestion({
+        idx, start: m.index, before: m[0].trim(), category: '채울 자리', severity: 'warning', needsCheck: true,
+        reason: '직접 채워야 하는 자리가 남아 있습니다. 발송 전에 실제 값으로 바꿔 주세요.',
+      }));
+    }
+  });
+  return result;
+}
+
 // AI로 보내기 전에 경고할 개인정보. 주민등록번호는 바로 가리고, 휴대전화 번호는 확인을 권한다.
 const RRN = /(?<!\d)(\d{6})\s*-\s*([1-8])\d{6}(?!\d)/g;
 const MOBILE = /(?<!\d)(01[016789])[-.\s]?(\d{3,4})[-.\s]?(\d{4})(?!\d)/g;
@@ -252,6 +463,12 @@ export function runDocRules(nodes: string[], options: { docKind: DocKind; school
     ...checkAmounts(nodes),
     ...checkOutlineNumbering(nodes),
     ...checkEndMark(nodes, options.docKind),
+    ...checkTimeNotation(nodes),
+    ...checkRangeNotation(nodes),
+    ...checkAttachmentNotation(nodes),
+    ...checkAmountNotation(nodes),
+    ...checkPlainWords(nodes),
+    ...checkPlaceholders(nodes),
     ...checkPersonalInfo(nodes),
   ];
 }

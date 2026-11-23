@@ -6,6 +6,9 @@ import {
   VERIFIED_GENERAL_MODELS,
   LastVerifiedModelCache,
   selectVerifiedModels,
+  selectFreeModels,
+  modelVersionOrder,
+  isZeroQuotaError,
   type ApiTier,
   getRetryDelayMs,
   isDailyQuotaError,
@@ -24,6 +27,10 @@ const PERMANENT_BLOCK_MS = 60 * 60 * 1000; // 1시간
 
 // 쿼터 초과로 임시 차단된 모델 → 차단 해제 시각(unix ms)
 const quotaBlockedModels = new Map<string, number>();
+
+// 무료 등급에서 제공하지 않는 것으로 확인된 모델(limit: 0, 자동 탐색 모델의 접근 거부)은 하루 동안 뺀다.
+// 하루가 지나면 다시 시도해, Google이 나중에 무료로 열어 준 모델도 놓치지 않는다.
+const NOT_FREE_BLOCK_MS = 24 * 60 * 60 * 1000;
 
 // 쿼터 초과 시 재시도 대기 시간 (60초)
 const QUOTA_COOLDOWN_MS = 60_000;
@@ -77,6 +84,8 @@ interface ModelSelection {
   verificationStatus: 'verified' | 'latest-unconfirmed';
   checkedAt: number;
   selectionReason: string;
+  // 검증 목록에는 없지만 이 키에서 새로 찾아 후보에 넣은 무료 모델
+  autoDiscovered: string[];
 }
 
 const availableModelsCache = new Map<string, AvailableModelsEntry>();
@@ -141,7 +150,9 @@ async function resolveModelSelection(
   const discovery = await discoverAvailableModelNames(ai, apiKey, forceRefresh);
   const keyId = modelKeyId(apiKey);
   if (discovery.names !== null) {
-    const chain = selectVerifiedModels(apiTier, discovery.names);
+    const freeSelection = apiTier === 'free' ? selectFreeModels(discovery.names) : null;
+    const chain = freeSelection ? freeSelection.chain : selectVerifiedModels(apiTier, discovery.names);
+    const autoDiscovered = freeSelection?.autoDiscovered ?? [];
     if (chain.length === 0) {
       throw new Error(
         `모델 목록은 확인했지만 ${apiTier === 'free' ? '무료' : '유료'} 등급에서 공식 확인된 정식 생성 모델을 찾지 못했습니다. 앱의 모델 정책 업데이트가 필요할 수 있습니다.`,
@@ -155,8 +166,9 @@ async function resolveModelSelection(
       verificationStatus: 'verified',
       checkedAt: discovery.checkedAt,
       selectionReason: apiTier === 'free'
-        ? '공식 정책에서 무료 제공·정식 지원·생성 가능 여부를 확인한 Lite 중 최신 모델을 기본으로 사용하고, 다음 Lite와 다른 무료 정식 모델을 폴백 후보로 둡니다.'
+        ? `이 키에서 쓸 수 있는 가장 새 무료 정식 모델을 먼저 쓰고, 한도를 넘으면 다음 모델과 검증된 Lite로 넘어갑니다.${autoDiscovered.length ? ` ${autoDiscovered.join(', ')}은(는) 앱 검증 목록에 없던 새 모델이라 직접 시도해 보고, 무료로 쓸 수 없으면 하루 동안 빼 둡니다.` : ''}`
         : '공식 정책에서 유료 제공·정식 지원·생성 가능 여부를 확인한 뒤, 기존 Pro → Flash → Lite 우선순위와 계열별 최신 순서로 선택했습니다.',
+      autoDiscovered,
     };
   }
 
@@ -165,7 +177,11 @@ async function resolveModelSelection(
       .filter(model => model.stable && model.generative && (apiTier === 'free' ? model.free : model.paid))
       .map(model => model.name),
   );
-  const chain = lastVerifiedModels.get(keyId, apiTier, discovery.checkedAt, allowed);
+  // 무료 모드는 자동 탐색한 새 모델도 마지막 후보에 들어 있을 수 있으므로 이름 규칙으로 함께 허용한다.
+  const cached = lastVerifiedModels.get(keyId, apiTier, discovery.checkedAt);
+  const chain = cached?.every(model => allowed.has(model) || (apiTier === 'free' && modelVersionOrder(model) !== null))
+    ? cached
+    : null;
   if (!chain?.length) throw discovery.error ?? new Error('모델 목록을 확인할 수 없습니다.');
   return {
     chain,
@@ -174,6 +190,7 @@ async function resolveModelSelection(
     verificationStatus: 'latest-unconfirmed',
     checkedAt: discovery.checkedAt,
     selectionReason: '이번 모델 목록 확인에 실패해, 24시간 안에 같은 키와 요금제로 확인한 후보만 사용합니다. 최신 여부는 확인되지 않았습니다.',
+    autoDiscovered: chain.filter(model => !allowed.has(model)),
   };
 }
 
@@ -197,6 +214,7 @@ export interface ModelDiagnostics {
   policyUpdatedAt: string;
   policySource: string;
   selectionReason: string;
+  autoDiscovered: string[];
 }
 
 export async function getModelDiagnostics(
@@ -221,6 +239,7 @@ export async function getModelDiagnostics(
     policyUpdatedAt: MODEL_POLICY_UPDATED_AT,
     policySource: MODEL_POLICY_SOURCE,
     selectionReason: selection.selectionReason,
+    autoDiscovered: selection.autoDiscovered,
   };
 }
 
@@ -336,6 +355,7 @@ async function generateWithModelChain<T>(
 ): Promise<{ result: T; model: string; fallbacks: ModelFallbackInfo[] }> {
   const selection = await resolveModelSelection(ai, apiKey, apiTier);
   const models = selection.chain;
+  const autoDiscovered = new Set(selection.autoDiscovered);
   let lastError: unknown = null;
   const fallbacks: ModelFallbackInfo[] = [];
 
@@ -363,6 +383,13 @@ async function generateWithModelChain<T>(
       // 다음 후보로 넘어가고, 일반 문서 생성은 최신 모델부터 다시 시작하게 둔다.
       if (usesTools && requireTools && isSearchGroundingUnavailableError(error)) {
         console.warn(`[${model}] 검색 그라운딩 미지원 → 검색 가능한 다음 모델로 폴백`);
+        continue;
+      }
+
+      // 무료 등급에 없는 모델: 기다려도 풀리지 않으므로 하루 동안 빼고 바로 다음 후보로 간다.
+      if (apiTier === 'free' && isZeroQuotaError(error)) {
+        quotaBlockedModels.set(model, Date.now() + NOT_FREE_BLOCK_MS);
+        console.warn(`[${model}] 무료 등급 미제공(limit: 0) → 하루 동안 제외`);
         continue;
       }
 
@@ -401,7 +428,7 @@ async function generateWithModelChain<T>(
             lastError = retryError;
           }
         }
-        permanentlyBlockedModels.set(model, Date.now() + PERMANENT_BLOCK_MS);
+        permanentlyBlockedModels.set(model, Date.now() + (autoDiscovered.has(model) ? NOT_FREE_BLOCK_MS : PERMANENT_BLOCK_MS));
         console.warn(`[${model}] 접근 불가 → 임시 차단, 다음 모델로 폴백`);
         continue;
       }
@@ -621,7 +648,9 @@ export async function testApiKey(apiKey: string, apiTier: ApiTier = 'free'): Pro
     for (const model of selection.chain) {
       const result = await tryModel(model);
       results.push(result);
-      if (result.ok || result.kind === 'invalid_key' || result.kind === 'network' || result.kind === 'permission') break;
+      // 자동 탐색한 새 모델의 접근 거부는 키 문제가 아니라 무료 미제공일 수 있으므로 다음 후보를 마저 확인한다.
+      const autoDenied = result.kind === 'permission' && selection.autoDiscovered.includes(model);
+      if (result.ok || result.kind === 'invalid_key' || result.kind === 'network' || (result.kind === 'permission' && !autoDenied)) break;
     }
   } catch (error: unknown) {
     results = [classifyError(error, '모델 목록 조회')];

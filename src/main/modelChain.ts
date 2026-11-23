@@ -19,7 +19,7 @@ export interface VerifiedModelPolicy {
   generative: boolean;
   // 유료 모드의 기존 품질 우선순위. 무료 자격 판정에는 사용하지 않는다.
   paidPriority?: number;
-  // 무료 모드에서 우선 사용할 검증된 경량 후보.
+  // 무료 모드에서 한도 초과에 대비해 마지막 후보로 두는 검증된 경량 모델.
   liteSafety?: boolean;
 }
 
@@ -36,29 +36,98 @@ export const VERIFIED_GENERAL_MODELS: readonly VerifiedModelPolicy[] = [
 
 const MAX_CHAIN_LENGTH = 3;
 
+// ─── 무료 모드 새 모델 자동 탐색 ───────────────────────────────────────────
+// Google이 새 모델을 내놓아도 앱 업데이트 없이 무료 키로 바로 써 보게 한다.
+// - 무료 키는 결제가 연결되지 않은 프로젝트라 새 모델을 시도해도 요금이 나가지 않는다.
+//   무료가 아니면 429(limit: 0)·403 같은 오류가 오고, 그 모델은 하루 동안 빼고 다음 후보로 넘어간다.
+// - 유료 모드는 모르는 모델을 자동으로 쓰면 과금될 수 있으므로 검증 목록만 쓴다.
+// - 이름이 "gemini-<버전>-<계열>"인 정식판만 받는다. 미리보기·실험판·음성·이미지·임베딩 모델은 뺀다.
+const AUTO_MODEL_NAME = /^gemini-(\d+)(?:\.(\d+))?-([a-z]+(?:-[a-z]+)?)$/;
+const NON_GENERAL_TOKENS = /(preview|exp|experimental|tts|image|live|audio|embedding|native|thinking|computer|robotics|latest|customtools|search|nano)/;
+
+// "gemini-3.8-flash" → 380, "gemini-4-hydrogen" → 400. 정식판 일반 모델 이름이 아니면 null.
+export function modelVersionOrder(name: string): number | null {
+  const bare = name.replace(/^models\//, '');
+  const m = bare.match(AUTO_MODEL_NAME);
+  if (!m || NON_GENERAL_TOKENS.test(m[3])) return null;
+  return Number(m[1]) * 100 + Number(m[2] ?? 0) * 10;
+}
+
+const isLiteName = (name: string) => /-lite$/.test(name);
+
+// 검증 목록에 없지만, 검증된 무료 모델 중 가장 새 모델보다 나중에 나온 정식 일반 모델.
+// 오래된 미등재 모델(사용 중단 예정 등)은 고르지 않는다.
+export function discoverNewFreeModels(
+  availableNames: string[],
+  policy: readonly VerifiedModelPolicy[] = VERIFIED_GENERAL_MODELS,
+): string[] {
+  const known = new Set(policy.map(model => model.name));
+  const newestVerified = Math.max(0, ...policy.filter(model => model.free && model.stable).map(model => model.releaseOrder));
+  return [...new Set(availableNames.map(name => name.replace(/^models\//, '')))]
+    .filter(name => !known.has(name))
+    .map(name => ({ name, order: modelVersionOrder(name) }))
+    .filter((item): item is { name: string; order: number } => item.order !== null && item.order > newestVerified)
+    .sort((a, b) => b.order - a.order || Number(isLiteName(a.name)) - Number(isLiteName(b.name)))
+    .map(item => item.name);
+}
+
+// 무료 모드 후보 순서: 이 키에서 쓸 수 있는 가장 새 무료 모델 → 다음으로 새 모델 → 한도 대비 Lite.
+// 같은 버전이면 Lite보다 일반 모델을 먼저 쓴다.
+export function selectFreeModels(
+  availableNames: string[],
+  policy: readonly VerifiedModelPolicy[] = VERIFIED_GENERAL_MODELS,
+  includeAuto = true,
+): { chain: string[]; autoDiscovered: string[] } {
+  const normalized = new Set(availableNames.map(name => name.replace(/^models\//, '')));
+  const verified = policy
+    .filter(model => normalized.has(model.name) && model.stable && model.generative && model.free)
+    .map(model => ({ name: model.name, order: model.releaseOrder }));
+  const auto = includeAuto ? discoverNewFreeModels(availableNames, policy) : [];
+  const ranked = [
+    ...auto.map(name => ({ name, order: modelVersionOrder(name) ?? 0 })),
+    ...verified,
+  ].sort((a, b) => b.order - a.order || Number(isLiteName(a.name)) - Number(isLiteName(b.name)));
+
+  const chain = ranked.slice(0, MAX_CHAIN_LENGTH - 1).map(item => item.name);
+  // 한도가 넉넉한 검증된 Lite를 마지막 안전판으로 둔다.
+  const lite = verified.filter(item => isLiteName(item.name)).sort((a, b) => b.order - a.order)[0];
+  if (lite && !chain.includes(lite.name)) chain.push(lite.name);
+  for (const item of ranked) {
+    if (chain.length >= MAX_CHAIN_LENGTH) break;
+    if (!chain.includes(item.name)) chain.push(item.name);
+  }
+  return { chain, autoDiscovered: chain.filter(name => auto.includes(name)) };
+}
+
+// 무료 등급에서 아예 제공하지 않는 모델의 한도 오류("limit: 0").
+// 분당·일일 한도 초과와 달리 기다려도 풀리지 않는다.
+export function isZeroQuotaError(error: unknown): boolean {
+  return /limit:\s*0(?![\d.])|free[_ ]tier[^.]*not (?:available|supported)/i.test(errorText(error));
+}
+
 export function buildModelChain(preference: readonly string[], availableNames: string[] | null): string[] {
   if (!availableNames?.length) return [];
   const normalized = new Set(availableNames.map(name => name.replace(/^models\//, '')));
   return preference.filter(model => normalized.has(model)).slice(0, MAX_CHAIN_LENGTH);
 }
 
+// 검증 목록 안에서만 고른다. 무료 모드는 selectFreeModels와 같은 순서(최신 우선, Lite는 안전판)다.
 export function selectVerifiedModels(
   tier: ApiTier,
   availableNames: string[],
   policy: readonly VerifiedModelPolicy[] = VERIFIED_GENERAL_MODELS,
 ): string[] {
+  if (tier === 'free') return selectFreeModels(availableNames, policy, false).chain;
   const normalized = new Set(availableNames.map(name => name.replace(/^models\//, '')));
   const eligible = policy
     .filter(model =>
       normalized.has(model.name) &&
       model.stable &&
       model.generative &&
-      (tier === 'free' ? model.free : model.paid),
+      model.paid,
     )
     .sort((a, b) =>
-      tier === 'paid'
-        ? (a.paidPriority ?? Number.MAX_SAFE_INTEGER) - (b.paidPriority ?? Number.MAX_SAFE_INTEGER) || b.releaseOrder - a.releaseOrder
-        : Number(Boolean(b.liteSafety)) - Number(Boolean(a.liteSafety)) || b.releaseOrder - a.releaseOrder,
+      (a.paidPriority ?? Number.MAX_SAFE_INTEGER) - (b.paidPriority ?? Number.MAX_SAFE_INTEGER) || b.releaseOrder - a.releaseOrder,
     );
   return eligible.slice(0, MAX_CHAIN_LENGTH).map(model => model.name);
 }

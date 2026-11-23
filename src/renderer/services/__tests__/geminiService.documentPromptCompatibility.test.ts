@@ -131,8 +131,9 @@ describe('문서 유형별 최종 프롬프트 호환성', () => {
     expect(minutes.user).toContain('입력에 없으면 새로 만들지');
 
     const expense = await captureDocumentPrompt(DocType.PUMUI, '[품의 내용]: 준비물 구입');
-    expect(expense.user).toContain('품목별 줄바꿈');
-    expect(expense.user).toContain('표(Table)는 사용하지');
+    expect(expense.user).toContain('품목별로 줄을 바꿔');
+    expect(expense.user).toContain('표(Table)를 쓰지 말고');
+    expect(expense.user).not.toContain('[표 작성 규칙]');
 
     const notice = await captureDocumentPrompt(DocType.GONGGO, '[공고 내용]: 체육관 이용 안내');
     expect(notice.user).toContain('모집 목적일 때만');

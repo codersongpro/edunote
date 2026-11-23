@@ -72,8 +72,9 @@ describe('겉공문 구성', () => {
     const text = await captureGongmunPrompt(GongmunComplexity.MEDIUM);
     expect(text).toContain('[안내], [알림], [신청], [제출], [협조], [참석]');
     expect(text).toContain('법령·조례·규칙·지침·제도 이름은 「 」로 감싸세요');
-    expect(text).toContain('"부서명-문서번호(YYYY. M. D.)" 형식');
-    expect(text).toContain('2026. 11. 6.(금) ~ 11. 7.(토)');
+    expect(text).toContain('"부서명-문서번호(YYYY. M. D.)「문서 제목」" 형식');
+    expect(text).toContain("문서번호 뒤에 '호'를 붙이지 않습니다");
+    expect(text).toContain('2026. 11. 6.(금)∼11. 7.(토)');
     expect(text).toContain('콜론(:) 위치가 세로로 맞도록');
     expect(text).toContain('4글자(행정사항·작품접수 등): 띄우지 않고');
     expect(text).toContain("'※'로 적으세요");
@@ -113,7 +114,7 @@ describe('겉공문 구성', () => {
   it('근거를 확인할 수 없으면 문서번호를 지어내지 않고 채울 자리만 남기게 한다', async () => {
     const text = await captureGongmunPrompt(GongmunComplexity.DETAILED);
     expect(text).toContain('문서번호·날짜·사업명을 지어내지 말고');
-    expect(text).toContain('"1. 관련: ○○과-○○○호(○○○○. ○. ○.)"처럼 교사가 채울 자리만 남기세요');
+    expect(text).toContain('"1. 관련: ○○과-○○○(○○○○. ○. ○.)「○○○」"처럼 교사가 채울 자리만 남기세요');
     expect(text).not.toContain('2026학년도 주요업무계획');
     expect(text).not.toContain('운영 계획서 1부');
   });
