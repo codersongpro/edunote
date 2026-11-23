@@ -451,6 +451,32 @@ export function maskPersonalInfo(text: string): string {
     .replace(MOBILE, (_, head, _mid, tail) => `${head}-****-${tail}`);
 }
 
+// 문서 생성 요청용. 주민등록번호는 결과 문서에 들어갈 일이 없으므로 가리기만 하고,
+// 휴대전화 번호는 교사가 문의처로 일부러 넣는 경우가 있어 ⟦연락처1⟧ 같은 대체어로 보낸 뒤
+// 결과에서 원래 번호로 되돌린다. 번호 자체는 AI 서비스로 나가지 않는다.
+export function createPersonalInfoGuard(): {
+  protect: (text: string) => string;
+  restore: (output: string) => string;
+  maskedCount: () => number;
+} {
+  const numbers: string[] = [];
+  let masked = 0;
+  return {
+    protect: text => text
+      .replace(RRN, (_, front, gender) => { masked += 1; return `${front}-${gender}******`; })
+      .replace(MOBILE, whole => {
+        masked += 1;
+        let at = numbers.indexOf(whole);
+        if (at === -1) { numbers.push(whole); at = numbers.length - 1; }
+        return `⟦연락처${at + 1}⟧`;
+      }),
+    restore: output => (numbers.length
+      ? output.replace(/⟦연락처(\d+)⟧/g, (token, n) => numbers[Number(n) - 1] ?? token)
+      : output),
+    maskedCount: () => masked,
+  };
+}
+
 export function hasPersonalInfo(nodes: string[]): boolean {
   return nodes.some(node => maskPersonalInfo(node) !== node);
 }

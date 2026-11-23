@@ -231,7 +231,7 @@ edunote
 | `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
 | `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
 | `src/main/GeminiService.ts` | Gemini API 실제 호출, 무료·유료 API 등급별 모델 폴백 체인 실행, 429/일일한도 재시도, 이미지 생성. `generateContent`류 함수는 `{text, model}` 형태로 실제 사용된 모델명을 함께 반환하며, 웹 검색 그라운딩을 켠 요청에는 출처 정보(`grounding`)가 선택 필드로 더해진다 |
-| `src/main/modelChain.ts` | 모델 폴백 체인 순수 로직 — 선호 모델 목록(`FREE_MODEL_PREFERENCE`/`PAID_MODEL_PREFERENCE`)과 키로 실제 조회한 모델 목록의 교집합 계산, 429 재시도 대기시간(retryDelay) 파싱, 일일 한도 오류 판별 |
+| `src/main/modelChain.ts` | 모델 선택 순수 로직 — 검증 목록, 무료 모드 최신 우선 선택과 새 모델 자동 탐색, 유료 모드 검증 목록 선택, 429 재시도 대기시간 파싱, 일일 한도·무료 미제공(limit: 0) 오류 판별 |
 | `src/main/groundingSources.ts` | 웹 검색 그라운딩 응답에서 출처(URL 기준 중복 제거)·검색어·검색 제안 위젯 HTML을 추려내는 순수 로직. 스트리밍은 청크마다 부분 메타데이터가 와서 정보가 가장 많은 것을 남긴다 |
 | `src/main/eduReferenceSearch.ts` | 연수자료 제작에 참고할 교육부·교육청 자료를 사람이 직접 찾도록, 교육 주제를 `site:go.kr`로 좁힌 검색 URL로 만드는 순수 로직. 결과는 전용 창이 아니라 기본 브라우저에서 연다(will-navigate 정책상 전용 창은 빈 창으로 남기 때문) |
 | `src/main/requestPacer.ts` | 무료 키 분당 요청 한도(15회)에 맞춰 AI 호출 간 최소 간격을 자동으로 띄우는 로직 |
@@ -351,24 +351,14 @@ edunote
 
 ## 8. Gemini 모델 구성
 
-고정된 모델 하나를 쓰지 않고, `src/main/modelChain.ts`의 선호 순서 목록과 API 키로 실제 조회한(`ai.models.list()`, 세션당 1회 캐시) 사용 가능 모델 목록의 **교집합**만 폴백 체인으로 사용한다. 목록에 없는 이름은 애초에 후보에서 빠지므로, 하드코딩한 모델명이 그 키에서 지원되지 않아 요청을 낭비하는 일이 없다.
+고정된 모델 하나를 쓰지 않고, API 키로 실제 조회한 모델 목록(`ai.models.list()`, 키별 6시간 캐시)에서 요금제별 규칙으로 최대 3개(`MAX_CHAIN_LENGTH`)를 골라 폴백 체인으로 쓴다. 선택 로직은 `src/main/modelChain.ts`, 호출과 차단 관리는 `src/main/GeminiService.ts`가 맡는다.
 
-선호 순서는 고정 목록이 아니라 `resolvePreference`가 실행할 때마다 새로 만든다.
-
-1. `buildDynamicPreference`가 조회된 모델 중 정식 안정판 이름 규칙(`gemini-{major}[.{minor}]-(flash-lite|flash|pro)`, 프리뷰·실험판 제외)에 맞는 것만 추려, **등급 → 세대** 순으로 정렬한다. 무료는 `flash-lite`를, 유료는 `pro`를 다른 등급의 최신 모델보다 앞세우고, 같은 등급 안에서는 세대가 높을수록 우선한다.
-2. 그 뒤에 아래 고정 목록을 **안전망**으로 붙인다(중복 제거).
-3. 앞에서부터 최대 3개(`MAX_CHAIN_LENGTH`)만 폴백 체인으로 쓴다.
-
-따라서 구글이 새 `flash-lite`/`pro` 안정판을 내면 코드 수정 없이 자동으로 1순위가 된다. 소수점 아래 버전은 선택이라 `gemini-4-flash-lite`처럼 세대만 붙인 이름도 인식하며, 이때 minor는 0으로 본다.
-
-모델 목록은 6시간 동안 캐시하고 그 뒤 다시 조회하므로(`MODEL_LIST_TTL_MS`), 앱을 며칠 켜둔 채로 써도 새로 출시된 모델이 반영된다. 조회에 실패하면 10분만 기억하고 다시 시도해(`MODEL_LIST_FAILURE_TTL_MS`), 일시적 네트워크 오류로 기본 모델 하나에 오래 묶이지 않는다. API 키를 바꾸면 캐시와 차단 상태가 즉시 초기화된다(`resetModelCache`).
-
-| 등급 | 고정 안전망 목록 (`FREE_MODEL_PREFERENCE` / `PAID_MODEL_PREFERENCE`) |
-| --- | --- |
-| 무료 (Free) | `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash` → `gemini-2.0-flash-lite` |
-| 유료 (Paid) | `gemini-2.5-pro` → `gemini-2.5-flash` → `gemini-2.5-flash-lite` |
-
-이 목록은 모델 조회에 성공하면 동적 감지 결과 **뒤**에 놓이므로 실제로는 거의 쓰이지 않는다. 조회가 실패했을 때만 첫 번째 모델 하나로 동작한다.
+- **검증 목록** `VERIFIED_GENERAL_MODELS`: 공식 모델·가격·사용 중단 문서로 무료·유료 제공 여부와 정식 상태를 확인한 모델. 확인 기준일은 `MODEL_POLICY_UPDATED_AT`이다.
+- **무료 모드** `selectFreeModels`: 이 키에서 쓸 수 있는 가장 새 무료 모델 두 개를 앞에 두고, 마지막 자리에 검증된 최신 Lite를 안전판으로 둔다. 같은 버전이면 Lite보다 일반 모델을 먼저 쓴다.
+- **새 모델 자동 탐색(무료 모드만)** `discoverNewFreeModels`: 검증 목록에 없지만 `gemini-<버전>-<계열>` 정식판 이름이고, 검증된 최신 무료 모델보다 버전이 높은 모델을 후보 맨 앞에 넣는다. 미리보기·실험판·음성·이미지·임베딩 모델은 뺀다. 무료 키는 결제가 연결되지 않아 시도만으로 과금되지 않는다. 무료 등급에서 제공하지 않는 모델(`limit: 0`, `isZeroQuotaError`)이거나 자동 탐색 모델이 접근을 거부하면 24시간(`NOT_FREE_BLOCK_MS`) 동안 뺀다.
+- **유료 모드** `selectVerifiedModels`: 과금 위험 때문에 검증 목록만 쓰고, Pro → Flash → Lite 순서와 계열별 최신 순서를 따른다.
+- 분당 한도는 같은 모델로 한 번 더 시도하고, 일일 한도는 10분, 접근 거부는 1시간 동안 그 모델을 빼고 다음 후보로 넘어간다. 목록 조회에 실패하면 같은 키·요금제로 24시간 안에 확인한 후보만 "최신 여부 미확인" 상태로 다시 쓴다.
+- 설정의 모델 진단(`getModelDiagnostics`)은 후보, 현재 선택, 최근 실제 사용 모델, 새로 찾은 모델(`autoDiscovered`), 선택 이유를 보여 준다.
 
 모델 폴백·오류 처리(`GeminiService.ts`):
 - 분당 요청 한도(429)로 재시도 대기시간(`retryDelay`)이 응답에 포함된 경우, 그 시간만큼 기다린 뒤 **같은 모델로** 재시도해 문체 일관성을 유지한다.
@@ -691,7 +681,7 @@ api/           ← Vercel 서버 함수 (CORS 때문에 브라우저가 직접 �
   ├─ url-meta.ts     링크·유튜브 미리보기
   ├─ fetch-proxy.ts  이미지 썸네일·공유 마켓(구글 시트·드라이브 JSON, 허용 호스트만)
   ├─ naramarket.ts   나라장터 검색 (교사 본인 키를 요청마다 전달, 저장 안 함)
-  └─ _guard.ts       공개 서버용 SSRF 차단·같은 사이트 요청 확인·속도 제한
+  └─ _guard.ts       공개 서버용 SSRF 차단(IPv6 안의 IPv4 포함)·웹판 전용 헤더(X-EduNote-Web)와 같은 사이트 요청 확인·속도 제한
 src/main/*         ← 순수 로직은 두 판이 공유: GeminiService, hwpxDocument, backupFormat,
                      configRules, configDefaults, naramarketClient 등
 ```

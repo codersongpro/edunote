@@ -1265,6 +1265,12 @@ export const SchoolDocPanel: React.FC<SchoolDocPanelProps> = ({ initialTab }) =>
                 onFilesChange={files => setFilesByTab(prev => ({ ...prev, [activeTab]: files }))}
                 multiple={true}
               />
+              {/* 입력 칸의 주민등록번호·휴대전화는 보내기 전에 가리지만, 첨부 파일 안의 내용은 고칠 수 없다 */}
+              {(uploadedFiles.length > 0 || uploadedTemplates.length > 0) && (
+                <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-300">
+                  첨부 파일은 내용 그대로 AI에 전송됩니다. 학생 이름·연락처·주민등록번호 같은 개인정보는 파일에서 지운 뒤 올려 주세요. 무료 API 키는 Google이 입력 내용을 서비스 개선에 쓸 수 있습니다.
+                </p>
+              )}
             </div>
 
             <div>

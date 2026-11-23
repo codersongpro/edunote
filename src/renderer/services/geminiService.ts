@@ -25,7 +25,7 @@ import { buildExampleFormatInstruction } from '../lib/documentExamples';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
 import { parseJsonObjectFromAiText } from '../lib/aiJson';
 import { DocSuggestion, formatNodesForPrompt, parseSuggestions, textToNodes } from '../lib/aiReview';
-import { DocKind, maskPersonalInfo } from '../lib/docRules';
+import { DocKind, maskPersonalInfo, createPersonalInfoGuard } from '../lib/docRules';
 import type { RecordKind } from '../lib/textLength';
 import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
 import {
@@ -1147,7 +1147,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     // 검색 도구 없는 최종 작성 호출에 전달한다.
     if (shouldRunTrainingResearch) {
       const researchText = await aiGenerateMultipart(
-        [{ text: buildTrainingMaterialResearchPrompt(promptContext, getDateContext()) }],
+        [{ text: buildTrainingMaterialResearchPrompt(maskPersonalInfo(promptContext), getDateContext()) }],
         SYSTEM_INSTRUCTION,
         {
           temperature: 0.1,
@@ -1168,21 +1168,26 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     const referencesInstruction = shouldRunTrainingResearch || finalUseSearchGrounding
       ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
       : NO_FABRICATED_REFERENCES_INSTRUCTION;
-    const inputContext = gonggoContext
+    // 입력 본문의 주민등록번호·휴대전화 번호는 AI로 보내기 전에 가린다(휴대전화는 결과에서 되돌림).
+    // 첨부 파일(PDF·이미지 등)은 내용을 고칠 수 없으므로 화면에서 올릴 때 따로 안내한다.
+    const personal = createPersonalInfoGuard();
+    const inputContext = personal.protect(gonggoContext
       ? [promptContext, gonggoContext].filter(context => context.trim()).join('\n\n')
-      : promptContext;
+      : promptContext);
+    const templateForPrompt = personal.protect(templateInstruction);
 
     parts.push({
-      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${publicDocInstruction}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n${formatPriorityInstruction}\n\n${templateInstruction}\n\n${exampleFormatInstruction}\n\n[입력 정보 및 요청사항]:\n${inputContext}\n\n${researchContext}`,
+      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${publicDocInstruction}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n${formatPriorityInstruction}\n\n${templateForPrompt}\n\n${exampleFormatInstruction}\n\n[입력 정보 및 요청사항]:\n${inputContext}\n\n${researchContext}`,
     });
 
     let finalGrounding: GroundingInfo | undefined;
     const options = { temperature: 0.3, useSearchGrounding: finalUseSearchGrounding };
+    const restorePersonal = personal.restore;
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, documentSystemInstruction, options, onProgressText, (model) => { usedModel = model; }, (info) => { finalGrounding = info; })
+      ? await aiGenerateMultipartStream(parts, documentSystemInstruction, options, text => onProgressText(restorePersonal(text)), (model) => { usedModel = model; }, (info) => { finalGrounding = info; })
       : await aiGenerateMultipart(parts, documentSystemInstruction, options, (model) => { usedModel = model; }, (info) => { finalGrounding = info; });
     const grounding = finalGrounding ?? researchGrounding;
-    return { text: stripGeneratedCodeFences(raw), model: usedModel, ...(grounding ? { grounding } : {}) };
+    return { text: restorePersonal(stripGeneratedCodeFences(raw)), model: usedModel, ...(grounding ? { grounding } : {}) };
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));

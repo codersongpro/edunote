@@ -17,6 +17,7 @@ import {
   runDocRules,
   detectDocumentYear,
   maskPersonalInfo,
+  createPersonalInfoGuard,
   shiftDatesForSchoolYear,
   weekdayOf,
   shiftDate,
@@ -253,5 +254,17 @@ describe('쉬운 표현과 남은 자리표시', () => {
   it('전체 검사에 새 규칙이 함께 돈다', () => {
     const categories = runDocRules(['붙임: 계획 1부.  끝.', '오후 2시 금일 시작'], { docKind: '공문' }).map(s => s.category);
     expect(categories).toEqual(expect.arrayContaining(['붙임 표시', '시간 표기', '쉬운 표현']));
+  });
+});
+
+describe('createPersonalInfoGuard', () => {
+  it('여러 글에 걸쳐 같은 번호는 같은 대체어로, 다른 번호는 다른 대체어로 바꾼다', () => {
+    const guard = createPersonalInfoGuard();
+    const a = guard.protect('연락처 010-1111-2222');
+    const b = guard.protect('양식 010-3333-4444 / 010-1111-2222');
+    expect(a).toBe('연락처 ⟦연락처1⟧');
+    expect(b).toBe('양식 ⟦연락처2⟧ / ⟦연락처1⟧');
+    expect(guard.restore('⟦연락처2⟧, ⟦연락처1⟧, ⟦연락처9⟧')).toBe('010-3333-4444, 010-1111-2222, ⟦연락처9⟧');
+    expect(guard.maskedCount()).toBe(3);
   });
 });

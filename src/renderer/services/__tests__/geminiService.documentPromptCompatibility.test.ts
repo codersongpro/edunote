@@ -140,3 +140,22 @@ describe('문서 유형별 최종 프롬프트 호환성', () => {
     expect(notice.user).toContain('지원 자격·제출 서류');
   });
 });
+
+describe('문서 생성 개인정보 보호', () => {
+  it('주민등록번호는 가리고 휴대전화 번호는 대체어로 보낸 뒤 결과에서 되돌린다', async () => {
+    aiGenerateMultipart.mockResolvedValueOnce({ text: '<div>문의: ⟦연락처1⟧, 담임: ⟦연락처2⟧</div>', model: 'gemini-test', fallbacks: [] });
+    const result = await generateDocument(
+      DocType.NEWSLETTER,
+      '[작성 내용]: 학생 900101-1234567 관련 안내. 문의 010-1234-5678, 담임 010 9876 5432, 다시 010-1234-5678',
+      undefined, 1, '2026', [], [], '', GongmunComplexity.MEDIUM,
+    );
+    const [parts] = aiGenerateMultipart.mock.calls.at(-1) as [Array<{ text?: string }>];
+    const sent = parts.map(part => part.text ?? '').join('\n');
+    expect(sent).not.toContain('1234567');
+    expect(sent).toContain('900101-1******');
+    expect(sent).not.toContain('010-1234-5678');
+    expect(sent).not.toContain('9876');
+    expect(sent).toContain('문의 ⟦연락처1⟧, 담임 ⟦연락처2⟧, 다시 ⟦연락처1⟧');
+    expect(result.text).toContain('문의: 010-1234-5678, 담임: 010 9876 5432');
+  });
+});
