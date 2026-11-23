@@ -9,6 +9,10 @@ import {
   getRetryDelayMs,
   isDailyQuotaError,
   isSearchGroundingUnavailableError,
+  modelVersionOrder,
+  discoverNewFreeModels,
+  selectFreeModels,
+  isZeroQuotaError,
 } from '../modelChain';
 
 describe('buildModelChain', () => {
@@ -40,14 +44,14 @@ describe('buildModelChain', () => {
 });
 
 describe('selectVerifiedModels', () => {
-  it('무료 모드는 최신 검증 Lite를 Flash보다 기본으로 사용한다', () => {
+  it('무료 모드는 가장 새 검증 모델을 먼저 쓰고 Lite를 안전판으로 둔다', () => {
     expect(selectVerifiedModels('free', [
       'models/gemini-3.5-flash-lite',
       'models/gemini-3.8-flash',
-    ])).toEqual(['gemini-3.5-flash-lite', 'gemini-3.8-flash']);
+    ])).toEqual(['gemini-3.8-flash', 'gemini-3.5-flash-lite']);
   });
 
-  it('무료 후보가 많으면 최신 Lite부터 다음 Lite와 Flash 순으로 폴백한다', () => {
+  it('무료 후보가 많으면 최신 두 모델 다음에 최신 Lite를 둔다', () => {
     expect(selectVerifiedModels('free', [
       'gemini-3.8-flash',
       'gemini-3.7-flash',
@@ -55,9 +59,9 @@ describe('selectVerifiedModels', () => {
       'gemini-3.5-flash-lite',
       'gemini-3.1-flash-lite',
     ])).toEqual([
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
       'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite',
     ]);
   });
 
@@ -185,5 +189,50 @@ describe('isSearchGroundingUnavailableError', () => {
   it('일반 쿼터 초과와 일반 입력 오류는 검색 미지원으로 오인하지 않는다', () => {
     expect(isSearchGroundingUnavailableError(new Error('429 rate limit exceeded'))).toBe(false);
     expect(isSearchGroundingUnavailableError({ status: 400, message: 'Invalid prompt format' })).toBe(false);
+  });
+});
+
+describe('무료 모드 새 모델 자동 탐색', () => {
+  it('정식 일반 모델 이름만 버전 순서로 읽는다', () => {
+    expect(modelVersionOrder('models/gemini-3.8-flash')).toBe(380);
+    expect(modelVersionOrder('gemini-4-hydrogen')).toBe(400);
+    expect(modelVersionOrder('gemini-4.1-flash-lite')).toBe(410);
+    expect(modelVersionOrder('gemini-4-flash-preview')).toBeNull();
+    expect(modelVersionOrder('gemini-4-flash-image')).toBeNull();
+    expect(modelVersionOrder('gemini-4-flash-tts')).toBeNull();
+    expect(modelVersionOrder('gemini-embedding-002')).toBeNull();
+    expect(modelVersionOrder('gemini-4-flash-09-2026')).toBeNull();
+  });
+
+  it('검증된 최신 모델보다 새 모델만 후보로 찾고, 오래된 미등재 모델은 고르지 않는다', () => {
+    expect(discoverNewFreeModels([
+      'models/gemini-4-hydrogen',
+      'models/gemini-4.1-flash-lite',
+      'models/gemini-2.0-flash',
+      'models/gemini-3.8-flash',
+      'models/gemini-5-pro-preview',
+    ])).toEqual(['gemini-4.1-flash-lite', 'gemini-4-hydrogen']);
+  });
+
+  it('새 모델을 맨 앞에 두고 검증된 Lite를 안전판으로 남긴다', () => {
+    expect(selectFreeModels([
+      'gemini-4-hydrogen',
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite',
+    ])).toEqual({
+      chain: ['gemini-4-hydrogen', 'gemini-3.8-flash', 'gemini-3.5-flash-lite'],
+      autoDiscovered: ['gemini-4-hydrogen'],
+    });
+  });
+
+  it('새 모델이 없으면 검증 목록만으로 고른다', () => {
+    expect(selectFreeModels(['gemini-3.8-flash', 'gemini-3.5-flash-lite']).autoDiscovered).toEqual([]);
+  });
+
+  it('무료 등급 미제공(limit: 0)을 일반 한도 초과와 구별한다', () => {
+    expect(isZeroQuotaError({ message: 'Quota exceeded for metric: generate_content_free_tier_requests, limit: 0' })).toBe(true);
+    expect(isZeroQuotaError({ message: 'Quota exceeded, limit: 15, retry in 20s' })).toBe(false);
+    expect(isZeroQuotaError({ message: 'limit: 0.5' })).toBe(false);
   });
 });

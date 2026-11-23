@@ -26,6 +26,38 @@ const BLOCKED_V4: Array<[string, number]> = [
   ['198.18.0.0', 15], ['198.51.100.0', 24], ['203.0.113.0', 24], ['224.0.0.0', 4], ['240.0.0.0', 4],
 ];
 
+// IPv6 주소를 16비트 그룹 8개로 펼친다. "::ffff:127.0.0.1"처럼 끝에 IPv4를 쓴 형태도 받는다.
+function expandIpv6(ip: string): number[] | null {
+  let text = ip.toLowerCase().replace(/%.*$/, '');
+  const v4 = text.match(/(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4) {
+    if (!net.isIPv4(v4[1])) return null;
+    const n = ipv4ToInt(v4[1]);
+    text = text.slice(0, -v4[1].length) + `${(n >>> 16).toString(16)}:${(n & 0xffff).toString(16)}`;
+  }
+  const halves = text.split('::');
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(':') : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
+  const parts = [...head, ...Array(halves.length === 2 ? missing : 0).fill('0'), ...tail];
+  const groups = parts.map(part => (/^[0-9a-f]{1,4}$/.test(part) ? parseInt(part, 16) : NaN));
+  return groups.length === 8 && groups.every(Number.isFinite) ? groups : null;
+}
+
+// IPv6 안에 IPv4를 담는 형식이면 그 IPv4를 꺼낸다. URL 해석기는 "[::ffff:127.0.0.1]"을
+// "[::ffff:7f00:1]"로 바꾸므로, 점 표기만 보면 내부 주소가 그대로 통과한다.
+function embeddedIpv4(g: number[]): string | null {
+  const toV4 = (hi: number, lo: number) => `${hi >> 8}.${hi & 0xff}.${lo >> 8}.${lo & 0xff}`;
+  const zeros = (from: number, to: number) => g.slice(from, to).every(x => x === 0);
+  if (zeros(0, 5) && g[5] === 0xffff) return toV4(g[6], g[7]);                 // ::ffff:a.b.c.d (매핑)
+  if (zeros(0, 4) && g[4] === 0xffff && g[5] === 0) return toV4(g[6], g[7]);   // ::ffff:0:a.b.c.d (변환)
+  if (zeros(0, 6) && (g[6] !== 0 || g[7] > 1)) return toV4(g[6], g[7]);        // ::a.b.c.d (호환, 폐지)
+  if (g[0] === 0x2002) return toV4(g[1], g[2]);                                // 2002:a.b.c.d::/48 (6to4)
+  return null;
+}
+
 export function isBlockedIp(ip: string): boolean {
   if (net.isIPv4(ip)) {
     const n = ipv4ToInt(ip);
@@ -35,14 +67,20 @@ export function isBlockedIp(ip: string): boolean {
     });
   }
   if (net.isIPv6(ip)) {
-    const lower = ip.toLowerCase();
-    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isBlockedIp(mapped[1]);
-    if (lower === '::' || lower === '::1') return true;
-    if (/^f[cd]/.test(lower)) return true;          // fc00::/7 고유 로컬
-    if (/^fe[89ab]/.test(lower)) return true;       // fe80::/10 링크로컬
-    if (/^ff/.test(lower)) return true;             // 멀티캐스트
-    if (lower.startsWith('64:ff9b:') || lower.startsWith('2001:db8')) return true;
+    const groups = expandIpv6(ip);
+    if (!groups) return true;
+    const embedded = embeddedIpv4(groups);
+    if (embedded) return isBlockedIp(embedded);
+    if (groups.every(g => g === 0)) return true;                       // ::
+    if (groups.slice(0, 7).every(g => g === 0) && groups[7] === 1) return true; // ::1
+    const first = groups[0];
+    if ((first & 0xfe00) === 0xfc00) return true;   // fc00::/7 고유 로컬
+    if ((first & 0xffc0) === 0xfe80) return true;   // fe80::/10 링크로컬
+    if ((first & 0xffc0) === 0xfec0) return true;   // fec0::/10 사이트 로컬(폐지)
+    if ((first & 0xff00) === 0xff00) return true;   // ff00::/8 멀티캐스트
+    if (first === 0x2001 && groups[1] === 0x0db8) return true; // 문서용 2001:db8::/32
+    if (first === 0x0064 && groups[1] === 0xff9b) return true; // NAT64 64:ff9b::/96
+    if (first === 0x0100 && groups[1] === 0 && groups[2] === 0 && groups[3] === 0) return true; // 폐기용 100::/64
     return false;
   }
   return true;
@@ -171,7 +209,14 @@ export function errorResponse(error: unknown, fallback = '요청을 처리하지
 
 // 같은 사이트(EduNote 웹)에서 온 요청만 받는다 — 다른 사이트가 이 서버를 공짜 프록시로 쓰는 것을 막는다.
 // 브라우저가 붙이는 Sec-Fetch-Site / Origin 헤더로 판단한다(서버 간 호출은 Vercel 방화벽 속도 제한으로 막는다).
+// 웹판 화면(src/web/webApi.ts callApi)은 모든 요청에 이 헤더를 붙인다. 다른 사이트의 브라우저는
+// 사용자 정의 헤더를 붙이려면 CORS 사전 요청을 통과해야 하는데 이 서버는 허용하지 않으므로 막힌다.
+// <img src>로 끌어다 쓰기나 헤더 없는 단순 호출도 함께 막는다. 헤더를 직접 붙이는 프로그램까지
+// 막지는 못하므로, 남용 방지의 근본 대책은 Vercel 방화벽 속도 제한이다.
+export const WEB_CLIENT_HEADER = 'x-edunote-web';
+
 export function assertSameOrigin(request: Request): void {
+  if (request.headers.get(WEB_CLIENT_HEADER) !== '1') throw new GuardError('허용되지 않은 요청입니다.', 403);
   const site = request.headers.get('sec-fetch-site');
   if (site && site !== 'same-origin') throw new GuardError('허용되지 않은 요청입니다.', 403);
   const origin = request.headers.get('origin');

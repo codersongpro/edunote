@@ -128,7 +128,10 @@ function safeDataName(name: string): string {
 
 // ── 서버 함수(/api) 호출 ────────────────────────────────────────────
 async function callApi<T>(path: string, init: RequestInit = {}, timeoutMs = 30_000): Promise<T> {
-  const res = await fetch(path, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+  // 서버 함수(api/_guard.ts assertSameOrigin)는 이 헤더가 없는 요청을 거부한다.
+  const headers = new Headers(init.headers);
+  headers.set('X-EduNote-Web', '1');
+  const res = await fetch(path, { ...init, headers, signal: AbortSignal.timeout(timeoutMs) });
   const body = await res.json().catch(() => null) as { error?: string } | null;
   if (!res.ok) throw new Error(body?.error || `요청에 실패했습니다(HTTP ${res.status}).`);
   // 서버 함수가 없는 환경(정적 미리보기 등)은 HTML을 돌려주므로 JSON이 아니면 오류로 본다.

@@ -19,6 +19,9 @@ export function ModelDiagnosticsPanel({ info }: Props) {
       <p className="mt-1"><strong>확인 시각</strong>: {checkedAt}</p>
       <p className="mt-1"><strong>정책 기준</strong>: {info.policySource} (갱신 {info.policyUpdatedAt})</p>
       <p className="mt-1"><strong>선택 이유</strong>: {info.selectionReason}</p>
+      {info.autoDiscovered && info.autoDiscovered.length > 0 && (
+        <p className="mt-1 text-blue-700 dark:text-blue-300">새로 찾은 모델: {info.autoDiscovered.join(', ')} (무료로 쓸 수 없으면 하루 동안 자동으로 빠집니다)</p>
+      )}
       {info.listFailed && (
         <p className="mt-1 text-amber-700 dark:text-amber-300">이번 목록 확인에 실패했습니다. 표시된 후보는 24시간 안에 같은 키와 요금제로 확인한 기록이며 최신 여부는 확인되지 않았습니다.</p>
       )}

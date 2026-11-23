@@ -51,7 +51,7 @@ describe('문서 생성 미입력 사실 처리', () => {
     expect(text).toContain('오늘 날짜를 공고일로 확정하지');
   });
 
-  it('공고 제목만 입력해도 내용·접수기간·문의처를 주제에 맞게 채우게 한다', async () => {
+  it('공고 제목만 입력해도 내용은 채우고 마감 일시·연락처는 자리표시로 남기게 한다', async () => {
     const text = await captureDocumentPrompt(
       DocType.GONGGO,
       '[참고 기본정보]\n소속기관: 새봄학교',
@@ -59,8 +59,9 @@ describe('문서 생성 미입력 사실 처리', () => {
     );
     // 학교가 정하는 값은 비워 두지 않고 채운다.
     expect(text).toContain('공고 내용: (미입력 — 공고 제목과 주제에 맞게 직접 작성)');
-    expect(text).toContain('접수 기간/마감: (미입력 — 공고 제목과 주제에 맞게 직접 작성)');
-    expect(text).toContain('문의처: (미입력 — 공고 제목과 주제에 맞게 직접 작성)');
+    // 마감 일시와 연락처는 사람만 아는 값이라 지어내지 않고 대괄호 자리표시로 남긴다.
+    expect(text).toContain('접수 기간/마감: (미입력 — 사람만 아는 값이므로 [접수 마감 일시] 자리표시로 남김)');
+    expect(text).toContain('문의처: (미입력 — 사람만 아는 값이므로 [연락처] 자리표시로 남김)');
     // 지침 본문에는 "[확인 필요: ...]를 쓰지 말라"는 금지 문구가 남으므로 항목별로 확인한다.
     expect(text).not.toContain('[확인 필요: 공고 내용]');
     expect(text).not.toContain('[확인 필요: 접수 기간/마감]');

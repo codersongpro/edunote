@@ -25,7 +25,7 @@ import { buildExampleFormatInstruction } from '../lib/documentExamples';
 import { formatStudentMemos, withStudentPrivacy, withStudentListPrivacy } from '../lib/generationSafety';
 import { parseJsonObjectFromAiText } from '../lib/aiJson';
 import { DocSuggestion, formatNodesForPrompt, parseSuggestions, textToNodes } from '../lib/aiReview';
-import { DocKind, maskPersonalInfo } from '../lib/docRules';
+import { DocKind, maskPersonalInfo, createPersonalInfoGuard } from '../lib/docRules';
 import type { RecordKind } from '../lib/textLength';
 import { describeGenerationError, isTemporaryApiError } from '../lib/generationErrors';
 import {
@@ -171,6 +171,52 @@ const FORMAL_PUBLIC_WRITING_INSTRUCTION = `
 - 구어체, 감탄형, 홍보성 표현, 사적인 평가, 과도하게 친근한 말투를 쓰지 마세요.
 - 판단이나 의견은 근거, 대상, 기간, 절차, 결과가 드러나도록 객관적으로 작성하세요.
 - 기관 문서에 맞게 간결하고 명확하게 쓰되, 의미가 모호한 추상어를 반복하지 마세요.`;
+
+// 「행정업무의 운영 및 혁신에 관한 규정」과 같은 시행규칙, 공문서 작성 편람을 줄인 표기 규칙.
+// 공문·계획서·보고서·품의서·공고문·회의록·가정통신문에 함께 넣는다. 형식이 정답으로 정해진 부분이라
+// 지정 양식이 있어도 적용한다.
+// 4단계보다 깊은 항목과 항목이 하나뿐인 경우의 처리. 계획서·보고서·공고문 항목 기호 규칙 뒤에 붙인다.
+const OUTLINE_DEPTH_RULE = `
+- 4단계보다 깊어지면 (1) → (가) → ① → ㉮ 순서로 씁니다.
+- 같은 단계의 항목이 하나뿐이면 기호를 붙이지 말고 바로 내용을 쓰세요. "가."만 있고 "나."가 없는 구성은 만들지 않습니다.`;
+
+const PUBLIC_DOC_NOTATION_INSTRUCTION = `
+[공문서 표기 규칙 — 반드시 준수]
+- 날짜: "2026. 3. 4.(수)"처럼 연·월·일 대신 마침표를 찍고 한 칸씩 띄웁니다. '일' 뒤에도 마침표를 찍고, 월·일에 0을 붙이지 않습니다. 틀린 예: 2026.3.4 / 2026. 03. 04. / '26. 3. 4. / 2026. 3. 4(수).
+- 시간: 24시각제로 쓰고 쌍점 양쪽을 붙이며, 10 미만은 0을 넣습니다. 예: 09:00, 13:30. "오전 9시", "오후 3시", "13 : 20", "24시까지"는 쓰지 않습니다.
+- 기간: 물결표(∼)를 앞말과 뒷말에 붙여 씁니다. 예: 2026. 3. 4.(수)∼3. 6.(금), 09:00∼12:00. 같은 해면 뒤 연도를 생략하고, 물결표와 '까지'를 겹쳐 쓰지 않습니다.
+- 마감·기한: 날짜와 시각을 함께 씁니다. 예: 2026. 3. 20.(금) 18:00까지.
+- 금액: "금113,560원(금일십일만삼천오백육십원)"처럼 '금'과 숫자를 붙이고 한글 금액은 괄호 안에 띄우지 않고 씁니다. 산출식은 "5,000원 × 20명 = 100,000원"처럼 ×를 씁니다. "345천원" 대신 "345,000원"으로 씁니다.
+- 문장 부호: 쌍점은 앞말에 붙이고 뒤는 한 칸 띄웁니다(일시: 2026. 3. 4.). 법령·규정·계획명은 「 」, 책·신문 이름은 『 』로 감쌉니다. 괄호 안에 다시 괄호가 필요하면 바깥을 대괄호로 씁니다. 예: 2명[홍길동(교무부), 성춘향(연구부)]
+- 띄어쓰기: 단위 명사(296억 원, 각 1부, 10월 초)와 의존 명사(참여 시, 방과 후, 기한 내, 50% 이상)는 띄우고, 기관·회의 이름(충청북도교육청, 학교운영위원회)과 조항(제1조제1항)은 붙여 씁니다.
+- 숫자는 아라비아 숫자로 씁니다. 대상·기관을 나열할 때 정해진 우선순위가 없으면 가나다순으로 씁니다.`;
+
+// 공문서 작성 편람의 '쉬운 공문서' 표현 원칙. 위와 같은 문서 종류에 넣는다.
+const PUBLIC_DOC_EXPRESSION_INSTRUCTION = `
+[쉬운 공문서 표현]
+- 겹치는 말을 쓰지 않습니다: 미리 예측 → 예측, 반드시 필요 → 필요, 새로 신설 → 신설, 과반수 이상 → 과반수, 2월달 → 2월.
+- 불필요한 사동형을 쓰지 않습니다: 향상시키다 → 향상하다·높이다, 발송시키다 → 보내다.
+- 어려운 한자어와 외래어는 쉬운 말로 씁니다: 금일 → 오늘, 익일 → 다음 날, 향후 → 앞으로, 의거하여 → 따라, 만전을 기하다 → 최선을 다하다, 하기 → 아래, 상기 → 위, 모니터링 → 점검.
+- 명령·금지형 대신 안내형으로 씁니다: "~할 것", "~하기 바람", "엄금" 대신 "~하시기 바랍니다", "~할 수 없습니다".
+- 받는 사람을 주어로 씁니다: 교부합니다 → 받으실 수 있습니다, 접수합니다 → 신청하실 수 있습니다.
+- 조사를 빼고 명사만 이어 붙여 뜻이 흐려지지 않게 합니다: "사고 원인 조속 파악" → "사고 원인을 조속히 파악".
+- 특정 집단을 낮추거나 구별하는 말을 쓰지 않습니다: 불우 이웃 → 이웃.`;
+
+// 표가 들어가는 계획서·보고서·품의서·공고문용 표 작성 원칙.
+const PUBLIC_DOC_TABLE_INSTRUCTION = `
+[표 작성 규칙]
+- 예산처럼 미리 정한 금액의 합계는 표의 첫 행(머리 행 바로 아래)에, 집행·정산 결과처럼 쓰고 난 금액의 합계는 마지막 행에 둡니다.
+- 비고란은 적을 특이사항이 있을 때만 만듭니다. 모든 칸이 비거나 "-"뿐이면 비고 열을 빼세요.
+- 표 안 강조는 굵게나 바탕색으로 하고 밑줄은 쓰지 않습니다.
+- 본문과 표의 날짜·요일·인원·금액이 서로 같아야 합니다.`;
+
+// 사람만 아는 값은 그럴듯하게 지어내면 교사가 놓치기 쉬우므로 대괄호 자리표시로 남긴다.
+// 행사 일시·장소·대상처럼 학교가 정하는 값은 기존처럼 주제에 맞게 채운다.
+const USER_ONLY_PLACEHOLDER_INSTRUCTION = `
+[사람만 아는 정보 — 대괄호 자리표시]
+- 입력에 없는 담당자 이름, 전화번호·이메일 같은 연락처, 제출·접수 마감 일시, 입력에 없는 수신 기관명은 지어내지 말고 [담당자], [연락처], [제출 마감 일시], [수신 기관명]처럼 대괄호 자리표시로 남기세요.
+- 자리표시는 위 네 종류에만 씁니다. 행사 일시·장소·대상·인원·내용은 자리표시로 남기지 말고 주제에 맞게 채우세요.
+- 학교명·기관명이 입력이나 기본정보에 있으면 그대로 쓰세요.`;
 
 const NO_FABRICATED_REFERENCES_INSTRUCTION = `
 [근거·출처 작성 규칙 — 반드시 지킬 것]
@@ -687,7 +733,7 @@ ${exampleFormatInstruction ? '5. 아래 [형식 참고 예시]로 제공된 해�
 - 대항목(1., 2. ...) 바로 아래는 반드시 가. 나. 다. 로 시작하세요.
 - 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하세요.
 - 1)/2)/3) 아래에 더 세부 항목이 필요할 때는 가) 나) 다) 을 사용하세요.
-- 긴 문단으로 이어 쓰지 말고, 각 대항목 아래는 가. 나. 다. 개조식으로 분리하세요.`;
+- 긴 문단으로 이어 쓰지 말고, 각 대항목 아래는 가. 나. 다. 개조식으로 분리하세요.${OUTLINE_DEPTH_RULE}`;
 
   const needsDocumentHeader = [
     DocType.PLAN,
@@ -720,6 +766,15 @@ ${exampleFormatInstruction ? '5. 아래 [형식 참고 예시]로 제공된 해�
     : docType === DocType.GONGMUN || docType === DocType.PUMUI
       ? OFFICIAL_HAPSHO_STYLE_INSTRUCTION
       : REPORT_STYLE_ENDING_INSTRUCTION;
+
+  // 공문서 표기·표현 규칙은 행정 문서와 가정통신문에 넣고, 표 규칙은 표가 들어가는 문서에만 넣는다.
+  // 문자 메시지·보도자료·연수자료는 글의 성격이 달라 넣지 않는다.
+  const publicDocTypes = [DocType.GONGMUN, DocType.PLAN, DocType.REPORT, DocType.PUMUI, DocType.GONGGO, DocType.MEETING_MINUTES, DocType.NEWSLETTER];
+  // 품의서는 산출내역에 표를 쓰지 않으므로 표 규칙에서 뺀다.
+  const tableDocTypes = [DocType.PLAN, DocType.REPORT, DocType.GONGGO];
+  const publicDocInstruction = publicDocTypes.includes(docType)
+    ? `${PUBLIC_DOC_NOTATION_INSTRUCTION}\n${PUBLIC_DOC_EXPRESSION_INSTRUCTION}${tableDocTypes.includes(docType) ? `\n${PUBLIC_DOC_TABLE_INSTRUCTION}` : ''}\n${USER_ONLY_PLACEHOLDER_INSTRUCTION}`
+    : '';
 
   let specificInstruction = '';
 
@@ -755,7 +810,7 @@ ${exampleFormatInstruction ? '5. 아래 [형식 참고 예시]로 제공된 해�
 
       // 실제 기안문은 관련 항목을 1.로 두고 본문을 2.부터 쓴다. 근거를 확인할 수 없더라도
       // 항목을 빼지 않고 문서번호 자리만 비워, 교사가 업무관리시스템에서 채워 넣게 한다.
-      const relatedLine = '1. 관련: (입력·첨부에서 확인된 근거 문서. 확인할 수 없으면 "○○과-○○○호(○○○○. ○. ○.)"처럼 채울 자리만 남김)';
+      const relatedLine = '1. 관련: (입력·첨부에서 확인된 근거 문서. 확인할 수 없으면 "○○과-○○○(○○○○. ○. ○.)「○○○」"처럼 채울 자리만 남김)';
       const overviewLines = [
         '&nbsp;&nbsp;가. 행 사 명: (제목에서 뽑은 행사·사업명)',
         '&nbsp;&nbsp;나. 기 &nbsp;&nbsp;간: (입력된 기간, 없으면 주제에 맞는 일정) ※ (보충 설명이 필요할 때만)',
@@ -777,7 +832,7 @@ ${exampleFormatInstruction ? '5. 아래 [형식 참고 예시]로 제공된 해�
       } else {
         complexityInstruction = `[작성 모드: 상세] 구성: 1.관련(항상 포함), 2.본문(시행문)과 그 아래 개요(가.나.다. 5~7항목, 마지막 항목을 '행정사항'으로), 붙임(실제 첨부가 있을 때만).
 - 개요는 본문 2.의 하위 항목으로 들여쓰고, 반드시 5~7항목을 채우세요. 입력으로 확인된 일시·기간·장소·대상을 먼저 넣고, 부족한 자리는 행사명·주요내용·신청 방법·운영 절차처럼 주제로 쓸 수 있는 항목으로 채우세요.
-- 행정사항은 별도 대항목(3.)으로 빼지 말고 개요의 마지막 항목(예: 바. 행정사항, 사. 행정사항)으로 넣으세요. 협조 요청·제출 기한·제출 방법·유의 사항처럼 수신처가 실제로 할 일을 적고, 세부는 그 아래 '-' 줄로 나누세요. 입력에 없는 날짜·담당자 이름은 만들지 마세요.
+- 행정사항은 별도 대항목(3.)으로 빼지 말고 개요의 마지막 항목(예: 바. 행정사항, 사. 행정사항)으로 넣으세요. 협조 요청·제출 기한·제출 방법·유의 사항처럼 수신처가 실제로 할 일을 적고, 세부는 그 아래 '-' 줄로 나누세요. 입력에 없는 제출 기한·담당자·연락처는 [제출 마감 일시], [담당자], [연락처]로 남기세요.
 - 표는 세부추진계획(일정·역할 분담처럼 여러 항목을 줄 단위로 비교해야 하는 내용)이 있을 때만 그 부분에 한해 쓰고, 나머지는 개조식 텍스트로 작성하세요.`;
         outputExample = `${relatedLine}<br>2. ${bodyOpening}<br><br>${overviewLines.join('<br>')}<br>&nbsp;&nbsp;바. 행정사항: (협조·제출 사항을 주제에 맞게 직접 작성)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- (제출 방법·기한 등 세부는 '-' 줄로 작성)<br><br>${attachmentExample}`;
       }
@@ -788,20 +843,21 @@ ${complexityInstruction}
 [공통 작성 규칙]
 1. 글자 색상: 무조건 검정색(#000000)만 사용.
 2. 발신 명의 제외.
-3. 마무리: 실제 첨부가 있을 때만 '붙임'을 표시하고 "끝."으로 마무리. 붙임이 1건이면 번호 없이 "붙임  ○○ 1부.  끝.", 2건 이상이면 "붙임  1. ○○ 1부." 아래로 번호를 매기고 마지막 줄 끝에 "끝."을 붙이세요. 첨부가 없으면 붙임 줄을 만들지 말고 본문 마지막 뒤에 "끝."만 두세요.
+3. 마무리: 실제 첨부가 있을 때만 본문 다음 줄에 '붙임'을 표시하고 "끝."으로 마무리. '붙임' 뒤에는 쌍점(:)을 쓰지 않고 두 칸 띄웁니다. 붙임이 1건이면 번호 없이 "붙임  ○○ 1부.  끝.", 2건 이상이면 "붙임  1. ○○ 1부." 아래로 번호를 매기고 마지막 줄 끝에 "끝."을 붙이세요. 첨부가 없으면 붙임 줄을 만들지 말고 본문 마지막 뒤에 "끝."만 두세요.
 4. 항목 기호(겉공문 전용): 대항목은 1. 2. 3., 그 아래는 가. 나. 다., 그 아래는 1) 2) 3), 더 아래는 가) 나) 다)를 씁니다.
 - 시행문 본문(2.)의 개요만 가./나./다.로 나누고, 관련(1.)은 근거가 2건 이상일 때만 가./나./다.로 나눕니다.
 - 위 작성 모드가 개요를 만들지 말라고 했으면 대항목 아래에 가./나./다.를 붙이지 말고 한 문장으로 끝내세요. 모든 대항목에 하위 항목을 붙일 필요는 없습니다.
-5. 제목: ${titlePrefixRule}
+5. 제목: ${titlePrefixRule} 한 문서에는 한 안건만 다룹니다(1안건 1기안). "○○ 계획 및 ○○ 공고"처럼 안건이 둘로 보이면 하나를 붙임으로 돌리고, 제목은 본문 내용을 모두 아우르는 짧은 말로 쓰세요. "우리 학교" 대신 학교명을 씁니다.
 6. 본문 시행문은 합쇼체 한 문장으로 쓰고 ${closingSentence} 형태로 끝내세요. "~함.", "~임." 같은 보고서체를 쓰지 마세요.
 7. 이 문서는 겉공문이며 계획서가 아닙니다. 추진배경, 목적, 운영방침, 세부추진계획, 소요예산, 기대효과 같은 계획서 목차를 만들지 마세요. 위 작성 모드가 지정한 구성만 사용하세요.
-8. 개요는 빈칸이나 "[확인 필요: ...]" 없이 모두 채워 완성하세요. 내용·운영 절차·신청 방법·협조 사항은 제목과 주제에 맞게 직접 쓰고, 일시·장소·대상·인원도 입력이 없으면 학교에서 실제로 잡을 법한 값으로 채웁니다. 다만 법령·조례 조항, 공문 문서번호, 상위 계획 명칭은 추정하지 말고 해당 항목을 생략하세요.
+8. 개요는 빈칸이나 "[확인 필요: ...]" 없이 모두 채워 완성하세요. 내용·운영 절차·신청 방법·협조 사항은 제목과 주제에 맞게 직접 쓰고, 일시·장소·대상·인원도 입력이 없으면 학교에서 실제로 잡을 법한 값으로 채웁니다. 다만 법령·조례 조항, 공문 문서번호, 상위 계획 명칭은 추정하지 말고 해당 항목을 생략하세요. 담당자·연락처·제출 마감 일시는 대괄호 자리표시 규칙을 따릅니다.
 [관련 항목 작성 규칙 — 반드시 준수]
 - 겉공문은 언제나 "1. 관련:"으로 시작하고 본문(시행문)은 2.부터 씁니다. 관련 항목을 빼거나 본문을 1.로 올리지 마세요.
-- 입력이나 첨부에서 근거 문서를 확인할 수 있으면 그대로 쓰고, 확인할 수 없으면 문서번호·날짜·사업명을 지어내지 말고 "1. 관련: ○○과-○○○호(○○○○. ○. ○.)"처럼 교사가 채울 자리만 남기세요.
+- 입력이나 첨부에서 근거 문서를 확인할 수 있으면 그대로 쓰고, 확인할 수 없으면 문서번호·날짜·사업명을 지어내지 말고 "1. 관련: ○○과-○○○(○○○○. ○. ○.)「○○○」"처럼 교사가 채울 자리만 남기세요.
 - 근거가 1건이면 "1. 관련: ○○" 한 줄로, 2건 이상이면 "1. 관련" 다음 줄에 가./나./다.로 나열하세요.
 - 법령·조례·규칙·지침·제도 이름은 「 」로 감싸세요. 예: 「충청북도교육청 ○○ 지원 조례」
-- 공문 근거는 "부서명-문서번호(YYYY. M. D.)" 형식으로 쓰세요. 예: 인성시민과-17381(2026. 8. 26.)
+- 공문 근거는 "부서명-문서번호(YYYY. M. D.)「문서 제목」" 형식으로 쓰세요. 번호와 날짜만 쓰면 어떤 문서인지 알 수 없으므로 문서 제목을 함께 씁니다. 예: 인성시민과-17381(2026. 8. 26.)「2026 학교폭력 예방교육 운영 계획」
+- 문서번호 뒤에 '호'를 붙이지 않습니다. 근거가 2건 이상이면 날짜가 앞선 것부터 씁니다.
 [개요 항목 작성 규칙]
 - 항목명은 2~4글자로 짧게 쓰고, 콜론(:) 위치가 세로로 맞도록 짧은 항목명 글자 사이에 공백과 &nbsp;를 넣어 너비를 맞추세요. 한 공문 안에서는 같은 너비를 쓰세요.
   - 3글자(행사명 등): "가. 행 사 명:" 처럼 글자 사이에 공백 한 칸씩
@@ -809,7 +865,9 @@ ${complexityInstruction}
   - 4글자(행정사항·작품접수 등): 띄우지 않고 "바. 행정사항:" 그대로
 - 한 항목에 딸린 세부 내용은 그 아래 줄에 '-'로 나누어 들여쓰세요.
 - 덧붙일 안내나 예외는 해당 항목 뒤 또는 아래 줄에 '※'로 적으세요.
-- 날짜는 "2026. 9. 29.(화)", 기간은 "2026. 11. 6.(금) ~ 11. 7.(토)", 시간은 "15:30 ~ 16:30" 형식으로 쓰세요.
+- 날짜는 "2026. 9. 29.(화)", 기간은 "2026. 11. 6.(금)∼11. 7.(토)", 시간은 "15:30∼16:30" 형식으로 쓰세요.
+- 개요는 언제(일시·기간) → 어디서(장소) → 누가(대상) → 무엇을(내용) → 협조·행정사항 순서로 씁니다. 하루 행사면 '기간' 대신 '일시'로 쓰고 날짜와 시간을 함께 적으세요.
+- 본문이 표로 끝나면 표 아래 왼쪽 끝에서 두 칸 띄우고 "끝."을 씁니다.
 ${files.length > 0 ? `[첨부 파일 처리 규칙 — 반드시 준수]
 - 첨부된 문서는 이 겉공문의 '붙임' 항목에 기재될 계획서·문서입니다.
 - 첨부 문서를 그대로 재작성하거나 복사하는 것은 절대 금지입니다.
@@ -843,6 +901,7 @@ ${hasExplicitNoBudget ? '- 예산 관련 제목, 빈 표, "해당 없음" 표를
 - 각 가. 나. 다. 항목은 한 문장으로 작성하고, 너무 길면 두 문장으로 나누세요.
 - 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
 - 일정, 역할 분담처럼 표가 자연스러운 부분은 선이 있는 표로 정리하세요.
+- 운영 개요는 일시·기간 → 장소 → 대상 → 방법·내용 순서로 쓰고, 일정에는 날짜와 요일을 함께 적으세요.${OUTLINE_DEPTH_RULE}
 [문체] 모든 문장은 학교 계획서에 맞는 간결한 보고서체로 작성하세요. "~함.", "~임."을 억지로 붙이지 말고, 문맥에 맞게 단어 또는 짧은 구로 끝내세요.
 [예시]
 - 가. 학생들의 문해력 및 비판적 사고력 함양을 위한 체계적인 독서교육 강화 필요성 증대
@@ -879,7 +938,7 @@ ${hasExplicitNoBudget ? '- 예산 관련 제목, 빈 표, "해당 없음" 표를
 [개조식 작성 규칙] 표 앞뒤 설명도 긴 문단 금지. 각 항목은 반드시 가. 나. 다. 또는 표로 분리하세요. 각 항목은 한 문장 중심으로 작성하고, 장황하면 둘로 나누세요.
 - 가./나./다. 아래에 세부 항목이 필요할 때는 1) 2) 3) 을 사용하고, 1)/2)/3) 아래는 가) 나) 다) 을 사용하세요.
 - 가. 항목에서 나. 항목으로 넘어갈 때, 나. 항목에서 다. 항목으로 넘어갈 때는 반드시 <br> 또는 별도 블록으로 줄바꿈하세요. 같은 줄에 가. 나. 다.를 이어 쓰지 마세요.
-- 비교·정산·일정처럼 행과 열로 정리할 실제 정보가 있을 때만 선이 있는 표를 사용하세요.
+- 비교·정산·일정처럼 행과 열로 정리할 실제 정보가 있을 때만 선이 있는 표를 사용하세요.${OUTLINE_DEPTH_RULE}
 [소제목 금지] 추진 개요와 운영 성과 및 제언의 하위 항목에는 '필요성', '현황', '문제점', '학생 측면', '교사 측면' 같은 분석용 소제목을 붙이지 마세요.
 [금지] 계획서와 동일한 '기대효과' 섹션 반복 금지. '추진배경' 독립 항목 금지. 실제 실적을 미래형으로 바꾸거나 개선 제안을 이미 실행한 사실처럼 쓰지 마세요.`;
       break;
@@ -924,7 +983,8 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     case DocType.PUMUI:
       specificInstruction = `
 작업: [지출품의서 기안문 작성]
-[공통 규칙] 항목기호(1.→가.→1)), 붙임 표시, 산출내역에 표(Table)는 사용하지 마세요. 긴 산출내역은 품목별 줄바꿈으로 구분하세요.
+[공통 규칙] 항목 기호는 1. → 가. → 1) 순서로 쓰고, 붙임은 실제 첨부가 있을 때만 "붙임  ○○ 1부.  끝."으로 씁니다. 산출내역에는 표(Table)를 쓰지 말고 품목별로 줄을 바꿔 "품목 단가 × 수량 = 금액" 형태로 쓰세요.
+[금액] 소요예산은 "금500,000원(금오십만원)"처럼 쓰고, 산출내역의 합계가 소요예산과 같아야 합니다.
 [문체] 본문 시행문은 반드시 합쇼체로 작성하세요. 예: "구입하고자 합니다.", "지급하고자 합니다.", "실시하고자 합니다." "~함.", "~임."으로 끝내지 마세요.
 [금지] 결재란(담당/부서장/원감/원장/학교장 표), 서명란, 직인란을 절대 출력하지 마세요. 업무관리시스템에서 전자결재로 처리하므로 불필요합니다.
 [물품] 1.관련 → 2.본문(구입) → 가.내역 나.용도 다.소요예산 라.산출내역
@@ -1038,9 +1098,10 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
   const gonggoField = (
     label: string,
     value: string | undefined,
-    kind: 'fact' | 'write' | 'skip' = 'skip',
+    kind: 'fact' | 'write' | 'placeholder' | 'skip' = 'skip',
   ): string => {
     if (value?.trim()) return value;
+    if (kind === 'placeholder') return `(미입력 — 사람만 아는 값이므로 [${label}] 자리표시로 남김)`;
     if (kind === 'fact') return '(미입력 — 기관이 부여하는 값이므로 추정하지 말고 해당 줄을 생략)';
     if (kind === 'write') return '(미입력 — 공고 제목과 주제에 맞게 직접 작성)';
     return '(미입력 — 생략 가능)';
@@ -1052,8 +1113,8 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 - 공고 제목: ${gonggoField('공고 제목', gonggoInputs.title, 'write')}
 - 공고 번호: ${gonggoField('공고 번호', gonggoInputs.number, 'fact')}
 - 공고 내용: ${gonggoField('공고 내용', gonggoInputs.content, 'write')}
-- 접수 기간/마감: ${gonggoField('접수 기간/마감', gonggoInputs.deadline, 'write')}
-- 문의처: ${gonggoField('문의처', gonggoInputs.contact, 'write')}
+- 접수 기간/마감: ${gonggoField('접수 마감 일시', gonggoInputs.deadline, 'placeholder')}
+- 문의처: ${gonggoField('연락처', gonggoInputs.contact, 'placeholder')}
 - 추가 사항: ${gonggoField('추가 사항', gonggoInputs.extraInfo)}`
       : '';
 
@@ -1062,12 +1123,14 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
 - 문서는 교사가 곧바로 손볼 수 있는 완성된 초안이어야 합니다. "(미입력)"으로 표시된 항목도 비워 두거나 "[확인 필요: ...]", "○○○", "(추후 결정)" 같은 자리표시자로 남기지 말고, 아래 기준에 따라 채워서 완성하세요. "(미입력)"이라는 말 자체도 출력하지 마세요.
   (1) [서술 항목] 목적, 필요성, 추진 배경, 운영 방침, 주요 내용, 세부 활동, 운영 방법, 지도 중점, 유의 사항, 협조 사항, 기대 효과.
       제목과 주제만 있어도 학교 현장에서 통용되는 일반적인 내용으로 충실히 작성하세요.
-  (2) [학교가 정하는 값 — 주제에 맞게 채움] 일시·기간, 장소, 대상, 인원, 예산·금액, 신청 방법, 제출 기한, 문의처.
+  (2) [학교가 정하는 값 — 주제에 맞게 채움] 일시·기간, 장소, 대상, 인원, 예산·금액, 신청 방법.
       입력에 있으면 그 값을 그대로 쓰고, 없으면 학년도와 주제에 어울리는 현실적인 값으로 채우세요.
       예: 독서 행사라면 학기 중 평일 오후, 장소는 도서관이나 시청각실, 대상은 전교생처럼 학교에서 실제로 잡을 법한 값.
       학년도·학사 일정과 어긋나는 날짜(방학 중 전교생 행사 등)나 학교 규모에 맞지 않는 금액은 쓰지 마세요.
   (3) [외부에 실재하는 식별자 — 지어내기 금지] 법령·조례·규칙의 이름과 조항 번호, 공문 문서번호, 공고 번호, 상위 기관 계획 명칭, 통계·만족도 수치, 회의 발언, 인용문, 실명 참석자 명단, 붙임 파일명.
       이 값들은 틀리면 문서가 무효가 되므로 추정해서 쓰지 마세요. 입력이나 첨부에 없으면 해당 항목을 통째로 생략하세요.
+  (4) [사람만 아는 정보 — 대괄호 자리표시] 담당자 이름, 연락처, 제출·접수 마감 일시, 입력에 없는 수신 기관명.
+      그럴듯한 값을 지어내면 교사가 놓친 채 발송할 수 있으므로 [담당자], [연락처], [제출 마감 일시], [수신 기관명]으로 남기세요. 이 자리표시는 위 자리표시자 금지의 예외입니다. 문자 메시지와 보도자료에서는 자리표시를 넣지 말고 입력에 없는 연락처·담당자 줄을 생략하세요.
 - 보고서에서는 자료 미제공과 실제 미실시를 구별하고, 자료가 없다는 이유로 미실시했다고 단정하지 마세요. 보고서의 실적·결과·정산은 (3)에 준해 입력에서 확인된 내용만 쓰고, 없으면 그 항목을 만들지 마세요.
 - 붙임은 실제 첨부가 있을 때만 작성하고 파일명을 만들지 마세요. 관련 근거도 입력이나 첨부에서 확인된 것만 쓰고 문서번호를 지어내지 마세요.
 - 다만 겉공문은 "1. 관련:" 항목 자체를 반드시 두고 본문을 2.부터 씁니다. 근거를 확인할 수 없으면 문서번호와 날짜 자리만 ○로 비워 교사가 채우게 하세요. 이 자리는 위 자리표시자 금지의 예외입니다.
@@ -1084,7 +1147,7 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     // 검색 도구 없는 최종 작성 호출에 전달한다.
     if (shouldRunTrainingResearch) {
       const researchText = await aiGenerateMultipart(
-        [{ text: buildTrainingMaterialResearchPrompt(promptContext, getDateContext()) }],
+        [{ text: buildTrainingMaterialResearchPrompt(maskPersonalInfo(promptContext), getDateContext()) }],
         SYSTEM_INSTRUCTION,
         {
           temperature: 0.1,
@@ -1105,21 +1168,26 @@ ${isReplyMode ? '[형식] 받은 메시지 내용을 인지하고 자연스럽�
     const referencesInstruction = shouldRunTrainingResearch || finalUseSearchGrounding
       ? SEARCH_GROUNDED_REFERENCES_INSTRUCTION
       : NO_FABRICATED_REFERENCES_INSTRUCTION;
-    const inputContext = gonggoContext
+    // 입력 본문의 주민등록번호·휴대전화 번호는 AI로 보내기 전에 가린다(휴대전화는 결과에서 되돌림).
+    // 첨부 파일(PDF·이미지 등)은 내용을 고칠 수 없으므로 화면에서 올릴 때 따로 안내한다.
+    const personal = createPersonalInfoGuard();
+    const inputContext = personal.protect(gonggoContext
       ? [promptContext, gonggoContext].filter(context => context.trim()).join('\n\n')
-      : promptContext;
+      : promptContext);
+    const templateForPrompt = personal.protect(templateInstruction);
 
     parts.push({
-      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n${formatPriorityInstruction}\n\n${templateInstruction}\n\n${exampleFormatInstruction}\n\n[입력 정보 및 요청사항]:\n${inputContext}\n\n${researchContext}`,
+      text: `${specificInstruction}\n${titleHeaderInstruction}\n${reportStyleInstruction}\n${NATURAL_WRITING_INSTRUCTION}\n${FORMAL_PUBLIC_WRITING_INSTRUCTION}\n${publicDocInstruction}\n${referencesInstruction}\n${emptyFieldInstruction}\n${volumeInstruction}\n${commonContext}\n${formatPriorityInstruction}\n\n${templateForPrompt}\n\n${exampleFormatInstruction}\n\n[입력 정보 및 요청사항]:\n${inputContext}\n\n${researchContext}`,
     });
 
     let finalGrounding: GroundingInfo | undefined;
     const options = { temperature: 0.3, useSearchGrounding: finalUseSearchGrounding };
+    const restorePersonal = personal.restore;
     const raw = onProgressText
-      ? await aiGenerateMultipartStream(parts, documentSystemInstruction, options, onProgressText, (model) => { usedModel = model; }, (info) => { finalGrounding = info; })
+      ? await aiGenerateMultipartStream(parts, documentSystemInstruction, options, text => onProgressText(restorePersonal(text)), (model) => { usedModel = model; }, (info) => { finalGrounding = info; })
       : await aiGenerateMultipart(parts, documentSystemInstruction, options, (model) => { usedModel = model; }, (info) => { finalGrounding = info; });
     const grounding = finalGrounding ?? researchGrounding;
-    return { text: stripGeneratedCodeFences(raw), model: usedModel, ...(grounding ? { grounding } : {}) };
+    return { text: restorePersonal(stripGeneratedCodeFences(raw)), model: usedModel, ...(grounding ? { grounding } : {}) };
   } catch (error: any) {
     console.error('Gemini API Error:', error);
     throw new Error(describeGenerationError(error));
