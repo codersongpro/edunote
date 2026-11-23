@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { notifyToast } from '../lib/toast';
 import {
   Wand2, AlertCircle, FileText, Layers, ClipboardList, Zap, SlidersHorizontal,
@@ -14,9 +14,11 @@ import { playSuccessSound } from '../lib/soundEffect';
 import { GeneratedDisplay } from './GeneratedDisplay';
 import {
   generateLessonSlides, generateLessonWorksheet, generateLessonQuiz, generateLessonPlan,
-  generateWorksheetVariant, generateWorksheetTeacherGuide,
-  LessonSlide, LessonParams, QuizType,
+  generateWorksheetVariant, generateWorksheetTeacherGuide, verifyLessonItems,
+  LessonSlide, LessonParams, QuizType, ItemVerification,
 } from '../services/geminiService';
+import { ItemQualityPanel } from './ItemQualityPanel';
+import { checkQuizItems, checkWorksheetItems, extractQuizItems, extractWorksheetItems } from '../lib/itemQuality';
 import { LESSON_LOADING_MESSAGES } from '../constants';
 import { GRADES as CURRICULUM_GRADES, getSubjectsForGrade } from '../constants/curriculum2022';
 import { getStandards, AchievementStandard } from '../constants/curriculumStandards';
@@ -231,6 +233,9 @@ const LessonMaterialGenerator: React.FC = () => {
   const [showNotes, setShowNotes] = useState(true);
   const [quizEditMode, setQuizEditMode] = useState(false);
   const [quizEditSource, setQuizEditSource] = useState('');
+  // AI 독립 풀이 검증 결과. source는 검증한 학생용 자료의 지문이라, 자료가 바뀌면 이전 결과임을 표시한다.
+  const [itemVerification, setItemVerification] = useState<{ results: ItemVerification[]; model: string; source: string; kind: 'WORKSHEET' | 'QUIZ' } | null>(null);
+  const [isVerifyingItems, setIsVerifyingItems] = useState(false);
 
   const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -345,6 +350,7 @@ const LessonMaterialGenerator: React.FC = () => {
     }
     setError(null);
     setIsGenerating(true);
+    if (contentType === 'WORKSHEET' || contentType === 'QUIZ') setItemVerification(null);
     if (contentType === 'WORKSHEET') {
       setWorksheetHtml(null);
       setWorksheetModel('');
@@ -529,6 +535,51 @@ li{margin-bottom:5pt;line-height:1.6;}
     details,
     achievementStandard: selectedStandard ? { code: selectedStandard.code, text: selectedStandard.text } : undefined,
   });
+
+  // 형식 점검은 AI 없이 바로 계산한다(정답 위치 쏠림·정답만 긴 보기·강조 없는 부정 질문 등).
+  const itemFindings = useMemo(() => {
+    try {
+      if (contentType === 'WORKSHEET' && worksheetHtml) {
+        return checkWorksheetItems(worksheetHtml, { includeScore: worksheetType === 'assessment' && includeScore, grade: selectedGradeLabel });
+      }
+      if (contentType === 'QUIZ' && quizHtml) {
+        const items = extractQuizItems(quizHtml);
+        return items ? checkQuizItems(items, selectedGradeLabel) : [];
+      }
+    } catch (error) {
+      console.warn('[문항 점검] 형식 점검 실패:', error);
+    }
+    return [];
+  }, [contentType, worksheetHtml, quizHtml, worksheetType, includeScore, selectedGradeLabel]);
+
+  const verificationSource = contentType === 'QUIZ' ? quizHtml : worksheetHtml;
+  const currentVerification = itemVerification && itemVerification.kind === contentType
+    ? { results: itemVerification.results, model: itemVerification.model, stale: !verificationSource || itemVerification.source !== contentFingerprint(verificationSource) }
+    : null;
+
+  const handleVerifyItems = async () => {
+    const kind = contentType === 'QUIZ' ? 'QUIZ' : 'WORKSHEET';
+    const source = kind === 'QUIZ' ? quizHtml : worksheetHtml;
+    if (!source) return;
+    setIsVerifyingItems(true);
+    try {
+      let result: { results: ItemVerification[]; model: string };
+      if (kind === 'QUIZ') {
+        const items = extractQuizItems(source);
+        if (!items) throw new Error('퀴즈 문항 데이터를 읽지 못했습니다. HTML을 직접 고쳤다면 문항 부분(var Q=…)이 그대로인지 확인해 주세요.');
+        result = await verifyLessonItems({ kind: 'quiz', items }, lessonParams());
+      } else {
+        result = await verifyLessonItems({ kind: 'worksheet', items: extractWorksheetItems(source) }, lessonParams());
+      }
+      setItemVerification({ ...result, source: contentFingerprint(source), kind });
+      const problems = result.results.filter(item => item.status !== 'ok').length;
+      notifyToast({ type: problems ? 'info' : 'success', title: problems ? `확인이 필요한 문항이 ${problems}개 있습니다.` : '모든 문항을 AI가 같은 답으로 풀었습니다.' });
+    } catch (error) {
+      notifyToast({ type: 'error', title: error instanceof Error ? error.message : '문항 검증에 실패했습니다.' });
+    } finally {
+      setIsVerifyingItems(false);
+    }
+  };
 
   const handleGenerateVariant = async () => {
     if (!worksheetHtml) return;
@@ -1089,6 +1140,15 @@ li{margin-bottom:5pt;line-height:1.6;}
                   )}
                 </div>
               )}
+              {worksheetTab === 'generate' && worksheetHtml && worksheetView === 'student' && (
+                <ItemQualityPanel
+                  findings={itemFindings}
+                  verification={currentVerification}
+                  isVerifying={isVerifyingItems}
+                  onVerify={handleVerifyItems}
+                  hasAnswerKey={false}
+                />
+              )}
               {worksheetTab === 'generate' && worksheetHtml && (
                 worksheetView === 'teacher' && teacherGuide ? (
                   <div className="flex-1 min-h-0 flex flex-col gap-1">
@@ -1203,6 +1263,17 @@ li{margin-bottom:5pt;line-height:1.6;}
                   </button>
                 </div>
               </div>
+              {!quizEditMode && (
+                <div className="px-3 pt-2">
+                  <ItemQualityPanel
+                    findings={itemFindings}
+                    verification={currentVerification}
+                    isVerifying={isVerifyingItems}
+                    onVerify={handleVerifyItems}
+                    hasAnswerKey
+                  />
+                </div>
+              )}
               <div className="flex-1 overflow-hidden">
                 {quizEditMode ? (
                   <textarea
