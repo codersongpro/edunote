@@ -210,6 +210,7 @@ edunote
 │     │  ├─ cancellation.ts
 │     │  ├─ aiJson.ts
 │     │  ├─ a4Check.ts
+│     │  ├─ itemQuality.ts
 │     │  ├─ toast.ts
 │     │  ├─ tours.ts
 │     │  ├─ hwpx-parser.ts
@@ -231,6 +232,7 @@ edunote
 | `src/main/index.ts` | Electron 앱 창 생성, 앱 메뉴 구성, 앱 아이콘 설정, main process (앱의 핵심 기능을 실제로 실행하는 부분) 진입점 |
 | `src/main/ipcHandlers.ts` | renderer (사용자가 보는 화면을 그리는 부분)에서 요청하는 파일 저장, PDF 저장, 설정 저장, 백업, 외부 열기, AI 호출 IPC (화면과 앱 본체 사이의 메시지 전달 통로) 처리 |
 | `src/main/GeminiService.ts` | Gemini API 실제 호출, 무료·유료 API 등급별 모델 폴백 체인 실행, 429/일일한도 재시도, 이미지 생성. `generateContent`류 함수는 `{text, model}` 형태로 실제 사용된 모델명을 함께 반환하며, 웹 검색 그라운딩을 켠 요청에는 출처 정보(`grounding`)가 선택 필드로 더해진다 |
+| `src/renderer/lib/itemQuality.ts` | 학생용 문항 형식 점검 순수 로직 — 객관식 정답 위치 쏠림·연속, OX 정답 쏠림, 정답만 긴 보기, "모두 옳다"·중복 보기, 강조 없는 부정 질문, 배점 누락·합계 불일치, 같은 시작 반복, 초등 학년별 문장 길이. 퀴즈 HTML의 문항 데이터(`var Q=`) 다시 읽기, 단답형 답 비교용 정규화. AI 독립 풀이 검증은 `geminiService.verifyLessonItems`(정답을 뺀 문항을 별도 요청으로 풀게 해 출제 정답과 비교), 화면은 `ItemQualityPanel.tsx` |
 | `src/main/modelChain.ts` | 모델 선택 순수 로직 — 검증 목록, 무료 모드 최신 우선 선택과 새 모델 자동 탐색, 유료 모드 검증 목록 선택, 429 재시도 대기시간 파싱, 일일 한도·무료 미제공(limit: 0) 오류 판별 |
 | `src/main/groundingSources.ts` | 웹 검색 그라운딩 응답에서 출처(URL 기준 중복 제거)·검색어·검색 제안 위젯 HTML을 추려내는 순수 로직. 스트리밍은 청크마다 부분 메타데이터가 와서 정보가 가장 많은 것을 남긴다 |
 | `src/main/eduReferenceSearch.ts` | 연수자료 제작에 참고할 교육부·교육청 자료를 사람이 직접 찾도록, 교육 주제를 `site:go.kr`로 좁힌 검색 URL로 만드는 순수 로직. 결과는 전용 창이 아니라 기본 브라우저에서 연다(will-navigate 정책상 전용 창은 빈 창으로 남기 때문) |
